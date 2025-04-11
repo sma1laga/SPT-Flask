@@ -1,16 +1,47 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Main Menu</h2>
-<p>Welcome to the Signal Processing Toolkit. Select an option below:</p>
-<ul>
-    <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
-    <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform Calculator</a></li>
-    <li><a href="{{ url_for('convolution.convolution') }}">Convolution</a></li>
-    <li><a href="{{ url_for('process_chain.show_chain') }}">Process Chain Plot</a></li>
-    <li><a href="{{ url_for('filter_design.filter_design') }}">Filter Design</a></li>
-    <li><a href="{{ url_for('training_page.training_menu') }}">Training Modules</a></li>
-    <li><a href="{{ url_for('function_definitions.function_definitions') }}">Function Definitions</a></li>
-    <li><a href="{{ url_for('transform_table.transform_table') }}">Fourier & Laplace Transform Table</a></li>
-    <li><a href="{{ url_for('theory.theory') }}">Theory</a></li>
-</ul>
+  <div style="text-align:center; margin-bottom:30px;">
+    <h2>Welcome to the Signal Processing Toolkit</h2>
+    <p>Select a category below to start exploring:</p>
+  </div>
+
+  <div class="menu-grid" style="display:flex; gap:20px; flex-wrap:wrap; justify-content: center;">
+    <!-- Plotting Category -->
+    <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Plotting</h3>
+      <ul style="list-style:none; padding:0; margin:0;">
+        <li><a href="{{ url_for('plot_function.plot_function') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Plot Function</a></li>
+        <li><a href="{{ url_for('fourier.fourier') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Fourier Transform Calculator</a></li>
+        <li><a href="{{ url_for('convolution.convolution') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Convolution</a></li>
+        <li><a href="{{ url_for('process_chain.show_chain') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Process Chain Plot</a></li>
+        <li><a href="{{ url_for('filter_design.filter_design') }}" style="display:block; padding:10px;">Filter Design</a></li>
+      </ul>
+    </div>
+
+    <!-- Theory Category -->
+    <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Theory</h3>
+      <ul style="list-style:none; padding:0; margin:0;">
+        <li><a href="{{ url_for('function_definitions.function_definitions') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Function Definitions</a></li>
+        <li><a href="{{ url_for('transform_table.transform_table') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Fourier & Laplace Transform Table</a></li>
+        <li><a href="{{ url_for('theory.theory') }}" style="display:block; padding:10px;">Theory</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Optional Training Modules Category -->
+  <div class="menu-grid" style="display:flex; gap:20px; flex-wrap:wrap; justify-content: center; margin-top:30px;">
+    <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Training Modules</h3>
+      <ul style="list-style:none; padding:0; margin:0;">
+        <li><a href="{{ url_for('training_page.training_menu') }}" style="display:block; padding:10px;">Training</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Legal Footer -->
+  <div class="legal-footer" style="margin-top:40px; font-size:0.8em; color:#777; text-align:center; border-top:1px solid #e0e0e0; padding-top:15px;">
+    © 2025 Signal Processing Toolkit. All rights reserved. Use of this software is subject to our 
+    <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+  </div>
 {% endblock %}

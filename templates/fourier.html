@@ -1,21 +1,195 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Fourier Transform Calculator</h2>
-
-<form method="POST">
-  <label>Function f(t): </label>
-  <input type="text" name="func" value="{{ func|default('', true) }}" size="50">
-  <button type="submit">Compute</button>
+<form id="fourierForm" method="POST">
+  <div class="function-group">
+    <label for="func">Function:</label>
+    <input type="text" id="func" name="func" 
+           value="{{ func|default('') }}" 
+           placeholder="e.g., sin(t) + 3*rect(t)"
+           onfocus="setActiveField(this)">
+    <div class="quick-buttons">
+      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+      <button type="button" onclick="insertOperand('step(t)')">Step</button>
+      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iwt)</button>
+      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)')">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+      <button type="button" onclick="insertOperand('/')">/</button>
+    </div>
+  </div>
+  <div>
+    <label for="phase">Phase Shift (degrees):</label>
+    <input type="number" id="phase" name="phase" value="{{ phase|default(0) }}" placeholder="0">
+  </div>
+  <div>
+    <input type="checkbox" id="showZeros" name="showZeros"
+           {% if show_zeros %}checked{% endif %}>
+    <label for="showZeros">Show Zeros (Edges)</label>
+  </div>
+  <br>
+  <div>
+    <button type="submit">Compute Fourier Transform</button>
+    <button type="button" id="clearBtn">Clear</button>
+  </div>
 </form>
 
-{% if error %}
-<p style="color:red;">{{ error }}</p>
-{% endif %}
+<!-- Plot Container with Wrapper -->
+<div id="fourier-plot-wrapper" style="position: relative; margin-top: 20px;">
+  {% if plot_data %}
+    <img id="fourier_plot_image" src="data:image/png;base64,{{ plot_data }}" alt="Fourier Plot">
+  {% else %}
+    <img id="fourier_plot_image" src="" alt="Fourier Plot will appear here" style="display:none;">
+  {% endif %}
+  <!-- Enlarge button positioned at top-right of wrapper -->
+  <button type="button" id="enlargeBtn" onclick="toggleEnlargePlot()">Enlarge Plot</button>
+  <p id="fourier_transformation_label" style="white-space: pre-line; text-align: center; margin-top: 10px;">{{ transformation_label }}</p>
+</div>
 
-{% if plot_data %}
-<hr>
-<img src="data:image/png;base64,{{ plot_data }}" alt="Fourier Plot">
-{% endif %}
+<script>
+  var activeField = null;
+  function setActiveField(field) {
+      activeField = field;
+  }
+  document.getElementById("func").addEventListener("focus", function() { activeField = this; });
+  
+  function insertOperand(operand) {
+      if (activeField) {
+          let start = activeField.selectionStart;
+          let end = activeField.selectionEnd;
+          let current = activeField.value;
+          activeField.value = current.substring(0, start) + operand + current.substring(end);
+          activeField.selectionStart = activeField.selectionEnd = start + operand.length;
+          activeField.focus();
+          updateFourierLive();
+      } else {
+          alert("Click in an input field first.");
+      }
+  }
+  
+  function debounce(func, wait) {
+      let timeout;
+      return function() {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, arguments), wait);
+      };
+  }
+  
+  function getFourierValues() {
+      return {
+          func: document.getElementById("func").value,
+          phase: document.getElementById("phase").value,
+          showZeros: document.getElementById("showZeros").checked
+      };
+  }
+  
+  var updateFourierLive = debounce(function() {
+      let values = getFourierValues();
+      fetch("{{ url_for('fourier.update_fourier') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values)
+      })
+      .then(resp => resp.json())
+      .then(data => {
+          if(data.plot_data) {
+              let img = document.getElementById("fourier_plot_image");
+              img.src = "data:image/png;base64," + data.plot_data;
+              img.style.display = "block";
+              document.getElementById("fourier_transformation_label").innerText = data.transformation_label;
+          }
+      })
+      .catch(err => {
+          console.error("Error updating plot:", err);
+      });
+  }, 400);
+  
+  document.getElementById("phase").addEventListener("input", updateFourierLive);
+  document.getElementById("func").addEventListener("keyup", updateFourierLive);
+  document.getElementById("showZeros").addEventListener("change", updateFourierLive);
+  
+  document.getElementById("clearBtn").addEventListener("click", function() {
+      document.getElementById("func").value = "";
+      document.getElementById("fourier_plot_image").src = "";
+      document.getElementById("fourier_plot_image").style.display = "none";
+      document.getElementById("phase").value = 0;
+      document.getElementById("showZeros").checked = false;
+  });
+  
+  // Toggle enlarge by applying a class to the whole plot wrapper.
+  function toggleEnlargePlot() {
+      let wrapper = document.getElementById("fourier-plot-wrapper");
+      if (!wrapper) {
+          console.error("Plot wrapper not found.");
+          return;
+      }
+      wrapper.classList.toggle("enlarged");
+  }
+</script>
 
-<p><a href="/">Back to Main Menu</a></p>
+<style>
+  .function-group {
+      margin-bottom: 20px;
+  }
+  .function-group input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      font-size: 1em;
+      margin-bottom: 5px;
+  }
+  .quick-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+  }
+  .quick-buttons button {
+      padding: 6px 10px;
+      font-size: 0.9em;
+  }
+  /* Plot wrapper is relatively positioned so that the button can be absolutely positioned */
+  #fourier-plot-wrapper {
+      position: relative;
+      display: inline-block;
+  }
+  #fourier_plot_image {
+      display: block;
+      max-width: 100%;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+  }
+  /* Enlarge plot: using a scale transform on the wrapper */
+  #fourier-plot-wrapper.enlarged {
+      transform: scale(1.5);
+      transform-origin: center center;
+      transition: transform 0.3s ease;
+  }
+  /* Enlarge button styling, positioned at top-right corner within the wrapper */
+  #enlargeBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 6px 10px;
+      font-size: 0.9em;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 20;
+  }
+  #enlargeBtn:hover {
+      background-color: #005fa3;
+  }
+</style>
 {% endblock %}
