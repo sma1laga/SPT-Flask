@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Fourier Transform Calculator</h2>
+
+<form method="POST">
+  <label>Function f(t): </label>
+  <input type="text" name="func" value="{{ func|default('', true) }}" size="50">
+  <button type="submit">Compute</button>
+</form>
+
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% endif %}
+
+{% if plot_data %}
+<hr>
+<img src="data:image/png;base64,{{ plot_data }}" alt="Fourier Plot">
+{% endif %}
+
+<p><a href="/">Back to Main Menu</a></p>
+{% endblock %}

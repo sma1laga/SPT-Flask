@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Signal Processing Toolkit</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+  <style>
+    /* Global Reset and Styling */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f4f7f9;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #007acc;
+    }
+    a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .header {
+      background-color: #007acc;
+      color: #fff;
+      padding: 15px;
+      border-radius: 8px 8px 0 0;
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header a {
+      text-decoration: none;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+    }
+    .header img {
+      height: 40px;
+      margin-right: 10px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: #777;
+    }
+    /* Form Styling */
+    form {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      font-size: 1em;
+    }
+    button {
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-right: 5px;
+    }
+    button:hover {
+      background-color: #005fa3;
+    }
+    /* Quick Functions & Operators */
+    #quick-functions {
+      margin-top: 20px;
+    }
+    #quick-functions button {
+      background-color: #e1ecf4;
+      color: #007acc;
+      border: 1px solid #d0dbe5;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin: 4px 2px;
+      font-size: 0.9em;
+    }
+    #quick-functions button:hover {
+      background-color: #d0e2f0;
+    }
+    /* Plot image styling */
+    img {
+      max-width: 100%;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="{{ url_for('home') }}">
+        <img src="{{ url_for('static', filename='images/icon.png') }}" alt="SPT Icon">
+        <span>Signal Processing Toolkit</span>
+      </a>
+    </div>
+    {% block content %}{% endblock %}
+    <div class="footer">
+      Developed for learning and experimentation in signal processing.
+    </div>
+  </div>
+</body>
+</html>

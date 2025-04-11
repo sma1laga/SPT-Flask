@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Training Modules</h2>
+<p>Select a training module:</p>
+<ul>
+  <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Training</a></li>
+  <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li>
+  <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Processing Chain Training</a></li>
+</ul>
+<p><a href="/">Back to Main Menu</a></p>
+{% endblock %}

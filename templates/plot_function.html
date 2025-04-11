@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Function Plotter</h2>
+<form id="plotForm" method="POST">
+  <!-- Function 1 Group -->
+  <div class="function-group">
+    <label for="func1">Function 1:</label>
+    <input type="text" id="func1" name="func1" value="{{ func1|default('') }}" placeholder="e.g., sin(t)" onfocus="setActiveField(this)">
+    <div class="quick-buttons">
+      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+      <button type="button" onclick="insertOperand('step(t)')">Step</button>
+      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iwt)</button>
+      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)')">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+      <button type="button" onclick="insertOperand('/')">/</button>
+    </div>
+  </div>
+  
+  <!-- Function 2 Group -->
+  <div class="function-group">
+    <label for="func2">Function 2 (optional):</label>
+    <input type="text" id="func2" name="func2" value="{{ func2|default('') }}" placeholder="e.g., cos(t)" onfocus="setActiveField(this)">
+    <div class="quick-buttons">
+      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+      <button type="button" onclick="insertOperand('step(t)')">Step</button>
+      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iwt)</button>
+      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)')">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+      <button type="button" onclick="insertOperand('/')">/</button>
+    </div>
+  </div>
+  
+  <hr>
+  
+  <!-- Transformation Sliders arranged horizontally for Function 1 -->
+  <h3>Function 1 Transformations</h3>
+  <div class="slider-row">
+    <div class="slider-group">
+      <label for="shift1">Shift: <span id="shift1_val">{{ shift1|default(0) }}</span></label>
+      <input type="range" id="shift1" name="shift1" min="-10" max="10" step="0.1" value="{{ shift1|default(0) }}">
+    </div>
+    <div class="slider-group">
+      <label for="stretch1">Stretch: <span id="stretch1_val">{{ stretch1|default(1) }}</span></label>
+      <input type="range" id="stretch1" name="stretch1" min="0.1" max="3.0" step="0.1" value="{{ stretch1|default(1) }}">
+    </div>
+    <div class="slider-group">
+      <label for="hscale1">Horizontal Scale: <span id="hscale1_val">{{ hscale1|default(1) }}</span></label>
+      <input type="range" id="hscale1" name="hscale1" min="0.1" max="3.0" step="0.1" value="{{ hscale1|default(1) }}">
+    </div>
+    <button type="button" onclick="resetGroup1()">Reset Group 1</button>
+  </div>
+  
+  <!-- Transformation Sliders arranged horizontally for Function 2 -->
+  <h3>Function 2 Transformations</h3>
+  <div class="slider-row">
+    <div class="slider-group">
+      <label for="shift2">Shift: <span id="shift2_val">{{ shift2|default(0) }}</span></label>
+      <input type="range" id="shift2" name="shift2" min="-10" max="10" step="0.1" value="{{ shift2|default(0) }}">
+    </div>
+    <div class="slider-group">
+      <label for="stretch2">Stretch: <span id="stretch2_val">{{ stretch2|default(1) }}</span></label>
+      <input type="range" id="stretch2" name="stretch2" min="0.1" max="3.0" step="0.1" value="{{ stretch2|default(1) }}">
+    </div>
+    <div class="slider-group">
+      <label for="hscale2">Horizontal Scale: <span id="hscale2_val">{{ hscale2|default(1) }}</span></label>
+      <input type="range" id="hscale2" name="hscale2" min="0.1" max="3.0" step="0.1" value="{{ hscale2|default(1) }}">
+    </div>
+    <button type="button" onclick="resetGroup2()">Reset Group 2</button>
+  </div>
+  
+  <br>
+  <div>
+    <button type="submit">Plot Functions</button>
+    <button type="button" id="clearBtn">Clear</button>
+  </div>
+</form>
+
+<div id="plot-container">
+  {% if plot_data %}
+    <h3>Resulting Plot</h3>
+    <img id="plot_image" src="data:image/png;base64,{{ plot_data }}" alt="Plot">
+    <p id="transformation_label" style="white-space: pre-line;">{{ transformation_label }}</p>
+  {% else %}
+    <img id="plot_image" src="" alt="Plot will appear here" style="display:none;">
+    <p id="transformation_label"></p>
+  {% endif %}
+</div>
+
+<script>
+  var activeField = null;
+  function setActiveField(field) {
+      activeField = field;
+  }
+  document.getElementById("func1").addEventListener("focus", function() { activeField = this; });
+  document.getElementById("func2").addEventListener("focus", function() { activeField = this; });
+  
+  function insertOperand(operand) {
+      if (activeField) {
+          var start = activeField.selectionStart;
+          var end = activeField.selectionEnd;
+          var current = activeField.value;
+          activeField.value = current.substring(0, start) + operand + current.substring(end);
+          activeField.selectionStart = activeField.selectionEnd = start + operand.length;
+          activeField.focus();
+          updatePlotLive();
+      } else {
+          alert("Please click in an input field first.");
+      }
+  }
+  
+  function debounce(func, wait) {
+      let timeout;
+      return function() {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, arguments), wait);
+      };
+  }
+  
+  function getFormValues() {
+      return {
+          func1: document.getElementById("func1").value,
+          func2: document.getElementById("func2").value,
+          shift1: document.getElementById("shift1").value,
+          stretch1: document.getElementById("stretch1").value,
+          hscale1: document.getElementById("hscale1").value,
+          shift2: document.getElementById("shift2").value,
+          stretch2: document.getElementById("stretch2").value,
+          hscale2: document.getElementById("hscale2").value
+      };
+  }
+  
+  function updateSliderDisplays() {
+      document.getElementById("shift1_val").innerText = document.getElementById("shift1").value;
+      document.getElementById("stretch1_val").innerText = document.getElementById("stretch1").value;
+      document.getElementById("hscale1_val").innerText = document.getElementById("hscale1").value;
+      document.getElementById("shift2_val").innerText = document.getElementById("shift2").value;
+      document.getElementById("stretch2_val").innerText = document.getElementById("stretch2").value;
+      document.getElementById("hscale2_val").innerText = document.getElementById("hscale2").value;
+  }
+  
+  var updatePlotLive = debounce(function() {
+      updateSliderDisplays();
+      var values = getFormValues();
+      fetch("{{ url_for('plot_function.update_plot') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values)
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.plot_data) {
+              var img = document.getElementById("plot_image");
+              img.src = "data:image/png;base64," + data.plot_data;
+              img.style.display = "block";
+              document.getElementById("transformation_label").innerText = data.transformation_label;
+          }
+      })
+      .catch(error => {
+          console.error("Error updating plot:", error);
+      });
+  }, 300);
+  
+  document.getElementById("shift1").addEventListener("input", updatePlotLive);
+  document.getElementById("stretch1").addEventListener("input", updatePlotLive);
+  document.getElementById("hscale1").addEventListener("input", updatePlotLive);
+  document.getElementById("shift2").addEventListener("input", updatePlotLive);
+  document.getElementById("stretch2").addEventListener("input", updatePlotLive);
+  document.getElementById("hscale2").addEventListener("input", updatePlotLive);
+  document.getElementById("func1").addEventListener("keyup", updatePlotLive);
+  document.getElementById("func2").addEventListener("keyup", updatePlotLive);
+  
+  function resetGroup1() {
+      document.getElementById("shift1").value = 0;
+      document.getElementById("stretch1").value = 1;
+      document.getElementById("hscale1").value = 1;
+      updatePlotLive();
+  }
+  function resetGroup2() {
+      document.getElementById("shift2").value = 0;
+      document.getElementById("stretch2").value = 1;
+      document.getElementById("hscale2").value = 1;
+      updatePlotLive();
+  }
+  
+  document.getElementById("clearBtn").addEventListener("click", function() {
+      document.getElementById("func1").value = "";
+      document.getElementById("func2").value = "";
+      document.getElementById("plot_image").src = "";
+      document.getElementById("plot_image").style.display = "none";
+      document.getElementById("transformation_label").innerText = "";
+  });
+</script>
+
+<style>
+  .function-group {
+      margin-bottom: 20px;
+  }
+  .function-group input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      font-size: 1em;
+      margin-bottom: 5px;
+  }
+  .quick-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+  }
+  .quick-buttons button {
+      padding: 6px 10px;
+      font-size: 0.9em;
+  }
+  .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 10px;
+  }
+  .slider-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+  }
+  .slider-group input[type="range"] {
+      width: 150px;
+  }
+</style>
+
+{% endblock %}
