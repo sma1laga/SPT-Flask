@@ -17,34 +17,24 @@
       background-color: #f4f7f9;
       color: #333;
       line-height: 1.6;
-      padding: 20px;
+      margin: 0;
     }
-    .container {
-      max-width: 960px;
+
+    .outer-wrapper {
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
       background-color: #fff;
-      border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      /* remove overflow:hidden so enlarged plots aren't clipped */
+      overflow: visible;
     }
-    h2 {
-      margin-bottom: 20px;
-      color: #007acc;
-    }
-    a {
-      color: #007acc;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
+
     .header {
       background-color: #007acc;
       color: #fff;
       padding: 15px;
-      border-radius: 8px 8px 0 0;
       text-align: center;
-      margin-bottom: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -59,13 +49,66 @@
       height: 40px;
       margin-right: 10px;
     }
+
+    .content-wrapper {
+      display: flex;
+      min-height: 70vh;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #e9edf1;
+      border-right: 1px solid #ccd0d5;
+      padding: 20px;
+    }
+    .sidebar h3 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 1.1rem;
+    }
+    .sidebar ul {
+      list-style: none;
+      padding-left: 0;
+      margin-bottom: 20px;
+    }
+    .sidebar li {
+      margin: 5px 0;
+    }
+    .sidebar a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    .sidebar a:hover {
+      text-decoration: underline;
+    }
+    .sidebar .section-title {
+      margin-top: 15px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 20px;
+    }
+
+    /* Footer styling */
     .footer {
       text-align: center;
-      margin-top: 20px;
+      padding: 15px;
       font-size: 0.9em;
       color: #777;
+      border-top: 1px solid #ccd0d5;
     }
-    /* Form Styling */
+    .footer a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Additional styling for forms, inputs, quick functions, etc. */
     form {
       margin-bottom: 20px;
     }
@@ -97,7 +140,6 @@
     button:hover {
       background-color: #005fa3;
     }
-    /* Quick Functions & Operators */
     #quick-functions {
       margin-top: 20px;
     }
@@ -113,7 +155,6 @@
     #quick-functions button:hover {
       background-color: #d0e2f0;
     }
-    /* Plot image styling */
     img {
       max-width: 100%;
       border: 1px solid #ccd0d5;
@@ -123,16 +164,77 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="outer-wrapper">
+    <!-- HEADER -->
     <div class="header">
       <a href="{{ url_for('home') }}">
         <img src="{{ url_for('static', filename='images/icon.png') }}" alt="SPT Icon">
         <span>Signal Processing Toolkit</span>
       </a>
     </div>
-    {% block content %}{% endblock %}
+
+    <!-- SIDEBAR + MAIN CONTENT -->
+    <div class="content-wrapper">
+      <!-- Sidebar area (example) -->
+      <div class="sidebar">
+        <h3>Navigation</h3>
+        <ul>
+          <li class="section-title">Plotting</li>
+          <ul>
+            <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
+            <li><a href="{{ url_for('fourier.fourier') }}">Fourier</a></li>
+          </ul>
+      
+          <li class="section-title">Convolution</li>
+          <ul>
+            <li><a href="{{ url_for('convolution.convolution') }}">Convolution Calc</a></li>
+          </ul>
+      
+          <li class="section-title">Process Chain</li>
+          <ul>
+            <li><a href="{{ url_for('process_chain.show_chain') }}">Process Chain Plot</a></li>
+          </ul>
+      
+          <li class="section-title">Filter Design</li>
+          <ul>
+            <li><a href="{{ url_for('filter_design.filter_design') }}">Filter Design</a></li>
+          </ul>
+      
+          <!-- ADD TRAINING SECTION -->
+          <li class="section-title">Training</li>
+          <ul>
+            <li>
+              <a href="{{ url_for('training_convolution.training_convolution') }}">
+                Convolution Training
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('training_processing_chain.training_processing_chain') }}">
+                Process Chain Training
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('training_fourier.training_fourier') }}">
+                Fourier Training
+              </a>
+            </li>
+          </ul>
+        </ul>
+      </div>
+
+      <!-- Main content area where child templates place content -->
+      <div class="main-content">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+
+    <!-- FOOTER -->
     <div class="footer">
-      Developed for learning and experimentation in signal processing.
+      <p>
+        © 2025 Signal Processing Toolkit. All rights reserved. <br>
+        For inquiries, please email:
+        <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a>
+      </p>
     </div>
   </div>
 </body>

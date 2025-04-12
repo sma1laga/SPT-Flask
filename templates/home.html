@@ -29,12 +29,14 @@
     </div>
   </div>
 
-  <!-- Optional Training Modules Category -->
+  <!-- Training Modules Category -->
   <div class="menu-grid" style="display:flex; gap:20px; flex-wrap:wrap; justify-content: center; margin-top:30px;">
     <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
       <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Training Modules</h3>
       <ul style="list-style:none; padding:0; margin:0;">
-        <li><a href="{{ url_for('training_page.training_menu') }}" style="display:block; padding:10px;">Training</a></li>
+        <li><a href="{{ url_for('training_convolution.training_convolution') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Convolution Training</a></li>
+        <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Process Chain Training</a></li>
+        <li><a href="{{ url_for('training_fourier.training_fourier') }}" style="display:block; padding:10px;">Fourier Training</a></li>
       </ul>
     </div>
   </div>
