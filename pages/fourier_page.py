@@ -56,17 +56,26 @@ def update_fourier():
 
 def compute_fourier(func_str, phase_rad, show_zeros=False):
     """
-    Compute Fourier transform and generate a 3-panel plot.
-    The original function is plotted with x-axis fixed from -20 to 20.
-    If show_zeros is True, the function's real part is scanned for zero (or near-zero)
-    transitions. Candidate zeros are grouped into symmetric pairs (within tolerance) and
-    each pair is marked on the plot with a matching color. Each marker is annotated
-    with its (rounded) absolute x-coordinate. This way, if the zeros are away from 0,
-    the labels will "follow" their markers.
+    Computes the Fourier transform for the user-supplied function (func_str) and returns a
+    figure with three subplots:
+      - Original time-domain function (x-axis fixed to [-20, 20])
+      - Magnitude spectrum
+      - Phase spectrum (unwrapped then re-wrapped into [-π, π])
+      
+    If show_zeros is True, the function scans the real part of the original function for
+    candidate zero (or edge) points, groups them symmetrically (if they exist as pairs), and
+    plots the paired zeros using markers of a consistent color along with text annotations.
     """
-    # Always plot from -20 to 20:
-    t = np.linspace(-20, 20, 2000)
+    import numpy as np
+    import io, base64
+    import matplotlib.pyplot as plt
+    from scipy.fftpack import fft, fftfreq, fftshift
+
+    # 1. Set up a time axis that always spans -20 to 20.
+    t = np.linspace(-20, 20, 4000)
     dt = t[1] - t[0]
+    
+    # 2. Set up the evaluation dictionary (using your math utilities):
     local_vars = {
         "t": t,
         "np": np,
@@ -87,84 +96,91 @@ def compute_fourier(func_str, phase_rad, show_zeros=False):
     except Exception as e:
         return {"error": f"Error evaluating function: {e}"}
     
-    # Compute Fourier Transform
-    window = np.hanning(len(t))
+    # 3. Use no window (identity window) for a clean transform:
+    window = np.ones_like(t)
     y_windowed = y * window
-    Yf = fft(y_windowed) * dt
-    freqs = fftfreq(len(t), dt)
-    omega = 2 * np.pi * freqs
-    omega_norm = omega / (2 * np.pi)
-    magnitude = np.abs(Yf)
+    
+    # 4. Compute the Fourier transform and shift it so frequency 0 is centered.
+    Yf = np.fft.fft(y_windowed) * dt
+    Yf_shifted = fftshift(Yf)
+    f = fftfreq(len(t), d=dt)
+    f_shifted = fftshift(f)
+    
+    # 5. Compute magnitude and phase.
+    magnitude = np.abs(Yf_shifted)
+    phase_raw = np.angle(Yf_shifted)
+    
+    # Unwrap phase and re-wrap into [-π, π]
+    phase_unwrapped = np.unwrap(phase_raw)
+    phase_wrapped = (phase_unwrapped + np.pi) % (2 * np.pi) - np.pi
+    
+    # Optionally zero out phase where magnitude is very tiny, to avoid noise.
+    tiny_threshold = 1e-6
+    phase_wrapped[magnitude < tiny_threshold] = 0
+    
+    # (Optional) Normalize magnitude if desired (comment this out to show absolute scaling)
     if np.max(magnitude) > 0:
         magnitude /= np.max(magnitude)
-    phase_spectrum = np.angle(Yf)
-    phase_spectrum[magnitude < 1e-6] = 0
-
-    # Create figure with three subplots (figure size increased for readability)
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 6))
     
-    # --- Plot Original Function (ax1) ---
-    y_re = y.real
-    y_im = y.imag
-    plotted = False
-    if not np.allclose(y_re, 0, atol=1e-6):
-        ax1.plot(t, y_re, color="blue", linewidth=2, label="Real")
-        plotted = True
-    if not np.allclose(y_im, 0, atol=1e-6):
-        ax1.plot(t, y_im, color="orange", linestyle=":", linewidth=2, label="Imag")
-        plotted = True
-    ax1.axhline(0, color="black", linestyle="--", linewidth=0.8)
-    ax1.axvline(0, color="black", linestyle="--", linewidth=0.8)
-    ax1.set_title("Original Function")
-    ax1.set_xlabel("t")
-    if plotted:
-        ax1.legend()
+    # 6. Create a figure with three subplots.
+    fig, (ax_time, ax_mag, ax_phase) = plt.subplots(1, 3, figsize=(14, 4))
     
-    # Always fix x-axis from -20 to 20.
-    ax1.set_xlim(-20, 20)
-
-    # If "Show Zeros" is requested and the function has a real component, detect and annotate zeros.
-    if show_zeros and plotted:
-        candidate_edges = find_function_edges(t, y_re, max_crossings=20, threshold_frac=0.01)
+    # Left subplot: Original function (time-domain)
+    ax_time.plot(t, y.real, label="Real", color='blue')
+    if not np.allclose(y.imag, 0, atol=1e-6):
+        ax_time.plot(t, y.imag, label="Imag", color='orange', linestyle=':')
+    ax_time.axhline(0, color='k', ls='--', lw=0.8)
+    ax_time.axvline(0, color='k', ls='--', lw=0.8)
+    ax_time.set_title("Original Function")
+    ax_time.legend()
+    # Force x-axis to be from -20 to 20
+    ax_time.set_xlim(-20, 20)
+    
+    # *** HERE is where we insert the "Show Zeros" logic ***
+    if show_zeros:
+        # Find candidate zero (edge) points in the real part.
+        candidate_edges = find_function_edges(t, y.real, max_crossings=20, threshold_frac=0.01)
+        # Group these candidate points into symmetric pairs (by absolute value) within tolerance.
         paired_zeros = group_symmetric_zeros(candidate_edges, tol=0.05)
-        # Define a palette of colors to differentiate pairs
+        # Define a palette of colors to use for each symmetric pair.
         palette = ["magenta", "cyan", "lime", "gold", "purple", "brown", "pink"]
         for i, x_val in enumerate(paired_zeros):
             color = palette[i % len(palette)]
-            # Compute the y-value via interpolation for both positive and negative
-            y_val_pos = np.interp(x_val, t, y_re)
-            y_val_neg = np.interp(-x_val, t, y_re)
-            # Plot markers on both sides
-            ax1.scatter(x_val, y_val_pos, color=color, s=50, zorder=10)
-            ax1.scatter(-x_val, y_val_neg, color=color, s=50, zorder=10)
-            # Annotate near the markers; place the label below each marker
-            ax1.annotate(f"{x_val:.2f}",
-                         xy=(x_val, y_val_pos),
-                         xytext=(0, -15), textcoords="offset points",
-                         ha="center", va="top", color=color, fontsize=8, fontweight="bold")
-            ax1.annotate(f"{x_val:.2f}",
-                         xy=(-x_val, y_val_neg),
-                         xytext=(0, -15), textcoords="offset points",
-                         ha="center", va="top", color=color, fontsize=8, fontweight="bold")
+            # For each symmetric pair, plot markers at +x_val and -x_val using linear interpolation for y.
+            y_val_pos = np.interp(x_val, t, y.real)
+            y_val_neg = np.interp(-x_val, t, y.real)
+            ax_time.scatter(x_val, y_val_pos, color=color, s=50, zorder=10)
+            ax_time.scatter(-x_val, y_val_neg, color=color, s=50, zorder=10)
+            # Annotate the markers with the rounded absolute x-value.
+            ax_time.annotate(f"{x_val:.2f}",
+                             xy=(x_val, y_val_pos),
+                             xytext=(0, -15), textcoords="offset points",
+                             ha="center", va="top", fontsize=8, color=color, fontweight="bold")
+            ax_time.annotate(f"{x_val:.2f}",
+                             xy=(-x_val, y_val_neg),
+                             xytext=(0, -15), textcoords="offset points",
+                             ha="center", va="top", fontsize=8, color=color, fontweight="bold")
+    # *** End of "Show Zeros" logic ***
 
-    # --- Plot Magnitude Spectrum (ax2) ---
-    ax2.plot(omega_norm, magnitude, color="red", linewidth=2, label="Magnitude")
-    ax2.axhline(0, color="black", linestyle="--", linewidth=0.8)
-    ax2.axvline(0, color="black", linestyle="--", linewidth=0.8)
-    ax2.set_title("Magnitude Spectrum")
-    ax2.set_xlim(-2, 2)
-    ax2.legend()
-
-    # --- Plot Phase Spectrum (ax3) ---
-    ax3.plot(omega_norm, phase_spectrum, color="green", linewidth=2, label="Phase")
-    ax3.axhline(0, color="black", linestyle="--", linewidth=0.8)
-    ax3.axvline(0, color="black", linestyle="--", linewidth=0.8)
-    ax3.set_title("Phase Spectrum")
-    ax3.set_xlim(-2, 2)
-    ax3.set_ylim(-np.pi, np.pi)
-    ax3.legend()
-
+    # Middle subplot: Magnitude Spectrum
+    ax_mag.plot(f_shifted, magnitude, color='red', linewidth=2)
+    ax_mag.axhline(0, color='k', ls='--', lw=0.8)
+    ax_mag.axvline(0, color='k', ls='--', lw=0.8)
+    ax_mag.set_title("Magnitude Spectrum")
+    ax_mag.set_xlim(-2, 2)
+    ax_mag.legend(["Magnitude"])
+    
+    # Right subplot: Phase Spectrum
+    ax_phase.plot(f_shifted, phase_wrapped, color='green', linewidth=2)
+    ax_phase.axhline(0, color='k', ls='--', lw=0.8)
+    ax_phase.axvline(0, color='k', ls='--', lw=0.8)
+    ax_phase.set_ylim(-np.pi, np.pi)
+    ax_phase.set_title("Phase Spectrum")
+    ax_phase.set_xlim(-2, 2)
+    ax_phase.legend(["Phase"])
+    
     buf = io.BytesIO()
+    plt.tight_layout()
     plt.savefig(buf, format="png")
     buf.seek(0)
     plot_data = base64.b64encode(buf.getvalue()).decode()
@@ -172,6 +188,7 @@ def compute_fourier(func_str, phase_rad, show_zeros=False):
     
     transformation_label = f"Phase Shift: {np.rad2deg(phase_rad):.2f}°"
     return {"plot_data": plot_data, "transformation_label": transformation_label}
+
 
 def find_function_edges(t, y_re, max_crossings=10, threshold_frac=0.01):
     """
@@ -197,26 +214,6 @@ def find_function_edges(t, y_re, max_crossings=10, threshold_frac=0.01):
             break
     return np.array(edges)
 
-
-def group_symmetric_zeros(zeros, tol=0.05):
-    """
-    Given candidate zero x-values (possibly positive and negative),
-    group them into symmetric pairs by comparing absolute values.
-    Returns an array of representative positive x-values for each pair.
-    """
-    if len(zeros) == 0:
-        return np.array([])
-    zeros = np.array(zeros)
-    pos = zeros[zeros >= 0]
-    neg = zeros[zeros < 0]
-    pos = np.sort(pos)
-    neg = np.sort(-neg)  # absolute values of negative zeros
-    groups = []
-    for xp in pos:
-        if np.any(np.abs(neg - xp) < tol):
-            groups.append(xp)
-    groups = np.unique(np.round(groups, 2))
-    return np.sort(groups)
 
 def group_symmetric_zeros(zeros, tol=0.05):
     """
