@@ -1,5 +1,135 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Filter Design</h2>
-<p>Here goes your filter design page or form, etc.</p>
+<h2>Filter Design & Experimentation</h2>
+<p>
+  Design your digital filter and experiment with noise. The generated plots below show:
+  <br>- The <strong>spectrum (FFT) of the original noise signal</strong> (magnitude vs frequency),
+  <br>- The <strong>spectrum (FFT) of the filtered noise signal</strong>,
+  <br>- And the <strong>filter's frequency response</strong>.
+</p>
+
+{% if error %}
+  <div style="color: red;">{{ error }}</div>
+{% endif %}
+
+<form method="post">
+    <label for="filter_type">Filter Type:</label>
+    <select name="filter_type" id="filter_type">
+      <option value="lowpass" {% if request.form.get('filter_type','lowpass') == 'lowpass' %}selected{% endif %}>Low Pass</option>
+      <option value="highpass" {% if request.form.get('filter_type') == 'highpass' %}selected{% endif %}>High Pass</option>
+      <option value="bandpass" {% if request.form.get('filter_type') == 'bandpass' %}selected{% endif %}>Band Pass</option>
+      <option value="bandstop" {% if request.form.get('filter_type') == 'bandstop' %}selected{% endif %}>Band Stop</option>
+    </select>
+    <br>
+    <small>
+      Choose the filter type. Use low/high pass for a single cutoff value, or band pass/stop for a range.
+    </small>
+    <br><br/>
+  
+    <label for="order">Filter Order:</label>
+    <input type="number" name="order" id="order" value="{{ request.form.get('order', '4') }}" min="1" max="5" required>
+    <br>
+    <small>
+      The filter order (1–5) determines how steep the transition is. Higher order means a sharper cutoff.
+    </small>
+    <br><br/>
+  
+    <label for="cutoff">Cutoff Frequency (Hz):</label>
+    <input type="text" name="cutoff" id="cutoff"
+           value="{{ request.form.get('cutoff', '100') }}"
+           pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
+           title="Enter a single numeric value (e.g., 100) for low/high pass, or two numeric values separated by a comma (e.g., 100,400) for band pass/stop."
+           required>
+    <br>
+    <small>
+      For low/high pass, enter a single value (up to 90,000 Hz). For band pass/stop, enter two values separated by a comma (e.g., 100,400).
+    </small>
+    <br><br/>
+    
+  
+    <label for="sample_rate">Sample Rate (Hz):</label>
+    <input type="number" name="sample_rate" id="sample_rate" value="{{ request.form.get('sample_rate', '1000') }}" min="1" max="900000" required>
+    <br>
+    <small>
+      The sample rate must be at least twice the highest frequency (Nyquist rate) and is limited to 900,000 Hz.
+    </small>
+    <br><br/>
+  
+    <label for="noise_amplitude">Noise Amplitude:</label>
+    <input type="number" name="noise_amplitude" id="noise_amplitude" value="{{ request.form.get('noise_amplitude', '1') }}" step="0.1" min="0" max="10" required>
+    <br>
+    <small>
+      Controls the intensity of the generated white noise (suggested range: 0 to 10).
+    </small>
+    <br><br/>
+  
+    <label for="num_samples">Number of Samples:</label>
+    <input type="number" name="num_samples" id="num_samples" value="{{ request.form.get('num_samples', '1000') }}" min="100" max="10000" required>
+    <br>
+    <small>
+      The total number of data points in the noise signal (max 10,000).
+    </small>
+    <br><br/>
+  
+    <button type="submit">Design Filter & Apply Noise</button>
+  </form>
+  
+
+{% if plot_url %}
+  <h3>Resulting Plots</h3>
+  <img src="data:image/png;base64,{{ plot_url }}" alt="Filter Design Plots">
+{% endif %}
+
+<h3>Live Filtering Simulation</h3>
+<p>
+  The image below simulates a live filtering process, reflecting the filter parameters you provided.
+  It updates approximately every 750 ms.
+</p>
+<img id="livePlot" src="{{ url_for('filter_design.live_plot') }}" alt="Live Filter Plot" style="max-width:800px; height:auto;">
+<br>
+<button id="toggleLiveButton">Start Live</button>
+<script>
+  function buildLivePlotURL() {
+    var baseUrl = "{{ url_for('filter_design.live_plot') }}";
+    var filterType = document.getElementById("filter_type").value;
+    var order = document.getElementById("order").value;
+    var cutoff = document.getElementById("cutoff").value;
+    var sampleRate = document.getElementById("sample_rate").value;
+    var noiseAmplitude = document.getElementById("noise_amplitude").value;
+    var numSamples = document.getElementById("num_samples").value;
+    return baseUrl + 
+      "?filter_type=" + encodeURIComponent(filterType) +
+      "&order=" + encodeURIComponent(order) +
+      "&cutoff=" + encodeURIComponent(cutoff) +
+      "&sample_rate=" + encodeURIComponent(sampleRate) +
+      "&noise_amplitude=" + encodeURIComponent(noiseAmplitude) +
+      "&num_samples=" + encodeURIComponent(numSamples) +
+      "&t=" + new Date().getTime();
+  }
+  
+  function refreshLivePlot() {
+    var livePlot = document.getElementById("livePlot");
+    livePlot.src = buildLivePlotURL();
+  }
+  
+  var timerId = null;
+  
+  document.getElementById("toggleLiveButton").addEventListener("click", function() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+      this.textContent = "Start Live";
+    } else {
+      timerId = setInterval(refreshLivePlot, 850);
+      this.textContent = "Stop Live";
+      refreshLivePlot();
+    }
+  });
+  
+  // Automatically start live simulation when a plot is generated.
+  {% if plot_url %}
+    timerId = setInterval(refreshLivePlot, 850);
+    document.getElementById("toggleLiveButton").textContent = "Stop Live";
+  {% endif %}
+</script>
 {% endblock %}
