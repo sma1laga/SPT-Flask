@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Exam Finished</h2>
+
+<!-- We'll keep the main container for the normal screen. -->
+<div class="certificate-section">
+  <!-- This entire block is your “certificate” content. -->
+  <div class="certificate">
+    <h3>Certificate of Completion</h3>
+    <p>Congratulations!</p>
+    <p>You got {{ correct_count }} out of 10 correct ({{ accuracy }}%).</p>
+    <p>Total time: {{ total_time }}s</p>
+    <p>Your final score: {{ final_score }}</p>
+  </div>
+
+  <h3>Detailed Results</h3>
+  {% for r in results %}
+  <div style="margin-bottom:20px; border:1px solid #ccc; padding:10px;">
+    <h4>Question #{{ r.index+1 }}</h4>
+    <img src="data:image/png;base64,{{ r.img_data }}" alt="Problem {{ r.index+1 }}">
+    <p>
+      Correct Option: {{ r.correctIndex+1 }}<br>
+      Your Answer:
+      {% if r.userIndex is not none %}
+        {{ r.userIndex+1 }}
+      {% else %}
+        No Answer
+      {% endif %}
+    </p>
+  </div>
+  {% endfor %}
+
+  <!-- Print certificate button -->
+  <p style="margin-top:20px;">
+    <button type="button" onclick="window.print()">Print Certificate</button>
+  </p>
+
+  <p><a href="{{ url_for('exam_convolution.exam_convolution') }}">Back to Exam Page</a></p>
+</div>
+{% endblock %}

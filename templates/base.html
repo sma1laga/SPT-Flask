@@ -161,6 +161,36 @@
       border-radius: 4px;
       margin-top: 10px;
     }
+
+    @media print {
+      /* Hide the sidebar, header, or other elements you don't want on the certificate */
+      .sidebar, .header, button, a {
+        display: none !important;
+      }
+    
+      body {
+        background-color: #fff !important;
+        color: #000 !important;
+      }
+    
+      /* If you want to ensure the certificate is on its own page: */
+      .certificate-section {
+        page-break-before: always;
+      }
+    
+      /* Increase text size for printing, etc. */
+      .certificate h3 {
+        font-size: 1.5rem;
+        margin: 20px 0;
+      }
+      .certificate p {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+      }
+    }
+
+
+
   </style>
 </head>
 <body>

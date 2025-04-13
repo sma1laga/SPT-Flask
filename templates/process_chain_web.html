@@ -1,0 +1,785 @@
+<!-- templates/process_chain_web.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Web Process Chain Plot</title>
+  <style>
+    /* (CSS from your web process chain approach) */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f0f0f0;
+      overflow: hidden;
+    }
+    .toolbar {
+      width: 100%;
+      padding: 8px;
+      background: #cce2ff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toolbar label { margin-left: 10px; }
+    .toolbar input[type="text"] { width: 180px; padding:4px; }
+    .main-area {
+      position: relative;
+      width: 100%; height: calc(100vh - 40px);
+      background: #fff; overflow: hidden;
+    }
+    .node {
+      position: absolute;
+      width: 100px; height: 50px;
+      background: lightblue;
+      border: 2px solid #666;
+      border-radius:4px;
+      text-align:center; line-height:50px;
+      font-weight: bold;
+      cursor: move; user-select: none;
+    }
+    .dot {
+      position:absolute;
+      width:10px; height:10px;
+      background: gray;
+      border-radius:50%;
+      cursor: move;
+    }
+    .highlight { border-color:red !important; }
+    .toolbar button {
+      padding:5px 8px; cursor:pointer;
+      border:1px solid #aaa;
+      background:#f7f7f7;
+      border-radius:4px;
+    }
+    .toolbar button:hover { background:#eaeaea; }
+    svg#conn-svg {
+      position:absolute; top:0; left:0;
+      width:100%; height:100%;
+      pointer-events:none; /* pass clicks through */
+      overflow: visible;
+    }
+    /* Modal for advanced block editing */
+    #modal-overlay {
+      display:none;
+      position:fixed; top:0; left:0;
+      width:100%; height:100%;
+      background:rgba(0,0,0,0.3);
+      z-index:998;
+    }
+    #block-modal {
+      display:none;
+      position:fixed;
+      top:30%; left:50%;
+      transform:translateX(-50%);
+      background:#fff;
+      padding:15px;
+      border:2px solid #444;
+      border-radius:8px;
+      z-index:999;
+    }
+    #block-modal h3 { margin-top:0; }
+  </style>
+</head>
+<body>
+<div class="toolbar">
+  <label>Input x(t):</label>
+  <input type="text" id="inputExpr" value="sin(t)" />
+  <button id="btnAddAdd">Add +</button>
+  <button id="btnAddSub">Add -</button>
+  <button id="btnAddMul">Add ×</button>
+  <button id="btnAddBlock">Add Block</button>
+  <button id="btnAddDot">Add Dot</button>
+  <button id="btnConnect">Connect</button>
+  <button id="btnCompute">Compute Expression</button>
+  <button id="btnClearAll">Clear All</button>
+</div>
+
+<div id="modal-overlay"></div>
+<div id="block-modal">
+  <h3>Edit Block</h3>
+  <p>Select advanced operation:</p>
+  <div>
+    <button class="block-func">d/dt</button>
+    <button class="block-func">h_BP</button>
+    <button class="block-func">h_LP</button>
+    <button class="block-func">Hilbert</button>
+    <button class="block-func">Re</button>
+    <button class="block-func">Im</button>
+  </div>
+  <p>Or type custom:</p>
+  <input type="text" id="blockCustom" style="width:140px;" />
+  <div style="margin-top:10px;">
+    <button id="blockOk">OK</button>
+    <button id="blockCancel">Cancel</button>
+  </div>
+</div>
+
+<div class="main-area" id="mainArea">
+  <svg id="conn-svg"></svg>
+</div>
+
+<script>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Process Chain Plot</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0; padding: 0;
+          background: #f0f0f0;
+          overflow: hidden;
+        }
+        .toolbar {
+          width: 100%;
+          padding: 8px;
+          background: #cce2ff;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .toolbar label {
+          margin-left: 10px;
+        }
+        .toolbar input[type="text"] {
+          width: 180px;
+          padding: 4px;
+        }
+        .main-area {
+          position: relative;
+          width: 100%;
+          height: calc(100vh - 40px);
+          background: #fff;
+          overflow: hidden;
+        }
+        /* Node styling */
+        .node {
+          position: absolute;
+          width: 100px;
+          height: 50px;
+          background: lightblue;
+          border: 2px solid #666;
+          border-radius: 4px;
+          text-align: center;
+          line-height: 50px;
+          font-weight: bold;
+          cursor: move;
+          user-select: none;
+        }
+        /* Dot styling */
+        .dot {
+          position: absolute;
+          width: 10px;
+          height: 10px;
+          background: gray;
+          border-radius: 50%;
+          cursor: move;
+        }
+        .highlight {
+          border-color: red !important;
+        }
+        .toolbar button {
+          padding: 5px 8px;
+          cursor: pointer;
+          border: 1px solid #aaa;
+          background: #f7f7f7;
+          border-radius: 4px;
+        }
+        .toolbar button:hover {
+          background: #eaeaea;
+        }
+        svg#conn-svg {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          pointer-events: none; /* so clicks pass through to the nodes */
+          overflow: visible;
+        }
+        /* Modal for advanced block editing */
+        #block-modal {
+          display: none;
+          position: fixed;
+          top: 30%;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #fff;
+          padding: 15px;
+          border: 2px solid #444;
+          border-radius: 8px;
+          z-index: 999;
+        }
+        #block-modal h3 {
+          margin-top: 0;
+        }
+        #modal-overlay {
+          display: none;
+          position: fixed;
+          top: 0; left:0;
+          width: 100%; height:100%;
+          background: rgba(0,0,0,0.3);
+          z-index: 998;
+        }
+      </style>
+    </head>
+    <body>
+    
+    <div class="toolbar">
+      <label>Input x(t):</label>
+      <input type="text" id="inputExpr" value="sin(t)"/>
+      <button id="btnAddAdd">Add +</button>
+      <button id="btnAddSub">Add -</button>
+      <button id="btnAddMul">Add ×</button>
+      <button id="btnAddBlock">Add Block</button>
+      <button id="btnAddDot">Add Dot</button>
+      <button id="btnConnect">Connect</button>
+      <button id="btnCompute">Compute Expression</button>
+      <button id="btnClearAll">Clear All</button>
+    </div>
+    
+    <div id="modal-overlay"></div>
+    <div id="block-modal">
+      <h3>Edit Block</h3>
+      <p>Select advanced operation:</p>
+      <div>
+        <button class="block-func">d/dt</button>
+        <button class="block-func">h_BP</button>
+        <button class="block-func">h_LP</button>
+        <button class="block-func">Hilbert</button>
+        <button class="block-func">Re</button>
+        <button class="block-func">Im</button>
+      </div>
+      <p>Or type custom:</p>
+      <input type="text" id="blockCustom" style="width:140px;"/>
+      <div style="margin-top:10px;">
+        <button id="blockOk">OK</button>
+        <button id="blockCancel">Cancel</button>
+      </div>
+    </div>
+    
+    <div class="main-area" id="mainArea">
+      <!-- lines are drawn in an SVG for convenience -->
+      <svg id="conn-svg"></svg>
+    </div>
+    
+    <script>
+    // We'll keep arrays of objects: nodes[], dots[], connections[].
+    const nodes = [];
+    const dots = [];
+    const connections = []; // each: {a: object, b: object, line: <line> reference}
+    
+    let connectMode = false;
+    let connectStartObj = null;
+    
+    // track the selected object for deletion, highlight
+    let selectedObj = null;
+    
+    // references
+    const mainArea = document.getElementById('mainArea');
+    const connSvg = document.getElementById('conn-svg');
+    
+    // store input node + output node
+    let inputNode = null;
+    let outputNode = null;
+    
+    // spawn input node at left
+    function createInputNode() {
+      const node = createNode(20, 100, "sin(t)", "Input", true);
+      inputNode = node;
+    }
+    // spawn output node at right
+    function createOutputNode() {
+      const node = createNode(700, 100, "y(t)", "Output", true);
+      outputNode = node;
+    }
+    
+    /********************************
+     * Create Node
+     *******************************/
+    function createNode(x, y, text, nodeType, nonDeletable=false) {
+      const div = document.createElement('div');
+      div.className = 'node';
+      div.style.left = x+'px';
+      div.style.top = y+'px';
+      div.innerText = text;
+    
+      // store data
+      const nodeData = {
+        el: div,
+        x: x, y: y,
+        w: 100, h: 50,
+        nodeType: nodeType,
+        text: text,
+        functionExpr: null,
+        correctIndex: null, // if for advanced usage
+        nonDeletable: nonDeletable,
+        value: null // for advanced block
+      };
+      div.dataset.nodeType = nodeType;
+    
+      // for highlight
+      div.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        selectObject(nodeData);
+      });
+    
+      // for dragging
+      let offsetX=0, offsetY=0;
+      div.addEventListener('mousedown', e => {
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      function onMouseMove(e) {
+        const rect = mainArea.getBoundingClientRect();
+        let newX = e.clientX - rect.left - offsetX;
+        let newY = e.clientY - rect.top - offsetY;
+        nodeData.x = newX;
+        nodeData.y = newY;
+        div.style.left = newX + 'px';
+        div.style.top = newY + 'px';
+        updateConnectionPositions();
+      }
+      function onMouseUp(e) {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+    
+      // double-click if nodeType == "Block"
+      if(nodeType==="Block") {
+        div.addEventListener('dblclick', e => {
+          openBlockModal(nodeData);
+        });
+      }
+    
+      mainArea.appendChild(div);
+      nodes.push(nodeData);
+      return nodeData;
+    }
+    
+    /********************************
+     * Create Dot
+     *******************************/
+    function createDot(x,y) {
+      const dotDiv = document.createElement('div');
+      dotDiv.className = 'dot';
+      dotDiv.style.left = (x-5)+'px';
+      dotDiv.style.top = (y-5)+'px';
+    
+      const dotData = {
+        el: dotDiv,
+        x: x, y: y,
+        w: 10, h: 10,
+        nodeType: 'Dot',
+        nonDeletable: false
+      };
+    
+      dotDiv.addEventListener('mousedown', e => {
+        e.stopPropagation();
+        selectObject(dotData);
+      });
+    
+      // drag
+      let offsetX=0, offsetY=0;
+      dotDiv.addEventListener('mousedown', e => {
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      function onMouseMove(e){
+        const rect = mainArea.getBoundingClientRect();
+        let newX = e.clientX - rect.left - offsetX;
+        let newY = e.clientY - rect.top - offsetY;
+        dotData.x = newX+5;
+        dotData.y = newY+5;
+        dotDiv.style.left = newX + 'px';
+        dotDiv.style.top = newY + 'px';
+        updateConnectionPositions();
+      }
+      function onMouseUp(e){
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+    
+      mainArea.appendChild(dotDiv);
+      dots.push(dotData);
+      return dotData;
+    }
+    
+    /********************************
+     * Selecting / Highlight
+     *******************************/
+    function selectObject(obj) {
+      if(obj.nonDeletable){
+        selectedObj = null;
+        return;
+      }
+      if(selectedObj && selectedObj.el) {
+        selectedObj.el.classList.remove('highlight');
+      }
+      selectedObj = obj;
+      if(obj && obj.el){
+        obj.el.classList.add('highlight');
+      }
+    }
+    
+    /********************************
+     * Connect Mode
+     *******************************/
+    function toggleConnectMode() {
+      connectMode = !connectMode;
+      if(connectMode){
+        mainArea.style.cursor = 'crosshair';
+        connectStartObj=null;
+      } else {
+        mainArea.style.cursor = 'default';
+        connectStartObj=null;
+      }
+    }
+    
+    mainArea.addEventListener('mousedown', e => {
+      if(!connectMode) return;
+      e.stopPropagation();
+      // find which object is under the mouse
+      let obj = findObjectUnderMouse(e.clientX, e.clientY);
+      if(!obj) {
+        if(connectStartObj) {
+          highlightObject(connectStartObj, false);
+          connectStartObj=null;
+        }
+        return;
+      }
+      if(!connectStartObj) {
+        connectStartObj = obj;
+        highlightObject(connectStartObj, true);
+      } else {
+        if(obj!==connectStartObj){
+          // create a line
+          createConnection(connectStartObj, obj);
+          highlightObject(connectStartObj, false);
+          connectStartObj=null;
+        } else {
+          highlightObject(connectStartObj, false);
+          connectStartObj=null;
+        }
+      }
+    });
+    
+    function findObjectUnderMouse(cx, cy){
+      // offset by mainArea left/top
+      const rect = mainArea.getBoundingClientRect();
+      const x = cx-rect.left, y=cy-rect.top;
+      // check nodes from top
+      for(let i=nodes.length-1; i>=0; i--){
+        const nd = nodes[i];
+        if(inBounds(x,y, nd.x, nd.y, nd.w, nd.h)) return nd;
+      }
+      // check dots
+      for(let i=dots.length-1; i>=0; i--){
+        const dt = dots[i];
+        if(inBounds(x,y, dt.x-5, dt.y-5, 10,10)) return dt;
+      }
+      return null;
+    }
+    function inBounds(x,y, left,top,w,h){
+      return (x>=left && x<=left+w && y>=top && y<=top+h);
+    }
+    
+    function highlightObject(obj, highlight){
+      if(obj && obj.el){
+        if(highlight) obj.el.classList.add('highlight');
+        else obj.el.classList.remove('highlight');
+      }
+    }
+    
+    /********************************
+     * Create Connection
+     *******************************/
+    function createConnection(a,b){
+      // create a <line> in the svg
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute('stroke', '#000');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('marker-end', 'url(#arrow)'); // optional arrow
+      connSvg.appendChild(line);
+    
+      // store in connections
+      connections.push({a:a, b:b, line: line});
+      updateConnectionPositions();
+    }
+    
+    /********************************
+     * Updating lines
+     *******************************/
+    function updateConnectionPositions(){
+      connections.forEach(cn=>{
+        const {a,b,line} = cn;
+        const ap = getConnectionPoint(a,b);
+        const bp = getConnectionPoint(b,a);
+        line.setAttribute('x1', ap.x);
+        line.setAttribute('y1', ap.y);
+        line.setAttribute('x2', bp.x);
+        line.setAttribute('y2', bp.y);
+      });
+    }
+    function getConnectionPoint(obj, otherObj){
+      // if node, pick left or right center
+      if(obj.nodeType==='Dot'){
+        return {x: obj.x, y: obj.y};
+      } else {
+        // figure out if other is left or right
+        let midX = obj.x + obj.w/2;
+        let midY = obj.y + obj.h/2;
+        let ox = 0, oy=0;
+        if(otherObj.nodeType==='Dot'){
+          ox=otherObj.x; oy=otherObj.y;
+        } else {
+          ox=otherObj.x + otherObj.w/2;
+          oy=otherObj.y + otherObj.h/2;
+        }
+        if(ox<midX){
+          // left center
+          return {x: obj.x, y: obj.y+obj.h/2};
+        } else {
+          // right center
+          return {x: obj.x+obj.w, y: obj.y+obj.h/2};
+        }
+      }
+    }
+    
+    /********************************
+     * Deletion
+     *******************************/
+    function deleteObject(){
+      if(!selectedObj) return;
+      if(selectedObj.nonDeletable) return;
+      // remove connections
+      for(let i=connections.length-1; i>=0; i--){
+        let c=connections[i];
+        if(c.a===selectedObj|| c.b===selectedObj){
+          connSvg.removeChild(c.line);
+          connections.splice(i,1);
+        }
+      }
+      // remove from arrays
+      if(selectedObj.nodeType==='Dot'){
+        mainArea.removeChild(selectedObj.el);
+        let idx = dots.indexOf(selectedObj);
+        if(idx>=0) dots.splice(idx,1);
+      } else {
+        mainArea.removeChild(selectedObj.el);
+        let idx=nodes.indexOf(selectedObj);
+        if(idx>=0) nodes.splice(idx,1);
+      }
+      selectedObj=null;
+    }
+    
+    /********************************
+     * Clearing all
+     *******************************/
+    function clearAll(){
+      // remove nodes
+      nodes.forEach(nd=>{
+        if(nd.el && !nd.nonDeletable){
+          mainArea.removeChild(nd.el);
+        }
+      });
+      // remove dots
+      dots.forEach(dt=>{
+        mainArea.removeChild(dt.el);
+      });
+      nodes.length=0;
+      dots.length=0;
+    
+      // re-add input, output
+      createInputNode();
+      createOutputNode();
+    
+      // remove connections lines
+      connections.forEach(c=> connSvg.removeChild(c.line));
+      connections.length=0;
+      selectedObj=null;
+    }
+    
+    /********************************
+     * Launch & handle block modal
+     *******************************/
+    let currentBlock = null;
+    const blockModal = document.getElementById('block-modal');
+    const overlay = document.getElementById('modal-overlay');
+    const blockOk = document.getElementById('blockOk');
+    const blockCancel = document.getElementById('blockCancel');
+    const blockCustom = document.getElementById('blockCustom');
+    
+    [...document.getElementsByClassName('block-func')].forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        blockCustom.value = btn.innerText;
+      });
+    });
+    
+    blockOk.addEventListener('click', e=>{
+      let val = blockCustom.value.trim();
+      if(val!==''){
+        currentBlock.value=val;
+        currentBlock.el.innerText=val;
+      }
+      hideBlockModal();
+    });
+    
+    blockCancel.addEventListener('click', e=>{
+      hideBlockModal();
+    });
+    
+    function openBlockModal(blockObj){
+      currentBlock = blockObj;
+      blockCustom.value = blockObj.value||''; // if it has a current value
+      overlay.style.display='block';
+      blockModal.style.display='block';
+    }
+    function hideBlockModal(){
+      overlay.style.display='none';
+      blockModal.style.display='none';
+      currentBlock=null;
+    }
+    
+    /********************************
+     * Compute Expression
+     *******************************/
+    function computeExpression(){
+      // We'll do a BFS from inputNode to outputNode
+      if(!inputNode || !outputNode){
+        alert("No input or output node found!");
+        return;
+      }
+      // build adjacency
+      let adj = new Map(); // object => array of neighbors
+      [...nodes, ...dots].forEach(o=> adj.set(o,[]));
+      connections.forEach(c=>{
+        adj.get(c.a).push(c.b);
+        adj.get(c.b).push(c.a);
+      });
+      // BFS
+      let queue=[inputNode];
+      let visited=new Map();
+      visited.set(inputNode,null);
+    
+      let found=false;
+      while(queue.length>0){
+        let cur=queue.shift();
+        if(cur===outputNode){
+          found=true;
+          break;
+        }
+        adj.get(cur).forEach(nbr=>{
+          if(!visited.has(nbr)){
+            visited.set(nbr, cur);
+            queue.push(nbr);
+          }
+        });
+      }
+      if(!found){
+        alert("No path from input to output!");
+        return;
+      }
+    
+      // reconstruct path
+      let path=[];
+      let node=outputNode;
+      while(node){
+        path.push(node);
+        node=visited.get(node);
+      }
+      path.reverse();
+    
+      // build expression
+      let expr = path[0].text; // e.g. "sin(t)"
+      // step through path
+      for(let i=1; i<path.length; i++){
+        let block=path[i];
+        if(block.nodeType==="Addition"){
+          expr = `(${expr} + ???)`;
+        } else if(block.nodeType==="Subtraction"){
+          expr = `(${expr} - ???)`;
+        } else if(block.nodeType==="Multiplication"){
+          if(block.functionExpr){
+            expr = `(${expr})*(${block.functionExpr})`;
+          } else {
+            expr = `(${expr} * ???)`;
+          }
+        } else if(block.nodeType==="Block"){
+          let val = block.value||"Block";
+          expr = `${val}(${expr})`;
+        } else if(block.nodeType==="Output"){
+          // do nothing
+        } else if(block.nodeType==="Dot"){
+          // skip
+        }
+      }
+      alert("Output y(t) = " + expr);
+    }
+    
+    /********************************
+     * Page init
+     *******************************/
+    document.getElementById('btnAddAdd').addEventListener('click', e=>{
+      createNode(150,60, "+", "Addition", false);
+    });
+    document.getElementById('btnAddSub').addEventListener('click', e=>{
+      createNode(180,60, "−", "Subtraction", false);
+    });
+    document.getElementById('btnAddMul').addEventListener('click', e=>{
+      // prompt for multiplier?
+      let node = createNode(210,60, "×", "Multiplication", false);
+      // ask user for multiplier expression
+      let expr = prompt("Enter multiplier expression:", "cos(ω₀t)");
+      if(expr){
+        node.functionExpr=expr;
+      }
+    });
+    document.getElementById('btnAddBlock').addEventListener('click', e=>{
+      createNode(240,60, "Block", "Block", false);
+    });
+    document.getElementById('btnAddDot').addEventListener('click', e=>{
+      createDot(300,200);
+    });
+    document.getElementById('btnConnect').addEventListener('click', e=>{
+      toggleConnectMode();
+    });
+    document.getElementById('btnCompute').addEventListener('click', e=>{
+      computeExpression();
+    });
+    document.getElementById('btnClearAll').addEventListener('click', e=>{
+      clearAll();
+    });
+    
+    // hooking up the "Delete Object" is done by pressing the "Delete" key or something else?
+    // We'll do that from the "Select Object" approach, or a separate button?
+    
+    // We can do a separate button for "Delete" or rely on "selectObject" + "deleteObject"
+    window.addEventListener('keydown', e=>{
+      if(e.key==="Delete"){
+        deleteObject();
+      }
+    });
+    
+    // Create default input, output
+    function init(){
+      createInputNode();
+      createOutputNode();
+    }
+    init();
+    
+    </script>
+    
+    <script src="utils/expressions_handler.js"></script>
+    <script src="utils/my_functions.js"></script>
+    <!-- If you have small scripts for them, or you can embed them here. -->
+    
+    </body>
+    </html>
+    
+</script>
+</body>
+</html>

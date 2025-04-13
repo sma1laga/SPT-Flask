@@ -14,6 +14,12 @@ from pages.training.training_convolution import training_convolution_bp
 from pages.training.training_fourier import training_fourier_bp
 from pages.training.training_processing_chain import training_processing_chain_bp
 
+# Import training exams
+from pages.exam_convolution import exam_convolution_bp
+
+
+
+
 def create_app():
     app = Flask(__name__)
 
@@ -31,6 +37,12 @@ def create_app():
     app.register_blueprint(training_convolution_bp, url_prefix="/training/convolution")
     app.register_blueprint(training_fourier_bp,     url_prefix="/training/fourier")
     app.register_blueprint(training_processing_chain_bp, url_prefix="/training/processing_chain")
+    
+    # Exams try
+    app.secret_key = "some secret"  # needed for session
+    app.register_blueprint(exam_convolution_bp, url_prefix="/exam/convolution")
+    
+
 
     @app.route("/")
     def home():

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Convolution Exam</h2>
+
+{% if not started %}
+<p>Click below to start a timed exam of 10 random convolution questions.</p>
+<a href="{{ url_for('exam_convolution.start_exam') }}">
+  <button>Start Exam</button>
+</a>
+{% else %}
+<form method="POST">
+  <p>Your exam has begun. Good luck!</p>
+
+  {% for item in problems_for_template %}
+    <div style="margin-bottom:20px; border:1px solid #ccc; padding:10px;">
+      <h4>Question {{ item.index+1 }}</h4>
+      <img src="data:image/png;base64,{{ item.img_data }}" alt="Problem {{ item.index+1 }}">
+
+      <!-- We'll have 4 radio buttons for each question -->
+      <p>Select your answer:</p>
+      <label><input type="radio" name="answer_{{ item.index }}" value="0"> Option 1</label><br>
+      <label><input type="radio" name="answer_{{ item.index }}" value="1"> Option 2</label><br>
+      <label><input type="radio" name="answer_{{ item.index }}" value="2"> Option 3</label><br>
+      <label><input type="radio" name="answer_{{ item.index }}" value="3"> Option 4</label><br>
+    </div>
+  {% endfor %}
+
+  <button type="submit">Submit Exam</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -22,6 +22,11 @@
     <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
       <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Theory</h3>
       <ul style="list-style:none; padding:0; margin:0;">
+        <li>
+          <a href="{{ url_for('process_chain_web.show_process_chain_web') }}">
+            Web-based Process Chain
+          </a>
+        </li>
         <li><a href="{{ url_for('function_definitions.function_definitions') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Function Definitions</a></li>
         <li><a href="{{ url_for('transform_table.transform_table') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Fourier & Laplace Transform Table</a></li>
         <li><a href="{{ url_for('theory.theory') }}" style="display:block; padding:10px;">Theory</a></li>

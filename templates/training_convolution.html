@@ -1,8 +1,102 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Convolution Training Module</h2>
-<p>This module lets you practice convolution concepts.
-   <!-- Insert your training logic, plots, and interactive quiz content here -->
+<h2>Convolution Training</h2>
+
+<!-- Difficulty selection -->
+<div style="margin-bottom:10px;">
+  <label><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
+  <label><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
+  <label><input type="radio" name="difficulty" value="HARD"> Hard</label>
+</div>
+
+<button id="generateBtn">Generate Problem</button>
+
+<!-- Plot container -->
+<div id="conv-training-plot" style="position:relative; margin-top:20px; display:inline-block;">
+  <img id="conv_plot_image" src="" alt="Training Convolution Plot" style="display:none;">
+</div>
+
+<!-- Answer buttons -->
+<div style="margin-top:10px;">
+  <button class="optionBtn" data-index="0">Option 1</button>
+  <button class="optionBtn" data-index="1">Option 2</button>
+  <button class="optionBtn" data-index="2">Option 3</button>
+  <button class="optionBtn" data-index="3">Option 4</button>
+</div>
+
+<!-- Feedback -->
+<div id="feedback" style="margin-top:10px; font-size:1.1em; color:#333;"></div>
+
+<script>
+  let correctIndex = null;
+
+  document.getElementById("generateBtn").addEventListener("click", generateProblem);
+
+  // For each of the 4 answer buttons:
+  let optionButtons = document.querySelectorAll(".optionBtn");
+  optionButtons.forEach(btn => {
+    btn.addEventListener("click", function(){
+      let selectedIndex = parseInt(btn.getAttribute("data-index"));
+      checkAnswer(selectedIndex);
+    });
+  });
+
+  function getDifficulty() {
+    let radios = document.getElementsByName("difficulty");
+    for(let i=0; i<radios.length; i++){
+      if(radios[i].checked) return radios[i].value;
+    }
+    return "EASY";
+  }
+
+  function generateProblem() {
+    let diff = getDifficulty();
+    fetch("{{ url_for('training_convolution.generate_problem') }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ difficulty: diff })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+      if(data.error) {
+        document.getElementById("feedback").innerText = "Error: " + data.error;
+      } else {
+        // Display the plot
+        let img = document.getElementById("conv_plot_image");
+        img.src = "data:image/png;base64," + data.plot_data;
+        img.style.display = "block";
+        correctIndex = data.correctIndex;
+        document.getElementById("feedback").innerText = "Problem generated. Pick the correct option!";
+      }
+    })
+    .catch(err => {
+      console.error("Generate problem error:", err);
+      document.getElementById("feedback").innerText = "Error generating problem.";
+    });
+  }
+
+  function checkAnswer(selectedIndex) {
+    if(correctIndex === null) {
+      document.getElementById("feedback").innerText = "Please generate a problem first!";
+      return;
+    }
+    fetch("{{ url_for('training_convolution.check_answer') }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ selectedIndex: selectedIndex, correctIndex: correctIndex })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+      document.getElementById("feedback").innerText = data.feedback || "No feedback received.";
+    })
+    .catch(err => {
+      console.error("Check answer error:", err);
+      document.getElementById("feedback").innerText = "Error checking answer.";
+    });
+  }
+</script>
+<p>Want to take a 10-question exam? 
+  <a href="{{ url_for('exam_convolution.exam_convolution') }}">Click here!</a>
 </p>
-<p><a href="{{ url_for('home') }}">Back to Home</a></p>
+
 {% endblock %}

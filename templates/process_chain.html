@@ -1,5 +1,403 @@
 {% extends "base.html" %}
 {% block content %}
+
 <h2>Process Chain Plot</h2>
-<p>Here you can implement your process chain plotting logic.</p>
+
+<!-- Toolbar / Input Expression -->
+<div style="margin-bottom:10px;">
+  <label>Input Function x(t):</label>
+  <input type="text" id="inputExpression" value="sin(t)" size="20"
+         style="margin-right:10px;">
+
+  <button onclick="addNode('Addition','+')">Add Addition</button>
+  <button onclick="addNode('Subtraction','−')">Add Subtraction</button>
+  <button onclick="addNode('Multiplication','×')">Add Multiplication</button>
+  <button onclick="addNode('Block','Block')">Add Block</button>
+  <button onclick="addDot()">Add Dot</button>
+  <button onclick="toggleConnectMode()">Connect</button>
+  <button onclick="deleteSelected()">Delete</button>
+  <button onclick="clearAll()">Clear</button>
+</div>
+
+<!-- The Canvas -->
+<canvas id="chainCanvas"
+        width="900"
+        height="500"
+        style="border:1px solid #ccc;">
+  Your browser does not support HTML canvas.
+</canvas>
+
+<!-- A hidden modal for "Edit Block" usage -->
+<div id="blockModal"
+     style="display:none;
+            position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            padding:20px; background:#fff;
+            border:2px solid #444; z-index:999;">
+  <p>Edit Block:</p>
+  <input type="text" id="blockModalInput" size="25">
+  <div style="margin-top:10px;">
+    <button id="blockModalOkBtn">OK</button>
+    <button onclick="closeBlockModal()">Cancel</button>
+  </div>
+  <p style="margin-top:10px;">Quick inserts:</p>
+  <div>
+    <button onclick="insertFunc('d/dt')">d/dt</button>
+    <button onclick="insertFunc('H')">H</button>
+    <button onclick="insertFunc('Re')">Re</button>
+    <button onclick="insertFunc('Im')">Im</button>
+    <button onclick="insertFunc('h_BP')">h_BP</button>
+    <button onclick="insertFunc('h_LP')">h_LP</button>
+  </div>
+</div>
+
+<script>
+/*
+  We'll store data in arrays:
+  - nodes[]: {id, x, y, width, height, text, nodeType, selected, ...}
+  - lines[]: {id, fromId, toId} indicating connections
+  - connectMode: boolean
+  - selectedId: which node/dot is selected
+*/
+let nodes = [];
+let lines = [];
+let nodeCounter = 0;
+let connectMode = false;
+let connectStartId = null;
+
+// Canvas, context
+const canvas = document.getElementById("chainCanvas");
+const ctx = canvas.getContext("2d");
+let offsetX = canvas.offsetLeft;
+let offsetY = canvas.offsetTop;
+
+// Input & Output "non-deletable" nodes
+// We'll create them on load
+window.onload = function(){
+  // Input node at (20,100)
+  addNode("Input","sin(t)", 20, 100, true);
+  // Output node at (700,100)
+  addNode("Output","y(t)", 700, 100, true);
+  drawAll();
+};
+
+// Add a node
+function addNode(nodeType, text, x, y, nonDeletable) {
+  x = x || 100 + nodes.length*10;
+  y = y || 50 + nodes.length*10;
+  const w = 100, h = 50;
+  const node = {
+    id: ++nodeCounter,
+    nodeType: nodeType,
+    text: text,
+    x:x, y:y, width:w, height:h,
+    selected:false,
+    nonDeletable: nonDeletable || false,
+    // for multiplication nodes, store functionExpr
+    functionExpr:null
+  };
+  nodes.push(node);
+  drawAll();
+  return node;
+}
+
+// Add a Dot (like a small point)
+function addDot(){
+  const dot = {
+    id:++nodeCounter,
+    nodeType:"Dot",
+    x:300, y:200,
+    radius:5,
+    selected:false,
+    nonDeletable:false
+  };
+  nodes.push(dot);
+  drawAll();
+}
+
+// Toggle connect mode
+function toggleConnectMode(){
+  connectMode = !connectMode;
+  if(!connectMode && connectStartId != null){
+    // un-highlight
+    let startObj = getNodeById(connectStartId);
+    if(startObj) startObj.selected = false;
+    connectStartId = null;
+  }
+  drawAll();
+}
+
+// Deletion
+function deleteSelected(){
+  if(!selectedId) return;
+  let n = getNodeById(selectedId);
+  if(!n || n.nonDeletable) return;
+  // remove lines that connect to this node/dot
+  lines = lines.filter(line => (line.fromId!=selectedId && line.toId!=selectedId));
+  // remove the node
+  nodes = nodes.filter(node => node.id != selectedId);
+  selectedId = null;
+  drawAll();
+}
+
+// Clear (except the input and output if you like)
+function clearAll(){
+  // keep input & output
+  let keep = [];
+  for(let n of nodes){
+    if(n.nodeType=="Input"||n.nodeType=="Output"){
+      keep.push(n);
+    }
+  }
+  nodes = keep;
+  lines = [];
+  selectedId=null;
+  drawAll();
+}
+
+// The main draw function
+function drawAll(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // lines first
+  for(let line of lines){
+    let a = getNodeById(line.fromId);
+    let b = getNodeById(line.toId);
+    if(!a || !b) continue;
+    let start = getConnectionPoint(a,b);
+    let end   = getConnectionPoint(b,a);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = "black";
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    // optionally draw arrow, or we do a simpler approach
+    // can do ctx.fillText or arrow ends
+  }
+
+  // nodes
+  for(let node of nodes){
+    if(node.nodeType=="Dot"){
+      // draw a circle
+      ctx.beginPath();
+      ctx.arc(node.x,node.y,node.radius,0,2*Math.PI);
+      ctx.fillStyle=node.selected?"red":"gray";
+      ctx.fill();
+    } else {
+      // node rect
+      ctx.beginPath();
+      ctx.fillStyle = "lightblue";
+      if(node.selected) ctx.strokeStyle = "orange"; else ctx.strokeStyle="black";
+      ctx.lineWidth=node.selected?3:1;
+      ctx.fillRect(node.x,node.y,node.width,node.height);
+      ctx.strokeRect(node.x,node.y,node.width,node.height);
+
+      // label
+      ctx.fillStyle = "black";
+      ctx.font = "16px Helvetica";
+      let textW = ctx.measureText(node.text).width;
+      let textX = node.x + (node.width - textW)/2;
+      let textY = node.y + node.height/2 + 5;
+      ctx.fillText(node.text, textX, textY);
+
+      // if nodeType=="Multiplication" and node.functionExpr != null => show it
+      if(node.nodeType=="Multiplication" && node.functionExpr){
+        ctx.font = "12px italic";
+        ctx.fillStyle="black";
+        let fx = node.x + node.width+10;
+        let fy = node.y + node.height/2;
+        ctx.fillText(node.functionExpr, fx, fy);
+        // draw an arrow from node right center to that text
+        ctx.beginPath();
+        ctx.moveTo(fx-8,fy-3);
+        ctx.lineTo(node.x+node.width, node.y+node.height/2);
+        ctx.strokeStyle="black";
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+// Get a node/dot by ID
+function getNodeById(id){
+  return nodes.find(n => n.id==id);
+}
+
+// On canvas click
+let selectedId=null;
+canvas.addEventListener("mousedown", e => {
+  let mx = e.offsetX, my = e.offsetY;
+  let clicked = findNodeAt(mx,my);
+  if(connectMode){
+    if(!connectStartId && clicked){
+      connectStartId=clicked.id;
+      clicked.selected=true;
+    } else if(connectStartId && clicked && connectStartId != clicked.id){
+      // create line from connectStartId to clicked
+      lines.push({fromId:connectStartId, toId:clicked.id});
+      let s = getNodeById(connectStartId);
+      if(s) s.selected=false;
+      connectStartId=null;
+    } else {
+      // same node or no node
+      if(connectStartId){
+        let s = getNodeById(connectStartId);
+        if(s) s.selected=false;
+      }
+      connectStartId=null;
+    }
+  } else {
+    // normal selection mode
+    if(clicked){
+      // highlight it
+      if(selectedId && selectedId!=clicked.id){
+        let old = getNodeById(selectedId);
+        if(old) old.selected=false;
+      }
+      clicked.selected=true;
+      selectedId = clicked.id;
+    } else {
+      // clicked empty area
+      if(selectedId){
+        let old = getNodeById(selectedId);
+        if(old) old.selected=false;
+      }
+      selectedId=null;
+    }
+  }
+  drawAll();
+});
+
+// For dragging nodes/dots
+let draggingId=null;
+let dragOffsetX=0, dragOffsetY=0;
+
+canvas.addEventListener("mousemove", e=>{
+  if(draggingId){
+    let node = getNodeById(draggingId);
+    if(!node) return;
+    let mx = e.offsetX, my = e.offsetY;
+    if(node.nodeType=="Dot"){
+      node.x = mx - dragOffsetX;
+      node.y = my - dragOffsetY;
+    } else {
+      node.x = mx - dragOffsetX;
+      node.y = my - dragOffsetY;
+    }
+    drawAll();
+  }
+});
+
+canvas.addEventListener("mouseup", e=>{
+  draggingId=null;
+});
+
+canvas.addEventListener("mousedown", e=>{
+  if(!connectMode){
+    let mx = e.offsetX, my = e.offsetY;
+    let node = findNodeAt(mx,my);
+    if(node){
+      draggingId=node.id;
+      if(node.nodeType=="Dot"){
+        dragOffsetX = mx - node.x;
+        dragOffsetY = my - node.y;
+      } else {
+        dragOffsetX = mx - node.x;
+        dragOffsetY = my - node.y;
+      }
+    }
+  }
+});
+
+// find a node at (x,y)
+function findNodeAt(x,y){
+  // top to bottom to find topmost
+  for(let i=nodes.length-1; i>=0; i--){
+    let n=nodes[i];
+    if(n.nodeType=="Dot"){
+      let dx=x-n.x, dy=y-n.y;
+      if(dx*dx+dy*dy <= n.radius*n.radius+5) return n;
+    } else {
+      if(x>=n.x && x<=n.x+n.width && y>=n.y && y<=n.y+n.height){
+        return n;
+      }
+    }
+  }
+  return null;
+}
+
+// get connection point => for Node, left or right center depending on direction
+function getConnectionPoint(a,b){
+  let ax = getNodeCenterX(a), ay = getNodeCenterY(a);
+  let bx = getNodeCenterX(b), by = getNodeCenterY(b);
+  if(a.nodeType=="Dot") return {x:ax,y:ay};
+  // for Node => if b.x < a.x => connect left side else right side
+  let centerX = ax;
+  if(bx < ax) {
+    // left side
+    return {x:a.x, y:a.y + a.height/2};
+  } else {
+    // right side
+    return {x:a.x+a.width, y:a.y + a.height/2};
+  }
+}
+
+function getNodeCenterX(n){
+  return (n.nodeType=="Dot") ? n.x : n.x + n.width/2;
+}
+function getNodeCenterY(n){
+  return (n.nodeType=="Dot") ? n.y : n.y + n.height/2;
+}
+
+// Double-click => if nodeType=="Block", open block editor
+canvas.addEventListener("dblclick", e=>{
+  let mx=e.offsetX, my=e.offsetY;
+  let n = findNodeAt(mx,my);
+  if(n && n.nodeType=="Block"){
+    // show blockModal
+    openBlockModal(n);
+  } else if(n && n.nodeType=="Multiplication"){
+    // for multiplier => ask user for expression?
+    openMultiplierModal(n);
+  }
+});
+
+// A small "Edit Block" modal
+let blockBeingEdited=null;
+function openBlockModal(block){
+  blockBeingEdited=block;
+  document.getElementById("blockModal").style.display="block";
+  let inp=document.getElementById("blockModalInput");
+  inp.value = block.text || "";
+}
+function closeBlockModal(){
+  document.getElementById("blockModal").style.display="none";
+}
+document.getElementById("blockModalOkBtn").onclick = function(){
+  let val = document.getElementById("blockModalInput").value.trim();
+  if(blockBeingEdited){
+    blockBeingEdited.text= val || "Block";
+  }
+  closeBlockModal();
+  drawAll();
+};
+// Insert function e.g. 'd/dt'
+function insertFunc(f){
+  let inp=document.getElementById("blockModalInput");
+  inp.value = inp.value ? (inp.value + " " + f) : f;
+}
+
+// A separate modal for multipliers
+function openMultiplierModal(multNode){
+  // a quick prompt
+  let expr = prompt("Enter multiplication expression:", multNode.functionExpr || "cos(ω₀t)");
+  if(expr!==null){
+    multNode.functionExpr=expr;
+    drawAll();
+  }
+}
+
+</script>
 {% endblock %}
