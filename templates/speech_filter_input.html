@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Speech Filter Input</h2>
+<p>
+  Upload a WAV audio file (maximum 10 seconds). The chosen filter will be applied to your audio.
+  You can listen to, visualize, and download the filtered output.
+</p>
+
+{% if error %}
+  <div style="color: red;">{{ error }}</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  <label for="audio_file">Audio File (WAV, max 10 sec):</label>
+  <input type="file" name="audio_file" id="audio_file" accept=".wav" required>
+  <br><br>
+
+  <label for="filter_type">Filter Type:</label>
+  <select name="filter_type" id="filter_type">
+    <option value="lowpass">Low Pass</option>
+    <option value="highpass">High Pass</option>
+    <option value="bandpass">Band Pass</option>
+    <option value="bandstop">Band Stop</option>
+  </select>
+  <br><br>
+
+  <label for="order">Filter Order (1–5):</label>
+  <input type="number" name="order" id="order" value="4" min="1" max="5" required>
+  <br><br>
+
+  <label for="cutoff">Cutoff Frequency (Hz):</label>
+  <input type="text" name="cutoff" id="cutoff" value="100,400"
+         pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
+         title="Enter a single value (e.g., 100) or two values separated by a comma (e.g., 100,400)"
+         required>
+  <br><br>
+
+  <button type="submit">Apply Filter to Audio</button>
+</form>
+
+{% if spec_plot and wave_plot %}
+  <h3>Visualization</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <div style="flex: 1 1 45%;">
+      <h4>Spectrograms</h4>
+      <img id="specPlot" src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram of Filtered Audio">
+    </div>
+    <div style="flex: 1 1 45%;">
+      <h4>Waveforms</h4>
+      <img id="wavePlot" src="data:image/png;base64,{{ wave_plot }}" alt="Waveform of Filtered Audio">
+    </div>
+  </div>
+{% endif %}
+
+{% if output_audio_data %}
+  <h3>Listen to Filtered Audio</h3>
+  <audio id="liveAudio" controls>
+    <source src="data:audio/wav;base64,{{ output_audio_data }}" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
+  
+  <h3>Download Filtered Audio</h3>
+  <a id="downloadLink" href="data:audio/wav;base64,{{ output_audio_data }}" download="filtered.wav">Download Filtered Audio</a>
+  
+  <br><br>
+  <button type="button" onclick="reapplyFilter()">Reapply Filter (Interactive Tuning)</button>
+{% endif %}
+
+<script>
+function buildLiveURL() {
+  var baseUrl = "{{ url_for('speech_filter_input.live_audio') }}";
+  var filterType = document.getElementById("filter_type").value;
+  var order = document.getElementById("order").value;
+  var cutoff = document.getElementById("cutoff").value;
+  return baseUrl + 
+         "?filter_type=" + encodeURIComponent(filterType) +
+         "&order=" + encodeURIComponent(order) +
+         "&cutoff=" + encodeURIComponent(cutoff) +
+         "&t=" + new Date().getTime();
+}
+
+function reapplyFilter() {
+  var url = buildLiveURL();
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+       document.getElementById("specPlot").src = "data:image/png;base64," + data.spec_plot;
+       document.getElementById("wavePlot").src = "data:image/png;base64," + data.wave_plot;
+       document.getElementById("liveAudio").src = "data:audio/wav;base64," + data.audio;
+       document.getElementById("downloadLink").href = "data:audio/wav;base64," + data.audio;
+    })
+    .catch(err => console.error("Error reapplying filter:", err));
+}
+</script>
+{% endblock %}
