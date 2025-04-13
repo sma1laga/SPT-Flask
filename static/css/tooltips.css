@@ -1,0 +1,32 @@
+/* static/css/tooltips.css */
+.info-icon {
+    display: inline-block;
+    background-color: #007acc;
+    color: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    text-align: center;
+    line-height: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 5px;
+    position: relative;
+  }
+  
+  .tooltip {
+    display: none;
+    position: absolute;
+    top: 20px;
+    left: 0;
+    background: #f9f9f9;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px;
+    z-index: 100;
+    font-size: 0.9em;
+    max-width: 300px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    border-radius: 4px;
+  }
+  

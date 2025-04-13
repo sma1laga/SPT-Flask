@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Understanding Bandpass Order</h2>
+<object data="{{ url_for('static', filename='docs/bandpass_order.pdf') }}" type="application/pdf" width="100%" height="800px">
+  <p>Your browser does not support PDFs. Please <a href="{{ url_for('static', filename='docs/bandpass_order.pdf') }}">download the PDF</a> to view it.</p>
+</object>
+{% endblock %}
