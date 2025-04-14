@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Speech Filter Input</h2>
 <p>
-  Upload a WAV audio file (maximum 10 seconds). The chosen filter will be applied to your audio.
+  Upload a WAV audio file (maximum 10 seconds long). The chosen filter will be applied to your audio.
   You can listen to, visualize, and download the filtered output.
 </p>
 
@@ -41,13 +41,13 @@
 {% if spec_plot and wave_plot %}
   <h3>Visualization</h3>
   <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-    <div style="flex: 1 1 45%;">
+    <div style="flex: 1 1 50%;">
       <h4>Spectrograms</h4>
-      <img id="specPlot" src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram of Filtered Audio">
+      <img id="specPlot" src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram Plot">
     </div>
-    <div style="flex: 1 1 45%;">
+    <div style="flex: 1 1 50%;">
       <h4>Waveforms</h4>
-      <img id="wavePlot" src="data:image/png;base64,{{ wave_plot }}" alt="Waveform of Filtered Audio">
+      <img id="wavePlot" src="data:image/png;base64,{{ wave_plot }}" alt="Waveform Plot">
     </div>
   </div>
 {% endif %}
@@ -64,6 +64,16 @@
   
   <br><br>
   <button type="button" onclick="reapplyFilter()">Reapply Filter (Interactive Tuning)</button>
+  {% endif %}
+  {% if pz_plot %}
+  <h3>
+    Pole–Zero Plot
+    <a href="{{ url_for('info.polezero') }}" target="_blank" class="info-button"
+       style="display: inline-block; margin-left: 10px; text-decoration: none; background-color: #007acc; color: #fff; border-radius: 50%; width: 20px; height: 20px; text-align: center; line-height: 20px; font-size: 12px;">
+       i
+    </a>
+  </h3>
+  <img id="pzPlot" src="data:image/png;base64,{{ pz_plot }}" alt="Pole–Zero Plot">
 {% endif %}
 
 <script>
@@ -86,6 +96,7 @@ function reapplyFilter() {
     .then(data => {
        document.getElementById("specPlot").src = "data:image/png;base64," + data.spec_plot;
        document.getElementById("wavePlot").src = "data:image/png;base64," + data.wave_plot;
+       document.getElementById("pzPlot").src = "data:image/png;base64," + data.pz_plot;
        document.getElementById("liveAudio").src = "data:audio/wav;base64," + data.audio;
        document.getElementById("downloadLink").href = "data:audio/wav;base64," + data.audio;
     })

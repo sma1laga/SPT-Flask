@@ -12,3 +12,8 @@ def bandpass_order():
 def sampling():
     # Renders the info page for sampling details.
     return render_template('info_sampling.html')
+
+@info_bp.route('/polezero')
+def polezero():
+    # This template displays the LaTeX document for pole–zero information (embedded as a PDF).
+    return render_template('info_polezero.html')
