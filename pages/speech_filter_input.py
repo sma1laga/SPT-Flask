@@ -123,13 +123,48 @@ def speech_filter_input():
     pz_plot = None
     output_audio_data = None
     error = None
-    
+
     if request.method == "POST":
         try:
-            filter_type = request.form.get("filter_type", "lowpass")
-            order = int(request.form.get("order", 4))
-            cutoff_str = request.form.get("cutoff", "100,400")
-            
+            # Check if the user chose to use a standard filter preset.
+            if request.form.get("use_standard_filter"):
+                preset = request.form.get("standard_filter", "lowpass_std")
+                if preset == "lowpass_std":
+                    filter_type = "lowpass"
+                    order = 3
+                    cutoff_str = "1000"
+                elif preset == "bandpass_std":
+                    filter_type = "bandpass"
+                    order = 4
+                    cutoff_str = "300,3400"
+                elif preset == "highpass_std":
+                    filter_type = "highpass"
+                    order = 2
+                    cutoff_str = "80"
+                elif preset == "telephone_filter":
+                    filter_type = "bandpass"
+                    order = 4
+                    cutoff_str = "300,3400"
+                elif preset == "podcast_filter":
+                    filter_type = "lowpass"
+                    order = 3
+                    cutoff_str = "3000"
+                elif preset == "noise_cancel_filter":
+                    filter_type = "bandstop"
+                    order = 2
+                    cutoff_str = "50,150"
+                else:
+                    # Fallback to default preset values.
+                    filter_type = "lowpass"
+                    order = 4
+                    cutoff_str = "100,400"
+            else:
+                # Otherwise, use the user-defined parameters.
+                filter_type = request.form.get("filter_type", "lowpass")
+                order = int(request.form.get("order", 4))
+                cutoff_str = request.form.get("cutoff", "100,400")
+
+            # Process the audio file upload.
             if "audio_file" not in request.files:
                 error = "No audio file uploaded."
             else:
@@ -138,34 +173,37 @@ def speech_filter_input():
                 filepath = os.path.join(TEMP_UPLOAD_FOLDER, filename)
                 audio_file.save(filepath)
                 session["uploaded_audio_file"] = filename
-                
+
                 sample_rate, audio = wavfile.read(filepath)
                 if len(audio.shape) > 1:
-                    audio = np.mean(audio, axis=1)
+                    audio = np.mean(audio, axis=1)  # Convert stereo to mono.
                 audio = audio.astype(np.float32)
                 duration = len(audio) / sample_rate
                 if duration > 10:
                     error = "The uploaded audio is longer than 10 seconds."
-            
+
             if not error:
+                # Process the audio with the chosen or preset filter parameters.
                 filtered_audio, spec_plot, wave_plot, pz_plot = process_audio(
-                    filter_type, order, cutoff_str, sample_rate, audio, duration)
-                
+                    filter_type, order, cutoff_str, sample_rate, audio, duration
+                )
+
+                # Prepare the filtered audio for playback.
                 out_buffer = BytesIO()
-                filtered_int16 = np.int16(filtered_audio/np.max(np.abs(filtered_audio)) * 32767)
+                filtered_int16 = np.int16(filtered_audio / np.max(np.abs(filtered_audio)) * 32767)
                 wavfile.write(out_buffer, int(sample_rate), filtered_int16)
                 out_buffer.seek(0)
                 output_audio_data = base64.b64encode(out_buffer.read()).decode("utf-8")
         except Exception as e:
             error = str(e)
-            
+
     return render_template("speech_filter_input.html",
                            spec_plot=spec_plot,
                            wave_plot=wave_plot,
                            pz_plot=pz_plot,
                            output_audio_data=output_audio_data,
                            error=error)
-
+@speech_filter_input_bp.route("/live")
 @speech_filter_input_bp.route("/live")
 def live_audio():
     try:
@@ -179,9 +217,41 @@ def live_audio():
         audio = audio.astype(np.float32)
         duration = len(audio) / sample_rate
         
-        filter_type = request.args.get("filter_type", "lowpass")
-        order = int(request.args.get("order", 4))
-        cutoff_str = request.args.get("cutoff", "100,400")
+        # Check if user is using a standard preset.
+        if request.args.get("use_standard_filter") == "1":
+            preset = request.args.get("standard_filter", "lowpass_std")
+            if preset == "lowpass_std":
+                filter_type = "lowpass"
+                order = 3
+                cutoff_str = "1000"
+            elif preset == "bandpass_std":
+                filter_type = "bandpass"
+                order = 4
+                cutoff_str = "300,3400"
+            elif preset == "highpass_std":
+                filter_type = "highpass"
+                order = 2
+                cutoff_str = "80"
+            elif preset == "telephone_filter":
+                filter_type = "bandpass"
+                order = 4
+                cutoff_str = "300,3400"
+            elif preset == "podcast_filter":
+                filter_type = "lowpass"
+                order = 3
+                cutoff_str = "3000"
+            elif preset == "noise_cancel_filter":
+                filter_type = "bandstop"
+                order = 2
+                cutoff_str = "50,150"
+            else:
+                filter_type = "lowpass"
+                order = 4
+                cutoff_str = "100,400"
+        else:
+            filter_type = request.args.get("filter_type", "lowpass")
+            order = int(request.args.get("order", 4))
+            cutoff_str = request.args.get("cutoff", "100,400")
         
         filtered_audio, spec_plot, wave_plot, pz_plot = process_audio(
             filter_type, order, cutoff_str, sample_rate, audio, duration)
@@ -200,3 +270,4 @@ def live_audio():
         })
     except Exception as e:
         return str(e), 400
+

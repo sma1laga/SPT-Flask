@@ -11,10 +11,29 @@
 {% endif %}
 
 <form method="post" enctype="multipart/form-data">
-  <label for="audio_file">Audio File (WAV, max 10 sec):</label>
-  <input type="file" name="audio_file" id="audio_file" accept=".wav" required>
-  <br><br>
+    <label for="audio_file">Audio File (WAV, max 10 sec):</label>
+    <input type="file" name="audio_file" id="audio_file" accept=".wav" required>
+    <br><br>
+  
+    <!-- New: Option to use a standard preset filter -->
+    <label>
+        <input type="checkbox" name="use_standard_filter" id="use_standard_filter">
+        Use Standard Filter
+      </label>
+      <div id="standard_filter_div" style="display: none; margin-top: 10px;">
+        <label for="standard_filter">Choose Standard Filter:</label>
+        <select name="standard_filter" id="standard_filter">
+          <option value="lowpass_std">Lowpass Standard Filter (Cutoff 1000 Hz, Order 3)</option>
+          <option value="bandpass_std">Bandpass Speech Filter (300–3400 Hz, Order 4)</option>
+          <option value="highpass_std">Highpass Standard Filter (Cutoff 80 Hz, Order 2)</option>
+          <option value="telephone_filter">Telephone Filter (300–3400 Hz, Order 4)</option>
+          <option value="podcast_filter">Podcast Filter (Cutoff 3000 Hz, Order 3)</option>
+          <option value="noise_cancel_filter">Noise-Cancellation Filter (50–150 Hz, Order 2, Bandstop)</option>
+        </select>
+      </div>
+      <br><br>
 
+  <!-- Existing filter parameters (only used if standard filter is not selected) -->
   <label for="filter_type">Filter Type:</label>
   <select name="filter_type" id="filter_type">
     <option value="lowpass">Low Pass</option>
@@ -23,6 +42,7 @@
     <option value="bandstop">Band Stop</option>
   </select>
   <br><br>
+
 
   <label for="order">Filter Order (1–5):</label>
   <input type="number" name="order" id="order" value="4" min="1" max="5" required>
@@ -77,17 +97,30 @@
 {% endif %}
 
 <script>
-function buildLiveURL() {
-  var baseUrl = "{{ url_for('speech_filter_input.live_audio') }}";
-  var filterType = document.getElementById("filter_type").value;
-  var order = document.getElementById("order").value;
-  var cutoff = document.getElementById("cutoff").value;
-  return baseUrl + 
-         "?filter_type=" + encodeURIComponent(filterType) +
-         "&order=" + encodeURIComponent(order) +
-         "&cutoff=" + encodeURIComponent(cutoff) +
-         "&t=" + new Date().getTime();
-}
+    document.getElementById("use_standard_filter").addEventListener("change", function() {
+      var stdDiv = document.getElementById("standard_filter_div");
+      stdDiv.style.display = this.checked ? "block" : "none";
+    });
+  </script>
+<script>
+
+    function buildLiveURL() {
+        var baseUrl = "{{ url_for('speech_filter_input.live_audio') }}";
+        var useStandard = document.getElementById("use_standard_filter").checked ? "1" : "";
+        var filterType = document.getElementById("filter_type").value;
+        var order = document.getElementById("order").value;
+        var cutoff = document.getElementById("cutoff").value;
+        var standardPreset = document.getElementById("standard_filter").value;
+        var url = baseUrl + "?t=" + new Date().getTime();
+        if (useStandard === "1") {
+            url += "&use_standard_filter=1&standard_filter=" + encodeURIComponent(standardPreset);
+        } else {
+            url += "&filter_type=" + encodeURIComponent(filterType) +
+                   "&order=" + encodeURIComponent(order) +
+                   "&cutoff=" + encodeURIComponent(cutoff);
+        }
+        return url;
+      }
 
 function reapplyFilter() {
   var url = buildLiveURL();
@@ -103,4 +136,15 @@ function reapplyFilter() {
     .catch(err => console.error("Error reapplying filter:", err));
 }
 </script>
+<script>
+    // Toggle display of the standard filter dropdown when checkbox is toggled.
+    document.getElementById("use_standard_filter").addEventListener("change", function() {
+      var stdDiv = document.getElementById("standard_filter_div");
+      if (this.checked) {
+        stdDiv.style.display = "block";
+      } else {
+        stdDiv.style.display = "none";
+      }
+    });
+  </script>
 {% endblock %}
