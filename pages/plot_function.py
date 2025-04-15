@@ -5,19 +5,17 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker  # Added import for ticker
 from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
 
 plot_function_bp = Blueprint("plot_function", __name__)
 
 @plot_function_bp.route("/", methods=["GET", "POST"])
 def plot_function():
-    # For non-live submission; the live updates use the /update endpoint.
     error = None
     plot_data = None
-    # Get function expressions (if not provided, default to empty strings)
-    func1_str = request.form.get("func1", "") if request.method=="POST" else ""
-    func2_str = request.form.get("func2", "") if request.method=="POST" else ""
-    # Read the 6 slider parameters:
+    func1_str = request.form.get("func1", "") if request.method == "POST" else ""
+    func2_str = request.form.get("func2", "") if request.method == "POST" else ""
     try:
         shift1 = float(request.form.get("shift1", 0))
     except:
@@ -51,22 +49,23 @@ def plot_function():
         else:
             plot_data = result["plot_data"]
             transformation_label = result["transformation_label"]
-    return render_template("plot_function.html",
-                           error=error,
-                           plot_data=plot_data,
-                           func1=func1_str,
-                           func2=func2_str,
-                           shift1=shift1,
-                           stretch1=stretch1,
-                           hscale1=hscale1,
-                           shift2=shift2,
-                           stretch2=stretch2,
-                           hscale2=hscale2,
-                           transformation_label=transformation_label)
+    return render_template(
+        "plot_function.html",
+        error=error,
+        plot_data=plot_data,
+        func1=func1_str,
+        func2=func2_str,
+        shift1=shift1,
+        stretch1=stretch1,
+        hscale1=hscale1,
+        shift2=shift2,
+        stretch2=stretch2,
+        hscale2=hscale2,
+        transformation_label=transformation_label,
+    )
 
 @plot_function_bp.route("/update", methods=["POST"])
 def update_plot():
-    # This AJAX endpoint is used for live updates.
     data = request.get_json(force=True)
     func1_str = data.get("func1", "")
     func2_str = data.get("func2", "")
@@ -102,7 +101,7 @@ def update_plot():
 
 def compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretch2, hscale2):
     t = np.linspace(-10, 10, 2000)
-    # For each function, prepare a local dictionary with independent transformation.
+    # Local variables for function 1
     local_vars1 = {
         "t": (t - shift1) / hscale1,
         "np": np,
@@ -116,8 +115,9 @@ def compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretc
         "exp_iwt": exp_iwt,
         "inv_t": inv_t,
         "si": si,
-        "exp": np.exp
+        "exp": np.exp,
     }
+    # Local variables for function 2
     local_vars2 = {
         "t": (t - shift2) / hscale2,
         "np": np,
@@ -131,7 +131,7 @@ def compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretc
         "exp_iwt": exp_iwt,
         "inv_t": inv_t,
         "si": si,
-        "exp": np.exp
+        "exp": np.exp,
     }
     try:
         y1 = stretch1 * eval(func1_str, local_vars1) if func1_str.strip() != "" else np.zeros_like(t)
@@ -156,9 +156,15 @@ def compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretc
     ax.grid(True)
     ax.legend()
 
-    transformation_label = (f"F1: y = {stretch1:.2f} · f((t - {shift1:.2f}) / {hscale1:.2f})\n"
-                              f"F2: y = {stretch2:.2f} · f((t - {shift2:.2f}) / {hscale2:.2f})")
-    
+    # Force whole number ticks on x and y axes
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+
+    transformation_label = (
+        f"F1: y = {stretch1:.2f} · f((t - {shift1:.2f}) / {hscale1:.2f})\n"
+        f"F2: y = {stretch2:.2f} · f((t - {shift2:.2f}) / {hscale2:.2f})"
+    )
+
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)
