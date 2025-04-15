@@ -17,3 +17,8 @@ def sampling():
 def polezero():
     # This template displays the LaTeX document for pole–zero information (embedded as a PDF).
     return render_template('info_polezero.html')
+
+@info_bp.route('/noise_reduction')
+def noise_reduction():
+    # Render an HTML template that embeds your LaTeX PDF or displays the theoretical explanation.
+    return render_template('info_noise_reduction.html')

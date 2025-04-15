@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>
+  Advanced Noise Reduction Module
+  <a href="{{ url_for('info.noise_reduction') }}" target="_blank" class="info-button" style="display:inline-block; margin-left:10px; text-decoration:none; background-color:#007acc; color:#fff; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; font-size:12px;">
+    i
+  </a>
+</h2>
+<p>
+  Upload a WAV audio file (maximum 10 seconds) and select a noise reduction method:
+  <strong>Wiener Filtering</strong>, <strong>Spectral Subtraction</strong>, or <strong>Wavelet Denoising</strong>.
+  This module provides multiple views:
+  <br>• <strong>Time Domain Comparison:</strong> Amplitude vs. time for original and denoised audio.
+  <br>• <strong>Frequency Domain Comparison:</strong> Magnitude spectrum (dB) vs. frequency.
+  <br>• <strong>Effective Filter Gain:</strong> The ratio (in dB) between denoised and original frequency amplitudes.
+  {% if coef_plot %}<br>• <strong>Wavelet Coefficient Plot:</strong> (Only for Wavelet Denoising){% endif %}
+</p>
+
+{% if error %}
+  <div style="color: red;">{{ error }}</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  <label for="audio_file">Audio File (WAV, max 10 sec):</label>
+  <input type="file" name="audio_file" id="audio_file" accept=".wav" required>
+  <br><br>
+  
+  <label for="method">Select Noise Reduction Method:</label>
+  <select name="method" id="method">
+    <option value="wiener">Wiener Filter</option>
+    <option value="spectral">Spectral Subtraction</option>
+    <option value="wavelet">Wavelet Denoising</option>
+  </select>
+  <br><br>
+  
+  <button type="submit">Apply Noise Reduction</button>
+</form>
+
+{% if time_plot and freq_plot and gain_plot %}
+  <h3>Visualization</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+    <div style="flex: 1 1 33%;">
+      <h4>Time Domain</h4>
+      <img src="data:image/png;base64,{{ time_plot }}" alt="Time Domain Plot">
+    </div>
+    <div style="flex: 1 1 33%;">
+      <h4>Frequency Domain</h4>
+      <img src="data:image/png;base64,{{ freq_plot }}" alt="Frequency Domain Plot">
+    </div>
+    <div style="flex: 1 1 33%;">
+      <h4>Effective Gain (dB)</h4>
+      <img src="data:image/png;base64,{{ gain_plot }}" alt="Effective Gain Plot">
+    </div>
+  </div>
+{% endif %}
+
+{% if coef_plot %}
+  <h3>Wavelet Coefficient Comparison</h3>
+  <img src="data:image/png;base64,{{ coef_plot }}" alt="Wavelet Coefficient Plot">
+{% endif %}
+
+{% if output_audio %}
+  <h3>Listen to Processed Audio</h3>
+  <audio controls>
+    <source src="data:audio/wav;base64,{{ output_audio }}" type="audio/wav">
+    Your browser does not support the audio element.
+  </audio>
+  
+  <h3>Download Processed Audio</h3>
+  <a href="data:audio/wav;base64,{{ output_audio }}" download="denoised.wav">Download Denoised Audio</a>
+{% endif %}
+{% endblock %}

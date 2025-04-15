@@ -11,6 +11,8 @@ from pages.transform_table import transform_table_bp
 from pages.theory import theory_bp
 from pages.info import info_bp
 
+# Import new advanced noise reduction blueprint
+from pages.advanced_noise_reduction import advanced_noise_reduction_bp
 
 # Import training blueprints from the training subfolder:
 from pages.training.training_convolution import training_convolution_bp
@@ -43,6 +45,9 @@ def create_app():
     app.register_blueprint(training_convolution_bp, url_prefix="/training/convolution")
     app.register_blueprint(training_fourier_bp,     url_prefix="/training/fourier")
     app.register_blueprint(training_processing_chain_bp, url_prefix="/training/processing_chain")
+    
+    # Register the advanced noise reduction module.
+    app.register_blueprint(advanced_noise_reduction_bp, url_prefix="/advanced_noise_reduction")
     
     # Exams try
     app.secret_key = "some secret"  # needed for session

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Advanced Noise Reduction Theory</h2>
+<p>
+  This document explains in detail the principles behind Wiener filtering, spectral subtraction, and wavelet denoising.
+</p>
+<object data="{{ url_for('static', filename='docs/noise_reduction.pdf') }}" type="application/pdf" width="100%" height="800px">
+  <p>Your browser does not support PDFs. Please <a href="{{ url_for('static', filename='docs/noise_reduction.pdf') }}">download the PDF</a> to view it.</p>
+</object>
+{% endblock %}
