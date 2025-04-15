@@ -248,4 +248,93 @@
       grid-template-columns: 1fr;
     }
   }
+
+/* Dark Mode Overrides */
+/* Dark Mode Overrides */
+/* ------------------------ */
+/* Base Dark Mode Overrides */
+/* ------------------------ */
+body.dark-mode {
+    background-color: #121212; 
+    color: #f5f5f5;
+  }
+  
+  /* Outer Wrapper */
+  body.dark-mode .outer-wrapper {
+    background-color: #181818; /* Match your dark background */
+    box-shadow: none;          /* Remove the white shadow effect */
+  }
+  
+  /* Header */
+  body.dark-mode .header {
+    background: linear-gradient(45deg, #1f1f1f, #292929);
+    color: #f5f5f5;
+  }
+  body.dark-mode .header .logo span,
+  body.dark-mode .header .main-nav ul li a,
+  body.dark-mode .header .main-nav ul li button {
+    color: #f5f5f5;
+  }
+  
+  /* Sidebar */
+  body.dark-mode .modern-sidebar {
+    background-color: #1f1f1f;
+    border-color: #333;
+    color: #f5f5f5;
+  }
+  body.dark-mode .modern-sidebar h3 {
+    color: #82aaff; /* Accent color */
+  }
+  body.dark-mode .modern-sidebar ul.sidebar-menu > li.section-title {
+    color: #f5f5f5;
+    border-color: #333;
+  }
+  body.dark-mode .modern-sidebar ul.sidebar-menu li a {
+    color: #82aaff;
+  }
+  body.dark-mode .modern-sidebar ul.sidebar-menu li a:hover {
+    background-color: #2a2a2a;
+  }
+  
+  /* Hero Section */
+  body.dark-mode .hero {
+    background-color: #1f1f1f;
+    color: #f5f5f5;
+  }
+  
+  /* Cards on the Home Page (or anywhere else) */
+  body.dark-mode .card {
+    background-color: #232323;  /* Dark gray for cards */
+    border: 1px solid #444;     /* Subtle border to separate from background */
+    color: #f5f5f5;
+  }
+  body.dark-mode .card a {
+    color: #82aaff;             /* Consistent link color */
+  }
+  body.dark-mode .card a:hover {
+    background-color: #2a2a2a;
+  }
+  
+  /* Footer */
+  body.dark-mode .footer {
+    background-color: #1f1f1f;
+    color: #f5f5f5;
+  }
+  
+  /* Links (generic) */
+  body.dark-mode a {
+    color: #82aaff;
+  }
+  
+  /* Optional: Add transitions for a smoother switch */
+  body,
+  .header,
+  .modern-sidebar,
+  .hero,
+  .card,
+  .footer {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  
   
