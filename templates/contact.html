@@ -3,10 +3,25 @@
 <div class="container" style="padding: 20px;">
   <h1>Contact Us</h1>
   <p>
-    If you have any questions or feedback, feel free to reach out to us at:
+    Have any questions or feedback? Drop us an email:
+    <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a>
   </p>
-  <p>
-    Email: <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a>
-  </p>
+  
+  <h2>Send a Message</h2>
+  <form action="{{ url_for('info.contact') }}" method="post">
+    <div style="margin-bottom: 10px;">
+      <label for="name">Name:</label>
+      <input type="text" name="name" id="name" style="width: 100%; padding: 8px;" required>
+    </div>
+    <div style="margin-bottom: 10px;">
+      <label for="email">Email:</label>
+      <input type="email" name="email" id="email" style="width: 100%; padding: 8px;" required>
+    </div>
+    <div style="margin-bottom: 10px;">
+      <label for="message">Message:</label>
+      <textarea name="message" id="message" rows="4" style="width: 100%; padding: 8px;" required></textarea>
+    </div>
+    <button type="submit" style="padding: 10px 20px;">Send Message</button>
+  </form>
 </div>
 {% endblock %}

@@ -164,11 +164,12 @@
         </div>
         <nav class="main-nav">
           <ul>
-            <li><a href="{{ url_for('home') }}">Home</a></li>
-            <li><a href="#">About</a></li>  <!-- Placeholder until endpoint is defined -->
-            <li><a href="#">Contact</a></li> <!-- Placeholder until endpoint is defined -->
-            <li><button id="dark-mode-toggle">Dark Mode</button></li>
-          </ul>
+            <ul>
+              <li><a href="{{ url_for('home') }}">Home</a></li>
+              <li><a href="{{ url_for('info.about') }}">About</a></li>
+              <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
+              <li><button id="dark-mode-toggle">Dark Mode</button></li>
+            </ul>
         </nav>
       </div>
     </div>
