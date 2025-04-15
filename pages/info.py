@@ -22,3 +22,11 @@ def polezero():
 def noise_reduction():
     # Render an HTML template that embeds your LaTeX PDF or displays the theoretical explanation.
     return render_template('info_noise_reduction.html')
+
+@info_bp.route('/about')
+def about():
+    return render_template('about.html')  # Create about.html template
+
+@info_bp.route('/contact')
+def contact():
+    return render_template('contact.html')  # Create contact.html template

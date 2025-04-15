@@ -6,220 +6,179 @@
   <link rel="shortcut icon" href="{{ url_for('static', filename='images/icon.png') }}" type="image/png">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
   <!-- MathJax for LaTeX rendering -->
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script id="MathJax-script" async
     src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
   </script>
-
   <!-- Include custom tooltip JavaScript -->
   <script src="{{ url_for('static', filename='js/tooltips.js') }}"></script>
-
+  <!-- New Header Script for Navigation and Dark Mode -->
+  <script src="{{ url_for('static', filename='js/header.js') }}"></script>
+  
   <style>
-    /* Global Reset and Styling */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #f4f7f9;
-      color: #333;
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .outer-wrapper {
-      max-width: 1200px;
-      margin: 0 auto;
-      background-color: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border-radius: 8px;
-      /* remove overflow:hidden so enlarged plots aren't clipped */
-      overflow: visible;
-    }
-
+    /* Header styling */
     .header {
-      background-color: #007acc;
+      background: linear-gradient(45deg, #007acc, #00aaff);
       color: #fff;
-      padding: 15px;
-      text-align: center;
+      padding: 10px 20px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
     }
-    .header a {
-      text-decoration: none;
-      color: #fff;
-      display: inline-flex;
+    .header .header-container {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
       align-items: center;
     }
-    .header img {
-      height: 40px;
+    .header .logo a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+    }
+    .header .logo img {
+      height: 50px;
       margin-right: 10px;
     }
-
-    .content-wrapper {
-      display: flex;
-      min-height: 70vh;
-    }
-    .sidebar {
-      width: 220px;
-      background-color: #e9edf1;
-      border-right: 1px solid #ccd0d5;
-      padding: 20px;
-    }
-    .sidebar h3 {
-      margin-bottom: 10px;
-      color: #333;
-      font-size: 1.1rem;
-    }
-    .sidebar ul {
+    .header .main-nav ul {
       list-style: none;
-      padding-left: 0;
-      margin-bottom: 20px;
+      display: flex;
+      margin: 0;
+      padding: 0;
     }
-    .sidebar li {
-      margin: 5px 0;
+    .header .main-nav ul li {
+      margin-left: 20px;
     }
-    .sidebar a {
-      color: #007acc;
+    .header .main-nav ul li a {
       text-decoration: none;
-    }
-    .sidebar a:hover {
-      text-decoration: underline;
-    }
-    .sidebar .section-title {
-      margin-top: 15px;
-      margin-bottom: 8px;
-      font-weight: 700;
-      color: #111;
-    }
-
-    .main-content {
-      flex: 1;
-      padding: 20px;
-    }
-
-    /* Footer styling */
-    .footer {
-      text-align: center;
-      padding: 15px;
-      font-size: 0.9em;
-      color: #777;
-      border-top: 1px solid #ccd0d5;
-    }
-    .footer a {
-      color: #007acc;
-      text-decoration: none;
-    }
-    .footer a:hover {
-      text-decoration: underline;
-    }
-
-    /* Additional styling for forms, inputs, quick functions, etc. */
-    form {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
+      color: #fff;
       font-weight: 500;
     }
-    input[type="text"],
-    input[type="number"] {
-      width: 100%;
-      padding: 8px 12px;
-      margin-bottom: 15px;
-      border: 1px solid #ccd0d5;
-      border-radius: 4px;
-      font-size: 1em;
-    }
-    button {
-      background-color: #007acc;
-      color: #fff;
+    .header .main-nav ul li button {
+      background: none;
       border: none;
-      padding: 10px 15px;
-      border-radius: 4px;
-      font-size: 1em;
+      color: #fff;
+      font-weight: 500;
       cursor: pointer;
-      transition: background-color 0.2s ease;
-      margin-right: 5px;
+      padding: 0;
     }
-    button:hover {
-      background-color: #005fa3;
+    
+    /* Existing Sidebar and Content styles remain unchanged */
+    .modern-sidebar {
+      width: 260px;
+      background-color: #fff;
+      border-right: 1px solid var(--border-color, #ccd0d5);
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin: 10px;
+      transition: box-shadow 0.3s ease;
     }
-    #quick-functions {
+    .modern-sidebar:hover {
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .modern-sidebar h3 {
+      margin-bottom: 15px;
+      color: var(--primary-color, #007acc);
+      font-size: 1.3rem;
+    }
+    .modern-sidebar ul.sidebar-menu {
+      list-style: none;
+      padding-left: 0;
+    }
+    .modern-sidebar ul.sidebar-menu > li.section-title {
       margin-top: 20px;
+      margin-bottom: 10px;
+      font-weight: 700;
+      color: #333;
+      border-bottom: 1px solid var(--border-color, #ccd0d5);
+      padding-bottom: 5px;
     }
-    #quick-functions button {
-      background-color: #e1ecf4;
-      color: #007acc;
-      border: 1px solid #d0dbe5;
-      padding: 6px 10px;
+    .modern-sidebar ul.sidebar-menu li a {
+      display: block;
+      padding: 5px 10px;
+      color: var(--primary-color, #007acc);
+      text-decoration: none;
       border-radius: 4px;
-      margin: 4px 2px;
-      font-size: 0.9em;
+      transition: background-color 0.2s ease;
     }
-    #quick-functions button:hover {
-      background-color: #d0e2f0;
+    .modern-sidebar ul.sidebar-menu li a:hover {
+      background-color: #f0f8ff;
     }
-    img {
-      max-width: 100%;
-      border: 1px solid #ccd0d5;
-      border-radius: 4px;
-      margin-top: 10px;
+    
+    /* Responsive adjustments for tablets and mobile (sidebar and content) */
+    @media (max-width: 1024px) {
+      .content-wrapper {
+        flex-direction: column;
+        padding: 0;
+      }
+      .modern-sidebar {
+        width: 100%;
+        margin: 0 0 20px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color, #ccd0d5);
+        border-radius: 0;
+      }
+      .main-content {
+        padding: 15px;
+      }
     }
-
-    @media print {
-      /* Hide the sidebar, header, or other elements you don't want on the certificate */
-      .sidebar, .header, button, a {
-        display: none !important;
+    @media (max-width: 600px) {
+      .header {
+        padding: 10px 15px;
       }
-    
-      body {
-        background-color: #fff !important;
-        color: #000 !important;
+      .header .logo img {
+        height: 35px;
+        margin-right: 8px;
       }
-    
-      /* If you want to ensure the certificate is on its own page: */
-      .certificate-section {
-        page-break-before: always;
-      }
-    
-      /* Increase text size for printing, etc. */
-      .certificate h3 {
-        font-size: 1.5rem;
-        margin: 20px 0;
-      }
-      .certificate p {
+      .modern-sidebar h3 {
         font-size: 1.2rem;
-        margin-bottom: 10px;
+      }
+      .modern-sidebar ul.sidebar-menu li a {
+        padding: 8px;
+      }
+      .footer {
+        font-size: 0.8em;
+        padding: 10px;
       }
     }
-
-
-
   </style>
 </head>
 <body>
   <div class="outer-wrapper">
-    <!-- HEADER -->
+    <!-- UPDATED HEADER with Global Navigation -->
     <div class="header">
-      <a href="{{ url_for('home') }}">
-        <img src="{{ url_for('static', filename='images/icon.png') }}" alt="SPT Icon">
-        <span>Signal Processing Toolkit</span>
-      </a>
+      <div class="header-container">
+        <div class="logo">
+          <a href="{{ url_for('home') }}">
+            <img src="{{ url_for('static', filename='images/icon.png') }}" alt="SPT Icon">
+            <span>Signal Processing Toolkit</span>
+          </a>
+        </div>
+        <nav class="main-nav">
+          <ul>
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="#">About</a></li>  <!-- Placeholder until endpoint is defined -->
+            <li><a href="#">Contact</a></li> <!-- Placeholder until endpoint is defined -->
+            <li><button id="dark-mode-toggle">Dark Mode</button></li>
+          </ul>
+        </nav>
+      </div>
     </div>
 
     <!-- SIDEBAR + MAIN CONTENT -->
     <div class="content-wrapper">
-      <!-- Sidebar area (example) -->
-      <div class="sidebar">
+      <!-- Sidebar area with modern styling -->
+      <div class="sidebar modern-sidebar">
         <h3>Navigation</h3>
-        <ul>
+        <ul class="sidebar-menu">
           <li class="section-title">Plotting</li>
           <ul>
             <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
@@ -246,24 +205,12 @@
             <li><a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a></li>
           </ul>
       
-          <!-- ADD TRAINING SECTION -->
+          <!-- Training Section -->
           <li class="section-title">Training</li>
           <ul>
-            <li>
-              <a href="{{ url_for('training_convolution.training_convolution') }}">
-                Convolution Training
-              </a>
-            </li>
-            <li>
-              <a href="{{ url_for('training_processing_chain.training_processing_chain') }}">
-                Process Chain Training
-              </a>
-            </li>
-            <li>
-              <a href="{{ url_for('training_fourier.training_fourier') }}">
-                Fourier Training
-              </a>
-            </li>
+            <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Training</a></li>
+            <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li>
+            <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li>
           </ul>
         </ul>
       </div>

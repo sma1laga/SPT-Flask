@@ -1,51 +1,95 @@
 {% extends "base.html" %}
 {% block content %}
-  <div style="text-align:center; margin-bottom:30px;">
-    <h2>Welcome to the Signal Processing Toolkit</h2>
-    <p>Select a category below to start exploring:</p>
-  </div>
+<style>
+  /* Adjust hero spacing to bring content closer to the top */
+  .hero {
+    margin: 20px 0;       /* Reduced overall margin */
+    padding: 20px 20px;   /* Reduced padding for a leaner look */
+  }
+  .hero h1 {
+    font-size: 2.8em;
+    margin-bottom: 10px;  /* Slightly reduce spacing below the main header */
+  }
+  .hero p {
+    font-size: 1.2em;
+    margin: 0;            /* Remove any additional paragraph margin */
+  }
+  
+  /* Maintain existing responsive tweaks for mobile devices */
+  @media (max-width: 600px) {
+    .hero {
+      padding: 15px 10px;
+      margin: 15px 0;
+    }
+    .hero h1 {
+      font-size: 2rem;
+    }
+    .hero p {
+      font-size: 1rem;
+    }
+    .menu-container {
+      grid-template-columns: 1fr;
+      gap: 15px;
+      padding: 0 10px;
+    }
+    .card {
+      padding: 15px;
+      font-size: 0.9rem;
+    }
+    .card h2 {
+      font-size: 1.4rem;
+    }
+    .card ul {
+      font-size: 0.9rem;
+    }
+  }
+</style>
 
-  <div class="menu-grid" style="display:flex; gap:20px; flex-wrap:wrap; justify-content: center;">
-    <!-- Plotting Category -->
-    <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Plotting</h3>
-      <ul style="list-style:none; padding:0; margin:0;">
-        <li><a href="{{ url_for('plot_function.plot_function') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Plot Function</a></li>
-        <li><a href="{{ url_for('fourier.fourier') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Fourier Transform Calculator</a></li>
-        <li><a href="{{ url_for('convolution.convolution') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Convolution</a></li>
-        <li><a href="{{ url_for('process_chain.show_chain') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Process Chain Plot</a></li>
-        <li><a href="{{ url_for('filter_design.filter_design') }}" style="display:block; padding:10px;">Filter Design</a></li>
-        <li><a href="{{ url_for('speech_filter_input.speech_filter_input') }}">Speech Filter Input</a></li>
-        <a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a>
-      </ul>      </ul>
-    </div>
+<div class="hero">
+  <h1>Signal Processing Toolkit</h1>
+  <p>Explore advanced tools, filters, and training modules to process and analyze your signals.</p>
+</div>
 
-    <!-- Theory Category -->
-    <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Theory</h3>
-      <ul style="list-style:none; padding:0; margin:0;">
-        <li><a href="{{ url_for('function_definitions.function_definitions') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Function Definitions</a></li>
-        <li><a href="{{ url_for('transform_table.transform_table') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Fourier & Laplace Transform Table</a></li>
-        <li><a href="{{ url_for('theory.theory') }}" style="display:block; padding:10px;">Theory</a></li>
-      </ul>
-    </div>
+<div class="menu-container">
+  <!-- Plotting Category Card -->
+  <div class="card">
+    <h2>Plotting</h2>
+    <ul>
+      <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
+      <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform Calculator</a></li>
+      <li><a href="{{ url_for('convolution.convolution') }}">Convolution</a></li>
+      <li><a href="{{ url_for('process_chain.show_chain') }}">Process Chain Plot</a></li>
+    </ul>
   </div>
-
-  <!-- Training Modules Category -->
-  <div class="menu-grid" style="display:flex; gap:20px; flex-wrap:wrap; justify-content: center; margin-top:30px;">
-    <div class="menu-category" style="flex:1; min-width:300px; border:1px solid #ccd0d5; border-radius:8px; padding:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-      <h3 style="color:#007acc; text-align:center; margin-bottom:10px;">Training Modules</h3>
-      <ul style="list-style:none; padding:0; margin:0;">
-        <li><a href="{{ url_for('training_convolution.training_convolution') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Convolution Training</a></li>
-        <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}" style="display:block; padding:10px; border-bottom:1px solid #e0e0e0;">Process Chain Training</a></li>
-        <li><a href="{{ url_for('training_fourier.training_fourier') }}" style="display:block; padding:10px;">Fourier Training</a></li>
-      </ul>
-    </div>
+  
+  <!-- Filter Design Category Card -->
+  <div class="card">
+    <h2>Filter Design</h2>
+    <ul>
+      <li><a href="{{ url_for('filter_design.filter_design') }}">Custom Filter Design</a></li>
+      <li><a href="{{ url_for('speech_filter_input.speech_filter_input') }}">Speech Filter Input</a></li>
+      <li><a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a></li>
+    </ul>
   </div>
-
-  <!-- Legal Footer -->
-  <div class="legal-footer" style="margin-top:40px; font-size:0.8em; color:#777; text-align:center; border-top:1px solid #e0e0e0; padding-top:15px;">
-    © 2025 Signal Processing Toolkit. All rights reserved. Use of this software is subject to our 
-    <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+  
+  <!-- Theory & Documentation Category Card -->
+  <div class="card">
+    <h2>Theory & Documentation</h2>
+    <ul>
+      <li><a href="{{ url_for('function_definitions.function_definitions') }}">Function Definitions</a></li>
+      <li><a href="{{ url_for('transform_table.transform_table') }}">Transform Tables</a></li>
+      <li><a href="{{ url_for('theory.theory') }}">Core Theory</a></li>
+    </ul>
   </div>
+  
+  <!-- Training Modules Category Card -->
+  <div class="card">
+    <h2>Training Modules</h2>
+    <ul>
+      <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Training</a></li>
+      <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li>
+      <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li>
+    </ul>
+  </div>
+</div>
 {% endblock %}
