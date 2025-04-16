@@ -55,6 +55,66 @@
   
   <!-- Possibly add quick function inserts, e.g. "sin(ω₀t)" "LP Filter" etc. -->
 </div>
+<!-- Filter Modal -->
+<div id="filterModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:400px; background:#fff; padding:20px; border:2px solid #666; z-index:999;">
+  <h3>Configure Filter Block</h3>
+  <label for="filterType">Filter Type:</label>
+  <select id="filterType">
+    <option value="lowpass">Lowpass</option>
+    <option value="highpass">Highpass</option>
+    <option value="bandpass">Bandpass</option>
+  </select>
+  <div id="filterParams">
+    <div id="singleCutoff">
+      <label for="cutoffValue">Cutoff Frequency (w):</label>
+      <input type="number" id="cutoffValue" step="0.1" value="1.0" />
+    </div>
+    <div id="bandCutoffs" style="display:none;">
+      <label for="lowCutoff">Low Cutoff (w):</label>
+      <input type="number" id="lowCutoff" step="0.1" value="0.5" />
+      <br>
+      <label for="highCutoff">High Cutoff (w):</label>
+      <input type="number" id="highCutoff" step="0.1" value="2.0" />
+    </div>
+  </div>
+  <div style="margin-top:10px;">
+    <button id="filterModalOk">OK</button>
+    <button id="filterModalCancel">Cancel</button>
+  </div>
+</div>
+<!-- Multiplication Block Modal -->
+<div id="multiplicationModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:400px; background:#fff; padding:20px; border:2px solid #666; z-index:999;">
+  <h3>Configure Multiplication Block</h3>
+  
+  <label for="multType">Multiplication Type:</label>
+  <select id="multType">
+    <option value="constant">Constant</option>
+    <option value="imaginary">Imaginary Unit (j)</option>
+    <option value="linear">Linear (a*w)</option>
+    <option value="sin">sin(w)</option>
+    <option value="cos">cos(w)</option>
+    <option value="exponential">Exponential (e^(±j*4*w))</option>
+    <option value="sampling">Sampling</option>
+  </select>
+  
+  <!-- Parameter input for types that require a numeric value or coefficient -->
+  <div id="multParamDiv" style="margin-top:10px; display:none;">
+    <label for="multParamValue">Parameter:</label>
+    <input type="text" id="multParamValue" placeholder="Enter parameter value" />
+  </div>
+  
+  <!-- Sampling-specific input -->
+  <div id="samplingDiv" style="margin-top:10px; display:none;">
+    <label for="samplingInterval">Sampling Interval (w):</label>
+    <input type="number" id="samplingInterval" step="0.1" value="1.0" />
+  </div>
+  
+  <div style="margin-top:10px;">
+    <button id="multModalOk">OK</button>
+    <button id="multModalCancel">Cancel</button>
+  </div>
+</div>
+
 
 <script src="{{ url_for('static', filename='js/process_chain.js') }}"></script>
 {% endblock %}

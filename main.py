@@ -10,6 +10,8 @@ from pages.function_definitions import func_defs_bp
 from pages.transform_table import transform_table_bp
 from pages.theory import theory_bp
 from pages.info import info_bp
+from pages.bode_plot import bode_plot_bp
+
 
 # Import new advanced noise reduction blueprint
 from pages.advanced_noise_reduction import advanced_noise_reduction_bp
@@ -39,6 +41,8 @@ def create_app():
     app.register_blueprint(transform_table_bp, url_prefix="/transform_table")
     app.register_blueprint(theory_bp,        url_prefix="/theory")
     app.register_blueprint(info_bp, url_prefix='/info')
+    app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
+
 
 
     # Register training pages (each with its own sub-URL)

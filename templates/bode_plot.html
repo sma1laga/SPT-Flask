@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Bode Plot</h1>
+<p>
+  <strong>How to Enter Your Transfer Function H(s):</strong>
+</p>
+<ul>
+  <li>
+    <strong>Coefficient List:</strong>  
+    Enter the coefficients as a Python list using square brackets.
+    <br>
+    <em>Example:</em>
+    <br>
+    Numerator: <code>[1, 1+10j, 1-10j]</code>
+    <br>
+    Denominator: <code>[1, 0, 2]</code>
+    <br>
+    In this mode, the system automatically expands the polynomial and displays the transfer function in its standard form.
+  </li>
+  <br>
+  <li>
+    <strong>Factorized Expression:</strong>  
+    Enter the function in a factorized form using parentheses.
+    <br>
+    <em>Example:</em>
+    <br>
+    Numerator: <code>(s+3+2*j)(s+3-2*j)</code>
+    <br>
+    (The denominator can be entered as a coefficient list or as a factorized expression if desired.)
+    <br>
+    When you use parentheses, your expression is displayed exactly as you typed it, even though the program expands it internally to compute the Bode plot.
+  </li>
+</ul>
+<p>
+  When you click "Plot Bode", your transfer function is shown below as a proper fraction (using LaTeX), and the Bode plot is generated.
+</p>
+
+<form method="POST">
+  <div>
+    <label for="numerator">Numerator:</label>
+    <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
+  </div>
+  <br>
+  <div>
+    <label for="denominator">Denominator:</label>
+    <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
+  </div>
+  <br>
+  <button type="submit">Plot Bode</button>
+</form>
+
+{% if error %}
+  <p style="color:red;">Error: {{ error }}</p>
+{% endif %}
+
+{% if function_str %}
+  <h2>Your Transfer Function</h2>
+  <p style="font-size:1.2em;">$$ {{ function_str }} $$</p>
+{% endif %}
+
+{% if plot_url %}
+  <div style="text-align:center; margin-top:20px;">
+    <img src="data:image/png;base64,{{ plot_url }}" alt="Bode Plot">
+  </div>
+{% endif %}
+{% endblock %}
