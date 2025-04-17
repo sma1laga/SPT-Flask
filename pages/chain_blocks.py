@@ -129,6 +129,10 @@ def interpret_chain(chain_data):
             current_signal = apply_filter(current_signal, param, w)
         elif btype == "Block":
             current_signal = apply_generic(current_signal, param, w)
+        elif btype == "Re":
+            current_signal = apply_real(current_signal, param, w)
+        elif btype == "Im":
+            current_signal = apply_imag(current_signal, param, w)
         else:
             current_signal = no_op(current_signal, param, w)
     

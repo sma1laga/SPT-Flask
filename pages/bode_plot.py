@@ -1,11 +1,13 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, Response
 import numpy as np
 import matplotlib.pyplot as plt
-from io import BytesIO
+from io import BytesIO, StringIO
 import base64
 from ast import literal_eval
 import re
 import sympy as sp
+import csv
+import io
 
 bode_plot_bp = Blueprint('bode_plot', __name__, template_folder='templates')
 
@@ -167,3 +169,73 @@ def bode_plot():
     
     return render_template("bode_plot.html", plot_url=image_base64, error=error,
                            default_num=user_num, default_den=user_den, function_str=function_str)
+    
+
+@bode_plot_bp.route('/download_csv')
+def download_csv():
+    # Read the same numerator/denominator strings from query params
+    num_str = request.args.get('numerator', '')
+    den_str = request.args.get('denominator', '')
+    try:
+        num, _ = parse_poly_input(num_str)
+        den, _ = parse_poly_input(den_str)
+    except Exception as e:
+        return f"Error parsing inputs: {e}", 400
+
+    # Compute frequency response
+    w = np.logspace(-1, 2, 500)
+    s = 1j * w
+    H = np.polyval(num, s) / np.polyval(den, s)
+    mag = 20 * np.log10(np.abs(H))
+    ph  = np.angle(H, deg=True)
+
+    # Build CSV in memory
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['Frequency (rad/s)', 'Magnitude (dB)', 'Phase (deg)'])
+    for ω, m, p in zip(w, mag, ph):
+        cw.writerow([f"{ω:.6g}", f"{m:.6g}", f"{p:.6g}"])
+    output = si.getvalue().encode('utf-8')
+
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="bode_data.csv"'}
+    )
+
+@bode_plot_bp.route('/download_png')
+def download_png():
+    # Read the same numerator/denominator strings
+    num_str = request.args.get('numerator', '')
+    den_str = request.args.get('denominator', '')
+    try:
+        num, _ = parse_poly_input(num_str)
+        den, _ = parse_poly_input(den_str)
+    except Exception as e:
+        return f"Error parsing inputs: {e}", 400
+
+    # Compute response
+    w = np.logspace(-1, 2, 500)
+    s = 1j * w
+    H = np.polyval(num, s) / np.polyval(den, s)
+    mag = 20 * np.log10(np.abs(H))
+    ph  = np.angle(H, deg=True)
+
+    # Re‑generate Bode plot at high DPI
+    fig, (ax1, ax2) = plt.subplots(2,1,figsize=(8,6),sharex=True)
+    ax1.semilogx(w, mag); ax1.set_ylabel("Magnitude (dB)"); ax1.grid(True, which='both', linestyle='--')
+    ax2.semilogx(w, ph);  ax2.set_ylabel("Phase (°)"); ax2.set_xlabel("Frequency (rad/s)"); ax2.grid(True, which='both', linestyle='--')
+    plt.tight_layout()
+
+    buf = BytesIO()
+    # Save at 300 DPI for high‑resolution
+    plt.savefig(buf, format='png', dpi=300)
+    buf.seek(0)
+    plt.close(fig)
+
+    return Response(
+        buf.getvalue(),
+        mimetype='image/png',
+        headers={'Content-Disposition': 'attachment; filename="bode_plot.png"'}
+    )
+

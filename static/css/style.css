@@ -336,5 +336,35 @@ body.dark-mode {
     transition: background-color 0.3s ease, color 0.3s ease;
   }
   
+
+  .button {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 0 5px;
+    background-color: #007acc;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .button:hover {
+    background-color: #005fa3;
+  }
+  
+
+/* process‑chain node shapes ------------------------------------- */
+.node {             /* default rectangle (Re, Im, Filter, etc.)  */}
+.node.mul {         /* circle with × */
+  border-radius:50%;
+  text-align:center;
+  font-weight:bold;
+  line-height:46px;           /* 50‑4 (border) */
+}
+.node.add { border-radius:50%; line-height:46px; font-weight:bold; }
+.node.dot { width:10px; height:10px; border-radius:50%; }
+
+/* override JS‑assigned colours */
+.node.mul, .node.add { background:#fff; border:2px solid #000; }
+
   
   

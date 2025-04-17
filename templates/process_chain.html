@@ -83,20 +83,48 @@
   </div>
 </div>
 <!-- Multiplication Block Modal -->
-<div id="multiplicationModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:400px; background:#fff; padding:20px; border:2px solid #666; z-index:999;">
+<div id="multiplicationModal"
+     style="display:none; position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%); width:400px;
+            background:#fff; padding:20px; border:2px solid #666; z-index:999;">
+
   <h3>Configure Multiplication Block</h3>
-  
+
   <label for="multType">Multiplication Type:</label>
   <select id="multType">
-    <option value="constant">Constant</option>
-    <option value="imaginary">Imaginary Unit (j)</option>
-    <option value="linear">Linear (a*w)</option>
-    <option value="sin">sin(w)</option>
-    <option value="cos">cos(w)</option>
-    <option value="exponential">Exponential (e^(±j*4*w))</option>
-    <option value="sampling">Sampling</option>
+    <option value="constant">Constant (K)</option>
+    <option value="imaginary">Imaginary unit (j)</option>
+    <option value="linear">Linear (A·ω)</option>
+    <option value="sin">sin(ω) [A, ω₀]</option>
+    <option value="cos">cos(ω) [A, ω₀]</option>
+    <option value="exponential">exp(±j ω₀ t)</option>
+    <option value="sampling">Sampling (interval T)</option>
   </select>
-  
+
+  <!-- live format hint -->
+  <p id="multHint"
+     style="font-size:0.9em; color:#555; margin:6px 0 0 0;">
+     Format: K → <code>4</code>
+  </p>
+
+  <!-- generic parameter input -->
+  <div id="multParamDiv" style="margin-top:10px; display:block;">
+    <label for="multParamValue">Parameter:</label>
+    <input type="text" id="multParamValue" placeholder="e.g. 4 or 3,1.5" />
+  </div>
+
+  <!-- sampling‑specific input -->
+  <div id="samplingDiv" style="margin-top:10px; display:none;">
+    <label for="samplingInterval">Sampling interval T:</label>
+    <input type="number" id="samplingInterval" step="0.1" value="1.0" />
+  </div>
+
+  <div style="margin-top:14px; text-align:right;">
+    <button id="multModalOk">OK</button>
+    <button id="multModalCancel">Cancel</button>
+  </div>
+</div>
+
   <!-- Parameter input for types that require a numeric value or coefficient -->
   <div id="multParamDiv" style="margin-top:10px; display:none;">
     <label for="multParamValue">Parameter:</label>

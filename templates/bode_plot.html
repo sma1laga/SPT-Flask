@@ -32,35 +32,51 @@
   </li>
 </ul>
 <p>
-  When you click "Plot Bode", your transfer function is shown below as a proper fraction (using LaTeX), and the Bode plot is generated.
+  When you click "Plot Bode", your transfer function is shown below and the Bode plot is generated.
 </p>
 
 <form method="POST">
-  <div>
-    <label for="numerator">Numerator:</label>
-    <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
-  </div>
-  <br>
-  <div>
-    <label for="denominator">Denominator:</label>
-    <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
-  </div>
-  <br>
-  <button type="submit">Plot Bode</button>
-</form>
+    <div>
+      <label for="numerator">Numerator:</label>
+      <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
+    </div>
+    <br>
+    <div>
+      <label for="denominator">Denominator:</label>
+      <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
+    </div>
+    <br>
+    <button type="submit">Plot Bode</button>
+  </form>
+  
+  {% if error %}
+    <p style="color:red;">Error: {{ error }}</p>
+  {% endif %}
+  
+  {% if function_str %}
+    <h2>Your Transfer Function</h2>
+    <p style="font-size:1.2em;">$$ {{ function_str }} $$</p>
+  {% endif %}
+  
+  {% if plot_url %}
+    <div style="text-align:center; margin-top:20px;">
+      <!-- Embed the plot -->
+      <img src="data:image/png;base64,{{ plot_url }}" alt="Bode Plot">
+      <br><br>
+  
+      <!-- Download buttons -->
+      <a
+        href="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+        class="button"
+        download="bode_plot.png"
+      >Download PNG</a>
+  
+      <a
+        href="{{ url_for('bode_plot.download_csv') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+        class="button"
+        download="bode_data.csv"
+      >Download CSV</a>
+    </div>
+  {% endif %}
+  {% endblock %}
 
-{% if error %}
-  <p style="color:red;">Error: {{ error }}</p>
-{% endif %}
-
-{% if function_str %}
-  <h2>Your Transfer Function</h2>
-  <p style="font-size:1.2em;">$$ {{ function_str }} $$</p>
-{% endif %}
-
-{% if plot_url %}
-  <div style="text-align:center; margin-top:20px;">
-    <img src="data:image/png;base64,{{ plot_url }}" alt="Bode Plot">
-  </div>
-{% endif %}
-{% endblock %}

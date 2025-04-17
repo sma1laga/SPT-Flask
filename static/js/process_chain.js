@@ -1,449 +1,526 @@
-// Global variables
-let blocks = [];   // Array to store block objects.
-let lines = [];    // Array to store connection objects.
+/* ------------------------------------------------------------------
+   Process‑Chain front‑end  (canvas UI + modals)
+------------------------------------------------------------------ */
+let blocks = [];            // all block objects
+let lines  = [];            // connection objects
 let blockIdCounter = 0;
-let connectMode = false;
-let connectStartId = null;
-let selectedId = null;
+
+let connectMode   = false;
+let connectStart  = null;
+
+let selectedId    = null;
 let draggingBlock = null;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
-let blockInModal = null;        // For generic block modal.
-let blockInFilterModal = null;  // For the filter modal.
-let blockInMultModal = null;    // For Multiplication blocks
+let dragDX = 0, dragDY = 0;
 
+let blockInModal       = null;   // generic
+let blockInFilterModal = null;   // filter
+let blockInMultModal   = null;   // multiplication
 
-// References
-const canvas = document.getElementById("chainCanvas");
-const ctx = canvas.getContext("2d");
+// cached DOM
+const canvas           = document.getElementById("chainCanvas");
+const ctx              = canvas.getContext("2d");
 
-// Utility: Get block by id.
-function getBlockById(id) {
-  return blocks.find(b => b.id == id);
+const multType         = document.getElementById("multType");
+const multParamDiv     = document.getElementById("multParamDiv");
+const multParamValue   = document.getElementById("multParamValue");
+const samplingDiv      = document.getElementById("samplingDiv");
+const samplingInterval = document.getElementById("samplingInterval");
+const multHint         = document.getElementById("multHint");
+
+/* ===============================================================
+/* circle helper                                              */
+function circle(ctx, x, y, r){
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2*Math.PI);
 }
 
-// Utility: Find block under mouse coordinates.
-function findBlockAt(x, y) {
-  for (let i = blocks.length - 1; i >= 0; i--) {
-    let b = blocks[i];
-    if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
-      return b;
-    }
+
+/* ================================================================ */
+/*  Block helpers                                                   */
+/* ================================================================ */
+function getBlock(id)      { return blocks.find(b => b.id === id); }
+function findBlockAt(x,y)  {
+  for (let i = blocks.length-1; i>=0; --i) {
+    const b = blocks[i];
+    if (x>=b.x && x<=b.x+b.width && y>=b.y && y<=b.y+b.height) return b;
   }
   return null;
 }
-
-// Utility: Determine a connection point on a block for drawing lines.
-function getConnectionPoint(a, b) {
-  let ax = a.x + a.width / 2, ay = a.y + a.height / 2;
-  let bx = b.x + b.width / 2, by = b.y + b.height / 2;
-  if (bx < ax) {
-    return { x: a.x, y: a.y + a.height / 2 };
-  } else {
-    return { x: a.x + a.width, y: a.y + a.height / 2 };
+// create Node func.
+function createNode(x, y, text, nodeType, nonDeletable = false) {
+  /* block dimensions */
+  let w = 90, h = 90;                   // rectangles (default)
+  if (nodeType === "Multiplication" || nodeType === "Addition") {
+      w = h = 48;                       // 24‑px radius circle
   }
-}
-
-// Draw all: clears canvas then draws lines and blocks.
-function drawAll() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // Draw connections.
-  for (let l of lines) {
-    let a = getBlockById(l.fromId);
-    let b = getBlockById(l.toId);
-    if (!a || !b) continue;
-    let start = getConnectionPoint(a, b);
-    let end = getConnectionPoint(b, a);
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  if (nodeType === "Dot") {
+      w = h = 8;                        // tiny dot
   }
-  // Draw blocks.
-  for (let b of blocks) {
-    ctx.beginPath();
-    ctx.fillStyle = b.nonDeletable ? "#cfc" : "#ccf";
-    ctx.fillRect(b.x, b.y, b.width, b.height);
-    if (b.selected) {
-      ctx.strokeStyle = "orange";
-      ctx.lineWidth = 3;
-    } else if (b.nonDeletable) {
-      ctx.strokeStyle = "green";
-      ctx.lineWidth = 2;
-    } else {
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 1;
-    }
-    ctx.strokeRect(b.x, b.y, b.width, b.height);
-    ctx.font = "16px sans-serif";
-    ctx.fillStyle = "black";
-    let linesText = b.label.split("\n");
-    linesText.forEach((line, index) => {
-      let textWidth = ctx.measureText(line).width;
-      let tx = b.x + (b.width - textWidth) / 2;
-      let ty = b.y + b.height / 2 + 5 + index * 18 - ((linesText.length - 1) * 9);
-      ctx.fillText(line, tx, ty);
-    });
-  }
-}
 
-// Adding a new block.
-function addBlock(type, label, x, y, nonDeletable = false) {
-  let bx = x !== undefined ? x : 150 + blocks.length * 10;
-  let by = y !== undefined ? y : 50 + blocks.length * 10;
-  let w = 100, h = 50;
   blocks.push({
-    id: ++blockIdCounter,
-    type: type,
-    label: label,
-    x: bx,
-    y: by,
-    width: w,
-    height: h,
-    param: null,        // Additional parameter.
-    selected: false,
-    nonDeletable: nonDeletable
+      id: ++blockIdCounter,
+      type: nodeType,
+      label: text,
+      x, y,
+      width:  w,
+      height: h,
+      param: null,
+      displayExpr: null,
+      nonDeletable,
+      selected: false
+  });
+  drawAll();
+  return blocks[blocks.length - 1];
+}
+
+
+
+
+function addBlock(type,label,x,y,nonDel=false) {
+  const bx = x ?? (120 + blocks.length*12);
+  const by = y ?? (60  + blocks.length*12);
+  blocks.push({
+    id: ++blockIdCounter, type, label,
+    x: bx, y: by, width: 100, height: 50,
+    param:null, displayExpr:null,
+    nonDeletable:nonDel, selected:false
   });
   drawAll();
 }
+/* ================================================================ */
+/*  Drawing                                                         */
+/* ================================================================ */
+function connPt(a, b) {
+  /* centres */
+  const ax = a.x + a.width  / 2,
+        ay = a.y + a.height / 2,
+        bx = b.x + b.width  / 2,
+        by = b.y + b.height / 2;
 
-// Toggle connect mode.
-function toggleConnectMode() {
-  connectMode = !connectMode;
-  if (!connectMode && connectStartId) {
-    let startBlock = getBlockById(connectStartId);
-    if (startBlock) startBlock.selected = false;
-    connectStartId = null;
+  /* circle blocks ------------------------------------------ */
+  if (a.type === "Multiplication" || a.type === "Addition") {
+      const outline = 3;                         // stroke thickness
+      const r  = a.width / 2 - outline / 2;      // visual radius
+      const dx = bx - ax,  dy = by - ay;
+      const len = Math.hypot(dx, dy) || 1;       // normalise
+      return { x: ax + (dx / len) * r,
+               y: ay + (dy / len) * r };
   }
-  drawAll();
+
+  /* tiny dot ------------------------------------------------ */
+  if (a.type === "Dot") {
+      const r = a.width / 2;
+      const dx = bx - ax,  dy = by - ay;
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: ax + (dx / len) * r,
+               y: ay + (dy / len) * r };
+  }
+
+  /* rectangle ---------------------------------------------- */
+  if (bx < ax) return { x: a.x,           y: ay };   // left centre
+  return          { x: a.x + a.width, y: ay };       // right centre
 }
 
-// Delete selected block (if allowed).
-function deleteSelected() {
-  if (!selectedId) return;
-  let b = getBlockById(selectedId);
-  if (b && b.nonDeletable) return;
-  lines = lines.filter(l => l.fromId !== selectedId && l.toId !== selectedId);
-  blocks = blocks.filter(b => b.id !== selectedId);
-  selectedId = null;
-  drawAll();
-}
 
-// Clear all user-added blocks and connections (retain non-deletable blocks).
-function clearAll() {
-  blocks = blocks.filter(b => b.nonDeletable);
-  lines = [];
-  selectedId = null;
-  drawAll();
-}
+/* ------------------------------------------------------------------
+   Redraw everything: connections (with arrow‑heads) and blocks
+------------------------------------------------------------------ */
+function drawAll () {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-// Mouse event handlers.
-canvas.addEventListener("mousedown", (e) => {
-  let rect = canvas.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  let y = e.clientY - rect.top;
-  let b = findBlockAt(x, y);
-  if (connectMode) {
-    if (!connectStartId && b) {
-      connectStartId = b.id;
-      b.selected = true;
-    } else if (connectStartId && b && connectStartId !== b.id) {
-      lines.push({ fromId: connectStartId, toId: b.id });
-      let startBlock = getBlockById(connectStartId);
-      if (startBlock) startBlock.selected = false;
-      connectStartId = null;
-    } else {
-      if (connectStartId) {
-        let st = getBlockById(connectStartId);
-        if (st) st.selected = false;
+  /* ========== draw connecting lines (with arrow heads) ========== */
+  ctx.strokeStyle = "black";
+  ctx.lineWidth   = 2;
+  ctx.fillStyle   = "black";
+
+  for (const l of lines) {
+    const a = getBlock(l.fromId), b = getBlock(l.toId);
+    if (!a || !b) continue;
+
+    const p1 = connPt(a, b);          // start point on block a
+    const p2 = connPt(b, a);          // end   point on block b
+
+    /* main segment */
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+
+    /* arrow head (size 6 px) at p2, pointing towards b */
+    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    const ah    = 6;
+    ctx.beginPath();
+    ctx.moveTo(p2.x, p2.y);
+    ctx.lineTo(p2.x - ah * Math.cos(angle - Math.PI / 6),
+               p2.y - ah * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(p2.x - ah * Math.cos(angle + Math.PI / 6),
+               p2.y - ah * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* helper for circles */
+  const circle = (x,y,r)=>{
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,2*Math.PI);
+  };
+
+  /* ========== draw every block (shapes + labels) ========== */
+  for (const b of blocks) {
+    const cx = b.x + b.width  / 2;
+    const cy = b.y + b.height / 2;
+
+    ctx.lineWidth   = b.selected ? 4 : 3;
+    ctx.strokeStyle = "black";
+    ctx.fillStyle   = "#fff";
+
+    /* --- Multiplication circle -------------------------- */
+    if (b.type === "Multiplication") {
+      const r = 24;
+      circle(cx, cy, r); ctx.fill(); ctx.stroke();
+
+      /* × symbol */
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.6, cy - r * 0.6);
+      ctx.lineTo(cx + r * 0.6, cy + r * 0.6);
+      ctx.moveTo(cx + r * 0.6, cy - r * 0.6);
+      ctx.lineTo(cx - r * 0.6, cy + r * 0.6);
+      ctx.stroke();
+
+      /* expression + arrow from above */
+      if (b.displayExpr) {
+        ctx.font = "16px serif"; ctx.fillStyle = "black";
+        const tw   = ctx.measureText(b.displayExpr).width;
+        const txtY = b.y - 30;                    // 30 px above top
+        ctx.fillText(b.displayExpr, cx - tw / 2, txtY);
+
+        /* arrow shaft */
+        ctx.beginPath();
+        ctx.moveTo(cx, txtY + 4);
+        ctx.lineTo(cx, cy - r);
+        ctx.stroke();
+
+        /* arrow head into circle */
+        ctx.beginPath();
+        ctx.moveTo(cx - 5, cy - r + 8);
+        ctx.lineTo(cx,     cy - r);
+        ctx.lineTo(cx + 5, cy - r + 8);
+        ctx.stroke();
       }
-      connectStartId = null;
+
+    /* --- Addition circle -------------------------------- */
+    } else if (b.type === "Addition") {
+      const r = 22;
+      circle(cx, cy, r); ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.6, cy);
+      ctx.lineTo(cx + r * 0.6, cy);
+      ctx.moveTo(cx, cy - r * 0.6);
+      ctx.lineTo(cx, cy + r * 0.6);
+      ctx.stroke();
+
+    /* --- tiny Dot -------------------------------------- */
+    } else if (b.type === "Dot") {
+      circle(cx, cy, 4); ctx.fill(); ctx.stroke();
+
+    /* --- Rectangles (Re, Im, Filter, x(t), y(t)… ) ------ */
+    } else {
+      ctx.fillRect(b.x, b.y, b.width, b.height);
+      ctx.strokeRect(b.x, b.y, b.width, b.height);
+
+      ctx.font = "17px serif"; ctx.fillStyle = "black";
+      const tw = ctx.measureText(b.label).width;
+      ctx.fillText(b.label, cx - tw / 2, cy + 6);
     }
-    drawAll();
+  }
+}
+
+
+
+
+/* ================================================================ */
+/*  Mouse interaction                                               */
+/* ================================================================ */
+canvas.addEventListener("mousedown",e=>{
+  const r=canvas.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  const b=findBlockAt(x,y);
+
+  if(connectMode){
+    if(!connectStart && b){ connectStart=b; b.selected=true; }
+    else if(connectStart && b && connectStart!==b){
+      lines.push({fromId:connectStart.id,toId:b.id});
+      connectStart.selected=false; connectStart=null; drawAll();
+    }
     return;
-  } else {
-    if (b) {
-      draggingBlock = b;
-      dragOffsetX = x - b.x;
-      dragOffsetY = y - b.y;
-      if (selectedId && selectedId !== b.id) {
-        let old = getBlockById(selectedId);
-        if (old) old.selected = false;
-      }
-      b.selected = true;
-      selectedId = b.id;
-    } else {
-      if (selectedId) {
-        let old = getBlockById(selectedId);
-        if (old) old.selected = false;
-      }
-      selectedId = null;
-    }
-    drawAll();
+  }
+
+  if(b){
+    draggingBlock=b; dragDX=x-b.x; dragDY=y-b.y;
+    if(selectedId && selectedId!==b.id){ getBlock(selectedId).selected=false; }
+    b.selected=true; selectedId=b.id; drawAll();
+  }else{
+    if(selectedId){ getBlock(selectedId).selected=false; selectedId=null; drawAll();}
   }
 });
-
-canvas.addEventListener("mousemove", (e) => {
-  if (draggingBlock) {
-    let rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
-    draggingBlock.x = x - dragOffsetX;
-    draggingBlock.y = y - dragOffsetY;
-    drawAll();
-  }
-});
-
-canvas.addEventListener("mouseup", () => {
-  draggingBlock = null;
-});
-
-// Double-click: Open modal editor.
-// For Filter blocks, open the dedicated filter modal.
-canvas.addEventListener("dblclick", (e) => {
-  let rect = canvas.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  let y = e.clientY - rect.top;
-  let b = findBlockAt(x, y);
-  if (b) {
-    openBlockModal(b);
-  }
-});
-
-// Standard block modal for non-filter blocks.
-function openBlockModal(block) {
-  if (block.type === "Filter") {
-    openFilterModal(block);
-  } else if (block.type === "Multiplication") {
-    openMultiplicationModal(block);
-  } else {
-    // For all other types, use the standard modal.
-    const modal = document.getElementById("blockModal");
-    modal.style.display = "block";
-    document.getElementById("blockTypeLabel").innerText = "Editing: " + block.type;
-    const input = document.getElementById("blockParamInput");
-    input.value = block.param || "";
-    blockInModal = block;
-  }
-}
-
-// --- New function: openMultiplicationModal ---
-function openMultiplicationModal(block) {
-  const modal = document.getElementById("multiplicationModal");
-  modal.style.display = "block";
-  blockInMultModal = block;
-  // Initialize the dropdown and input fields.
-  if (block.param) {
-    // Expect the parameter string in format: "type:value"
-    let parts = block.param.split(":");
-    let multType = parts[0].trim();
-    document.getElementById("multType").value = multType;
-    if (multType === "sampling") {
-      document.getElementById("samplingDiv").style.display = "block";
-      document.getElementById("multParamDiv").style.display = "none";
-      document.getElementById("samplingInterval").value = parts[1] ? parseFloat(parts[1]) : 1.0;
-    } else if (multType === "imaginary" || multType === "sin" || multType === "cos") {
-      document.getElementById("multParamDiv").style.display = "none";
-      document.getElementById("samplingDiv").style.display = "none";
-    } else {
-      // For constant, linear, exponential, etc.
-      document.getElementById("multParamDiv").style.display = "block";
-      document.getElementById("samplingDiv").style.display = "none";
-      document.getElementById("multParamValue").value = parts[1] ? parts[1].trim() : "";
-    }
-  } else {
-    // Default settings if no parameter is set.
-    document.getElementById("multType").value = "constant";
-    document.getElementById("multParamDiv").style.display = "block";
-    document.getElementById("samplingDiv").style.display = "none";
-    document.getElementById("multParamValue").value = "";
-  }
-}
-
-// Listen for changes in the multiplication type dropdown.
-document.getElementById("multType").addEventListener("change", function() {
-  const type = this.value;
-  if (type === "sampling") {
-    document.getElementById("samplingDiv").style.display = "block";
-    document.getElementById("multParamDiv").style.display = "none";
-  } else if (type === "imaginary" || type === "sin" || type === "cos") {
-    document.getElementById("multParamDiv").style.display = "none";
-    document.getElementById("samplingDiv").style.display = "none";
-  } else {
-    document.getElementById("multParamDiv").style.display = "block";
-    document.getElementById("samplingDiv").style.display = "none";
-  }
-});
-
-// Handler for Multiplication Modal OK button.
-document.getElementById("multModalOk").addEventListener("click", function() {
-  if (blockInMultModal) {
-    const type = document.getElementById("multType").value;
-    let paramStr = "";
-    if (type === "sampling") {
-      const interval = document.getElementById("samplingInterval").value;
-      paramStr = `${type}:${interval}`;
-    } else if (type === "imaginary" || type === "sin" || type === "cos") {
-      paramStr = type;  // No additional parameter.
-    } else {
-      const value = document.getElementById("multParamValue").value;
-      paramStr = `${type}:${value}`;
-    }
-    blockInMultModal.param = paramStr;
-    blockInMultModal.label = "×\n(" + paramStr + ")";
-  }
-  closeMultiplicationModal();
+canvas.addEventListener("mousemove",e=>{
+  if(!draggingBlock) return;
+  const r=canvas.getBoundingClientRect();
+  draggingBlock.x=e.clientX-r.left-dragDX;
+  draggingBlock.y=e.clientY-r.top -dragDY;
   drawAll();
 });
+canvas.addEventListener("mouseup",()=>{ draggingBlock=null; });
+window.addEventListener("keydown",e=>{ if(e.key==="Delete" && selectedId){ deleteSelected(); }});
 
-// Handler for Multiplication Modal Cancel button.
-document.getElementById("multModalCancel").addEventListener("click", function() {
-  closeMultiplicationModal();
+canvas.addEventListener("dblclick",e=>{
+  const r=canvas.getBoundingClientRect(), b=findBlockAt(e.clientX-r.left,e.clientY-r.top);
+  if(b) openBlockModal(b);
 });
 
-// Function to close the multiplication modal.
-function closeMultiplicationModal() {
-  document.getElementById("multiplicationModal").style.display = "none";
-  blockInMultModal = null;
-}
-
-// Existing event handlers (mousedown, mousemove, mouseup, etc.) remain unchanged.
-// Also, ensure that your double-click event on the canvas calls openBlockModal.
-
-canvas.addEventListener("dblclick", (e) => {
-  let rect = canvas.getBoundingClientRect();
-  let x = e.clientX - rect.left;
-  let y = e.clientY - rect.top;
-  let b = findBlockAt(x, y);
-  if (b) {
-    openBlockModal(b);
+/* ================================================================ */
+/*  Modals                                                          */
+/* ================================================================ */
+function openBlockModal(b){
+  if (["Hilbert","Derivative","d/dt","Re","Im"].includes(b.type)) return;
+  if(b.type==="Filter")        openFilterModal(b);
+  else if(b.type==="Multiplication") openMultiplicationModal(b);
+  else{
+    document.getElementById("blockModal").style.display="block";
+    document.getElementById("blockTypeLabel").innerText="Editing: "+b.type;
+    document.getElementById("blockParamInput").value=b.param||"";
+    blockInModal=b;
   }
-});
+}
+/* ---------- Multiplication modal ---------- */
+const multHintMap = {
+  constant    :'Format: K → <code>4</code>',
+  imaginary   :'Optional factor: K → <code>imaginary:3</code>',
+  linear      :'Format: A → <code>2</code> (result = A·ω)',
+  sin         :'A,ω₀ or j,A,ω₀ → <code>4,2</code> or <code>j,4,2</code>',
+  cos         :'A,ω₀ or j,A,ω₀ → <code>3,1</code> or <code>j,3,1</code>',
+  exponential :'K,±,ω₀ → <code>2,+,5</code> or <code>+,5</code>',
+  sampling    :'Sampling interval T – keep ω = kT'
+};
+function updateMultHint(){
+  multHint.innerHTML=multHintMap[multType.value];
+  /* toggle inputs */
+  if(multType.value==="sampling"){
+    samplingDiv.style.display="block"; multParamDiv.style.display="none";
+  }else if(multType.value==="imaginary"){
+    samplingDiv.style.display="none";  multParamDiv.style.display="block";
+  }else{
+    samplingDiv.style.display="none";  multParamDiv.style.display="block";
+  }
+}
+multType.addEventListener("change",updateMultHint);
 
-// Expose any other global functions for UI buttons as before.
-window.addMultiplication = function() {
-  // Instead of directly prompting, we add a multiplication block.
-  addBlock("Multiplication", "×", undefined, undefined, false);
+function openMultiplicationModal(b){
+  blockInMultModal=b;
+  /* preload */
+  if(b.param){
+    const [tp,val=""] = b.param.split(":");
+    multType.value=tp; multParamValue.value=val;
+    if(tp==="sampling") samplingInterval.value=parseFloat(val||1);
+  }else{
+    multType.value="constant"; multParamValue.value="";
+  }
+  updateMultHint();
+  document.getElementById("multiplicationModal").style.display="block";
+}
+function closeMultModal(){
+  document.getElementById("multiplicationModal").style.display="none";
+  blockInMultModal=null;
+}
+document.getElementById("multModalCancel").onclick=closeMultModal;
+document.getElementById("multModalOk").onclick = function () {
+
+  if (!blockInMultModal) { closeMultModal(); return; }
+
+  const tp = multType.value;                     // dropdown choice
+  const raw = multParamValue.value.trim();       // user text
+  let paramStr = "";
+
+  /* ---------- build param string (internal) ---------- */
+  if (tp === "sampling") {
+      paramStr = `sampling:${samplingInterval.value}`;
+  } else if (tp === "imaginary") {
+      paramStr = raw ? `imaginary:${raw}` : "imaginary";
+  } else {
+      paramStr = `${tp}:${raw}`;
+  }
+
+  /* ---------- prettify ---------- */
+  function nice(tp, raw){
+      const ω = "ω";                 // feel free to replace with ω₀ if needed
+
+      if (tp === "constant") return raw;
+
+      if (tp === "imaginary"){
+          return raw ? `${raw} j` : "j";
+      }
+
+      if (tp === "linear"){          // A →  A ω
+          return `${raw} ${ω}`;
+      }
+
+      if (tp === "sin" || tp === "cos"){
+          // possible raw formats:  "4,2"   or  "j,4,2"
+          const parts = raw.split(",").map(s=>s.trim()).filter(s=>s!=="");
+          let jflag = false;
+          if (parts[0] === "j"){ jflag = true; parts.shift(); }
+          const A   = parts[0] || "1";
+          const w0  = parts[1] || "1";
+          const core = `${A} ${tp}(${w0}${ω} t)`;
+          return jflag ? `j · ${core}` : core;
+      }
+
+      if (tp === "exponential"){
+          // raw =  "K,+,w0"  or "+,w0"
+          const p = raw.split(",").map(s=>s.trim());
+          let K, sign, w0;
+          if (p.length === 3){ K=p[0]; sign=p[1]; w0=p[2]; }
+          else { K=""; sign=p[0]; w0=p[1]; }
+          const amp = K && K!=="1" ? `${K} ` : "";
+          return `${amp}e^{${sign==="-"?"‑":"+"}j ${w0}${ω} t}`;
+      }
+
+      if (tp === "sampling") return "⟂";
+
+      return raw;   // fallback
+  }
+
+  const pretty = (()=>{
+      const [kind,value=""] = paramStr.split(":");
+      return nice(kind,value);
+  })();
+
+  /* ---------- save to block ---------- */
+  blockInMultModal.param       = paramStr;
+  blockInMultModal.label       = "×";
+  blockInMultModal.displayExpr = pretty;
+
+  closeMultModal();
+  drawAll();
 };
 
-// === New functions for Filter Modal ===
-function openFilterModal(block) {
-  const filterModal = document.getElementById("filterModal");
-  filterModal.style.display = "block";
-  blockInFilterModal = block;
-  // Initialize modal fields from block.param if available.
-  if (block.param) {
-    const parts = block.param.split(":");
-    if (parts.length === 2) {
-      const type = parts[0].trim();
-      document.getElementById("filterType").value = type;
-      if (type === "bandpass") {
-        document.getElementById("bandCutoffs").style.display = "block";
-        document.getElementById("singleCutoff").style.display = "none";
-        const freqs = parts[1].split(",");
-        if (freqs.length === 2) {
-          document.getElementById("lowCutoff").value = parseFloat(freqs[0]);
-          document.getElementById("highCutoff").value = parseFloat(freqs[1]);
-        }
-      } else {
-        document.getElementById("singleCutoff").style.display = "block";
-        document.getElementById("bandCutoffs").style.display = "none";
-        document.getElementById("cutoffValue").value = parseFloat(parts[1]);
-      }
+
+/* ---------- Filter modal (unchanged) ---------- */
+/* ---------- Filter‑modal ---------- */
+function openFilterModal(b){
+  blockInFilterModal = b;
+  const fm = document.getElementById("filterModal");
+  fm.style.display = "block";
+
+  // preload controls
+  if(b.param){
+    const [type,rest=""] = b.param.split(":");
+    document.getElementById("filterType").value = type;
+    if(type==="bandpass"){
+      document.getElementById("bandCutoffs").style.display="block";
+      document.getElementById("singleCutoff").style.display="none";
+      const [lo="0.5",hi="2"] = rest.split(",");
+      document.getElementById("lowCutoff").value  = parseFloat(lo);
+      document.getElementById("highCutoff").value = parseFloat(hi);
+    }else{
+      document.getElementById("singleCutoff").style.display="block";
+      document.getElementById("bandCutoffs").style.display="none";
+      document.getElementById("cutoffValue").value = parseFloat(rest||1);
     }
-  } else {
-    document.getElementById("filterType").value = "lowpass";
-    document.getElementById("singleCutoff").style.display = "block";
-    document.getElementById("bandCutoffs").style.display = "none";
-    document.getElementById("cutoffValue").value = 1.0;
+  }else{
+    document.getElementById("filterType").value="lowpass";
+    document.getElementById("singleCutoff").style.display="block";
+    document.getElementById("bandCutoffs").style.display="none";
   }
 }
 
-// Listen for changes in the filter type dropdown.
-document.getElementById("filterType").addEventListener("change", function() {
-  const type = this.value;
-  if (type === "bandpass") {
-    document.getElementById("bandCutoffs").style.display = "block";
-    document.getElementById("singleCutoff").style.display = "none";
-  } else {
-    document.getElementById("bandCutoffs").style.display = "none";
-    document.getElementById("singleCutoff").style.display = "block";
+/* dropdown toggle */
+document.getElementById("filterType").addEventListener("change",e=>{
+  const t=e.target.value;
+  if(t==="bandpass"){
+    document.getElementById("bandCutoffs").style.display="block";
+    document.getElementById("singleCutoff").style.display="none";
+  }else{
+    document.getElementById("bandCutoffs").style.display="none";
+    document.getElementById("singleCutoff").style.display="block";
   }
 });
 
-document.getElementById("filterModalOk").addEventListener("click", function() {
-  if (blockInFilterModal) {
-    const type = document.getElementById("filterType").value;
-    let paramStr = "";
-    if (type === "bandpass") {
-      const low = document.getElementById("lowCutoff").value;
-      const high = document.getElementById("highCutoff").value;
-      paramStr = `${type}:${low},${high}`;
-    } else {
-      const cutoff = document.getElementById("cutoffValue").value;
-      paramStr = `${type}:${cutoff}`;
+/* OK / Cancel */
+document.getElementById("filterModalOk").onclick = ()=>{
+  if(blockInFilterModal){
+    const t=document.getElementById("filterType").value;
+    let paramStr="";
+    if(t==="bandpass"){
+      const lo=document.getElementById("lowCutoff").value;
+      const hi=document.getElementById("highCutoff").value;
+      paramStr=`bandpass:${lo},${hi}`;
+    }else{
+      const c=document.getElementById("cutoffValue").value;
+      paramStr=`${t}:${c}`;
     }
     blockInFilterModal.param = paramStr;
-    blockInFilterModal.label = "Filter\n(" + paramStr + ")";
+    blockInFilterModal.label = "Filter\n("+paramStr+")";
   }
-  closeFilterModal();
+  closeFilterModal(); drawAll();
+};
+function closeFilterModal(){
+  document.getElementById("filterModal").style.display="none";
+  blockInFilterModal=null;
+}
+document.getElementById("filterModalCancel").onclick = closeFilterModal;
+/* ---------------------------------- */
+
+
+/* ================================================================ */
+/*  Toolbar buttons                                                 */
+/* ================================================================ */
+window.addAddition       = ()=> addBlock("Addition","+");
+window.addSubtraction    = ()=> addBlock("Subtraction","−");
+window.addRe = () => addBlock("Re","Re");
+window.addIm = () => addBlock("Im","Im")
+window.addDot            = ()=> {/* optional dots */};
+window.toggleConnectMode = ()=>{
+  connectMode=!connectMode;
+  if(connectStart){ connectStart.selected=false; connectStart=null; }
   drawAll();
-});
-
-document.getElementById("filterModalCancel").addEventListener("click", function() {
-  closeFilterModal();
-});
-
-function closeFilterModal() {
-  document.getElementById("filterModal").style.display = "none";
-  blockInFilterModal = null;
-}
-// === End of Filter Modal Functions ===
-
-// Expose UI functions globally.
-window.addAddition = function() { addBlock("Addition", "+"); };
-window.addSubtraction = function() { addBlock("Subtraction", "−"); };
-window.addMultiplication = function() { 
-  let expr = prompt("Enter multiplier expression:", "cos(ω₀w)");
-  let label = "×";
-  if(expr) {
-    label += "\n(" + expr + ")";
-  }
-  addBlock("Multiplication", label);
 };
-window.addGenericBlock = function() { addBlock("Block", "Block"); };
-window.addDot = function() { /* Extend to add dots if needed */ };
-window.toggleConnectMode = toggleConnectMode;
+function deleteSelected(){
+  if(!selectedId) return;
+  const b=getBlock(selectedId); if(b.nonDeletable) return;
+  lines = lines.filter(l=>l.fromId!==selectedId && l.toId!==selectedId);
+  blocks=blocks.filter(bl=>bl.id!==selectedId);
+  selectedId=null; drawAll();
+}
 window.deleteSelected = deleteSelected;
-window.clearAll = clearAll;
-window.computeChain = function() {
-  let chainData = {
-    input: document.getElementById("inputExpression").value,
-    blocks: blocks,
-    lines: lines
-  };
-  fetch("/process_chain/compute", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(chainData)
+window.clearAll = ()=>{
+  blocks=blocks.filter(b=>b.nonDeletable);
+  lines=[]; selectedId=null; drawAll();
+};
+/* add new multiplication block */
+window.addMultiplication = ()=> addBlock("Multiplication","×");
+
+/* ================================================================ */
+/*  AJAX compute                                                    */
+/* ================================================================ */
+window.computeChain = ()=>{
+  fetch("/process_chain/compute",{
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      input : document.getElementById("inputExpression").value,
+      blocks: blocks,
+      lines : lines
+    })
   })
-  .then(r => r.json())
-  .then(data => {
-    if (data.error) {
-      alert("Compute error: " + data.error);
-    } else {
-      let plotDiv = document.getElementById("plotResult");
-      plotDiv.innerHTML = '<img src="data:image/png;base64,' + data.plot_data + '" alt="Plot">';
-    }
-  })
-  .catch(err => console.error(err));
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error) alert("Compute error: "+d.error);
+    else document.getElementById("plotResult").innerHTML=
+         `<img src="data:image/png;base64,${d.plot_data}">`;
+  });
 };
 
-// Initialize chain with fixed Input and Output blocks.
-function initChain() {
-  addBlock("Input", "x(t)", 20, canvas.height / 2 - 25, true);
-  addBlock("Output", "y(t)", canvas.width - 120, canvas.height / 2 - 25, true);
-}
-initChain();
+/* ================================================================ */
+/*  Init fixed x(t) → y(t) nodes                                    */
+/* ================================================================ */
+addBlock("Input" ,"x(t)", 20, canvas.height/2-25,true);
+addBlock("Output","y(t)", canvas.width-120, canvas.height/2-25,true);
