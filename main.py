@@ -13,7 +13,7 @@ from pages.info import info_bp
 from pages.bode_plot import bode_plot_bp
 
 
-# Import new advanced noise reduction blueprint
+# Import advanced noise reduction blueprint
 from pages.advanced_noise_reduction import advanced_noise_reduction_bp
 
 # Import training blueprints from the training subfolder:
