@@ -7,18 +7,18 @@
     <label for="func1">Function 1:</label>
     <input type="text" id="func1" name="func1" value="{{ func1|default('') }}" placeholder="e.g., sin(t)" onfocus="setActiveField(this)">
     <div class="quick-buttons">
-      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-      <button type="button" onclick="insertOperand('step(t)')">Step</button>
-      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
-      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iwt)</button>
-      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
-      <button type="button" onclick="insertOperand('si(t)')">Si</button>
-      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+      <button type="button" onclick="insertOperand('rect(t)', this)">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)', this)">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)', this)">Sin</button>
+      <button type="button" onclick="insertOperand('step(t)', this)">Step</button>
+      <button type="button" onclick="insertOperand('cos(t)', this)">Cos</button>
+      <button type="button" onclick="insertOperand('sign(t)', this)">Sign</button>
+      <button type="button" onclick="insertOperand('delta(t)', this)">Delta</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)', this)">e^(iwt)</button>
+      <button type="button" onclick="insertOperand('exp(t)', this)">Exp</button>
+      <button type="button" onclick="insertOperand('inv_t(t)', this)">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)', this)">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2', this)">Si²</button>
       <button type="button" onclick="insertOperand('+')">+</button>
       <button type="button" onclick="insertOperand('-')">-</button>
       <button type="button" onclick="insertOperand('*')">*</button>
@@ -114,18 +114,30 @@
   document.getElementById("func1").addEventListener("focus", function() { activeField = this; });
   document.getElementById("func2").addEventListener("focus", function() { activeField = this; });
   
-  function insertOperand(operand) {
-      if (activeField) {
-          var start = activeField.selectionStart;
-          var end = activeField.selectionEnd;
-          var current = activeField.value;
-          activeField.value = current.substring(0, start) + operand + current.substring(end);
-          activeField.selectionStart = activeField.selectionEnd = start + operand.length;
-          activeField.focus();
-          updatePlotLive();
-      } else {
-          alert("Please click in an input field first.");
-      }
+  function insertOperand(operand, btn) {
+    // If no field is active, pick the input in this button’s .function-group
+    if (!activeField) {
+      const group = btn.closest('.function-group');
+      activeField = group.querySelector('input[type="text"]');
+    }
+    if (!activeField) {
+      console.error("No input found to insert into!");
+      return;
+    }
+    // Insert at the cursor (or at end if there's no selection info)
+    const start = activeField.selectionStart ?? activeField.value.length;
+    const end   = activeField.selectionEnd   ?? activeField.value.length;
+    const val   = activeField.value;
+    activeField.value =
+      val.substring(0, start) +
+      operand +
+      val.substring(end);
+    // Move cursor to just after the inserted text
+    activeField.selectionStart = activeField.selectionEnd = start + operand.length;
+    // Focus so further inserts keep targeting this field
+    activeField.focus();
+    // Trigger live update (if you have one)
+    updatePlotLive();
   }
   
   function debounce(func, wait) {

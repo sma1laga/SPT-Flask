@@ -167,6 +167,9 @@
             <ul>
               <li><a href="{{ url_for('home') }}">Home</a></li>
               <li><a href="{{ url_for('info.about') }}">About</a></li>
+              <li><a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}">
+              Dynamic Convolution
+              </a></li>
               <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
               <li><button id="dark-mode-toggle">Dark Mode</button></li>
             </ul>
@@ -189,8 +192,14 @@
       
           <li class="section-title">Convolution</li>
           <ul>
-            <li><a href="{{ url_for('convolution.convolution') }}">Convolution Calc</a></li>
+            <li><a href="{{ url_for('convolution.convolution') }}">
+              Convolution Calc
+            </a></li>
+           <li><a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}">
+             Dynamic Convolution
+           </a></li>
           </ul>
+    
       
           <li class="section-title">Process Chain</li>
           <ul>

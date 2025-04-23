@@ -11,6 +11,8 @@ from pages.transform_table import transform_table_bp
 from pages.theory import theory_bp
 from pages.info import info_bp
 from pages.bode_plot import bode_plot_bp
+from pages.dynamic_convolution import dynamic_convolution_bp
+
 
 
 # Import advanced noise reduction blueprint
@@ -34,6 +36,7 @@ def create_app():
     app.register_blueprint(plot_function_bp, url_prefix="/plot_function")
     app.register_blueprint(fourier_bp,       url_prefix="/fourier")
     app.register_blueprint(convolution_bp,   url_prefix="/convolution")
+    app.register_blueprint(dynamic_convolution_bp, url_prefix="/convolution/dynamic")
     app.register_blueprint(process_chain_bp, url_prefix="/process_chain")
     app.register_blueprint(filter_design_bp, url_prefix="/filter_design")
     app.register_blueprint(func_defs_bp,     url_prefix="/function_definitions")
@@ -42,6 +45,7 @@ def create_app():
     app.register_blueprint(theory_bp,        url_prefix="/theory")
     app.register_blueprint(info_bp, url_prefix='/info')
     app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
+    
 
 
 

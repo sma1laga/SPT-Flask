@@ -1,39 +1,47 @@
+<!-- templates/speech_filter_input.html -->
+
 {% extends "base.html" %}
 {% block content %}
 <h2>Speech Filter Input</h2>
-<p>
-  Upload a WAV audio file (maximum 10 seconds long). The chosen filter will be applied to your audio.
-  You can listen to, visualize, and download the filtered output.
-</p>
 
 {% if error %}
-  <div style="color: red;">{{ error }}</div>
+  <div style="color:red;">{{ error }}</div>
 {% endif %}
 
 <form method="post" enctype="multipart/form-data">
-    <label for="audio_file">Audio File (WAV, max 10 sec):</label>
-    <input type="file" name="audio_file" id="audio_file" accept=".wav" required>
-    <br><br>
-  
-    <!-- New: Option to use a standard preset filter -->
-    <label>
-        <input type="checkbox" name="use_standard_filter" id="use_standard_filter">
-        Use Standard Filter
-      </label>
-      <div id="standard_filter_div" style="display: none; margin-top: 10px;">
-        <label for="standard_filter">Choose Standard Filter:</label>
-        <select name="standard_filter" id="standard_filter">
-          <option value="lowpass_std">Lowpass Standard Filter (Cutoff 1000 Hz, Order 3)</option>
-          <option value="bandpass_std">Bandpass Speech Filter (300–3400 Hz, Order 4)</option>
-          <option value="highpass_std">Highpass Standard Filter (Cutoff 80 Hz, Order 2)</option>
-          <option value="telephone_filter">Telephone Filter (300–3400 Hz, Order 4)</option>
-          <option value="podcast_filter">Podcast Filter (Cutoff 3000 Hz, Order 3)</option>
-          <option value="noise_cancel_filter">Noise-Cancellation Filter (50–150 Hz, Order 2, Bandstop)</option>
-        </select>
-      </div>
-      <br><br>
+  <label>
+    <input type="radio" name="audio_choice" value="default" checked>
+    Use Example Audio
+  </label>
+  <label style="margin-left:1em;">
+    <input type="radio" name="audio_choice" value="upload">
+    Upload Your Own
+  </label>
+  <br><br>
 
-  <!-- Existing filter parameters (only used if standard filter is not selected) -->
+  <div id="uploadDiv" style="display:none;">
+    <label for="audio_file">Audio (WAV, ≤10 s):</label>
+    <input type="file" name="audio_file" id="audio_file" accept=".wav">
+    <br><br>
+  </div>
+
+  <label>
+    <input type="checkbox" name="use_standard_filter" id="use_standard_filter">
+    Use Standard Filter
+  </label>
+  <div id="standard_filter_div" style="display:none; margin-top:10px;">
+    <label for="standard_filter">Choose Standard Filter:</label>
+    <select name="standard_filter" id="standard_filter">
+      <option value="lowpass_std">Lowpass Std (1 kHz, Order 3)</option>
+      <option value="bandpass_std">Bandpass Speech (300–3400 Hz, Order 4)</option>
+      <option value="highpass_std">Highpass Std (80 Hz, Order 2)</option>
+      <option value="telephone_filter">Telephone (300–3400 Hz, Order 4)</option>
+      <option value="podcast_filter">Podcast (3 kHz, Order 3)</option>
+      <option value="noise_cancel_filter">Noise Cancel (50–150 Hz, Order 2)</option>
+    </select>
+  </div>
+  <br><br>
+
   <label for="filter_type">Filter Type:</label>
   <select name="filter_type" id="filter_type">
     <option value="lowpass">Low Pass</option>
@@ -43,7 +51,6 @@
   </select>
   <br><br>
 
-
   <label for="order">Filter Order (1–5):</label>
   <input type="number" name="order" id="order" value="4" min="1" max="5" required>
   <br><br>
@@ -51,100 +58,91 @@
   <label for="cutoff">Cutoff Frequency (Hz):</label>
   <input type="text" name="cutoff" id="cutoff" value="100,400"
          pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
-         title="Enter a single value (e.g., 100) or two values separated by a comma (e.g., 100,400)"
+         title="e.g. 100 or 100,400"
          required>
   <br><br>
 
   <button type="submit">Apply Filter to Audio</button>
 </form>
 
+<script>
+  // Toggle upload picker
+  const aRad = document.getElementsByName("audio_choice"),
+        uDiv = document.getElementById("uploadDiv"),
+        fIn = document.getElementById("audio_file");
+  aRad.forEach(r=> r.addEventListener("change", ()=>{
+    if(r.value==="upload"&&r.checked){
+      uDiv.style.display="block"; fIn.required=true;
+    } else if(r.value==="default"&&r.checked){
+      uDiv.style.display="none";  fIn.required=false;
+    }
+  }));
+  // Toggle standard filter options
+  document.getElementById("use_standard_filter")
+    .addEventListener("change", function(){
+      document.getElementById("standard_filter_div")
+        .style.display = this.checked ? "block" : "none";
+    });
+</script>
+
 {% if spec_plot and wave_plot %}
   <h3>Visualization</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-    <div style="flex: 1 1 50%;">
+  <div style="display:flex; gap:20px; flex-wrap:wrap;">
+    <div style="flex:1 1 45%;">
       <h4>Spectrograms</h4>
-      <img id="specPlot" src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram Plot">
+      <img id="specPlot" src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram">
     </div>
-    <div style="flex: 1 1 50%;">
+    <div style="flex:1 1 45%;">
       <h4>Waveforms</h4>
-      <img id="wavePlot" src="data:image/png;base64,{{ wave_plot }}" alt="Waveform Plot">
+      <img id="wavePlot" src="data:image/png;base64,{{ wave_plot }}" alt="Waveform">
     </div>
   </div>
 {% endif %}
 
 {% if output_audio_data %}
-  <h3>Listen to Filtered Audio</h3>
+  <h3>Listen</h3>
   <audio id="liveAudio" controls>
     <source src="data:audio/wav;base64,{{ output_audio_data }}" type="audio/wav">
-    Your browser does not support the audio element.
   </audio>
-  
-  <h3>Download Filtered Audio</h3>
-  <a id="downloadLink" href="data:audio/wav;base64,{{ output_audio_data }}" download="filtered.wav">Download Filtered Audio</a>
-  
+  <h3>Download</h3>
+  <a id="downloadLink" href="data:audio/wav;base64,{{ output_audio_data }}" download="filtered.wav">
+    Download Filtered Audio
+  </a>
   <br><br>
-  <button type="button" onclick="reapplyFilter()">Reapply Filter (Interactive Tuning)</button>
-  {% endif %}
-  {% if pz_plot %}
-  <h3>
-    Pole–Zero Plot
-    <a href="{{ url_for('info.polezero') }}" target="_blank" class="info-button"
-       style="display: inline-block; margin-left: 10px; text-decoration: none; background-color: #007acc; color: #fff; border-radius: 50%; width: 20px; height: 20px; text-align: center; line-height: 20px; font-size: 12px;">
-       i
-    </a>
-  </h3>
-  <img id="pzPlot" src="data:image/png;base64,{{ pz_plot }}" alt="Pole–Zero Plot">
+  <button type="button" onclick="reapplyFilter()">Reapply Filter</button>
+{% endif %}
+
+{% if pz_plot %}
+  <h3>Pole–Zero Plot</h3>
+  <img id="pzPlot" src="data:image/png;base64,{{ pz_plot }}" alt="Pole–Zero">
 {% endif %}
 
 <script>
-    document.getElementById("use_standard_filter").addEventListener("change", function() {
-      var stdDiv = document.getElementById("standard_filter_div");
-      stdDiv.style.display = this.checked ? "block" : "none";
-    });
-  </script>
-<script>
-
-    function buildLiveURL() {
-        var baseUrl = "{{ url_for('speech_filter_input.live_audio') }}";
-        var useStandard = document.getElementById("use_standard_filter").checked ? "1" : "";
-        var filterType = document.getElementById("filter_type").value;
-        var order = document.getElementById("order").value;
-        var cutoff = document.getElementById("cutoff").value;
-        var standardPreset = document.getElementById("standard_filter").value;
-        var url = baseUrl + "?t=" + new Date().getTime();
-        if (useStandard === "1") {
-            url += "&use_standard_filter=1&standard_filter=" + encodeURIComponent(standardPreset);
-        } else {
-            url += "&filter_type=" + encodeURIComponent(filterType) +
-                   "&order=" + encodeURIComponent(order) +
-                   "&cutoff=" + encodeURIComponent(cutoff);
-        }
-        return url;
-      }
-
-function reapplyFilter() {
-  var url = buildLiveURL();
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-       document.getElementById("specPlot").src = "data:image/png;base64," + data.spec_plot;
-       document.getElementById("wavePlot").src = "data:image/png;base64," + data.wave_plot;
-       document.getElementById("pzPlot").src = "data:image/png;base64," + data.pz_plot;
-       document.getElementById("liveAudio").src = "data:audio/wav;base64," + data.audio;
-       document.getElementById("downloadLink").href = "data:audio/wav;base64," + data.audio;
+function buildLiveURL(){
+  let url = "{{ url_for('speech_filter_input.live_audio') }}?t="+Date.now();
+  if(document.getElementById("use_standard_filter").checked){
+    url += "&use_standard_filter=1&standard_filter="+
+           encodeURIComponent(document.getElementById("standard_filter").value);
+  } else {
+    url += "&filter_type="+encodeURIComponent(document.getElementById("filter_type").value)+
+           "&order="+encodeURIComponent(document.getElementById("order").value)+
+           "&cutoff="+encodeURIComponent(document.getElementById("cutoff").value);
+  }
+  return url;
+}
+function reapplyFilter(){
+  fetch(buildLiveURL())
+    .then(r=>r.json())
+    .then(d=>{
+      document.getElementById("specPlot").src = "data:image/png;base64,"+d.spec_plot;
+      document.getElementById("wavePlot").src= "data:image/png;base64,"+d.wave_plot;
+      document.getElementById("pzPlot").src=  "data:image/png;base64,"+d.pz_plot;
+      document.getElementById("liveAudio").src =
+           "data:audio/wav;base64,"+d.audio;
+      document.getElementById("downloadLink").href =
+           "data:audio/wav;base64,"+d.audio;
     })
-    .catch(err => console.error("Error reapplying filter:", err));
+    .catch(console.error);
 }
 </script>
-<script>
-    // Toggle display of the standard filter dropdown when checkbox is toggled.
-    document.getElementById("use_standard_filter").addEventListener("change", function() {
-      var stdDiv = document.getElementById("standard_filter_div");
-      if (this.checked) {
-        stdDiv.style.display = "block";
-      } else {
-        stdDiv.style.display = "none";
-      }
-    });
-  </script>
 {% endblock %}

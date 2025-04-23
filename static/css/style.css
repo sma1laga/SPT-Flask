@@ -32,7 +32,7 @@
     background-color: #fff;
     border-radius: 12px;
     box-shadow: var(--box-shadow);
-    overflow: hidden;
+    overflow: visible;
   }
   
   /* Header */
@@ -366,5 +366,4 @@ body.dark-mode {
 /* override JS‑assigned colours */
 .node.mul, .node.add { background:#fff; border:2px solid #000; }
 
-  
   

@@ -1,0 +1,147 @@
+<!-- templates/dynamic_convolution.html -->
+{% extends "base.html" %}
+{% block content %}
+<h2>Dynamic Convolution Explorer</h2>
+
+<div style="margin-bottom:1em;">
+  <label>f₁(t):</label>
+  <select id="func1">
+    <option value="">-- none --</option>
+    {% for f in functions %}<option>{{f}}</option>{% endfor %}
+  </select>
+
+  <label style="margin-left:2em;">f₂(t):</label>
+  <select id="func2">
+    <option value="">-- none --</option>
+    {% for f in functions %}<option>{{f}}</option>{% endfor %}
+  </select>
+</div>
+
+<div style="margin-bottom:1em;">
+  <label>Shift τ:</label>
+  <input type="range" id="tauSlider" min="-10" max="10" step="0.1" value="0">
+  <span id="tauValue">0.0</span>
+</div>
+
+<div style="max-width: 600px; margin: auto;">
+    <canvas id="topChart"
+            height="150"
+            style="width: 100%; display: block; border: 1px solid #ccc; border-radius:4px;">
+    </canvas>
+  
+    <canvas id="bottomChart"
+            height="150"
+            style="width: 100%; margin-top: 1em; display: block; border: 1px solid #ccc; border-radius:4px;">
+    </canvas>
+  </div>
+  
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let tData, y1Data, y2Data, yConvData;
+let topChart, bottomChart;
+
+function fetchData(){
+  const f1 = document.getElementById("func1").value;
+  const f2 = document.getElementById("func2").value;
+  fetch("{{ url_for('dynamic_convolution.dynamic_data') }}", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ func1:f1, func2:f2 })
+  })
+  .then(r=>r.json().then(d=> r.ok ? d : Promise.reject(d.error)))
+  .then(d=>{
+    tData   = d.t;
+    y1Data  = d.y1;
+    y2Data  = d.y2;
+    yConvData = d.y_conv;
+    initCharts();
+    updatePlots();
+  })
+  .catch(e=>alert("Error: "+e));
+}
+
+function initCharts(){
+  const topCtx = document.getElementById("topChart").getContext("2d");
+  const bottomCtx = document.getElementById("bottomChart").getContext("2d");
+
+  if(topChart) topChart.destroy();
+  if(bottomChart) bottomChart.destroy();
+
+  topChart = new Chart(topCtx, {
+    type: 'line',
+    data: {
+      labels: tData,
+      datasets: [
+        { label: "f₁(t)", data: y1Data, borderColor: 'blue', fill:false },
+        { label: "f₂(τ−t)", data: [], borderColor: 'orange', fill:false }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: { x:{ type:'linear', min:-10, max:10 } }
+    }
+  });
+
+  bottomChart = new Chart(bottomCtx, {
+    type: 'line',
+    data: {
+      labels: tData,
+      datasets: [
+        { label: "(f₁*f₂)(τ)", data: yConvData, borderColor: 'darkblue', fill:false},
+        { label: "Marker", data: [], pointRadius: 5, showLine:false, borderColor:'red' }
+      ]
+    },
+    options: {
+      animation: false,
+      scales: { x:{ type:'linear', min:-10, max:10 } }
+    }
+  });
+}
+
+function updatePlots(){
+  const τ = parseFloat(document.getElementById("tauSlider").value);
+  document.getElementById("tauValue").textContent = τ.toFixed(1);
+
+  // compute shifted y2: y2_shift[i] = y2(τ - t[i])
+  const N = tData.length;
+  let y2shift = new Array(N);
+  const dt = tData[1] - tData[0];
+  for(let i=0;i<N;i++){
+    // find index for (τ - t[i])
+    const want = τ - tData[i];
+    const idx  = (want - tData[0]) / dt;
+    const lo = Math.floor(idx), hi = Math.ceil(idx);
+    if(lo<0 || hi>=N) y2shift[i]=0;
+    else {
+      const w = idx - lo;
+      y2shift[i] = y2Data[lo]*(1-w) + y2Data[hi]*w;
+    }
+  }
+
+  // update top
+  topChart.data.datasets[1].data = y2shift;
+  topChart.update();
+
+  // bottom marker
+  // find conv value at τ
+  const idx = (τ - tData[0]) / dt;
+  let convAt = 0;
+  if(idx>=0 && idx<=N-1){
+    const lo = Math.floor(idx), hi = Math.ceil(idx), w = idx - lo;
+    convAt = yConvData[lo]*(1-w)+yConvData[hi]*w;
+  }
+  bottomChart.data.datasets[1].data = [ { x:τ, y:convAt } ];
+  bottomChart.update();
+}
+
+// wire up
+document.getElementById("func1").onchange = fetchData;
+document.getElementById("func2").onchange = fetchData;
+document.getElementById("tauSlider").oninput = updatePlots;
+
+// initial empty charts
+initCharts();
+</script>
+{% endblock %}
