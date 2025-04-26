@@ -2,6 +2,7 @@
 from flask import Flask, render_template
 from pages.plot_function import plot_function_bp
 from pages.fourier_page import fourier_bp
+from pages.ztransform_page import ztransform_bp
 from pages.convolution import convolution_bp
 from pages.process_chain import process_chain_bp
 from pages.filter_design import filter_design_bp
@@ -34,17 +35,23 @@ def create_app():
 
     # Register regular pages
     app.register_blueprint(plot_function_bp, url_prefix="/plot_function")
+    
     app.register_blueprint(fourier_bp,       url_prefix="/fourier")
+    app.register_blueprint(ztransform_bp, url_prefix="/ztransform")
+    app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
     app.register_blueprint(convolution_bp,   url_prefix="/convolution")
     app.register_blueprint(dynamic_convolution_bp, url_prefix="/convolution/dynamic")
+    
     app.register_blueprint(process_chain_bp, url_prefix="/process_chain")
+    
     app.register_blueprint(filter_design_bp, url_prefix="/filter_design")
     app.register_blueprint(func_defs_bp,     url_prefix="/function_definitions")
     app.register_blueprint(speech_filter_input_bp, url_prefix="/filter_design/speech_filter_input")
+    
     app.register_blueprint(transform_table_bp, url_prefix="/transform_table")
     app.register_blueprint(theory_bp,        url_prefix="/theory")
     app.register_blueprint(info_bp, url_prefix='/info')
-    app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
+
     
 
 

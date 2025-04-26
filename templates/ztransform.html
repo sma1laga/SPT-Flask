@@ -1,0 +1,129 @@
+{# templates/ztransform.html #}
+{% extends "base.html" %}
+{% block content %}
+<h2>Z-Transform Calculator</h2>
+
+<form method="POST" id="zform">
+  <!-- 1) Template chooser -->
+  <div class="function-group">
+    <label for="seqType">Template:</label>
+    <select id="seqType" name="seqType" onchange="onSeqTypeChange()">
+      <option value="custom">Custom (free-form)</option>
+      <option value="impulses">Weighted impulses</option>
+      <option value="exp">Causal exponential</option>
+      <option value="damped_cos">Damped cosine</option>
+      <option value="pulse">Rectangular pulse</option>
+    </select>
+  </div>
+
+  <!-- 2) Parameters for each template -->
+  <div id="params_impulses" style="display:none; margin-bottom:10px;">
+    <label>Impulse terms (cᵢ at kᵢ):</label>
+    <div>
+      <input name="imp_c0" placeholder="c₀" style="width:4em;">
+      · δ[n – <input name="imp_k0" style="width:3em;">]
+    </div>
+    <small>(Copy/paste to add imp_c1/imp_k1, etc.)</small>
+  </div>
+
+  <div id="params_exp" style="display:none; margin-bottom:10px;">
+    <label>a (growth):</label>
+    <input type="number" name="a" value="0.9" step="0.01" min="0">
+  </div>
+
+  <div id="params_damped_cos" style="display:none; margin-bottom:10px;">
+    <label>a (damping):</label>
+    <input type="number" name="a" value="0.9" step="0.01" min="0"><br>
+    <label>ω (rad):</label>
+    <input type="number" name="omega" value="1.2" step="0.01" min="0">
+  </div>
+
+  <div id="params_pulse" style="display:none; margin-bottom:10px;">
+    <label>Start n₁:</label>
+    <input type="number" name="n_start" value="0" style="width:4em;">
+    <label>End n₂:</label>
+    <input type="number" name="n_end"   value="5" style="width:4em;">
+  </div>
+
+  <!-- 3) Custom free-form fallback -->
+  <div class="function-group" id="params_custom">
+    <label for="expr">Sequence x[n]:</label>
+    <input type="text" id="expr" name="expr"
+           value="{{ expr|default('') }}"
+           placeholder="e.g., (1/2)**n * Heaviside(n)">
+    <small>Use Python syntax (n>=0, DiracDelta(n-3), etc.).</small>
+  </div>
+
+  <!-- 4) Summation bounds -->
+  <div class="bounds-group">
+    <label>Summation bounds:</label>
+    <input type="number" name="n_min" value="{{ n_min }}" style="width:4em;"> ≤ n ≤
+    <input type="number" name="n_max" value="{{ n_max }}" style="width:4em;">
+  </div>
+
+  <!-- 5) Plot checkbox -->
+  <div>
+    <input type="checkbox" id="plot" name="plot" {% if do_plot %}checked{% endif %}>
+    <label for="plot">Plot on unit circle (magnitude & phase)</label>
+  </div>
+
+  <!-- 6) Submit / Clear -->
+  <div style="margin-top:15px;">
+    <button type="submit">Compute Z-Transform</button>
+    <button type="button" id="clearBtn">Clear</button>
+  </div>
+</form>
+
+<script>
+  function onSeqTypeChange() {
+    ['impulses','exp','damped_cos','pulse','custom'].forEach(t => {
+      document.getElementById('params_'+t).style.display =
+        document.getElementById('seqType').value===t ? 'block' : 'none';
+    });
+  }
+  window.addEventListener('DOMContentLoaded', onSeqTypeChange);
+
+  document.getElementById("clearBtn").addEventListener("click", function(){
+    // reset all fields to defaults
+    document.getElementById("expr").value = '';
+    document.querySelector('input[name="n_start"]').value = 0;
+    document.querySelector('input[name="n_end"]').value   = 5;
+    document.querySelectorAll('input[name="a"]').forEach(i=>i.value='0.9');
+    document.querySelector('input[name="omega"]').value  = '1.2';
+    document.querySelector('input[name="imp_c0"]').value = '';
+    document.querySelector('input[name="imp_k0"]').value = '';
+    document.querySelector('input[name="n_min"]').value  = 0;
+    document.querySelector('input[name="n_max"]').value  = 10;
+    document.getElementById("plot").checked = false;
+  });
+</script>
+
+{% if error %}
+  <p class="error">{{ error }}</p>
+{% endif %}
+
+{% if z_expr_latex %}
+  <div style="margin-top:20px;">
+    <strong>Z-Transform:</strong>
+    <p>$$X(z)= {{ z_expr_latex }}$$</p>
+  </div>
+{% endif %}
+
+{% if plot_data %}
+  <div id="zplot" style="margin-top:20px;">
+    <img src="data:image/png;base64,{{ plot_data }}"
+         alt="Z-Transform Plot"
+         style="max-width:100%;border:1px solid #ccd0d5;border-radius:4px;">
+  </div>
+{% endif %}
+
+<style>
+  .function-group input[type="text"],
+  .bounds-group input,
+  #params_impulses input {
+    padding:6px; border:1px solid #ccd0d5; border-radius:4px;
+  }
+  .bounds-group { margin:15px 0; }
+  .error { color:red; }
+</style>
+{% endblock %}
