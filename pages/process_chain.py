@@ -13,8 +13,9 @@ def chain_home():
 @process_chain_bp.route("/compute", methods=["POST"])
 def compute_chain():
     data = request.get_json(force=True)
+    until = data.pop("until", None)       # may be absent
     try:
-        plot_data = interpret_chain(data)
+        plot_data = interpret_chain(data, until_block=until)
         return jsonify({"plot_data": plot_data})
     except Exception as e:
         return jsonify({"error": str(e)}), 400

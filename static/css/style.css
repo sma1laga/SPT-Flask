@@ -366,4 +366,11 @@ body.dark-mode {
 /* override JS‑assigned colours */
 .node.mul, .node.add { background:#fff; border:2px solid #000; }
 
+#btnConnect.active {
+  background-color: #ffd700;  /* gold */
+  border-color:     #c0a000;
+  color:            #000;
+}
+
+
   

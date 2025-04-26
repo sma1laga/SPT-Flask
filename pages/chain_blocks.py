@@ -6,7 +6,7 @@ from .chain_transforms import (apply_addition, apply_subtraction, apply_multipli
                                apply_derivative, apply_hilbert, apply_filter,
                                apply_generic, no_op, rect, tri)
 
-def interpret_chain(chain_data):
+def interpret_chain(chain_data, until_block=None):
     """
     Computes the process chain in the frequency domain and plots the output Y(jω).
     
@@ -112,6 +112,8 @@ def interpret_chain(chain_data):
     # (6) Process the signal through each block in the chain path.
     current_signal = signal
     for bid in path:
+        if until_block is not None and bid == until_block:
+            break
         block = blocks_by_id[bid]
         btype = block.get("type", "")
         param = block.get("param")

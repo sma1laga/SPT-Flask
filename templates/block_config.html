@@ -497,17 +497,17 @@
     /********************************
      * Create Connection
      *******************************/
-    function createConnection(a,b){
-      // create a <line> in the svg
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute('stroke', '#000');
-      line.setAttribute('stroke-width', '2');
-      line.setAttribute('marker-end', 'url(#arrow)'); // optional arrow
-      connSvg.appendChild(line);
+     function createConnection(a, b) {
+      const newLetter = nextLetter();
     
-      // store in connections
-      connections.push({a:a, b:b, line: line});
-      updateConnectionPositions();
+      /* store geometry only – drawing happens in drawAll() */
+      lines.push({
+        fromId: a.id,
+        toId  : b.id,
+        letter: newLetter,      // <── NEW
+        selected: false
+      });
+      drawAll();
     }
     
     /********************************

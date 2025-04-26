@@ -2,8 +2,16 @@
 {% block content %}
 
 <h2>Process Chain</h2>
-
+<div id="userManual" style="margin-bottom:8px; padding:8px; background:#f9f9f9; border:1px solid #ddd; font-size:0.9em;">
+  <strong>How it works:</strong><br>
+  • Your input X(jω) must be a spectrum: use <code>rect(w)</code> or <code>tri(w)</code> only.<br>
+  • Click <em>Connect</em>, then click one block then another to draw an arrow (labeled a(t), b(t), …).<br>
+  • Double-click any arrow’s letter to plot the signal up to that point.<br>
+  • Or click <em>Comppute</em> to plot the full chain output y(jω).<br>
+  • Use <em>Delete</em> to remove a selected block or arrow; <em>Clear</em> to reset everything.
+</div>
 <div class="toolbar" style="margin-bottom:10px;">
+
   <!-- Input expression field -->
   <label>Input x(t):</label>
   <input type="text" id="inputExpression" value="sin(t)" size="15">
@@ -18,7 +26,7 @@
   
   <!-- Add Dot or Misc. -->
   <button onclick="addDot()">Add Dot</button>
-  <button onclick="toggleConnectMode()">Connect</button>
+  <button id="btnConnect" onclick="toggleConnectMode()">Connect</button>
   
   <!-- Deletion / Clear -->
   <button onclick="deleteSelected()">Delete</button>

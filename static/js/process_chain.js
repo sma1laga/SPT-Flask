@@ -1,6 +1,11 @@
 /* ------------------------------------------------------------------
    Process‑Chain front‑end  (canvas UI + modals)
 ------------------------------------------------------------------ */
+
+let letterCounter = 0;                   // a, b, c ...
+const nextLetter  = () => String.fromCharCode(97 + (letterCounter++));
+let lineSelected  = null;                // currently highlighted line
+
 let blocks = [];            // all block objects
 let lines  = [];            // connection objects
 let blockIdCounter = 0;
@@ -46,6 +51,30 @@ function findBlockAt(x,y)  {
   }
   return null;
 }
+/* === NEW === */
+function findLineAt(x, y) {
+  const tol2 = 6 * 6;                // 6-px tolerance
+  for (let i = lines.length - 1; i >= 0; --i) {
+    const l  = lines[i];
+    const a  = getBlock(l.fromId),
+          b  = getBlock(l.toId);
+    if (!a || !b) continue;
+    const p1 = connPt(a, b),
+          p2 = connPt(b, a);
+
+    /* distance point→segment */
+    const dx = p2.x - p1.x,  dy = p2.y - p1.y;
+    const len2 = dx*dx + dy*dy || 1;
+    const t  = ((x - p1.x) * dx + (y - p1.y) * dy) / len2;
+    const tClamped = Math.max(0, Math.min(1, t));
+    const px = p1.x + tClamped * dx,
+          py = p1.y + tClamped * dy;
+    const d2 = (x - px)**2 + (y - py)**2;
+    if (d2 < tol2) return l;
+  }
+  return null;
+}
+
 // create Node func.
 function createNode(x, y, text, nodeType, nonDeletable = false) {
   /* block dimensions */
@@ -139,12 +168,20 @@ function drawAll () {
 
     const p1 = connPt(a, b);          // start point on block a
     const p2 = connPt(b, a);          // end   point on block b
+    ctx.strokeStyle = l.selected ? "red" : "black";
 
     /* main segment */
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
+    /* ==== letter at mid-point ==== */
+    const mx = (p1.x + p2.x) / 2,
+    my = (p1.y + p2.y) / 2;
+
+    ctx.font = "15px sans-serif";
+    ctx.fillStyle = l.selected ? "red" : "black";
+    ctx.fillText(`${l.letter}(t)`, mx + 6, my - 6);
 
     /* arrow head (size 6 px) at p2, pointing towards b */
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
@@ -241,40 +278,133 @@ function drawAll () {
 /* ================================================================ */
 /*  Mouse interaction                                               */
 /* ================================================================ */
-canvas.addEventListener("mousedown",e=>{
-  const r=canvas.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
-  const b=findBlockAt(x,y);
+// ================================================================
+//  Mouse interaction
+// ================================================================
+canvas.addEventListener("mousedown", e => {
+  const r = canvas.getBoundingClientRect(),
+        x = e.clientX - r.left,
+        y = e.clientY - r.top;
 
-  if(connectMode){
-    if(!connectStart && b){ connectStart=b; b.selected=true; }
-    else if(connectStart && b && connectStart!==b){
-      lines.push({fromId:connectStart.id,toId:b.id});
-      connectStart.selected=false; connectStart=null; drawAll();
-    }
+          /**** CONNECT-MODE: click twice to draw an arrow ****/
+          if (connectMode) {
+            const b = findBlockAt(x, y);
+            if (!connectStart && b) {
+              // first click: pick the “from” block
+              connectStart = b;
+              b.selected   = true;
+              drawAll();
+              return;
+            }
+            if (connectStart && b && connectStart !== b) {
+              // second click: push a new connection into lines[]
+              lines.push({
+                fromId: connectStart.id,
+                toId:   b.id,
+                letter: nextLetter()            // ← assign "a", then "b", then "c", …
+              });
+              connectStart.selected = false;
+              connectStart = null;
+              drawAll();
+              return;
+            }
+            // click on empty or same block — stay in connectMode
+            return;
+          }
+
+  // Not in connect-mode → selection or dragging
+  let b = findBlockAt(x, y);
+  let l = !b ? findLineAt(x, y) : null;
+
+  if (b) {
+    // start dragging or selecting a block
+    draggingBlock = b; 
+    dragDX = x - b.x; 
+    dragDY = y - b.y;
+
+    // clear previous highlight
+    if (selectedId && selectedId !== b.id) getBlock(selectedId).selected = false;
+    if (lineSelected) lineSelected.selected = false;
+
+    // select this block
+    b.selected    = true;
+    selectedId    = b.id;
+    lineSelected  = null;
+    drawAll();
     return;
   }
 
-  if(b){
-    draggingBlock=b; dragDX=x-b.x; dragDY=y-b.y;
-    if(selectedId && selectedId!==b.id){ getBlock(selectedId).selected=false; }
-    b.selected=true; selectedId=b.id; drawAll();
-  }else{
-    if(selectedId){ getBlock(selectedId).selected=false; selectedId=null; drawAll();}
+  if (l) {
+    // clicked a line → select it
+    if (lineSelected) lineSelected.selected = false;
+    if (selectedId)   getBlock(selectedId).selected = false;
+
+    l.selected      = true;
+    lineSelected    = l;
+    selectedId      = null;
+    drawAll();
+    return;
   }
-});
-canvas.addEventListener("mousemove",e=>{
-  if(!draggingBlock) return;
-  const r=canvas.getBoundingClientRect();
-  draggingBlock.x=e.clientX-r.left-dragDX;
-  draggingBlock.y=e.clientY-r.top -dragDY;
+
+  // clicked empty space → clear selection
+  if (selectedId)   { getBlock(selectedId).selected = false; selectedId = null; }
+  if (lineSelected) { lineSelected.selected = false; lineSelected = null; }
   drawAll();
 });
-canvas.addEventListener("mouseup",()=>{ draggingBlock=null; });
-window.addEventListener("keydown",e=>{ if(e.key==="Delete" && selectedId){ deleteSelected(); }});
 
-canvas.addEventListener("dblclick",e=>{
-  const r=canvas.getBoundingClientRect(), b=findBlockAt(e.clientX-r.left,e.clientY-r.top);
-  if(b) openBlockModal(b);
+canvas.addEventListener("mousemove", e => {
+  if (!draggingBlock) return;
+  const r = canvas.getBoundingClientRect();
+  draggingBlock.x = e.clientX - r.left - dragDX;
+  draggingBlock.y = e.clientY - r.top  - dragDY;
+  drawAll();
+});
+
+canvas.addEventListener("mouseup", () => {
+  draggingBlock = null;
+});
+
+window.addEventListener("keydown", e => {
+  if (e.key === "Delete") deleteSelected();
+});
+
+
+// ================================================================
+//  Double-click: blocks open modal, letters trigger partial plot
+// ================================================================
+canvas.addEventListener("dblclick", e => {
+  const r = canvas.getBoundingClientRect(),
+        x = e.clientX - r.left,
+        y = e.clientY - r.top;
+
+  // 1) Block double-click → open its parameter modal
+  const b = findBlockAt(x, y);
+  if (b) {
+    openBlockModal(b);
+    return;
+  }
+
+  // 2) Otherwise, check if it’s on a letter/line
+  const l = findLineAt(x, y);
+  if (!l) return;
+
+  // fetch up-to-that-arrow plot
+  fetch("/process_chain/compute", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      input : document.getElementById("inputExpression").value,
+      blocks: blocks,
+      lines : lines,
+      until : l.toId
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) alert("Compute error: " + d.error);
+    else document.getElementById("plotResult").innerHTML =
+         `<img src="data:image/png;base64,${d.plot_data}">`;
+  });
 });
 
 /* ================================================================ */
@@ -479,18 +609,40 @@ window.addSubtraction    = ()=> addBlock("Subtraction","−");
 window.addRe = () => addBlock("Re","Re");
 window.addIm = () => addBlock("Im","Im")
 window.addDot            = ()=> {/* optional dots */};
-window.toggleConnectMode = ()=>{
-  connectMode=!connectMode;
-  if(connectStart){ connectStart.selected=false; connectStart=null; }
+window.toggleConnectMode = () => {
+  connectMode = !connectMode;
+
+  // highlight the button
+  const btn = document.getElementById("btnConnect");
+  btn.classList.toggle("active", connectMode);
+
+  // clear any partial selection
+  if (connectStart) {
+    connectStart.selected = false;
+    connectStart = null;
+  }
   drawAll();
 };
-function deleteSelected(){
-  if(!selectedId) return;
-  const b=getBlock(selectedId); if(b.nonDeletable) return;
-  lines = lines.filter(l=>l.fromId!==selectedId && l.toId!==selectedId);
-  blocks=blocks.filter(bl=>bl.id!==selectedId);
-  selectedId=null; drawAll();
+function deleteSelected() {
+  /* delete block */
+  if (selectedId) {
+    const b = getBlock(selectedId);
+    if (b.nonDeletable) return;
+
+    lines = lines.filter(l => l.fromId !== selectedId && l.toId !== selectedId);
+    blocks = blocks.filter(bl => bl.id !== selectedId);
+    selectedId = null;
+    drawAll();
+    return;
+  }
+  /* delete connection */
+  if (lineSelected) {
+    lines = lines.filter(l => l !== lineSelected);
+    lineSelected = null;
+    drawAll();
+  }
 }
+
 window.deleteSelected = deleteSelected;
 window.clearAll = ()=>{
   blocks=blocks.filter(b=>b.nonDeletable);
