@@ -396,7 +396,7 @@ canvas.addEventListener("dblclick", e => {
       input : document.getElementById("inputExpression").value,
       blocks: blocks,
       lines : lines,
-      until : l.toId
+      until : l.fromId
     })
   })
   .then(r => r.json())
