@@ -49,7 +49,26 @@ def dynamic_data():
         return jsonify(error=f"Function 2 eval error: {e}"), 400
 
     # full convolution
-    y_conv = convolve(y1, y2, mode="same") * dt
+        # ——— Extended‐domain convolution to avoid edge truncation ———
+    N = len(t)
+    t_ext = np.linspace(2*t[0], 2*t[-1], 2*N - 1)
+    dt_ext = t_ext[1] - t_ext[0]
+
+    local_ext = local.copy()
+    local_ext['t'] = t_ext
+
+    try:
+        y1_ext = eval(f1_str, local_ext) if f1_str else np.zeros_like(t_ext)
+        y2_ext = eval(f2_str, local_ext) if f2_str else np.zeros_like(t_ext)
+    except Exception as e:
+        return jsonify(error=f"Extended‐domain eval error: {e}"), 400
+
+    y_conv_ext = convolve(y1_ext, y2_ext, mode="same") * dt_ext
+
+    # sample back onto the original t grid
+    y_conv = np.interp(t, t_ext, y_conv_ext)
+    # ——————————————————————————————————————————————————————
+
 
     return jsonify({
         "t":     np.round(t, 4).tolist(),

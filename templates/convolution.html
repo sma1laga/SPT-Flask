@@ -12,9 +12,11 @@
     <input type="text" id="func2" name="func2" value="{{ func2|default('') }}" placeholder="e.g. step(t)">
   </div>
   
-  <!-- Quick Functions / Operators -->
-  <h4>Quick Functions & Operators</h4>
-  <div id="quick-functions" style="margin-bottom:10px;">
+<!-- Quick Functions / Operators -->
+<h4>Quick Functions & Operators</h4>
+<div id="quick-functions" style="margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">
+  <!-- first row: functions -->
+  <div style="display:flex; flex-wrap:wrap; gap:14px;">
     <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
     <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
     <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
@@ -22,21 +24,23 @@
     <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
     <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
     <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-    <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iwt)</button>
     <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-    <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
     <button type="button" onclick="insertOperand('si(t)')">Si</button>
-    <br>
+  </div>
+  <!-- second row: operators -->
+  <div style="display:flex; flex-wrap:wrap; gap:14px;">
     <button type="button" onclick="insertOperand('+')">+</button>
     <button type="button" onclick="insertOperand('-')">-</button>
     <button type="button" onclick="insertOperand('*')">*</button>
     <button type="button" onclick="insertOperand('/')">/</button>
   </div>
+</div>
 
-  <div style="margin-bottom: 10px;">
-    <button type="submit">Compute Convolution</button>
-    <button type="button" id="clearBtn">Clear</button>
-  </div>
+<div style="margin-bottom: 10px;">
+  <button type="submit">Compute Convolution</button>
+  <button type="button" id="clearBtn">Clear</button>
+</div>
+
 
   {% if error %}
   <div style="color:red;">Error: {{ error }}</div>

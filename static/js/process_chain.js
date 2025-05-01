@@ -51,7 +51,7 @@ function findBlockAt(x,y)  {
   }
   return null;
 }
-/* === NEW === */
+
 function findLineAt(x, y) {
   const tol2 = 6 * 6;                // 6-px tolerance
   for (let i = lines.length - 1; i >= 0; --i) {
@@ -411,7 +411,7 @@ canvas.addEventListener("dblclick", e => {
 /*  Modals                                                          */
 /* ================================================================ */
 function openBlockModal(b){
-  if (["Hilbert","Derivative","d/dt","Re","Im"].includes(b.type)) return;
+  if (["Hilbert","Derivative","d/dt","Re","Im", "Input", "Output", "Addition", "Subtraction"].includes(b.type)) return;
   if(b.type==="Filter")        openFilterModal(b);
   else if(b.type==="Multiplication") openMultiplicationModal(b);
   else{

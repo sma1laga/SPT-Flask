@@ -79,11 +79,25 @@ def process_audio(filter_type, order, cutoff_str, sample_rate, audio, duration):
 def speech_filter_input():
     spec_plot = wave_plot = pz_plot = output_audio_data = None
     error = None
+    
+    audio_choice      = "default"
+    use_standard_flag = False
+    standard_filter   = "lowpass_std"
+    filter_type       = "lowpass"
+    order             = 4
+    cutoff_str        = "100,400"
 
     if request.method == "POST":
         try:
             # --- load audio ---
             choice = request.form.get("audio_choice", "default")
+            audio_choice      = request.form.get("audio_choice", audio_choice)
+            use_standard_flag = bool(request.form.get("use_standard_filter"))
+            standard_filter   = request.form.get("standard_filter", standard_filter)
+            filter_type       = request.form.get("filter_type", filter_type)
+            order             = int(request.form.get("order", order))
+            cutoff_str        = request.form.get("cutoff", cutoff_str)
+
             if choice == "default":
                 path = os.path.join(current_app.root_path, "static", "audio", "example.wav")
                 sr, audio = wavfile.read(path)
@@ -141,6 +155,12 @@ def speech_filter_input():
             error = str(e)
 
     return render_template("speech_filter_input.html",
+                            audio_choice=audio_choice,
+                            use_standard_filter=use_standard_flag,
+                            standard_filter=standard_filter,
+                            filter_type=filter_type,
+                            order=order,
+                            cutoff=cutoff_str,
                            spec_plot=spec_plot,
                            wave_plot=wave_plot,
                            pz_plot=pz_plot,

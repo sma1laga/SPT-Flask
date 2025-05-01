@@ -114,6 +114,16 @@ def bode_plot():
     # Build the transfer function string using LaTeX fraction command
     function_str = f"H(s) = \\frac{{{num_disp}}}{{{den_disp}}}"
     
+    if request.method == 'GET':
+        return render_template(
+            "bode_plot.html",
+            plot_url=None,
+            error=None,
+            default_num=default_num,
+            default_den=default_den,
+            function_str=None
+    )
+    
     if request.method == 'POST':
         user_num = request.form.get('numerator', default_num)
         user_den = request.form.get('denominator', default_den)

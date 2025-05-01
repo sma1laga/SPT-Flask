@@ -65,6 +65,9 @@ def filter_design():
             
             # Plot 1: FFT Spectrum of Original Noise Signal
             ax[0].plot(freqs, orig_fft_db)
+            # ── FIXED SCALE ────────────────────────────────────────
+            ax[0].set_xlim(0, sample_rate/2)
+            ax[0].set_ylim(-80,  80)    # set your desired dB‐range here
             ax[0].set_title("Spectrum of Original Noise Signal")
             ax[0].set_xlabel("Frequency (Hz)")
             ax[0].set_ylabel("Magnitude (dB)")
@@ -72,6 +75,9 @@ def filter_design():
             
             # Plot 2: FFT Spectrum of Filtered Noise Signal
             ax[1].plot(freqs, fft_db, color="orange")
+            # ── FIXED SCALE ────────────────────────────────────────
+            ax[1].set_xlim(0, sample_rate/2)
+            ax[1].set_ylim(-80,  80)    # same y‐range for consistency
             ax[1].set_title("Spectrum of Filtered Noise Signal")
             ax[1].set_xlabel("Frequency (Hz)")
             ax[1].set_ylabel("Magnitude (dB)")
@@ -79,6 +85,9 @@ def filter_design():
             
             # Plot 3: Filter Frequency Response
             ax[2].plot(w, h_db, color="green")
+            # ── FIXED SCALE ────────────────────────────────────────
+            ax[2].set_xlim(0, sample_rate/2)
+            ax[2].set_ylim(-60,  5)     # adjust to cover your filter’s pass/stop‐band
             ax[2].set_title("Filter Frequency Response")
             ax[2].set_xlabel("Frequency (Hz)")
             ax[2].set_ylabel("Magnitude (dB)")

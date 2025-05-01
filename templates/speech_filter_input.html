@@ -9,80 +9,123 @@
 {% endif %}
 
 <form method="post" enctype="multipart/form-data">
+  <!-- Audio choice -->
   <label>
-    <input type="radio" name="audio_choice" value="default" checked>
+    <input type="radio" name="audio_choice" value="default"
+           {% if audio_choice=='default' %}checked{% endif %}>
     Use Example Audio
   </label>
   <label style="margin-left:1em;">
-    <input type="radio" name="audio_choice" value="upload">
+    <input type="radio" name="audio_choice" value="upload"
+           {% if audio_choice=='upload' %}checked{% endif %}>
     Upload Your Own
   </label>
   <br><br>
 
-  <div id="uploadDiv" style="display:none;">
+  <!-- Upload picker -->
+  <div id="uploadDiv"
+       style="display: {{ 'block' if audio_choice=='upload' else 'none' }};">
     <label for="audio_file">Audio (WAV, ≤10 s):</label>
-    <input type="file" name="audio_file" id="audio_file" accept=".wav">
+    <input type="file" name="audio_file" id="audio_file" accept=".wav"
+           {% if audio_choice=='upload' %}required{% endif %}>
     <br><br>
   </div>
 
+  <!-- Standard‐filter toggle -->
   <label>
-    <input type="checkbox" name="use_standard_filter" id="use_standard_filter">
+    <input type="checkbox" name="use_standard_filter" id="use_standard_filter"
+           {% if use_standard_filter %}checked{% endif %}>
     Use Standard Filter
   </label>
-  <div id="standard_filter_div" style="display:none; margin-top:10px;">
+  <div id="standard_filter_div"
+       style="display: {{ 'block' if use_standard_filter else 'none' }};
+              margin-top:10px;">
     <label for="standard_filter">Choose Standard Filter:</label>
     <select name="standard_filter" id="standard_filter">
-      <option value="lowpass_std">Lowpass Std (1 kHz, Order 3)</option>
-      <option value="bandpass_std">Bandpass Speech (300–3400 Hz, Order 4)</option>
-      <option value="highpass_std">Highpass Std (80 Hz, Order 2)</option>
-      <option value="telephone_filter">Telephone (300–3400 Hz, Order 4)</option>
-      <option value="podcast_filter">Podcast (3 kHz, Order 3)</option>
-      <option value="noise_cancel_filter">Noise Cancel (50–150 Hz, Order 2)</option>
+      <option value="lowpass_std"
+              {% if standard_filter=='lowpass_std' %}selected{% endif %}>
+        Lowpass Std (1 kHz, Order 3)
+      </option>
+      <option value="bandpass_std"
+              {% if standard_filter=='bandpass_std' %}selected{% endif %}>
+        Bandpass Speech (300–3400 Hz, Order 4)
+      </option>
+      <option value="highpass_std"
+              {% if standard_filter=='highpass_std' %}selected{% endif %}>
+        Highpass Std (80 Hz, Order 2)
+      </option>
+      <option value="telephone_filter"
+              {% if standard_filter=='telephone_filter' %}selected{% endif %}>
+        Telephone (300–3400 Hz, Order 4)
+      </option>
+      <option value="podcast_filter"
+              {% if standard_filter=='podcast_filter' %}selected{% endif %}>
+        Podcast (3 kHz, Order 3)
+      </option>
+      <option value="noise_cancel_filter"
+              {% if standard_filter=='noise_cancel_filter' %}selected{% endif %}>
+        Noise Cancel (50–150 Hz, Order 2)
+      </option>
     </select>
   </div>
   <br><br>
 
+  <!-- Custom‐filter controls -->
   <label for="filter_type">Filter Type:</label>
   <select name="filter_type" id="filter_type">
-    <option value="lowpass">Low Pass</option>
-    <option value="highpass">High Pass</option>
-    <option value="bandpass">Band Pass</option>
-    <option value="bandstop">Band Stop</option>
+    <option value="lowpass"
+            {% if filter_type=='lowpass' %}selected{% endif %}>
+      Low Pass
+    </option>
+    <option value="highpass"
+            {% if filter_type=='highpass' %}selected{% endif %}>
+      High Pass
+    </option>
+    <option value="bandpass"
+            {% if filter_type=='bandpass' %}selected{% endif %}>
+      Band Pass
+    </option>
+    <option value="bandstop"
+            {% if filter_type=='bandstop' %}selected{% endif %}>
+      Band Stop
+    </option>
   </select>
   <br><br>
 
   <label for="order">Filter Order (1–5):</label>
-  <input type="number" name="order" id="order" value="4" min="1" max="5" required>
+  <input type="number" name="order" id="order"
+         value="{{ order }}" min="1" max="5" required>
   <br><br>
 
   <label for="cutoff">Cutoff Frequency (Hz):</label>
-  <input type="text" name="cutoff" id="cutoff" value="100,400"
+  <input type="text" name="cutoff" id="cutoff"
+         value="{{ cutoff }}"
          pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
-         title="e.g. 100 or 100,400"
-         required>
+         title="e.g. 100 or 100,400" required>
   <br><br>
 
   <button type="submit">Apply Filter to Audio</button>
 </form>
 
 <script>
-  // Toggle upload picker
-  const aRad = document.getElementsByName("audio_choice"),
-        uDiv = document.getElementById("uploadDiv"),
-        fIn = document.getElementById("audio_file");
-  aRad.forEach(r=> r.addEventListener("change", ()=>{
-    if(r.value==="upload"&&r.checked){
-      uDiv.style.display="block"; fIn.required=true;
-    } else if(r.value==="default"&&r.checked){
-      uDiv.style.display="none";  fIn.required=false;
-    }
-  }));
-  // Toggle standard filter options
-  document.getElementById("use_standard_filter")
-    .addEventListener("change", function(){
-      document.getElementById("standard_filter_div")
-        .style.display = this.checked ? "block" : "none";
-    });
+// Toggle upload picker
+const aRad = document.getElementsByName("audio_choice"),
+      uDiv = document.getElementById("uploadDiv"),
+      fIn = document.getElementById("audio_file");
+aRad.forEach(r => r.addEventListener("change", ()=>{
+  if (r.value==="upload" && r.checked) {
+    uDiv.style.display="block";  fIn.required=true;
+  } else if (r.value==="default" && r.checked) {
+    uDiv.style.display="none";   fIn.required=false;
+  }
+}));
+
+// Toggle standard-filter dropdown
+document.getElementById("use_standard_filter")
+  .addEventListener("change", function(){
+    document.getElementById("standard_filter_div")
+      .style.display = this.checked ? "block" : "none";
+  });
 </script>
 
 {% if spec_plot and wave_plot %}
@@ -90,11 +133,15 @@
   <div style="display:flex; gap:20px; flex-wrap:wrap;">
     <div style="flex:1 1 45%;">
       <h4>Spectrograms</h4>
-      <img id="specPlot" src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram">
+      <img id="specPlot"
+           src="data:image/png;base64,{{ spec_plot }}"
+           alt="Spectrogram">
     </div>
     <div style="flex:1 1 45%;">
       <h4>Waveforms</h4>
-      <img id="wavePlot" src="data:image/png;base64,{{ wave_plot }}" alt="Waveform">
+      <img id="wavePlot"
+           src="data:image/png;base64,{{ wave_plot }}"
+           alt="Waveform">
     </div>
   </div>
 {% endif %}
@@ -102,10 +149,13 @@
 {% if output_audio_data %}
   <h3>Listen</h3>
   <audio id="liveAudio" controls>
-    <source src="data:audio/wav;base64,{{ output_audio_data }}" type="audio/wav">
+    <source src="data:audio/wav;base64,{{ output_audio_data }}"
+            type="audio/wav">
   </audio>
   <h3>Download</h3>
-  <a id="downloadLink" href="data:audio/wav;base64,{{ output_audio_data }}" download="filtered.wav">
+  <a id="downloadLink"
+     href="data:audio/wav;base64,{{ output_audio_data }}"
+     download="filtered.wav">
     Download Filtered Audio
   </a>
   <br><br>
@@ -114,19 +164,24 @@
 
 {% if pz_plot %}
   <h3>Pole–Zero Plot</h3>
-  <img id="pzPlot" src="data:image/png;base64,{{ pz_plot }}" alt="Pole–Zero">
+  <img id="pzPlot"
+       src="data:image/png;base64,{{ pz_plot }}"
+       alt="Pole–Zero">
 {% endif %}
 
 <script>
 function buildLiveURL(){
   let url = "{{ url_for('speech_filter_input.live_audio') }}?t="+Date.now();
-  if(document.getElementById("use_standard_filter").checked){
-    url += "&use_standard_filter=1&standard_filter="+
+  if (document.getElementById("use_standard_filter").checked) {
+    url += "&use_standard_filter=1&standard_filter=" +
            encodeURIComponent(document.getElementById("standard_filter").value);
   } else {
-    url += "&filter_type="+encodeURIComponent(document.getElementById("filter_type").value)+
-           "&order="+encodeURIComponent(document.getElementById("order").value)+
-           "&cutoff="+encodeURIComponent(document.getElementById("cutoff").value);
+    url += "&filter_type=" + encodeURIComponent(
+             document.getElementById("filter_type").value) +
+           "&order="       + encodeURIComponent(
+             document.getElementById("order").value) +
+           "&cutoff="      + encodeURIComponent(
+             document.getElementById("cutoff").value);
   }
   return url;
 }
@@ -134,13 +189,16 @@ function reapplyFilter(){
   fetch(buildLiveURL())
     .then(r=>r.json())
     .then(d=>{
-      document.getElementById("specPlot").src = "data:image/png;base64,"+d.spec_plot;
-      document.getElementById("wavePlot").src= "data:image/png;base64,"+d.wave_plot;
-      document.getElementById("pzPlot").src=  "data:image/png;base64,"+d.pz_plot;
-      document.getElementById("liveAudio").src =
-           "data:audio/wav;base64,"+d.audio;
+      document.getElementById("specPlot").src  =
+        "data:image/png;base64,"+d.spec_plot;
+      document.getElementById("wavePlot").src =
+        "data:image/png;base64,"+d.wave_plot;
+      document.getElementById("pzPlot").src   =
+        "data:image/png;base64,"+d.pz_plot;
+      document.getElementById("liveAudio").src=
+        "data:audio/wav;base64,"+d.audio;
       document.getElementById("downloadLink").href =
-           "data:audio/wav;base64,"+d.audio;
+        "data:audio/wav;base64,"+d.audio;
     })
     .catch(console.error);
 }

@@ -93,7 +93,29 @@ def compute_convolution(func1_str, func2_str):
         return {"error": f"Error evaluating Function 2: {e}"}
 
     # Convolution
-    y_conv = convolve(y1, y2, mode='same') * dt
+        # ——— Extended‐domain convolution to avoid edge truncation ———
+    N = len(t)
+    # build a 2× wider time axis
+    t_ext = np.linspace(2*t[0], 2*t[-1], 2*N - 1)
+    dt_ext = t_ext[1] - t_ext[0]
+
+    # safe eval context for extended axis
+    local_ext = local_eval.copy()
+    local_ext['t'] = t_ext
+
+    try:
+        y1_ext = eval(func1_str, local_ext) if func1_str.strip() else np.zeros_like(t_ext)
+        y2_ext = eval(func2_str, local_ext) if func2_str.strip() else np.zeros_like(t_ext)
+    except Exception as e:
+        return {"error": f"Error evaluating functions for extended convolution: {e}"}
+
+    # convolve on the extended axis
+    y_conv_ext = convolve(y1_ext, y2_ext, mode='same') * dt_ext
+
+    # now interpolate *that* back onto our original t
+    y_conv = np.interp(t, t_ext, y_conv_ext)
+    # ——————————————————————————————————————————————————————
+
 
     # Build a figure with a 2x2 layout, but the bottom row is a single subplot spanning columns
     fig = plt.figure(figsize=(12,8))
