@@ -1,4 +1,3 @@
-<!-- templates/dynamic_convolution.html -->
 {% extends "base.html" %}
 {% block content %}
 <h2>Dynamic Convolution Explorer</h2>
@@ -23,9 +22,9 @@
   <span id="tauValue">0.0</span>
 </div>
 
-<div style="max-width: 600px; margin: auto;">
+<div style="max-width: 650px; margin: auto;">
     <canvas id="topChart"
-            height="150"
+            height="200"
             style="width: 100%; display: block; border: 1px solid #ccc; border-radius:4px;">
     </canvas>
   
@@ -52,10 +51,10 @@ function fetchData(){
   })
   .then(r=>r.json().then(d=> r.ok ? d : Promise.reject(d.error)))
   .then(d=>{
-    tData   = d.t;
-    y1Data  = d.y1;
-    y2Data  = d.y2;
-    yConvData = d.y_conv;
+    tData      = d.t;
+    y1Data     = d.y1;
+    y2Data     = d.y2;
+    yConvData  = d.y_conv;
     initCharts();
     updatePlots();
   })
@@ -74,8 +73,9 @@ function initCharts(){
     data: {
       labels: tData,
       datasets: [
-        { label: "f₁(t)", data: y1Data, borderColor: 'blue', fill:false },
-        { label: "f₂(τ−t)", data: [], borderColor: 'orange', fill:false }
+        { label: "f₁(t)",       data: y1Data,  borderColor: 'blue',   fill:false },
+        { label: "f₂(τ−t)",     data: [],      borderColor: 'orange', fill:false },
+        { label: "f₁·f₂",       data: [],      borderColor: 'red',     fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
       ]
     },
     options: {
@@ -90,7 +90,7 @@ function initCharts(){
       labels: tData,
       datasets: [
         { label: "(f₁*f₂)(τ)", data: yConvData, borderColor: 'darkblue', fill:false},
-        { label: "Marker", data: [], pointRadius: 5, showLine:false, borderColor:'red' }
+        { label: "Marker",       data: [],  pointRadius: 5, showLine:false, borderColor:'red' }
       ]
     },
     options: {
@@ -104,12 +104,11 @@ function updatePlots(){
   const τ = parseFloat(document.getElementById("tauSlider").value);
   document.getElementById("tauValue").textContent = τ.toFixed(1);
 
-  // compute shifted y2: y2_shift[i] = y2(τ - t[i])
+  // compute shifted y2: y2(τ - t[i])
   const N = tData.length;
   let y2shift = new Array(N);
   const dt = tData[1] - tData[0];
   for(let i=0;i<N;i++){
-    // find index for (τ - t[i])
     const want = τ - tData[i];
     const idx  = (want - tData[0]) / dt;
     const lo = Math.floor(idx), hi = Math.ceil(idx);
@@ -120,12 +119,15 @@ function updatePlots(){
     }
   }
 
-  // update top
+  // update shifted dataset
   topChart.data.datasets[1].data = y2shift;
+
+  // compute pointwise multiplication with a stronger highlight
+  let yMul = y1Data.map((v,i) => v * y2shift[i]);
+  topChart.data.datasets[2].data = yMul;
   topChart.update();
 
-  // bottom marker
-  // find conv value at τ
+  // bottom marker: convolution value at τ
   const idx = (τ - tData[0]) / dt;
   let convAt = 0;
   if(idx>=0 && idx<=N-1){

@@ -43,38 +43,32 @@ function circle(ctx, x, y, r){
 /* ================================================================ */
 /*  Block helpers                                                   */
 /* ================================================================ */
-function getBlock(id)      { return blocks.find(b => b.id === id); }
-function findBlockAt(x,y)  {
-  for (let i = blocks.length-1; i>=0; --i) {
-    const b = blocks[i];
-    if (x>=b.x && x<=b.x+b.width && y>=b.y && y<=b.y+b.height) return b;
-  }
-  return null;
+function getBlock(id) {
+  return blocks.find(b => b.id === id);
 }
-
+function findBlockAt(x, y) {
+  return blocks.slice().reverse().find(b =>
+    x >= b.x && x <= b.x + b.width &&
+    y >= b.y && y <= b.y + b.height
+  ) || null;
+}
 function findLineAt(x, y) {
-  const tol2 = 6 * 6;                // 6-px tolerance
+  const tol2 = 12 * 12;
   for (let i = lines.length - 1; i >= 0; --i) {
-    const l  = lines[i];
-    const a  = getBlock(l.fromId),
-          b  = getBlock(l.toId);
+    const l = lines[i];
+    const a = getBlock(l.fromId), b = getBlock(l.toId);
     if (!a || !b) continue;
-    const p1 = connPt(a, b),
-          p2 = connPt(b, a);
-
-    /* distance point→segment */
-    const dx = p2.x - p1.x,  dy = p2.y - p1.y;
+    const p1 = connPt(a, b), p2 = connPt(b, a);
+    const dx = p2.x - p1.x, dy = p2.y - p1.y;
     const len2 = dx*dx + dy*dy || 1;
-    const t  = ((x - p1.x) * dx + (y - p1.y) * dy) / len2;
-    const tClamped = Math.max(0, Math.min(1, t));
-    const px = p1.x + tClamped * dx,
-          py = p1.y + tClamped * dy;
+    const t = ((x - p1.x)*dx + (y - p1.y)*dy) / len2;
+    const tc = Math.max(0, Math.min(1, t));
+    const px = p1.x + tc * dx, py = p1.y + tc * dy;
     const d2 = (x - px)**2 + (y - py)**2;
     if (d2 < tol2) return l;
   }
   return null;
 }
-
 // create Node func.
 function createNode(x, y, text, nodeType, nonDeletable = false) {
   /* block dimensions */
@@ -273,11 +267,6 @@ function drawAll () {
 }
 
 
-
-
-/* ================================================================ */
-/*  Mouse interaction                                               */
-/* ================================================================ */
 // ================================================================
 //  Mouse interaction
 // ================================================================
@@ -369,43 +358,42 @@ window.addEventListener("keydown", e => {
 });
 
 
-// ================================================================
-//  Double-click: blocks open modal, letters trigger partial plot
-// ================================================================
-canvas.addEventListener("dblclick", e => {
-  const r = canvas.getBoundingClientRect(),
-        x = e.clientX - r.left,
-        y = e.clientY - r.top;
-
-  // 1) Block double-click → open its parameter modal
-  const b = findBlockAt(x, y);
-  if (b) {
-    openBlockModal(b);
-    return;
-  }
-
-  // 2) Otherwise, check if it’s on a letter/line
+/* ================================================================
+   Single-click on a letter → partial plot
+================================================================ */
+canvas.addEventListener("click", e => {
+  if (connectMode) return;
+  const { x, y } = getMousePos(e);
+  if (findBlockAt(x, y)) return;
   const l = findLineAt(x, y);
   if (!l) return;
-
-  // fetch up-to-that-arrow plot
   fetch("/process_chain/compute", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      input : document.getElementById("inputExpression").value,
-      blocks: blocks,
-      lines : lines,
-      until : l.fromId
+      input: document.getElementById("inputExpression").value,
+      blocks, lines,
+      until: l.fromId
     })
   })
   .then(r => r.json())
   .then(d => {
     if (d.error) alert("Compute error: " + d.error);
     else document.getElementById("plotResult").innerHTML =
-         `<img src="data:image/png;base64,${d.plot_data}">`;
+      `<img src="data:image/png;base64,${d.plot_data}">`;
   });
 });
+
+canvas.addEventListener("dblclick", e => {
+  const { x, y } = getMousePos(e);
+  const b = findBlockAt(x, y);
+  if (b) openBlockModal(b);
+});
+
+function getMousePos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
 
 /* ================================================================ */
 /*  Modals                                                          */
@@ -534,7 +522,6 @@ document.getElementById("multModalOk").onclick = function () {
 };
 
 
-/* ---------- Filter modal (unchanged) ---------- */
 /* ---------- Filter‑modal ---------- */
 function openFilterModal(b){
   blockInFilterModal = b;
@@ -600,57 +587,76 @@ function closeFilterModal(){
 document.getElementById("filterModalCancel").onclick = closeFilterModal;
 /* ---------------------------------- */
 
-
-/* ================================================================ */
-/*  Toolbar buttons                                                 */
-/* ================================================================ */
-window.addAddition       = ()=> addBlock("Addition","+");
-window.addSubtraction    = ()=> addBlock("Subtraction","−");
-window.addRe = () => addBlock("Re","Re");
-window.addIm = () => addBlock("Im","Im")
-window.addDot            = ()=> {/* optional dots */};
+/* ================================================================
+   Toolbar actions
+================================================================ */
 window.toggleConnectMode = () => {
   connectMode = !connectMode;
-
-  // highlight the button
-  const btn = document.getElementById("btnConnect");
-  btn.classList.toggle("active", connectMode);
-
-  // clear any partial selection
+  document.getElementById("btnConnect").classList.toggle("active", connectMode);
   if (connectStart) {
     connectStart.selected = false;
     connectStart = null;
   }
   drawAll();
 };
+
 function deleteSelected() {
-  /* delete block */
   if (selectedId) {
     const b = getBlock(selectedId);
     if (b.nonDeletable) return;
-
     lines = lines.filter(l => l.fromId !== selectedId && l.toId !== selectedId);
     blocks = blocks.filter(bl => bl.id !== selectedId);
     selectedId = null;
     drawAll();
     return;
   }
-  /* delete connection */
   if (lineSelected) {
     lines = lines.filter(l => l !== lineSelected);
     lineSelected = null;
     drawAll();
   }
 }
-
 window.deleteSelected = deleteSelected;
-window.clearAll = ()=>{
-  blocks=blocks.filter(b=>b.nonDeletable);
-  lines=[]; selectedId=null; drawAll();
-};
-/* add new multiplication block */
-window.addMultiplication = ()=> addBlock("Multiplication","×");
 
+window.clearAll = () => {
+  letterCounter = 0;  // reset letters
+  blocks = blocks.filter(b => b.nonDeletable);
+  lines  = [];
+  selectedId   = null;
+  lineSelected = null;
+  drawAll();
+};
+
+window.computeChain = () => {
+  fetch("/process_chain/compute", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ input: document.getElementById("inputExpression").value, blocks, lines })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) alert("Compute error: " + d.error);
+    else document.getElementById("plotResult").innerHTML =
+      `<h3>Y(jω)</h3><img src="data:image/png;base64,${d.plot_data}">`;
+  });
+};
+
+window.computeChain = () => {
+  fetch("/process_chain/compute", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      input:  document.getElementById("inputExpression").value,
+      blocks: blocks,
+      lines:  lines
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) alert("Compute error: " + d.error);
+    else document.getElementById("plotResult").innerHTML =
+           `<h3>Y(jω)</h3><img src="data:image/png;base64,${d.plot_data}">`;
+  });
+};
 /* ================================================================ */
 /*  AJAX compute                                                    */
 /* ================================================================ */
