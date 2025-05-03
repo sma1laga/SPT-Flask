@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Discrete: Plot Functions</h2>
+  <form method="post">
+    <label>f[n] = </label>
+    <input type="text" name="func" value="{{ func }}" placeholder="n**2">
+    <button type="submit">Plot</button>
+  </form>
+  {% if error %}
+    <p style="color:red">{{ error }}</p>
+  {% endif %}
+  {% if img_data %}
+    <img src="data:image/png;base64,{{ img_data }}" alt="">
+  {% endif %}
+{% endblock %}

@@ -14,6 +14,16 @@ from pages.bode_plot import bode_plot_bp
 from pages.dynamic_convolution import dynamic_convolution_bp
 
 
+# discrete
+from pages.discrete_plot_functions import discrete_plot_functions_bp
+from pages.discrete_fourier import discrete_fourier_bp
+from pages.discrete_convolution import discrete_convolution_bp
+from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
+
+
+
+
+
 
 
 # Import advanced noise reduction blueprint
@@ -51,9 +61,15 @@ def create_app():
     app.register_blueprint(theory_bp,        url_prefix="/theory")
     app.register_blueprint(info_bp, url_prefix='/info')
 
-    
-
-
+    # Register discrete
+    app.register_blueprint(discrete_plot_functions_bp,
+                           url_prefix='/discrete/plot_functions')
+    app.register_blueprint(discrete_fourier_bp,
+                           url_prefix='/discrete/fourier')        
+    app.register_blueprint(discrete_convolution_bp,
+                           url_prefix='/discrete/convolution')
+    app.register_blueprint(discrete_dynamic_convolution_bp,
+                           url_prefix='/discrete/dynamic_convolution')
 
     # Register training pages (each with its own sub-URL)
     app.register_blueprint(training_convolution_bp, url_prefix="/training/convolution")

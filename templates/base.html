@@ -15,11 +15,11 @@
   </script>
   <!-- Include custom tooltip JavaScript -->
   <script src="{{ url_for('static', filename='js/tooltips.js') }}"></script>
-  <!-- New Header Script for Navigation and Dark Mode -->
+  <!-- Header Script (navigation & dark‐mode) -->
   <script src="{{ url_for('static', filename='js/header.js') }}"></script>
-  
+
   <style>
-    /* Header styling */
+    /* --- Original Header styling (unchanged) --- */
     .header {
       background: linear-gradient(45deg, #007acc, #00aaff);
       color: #fff;
@@ -69,8 +69,34 @@
       cursor: pointer;
       padding: 0;
     }
-    
-    /* Existing Sidebar and Content styles remain unchanged */
+
+    /* --- Sidebar Tabs styling --- */
+    .toggle-tabs {
+      display: flex;
+      margin-bottom: 1em;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .toggle-tabs button {
+      flex: 1;
+      padding: 0.5em 0;
+      background: #fff;               /* white background */
+      border: 1px solid #007bff;      /* blue outline */
+      color: #007bff;                 /* blue text */
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .toggle-tabs button:not(:last-child) {
+      border-right: none;            /* no double border */
+    }
+    .toggle-tabs button.active {
+      background: #007bff;            /* solid blue when active */
+      color: #fff;                    /* white text when active */
+    }
+
+
+    /* --- Sidebar & content styles --- */
     .modern-sidebar {
       width: 260px;
       background-color: #fff;
@@ -112,48 +138,21 @@
     .modern-sidebar ul.sidebar-menu li a:hover {
       background-color: #f0f8ff;
     }
-    
-    /* Responsive adjustments for tablets and mobile (sidebar and content) */
-    @media (max-width: 1024px) {
-      .content-wrapper {
-        flex-direction: column;
-        padding: 0;
-      }
+
+    @media (max-width: 768px) {
       .modern-sidebar {
         width: 100%;
-        margin: 0 0 20px;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color, #ccd0d5);
-        border-radius: 0;
+        margin: 0 0 1em 0;
       }
-      .main-content {
-        padding: 15px;
-      }
-    }
-    @media (max-width: 600px) {
-      .header {
-        padding: 10px 15px;
-      }
-      .header .logo img {
-        height: 35px;
-        margin-right: 8px;
-      }
-      .modern-sidebar h3 {
-        font-size: 1.2rem;
-      }
-      .modern-sidebar ul.sidebar-menu li a {
-        padding: 8px;
-      }
-      .footer {
-        font-size: 0.8em;
-        padding: 10px;
+      .content-wrapper {
+        flex-direction: column;
       }
     }
   </style>
 </head>
 <body>
   <div class="outer-wrapper">
-    <!-- UPDATED HEADER with Global Navigation -->
+    <!-- HEADER -->
     <div class="header">
       <div class="header-container">
         <div class="logo">
@@ -164,79 +163,105 @@
         </div>
         <nav class="main-nav">
           <ul>
-            <ul>
-              <li><a href="{{ url_for('home') }}">Home</a></li>
-              <li><a href="{{ url_for('info.about') }}">About</a></li>
-              <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
-              <li><button id="dark-mode-toggle">Dark Mode</button></li>
-            </ul>
+            <li><a href="{{ url_for('home') }}">Home</a></li>
+            <li><a href="{{ url_for('info.about') }}">About</a></li>
+            <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
+            <li><button id="dark-mode-toggle">Dark Mode</button></li>
+          </ul>
         </nav>
       </div>
     </div>
 
-    <!-- SIDEBAR + MAIN CONTENT -->
-    <div class="content-wrapper">
-      <!-- Sidebar area with modern styling -->
-      <div class="sidebar modern-sidebar">
+    <!-- SIDEBAR + CONTENT -->
+    <div class="content-wrapper" style="display:flex;">
+      <aside class="sidebar modern-sidebar">
         <h3>Navigation</h3>
-        <ul class="sidebar-menu">
-          <li class="section-title">Plotting</li>
-          <ul>
+        <div class="toggle-tabs">
+          <button id="tab-continuous"
+                  class="{% if not request.path.startswith('/discrete') %}active{% endif %}">
+            Continuous
+          </button>
+          <button id="tab-discrete"
+                  class="{% if request.path.startswith('/discrete') %}active{% endif %}">
+            Discrete
+          </button>
+        </div>
+
+        <!-- Continuous menu -->
+        <div id="menu-continuous" style="display: {% if not request.path.startswith('/discrete') %}block{% else %}none{% endif %};">
+          <ul class="sidebar-menu">
+            <li class="section-title">Plotting</li>
             <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
             <li><a href="{{ url_for('fourier.fourier') }}">Fourier</a></li>
             <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot</a></li>
-          </ul>
-      
-          <li class="section-title">Convolution</li>
-          <ul>
-            <li><a href="{{ url_for('convolution.convolution') }}">
-              Convolution Calc
-            </a></li>
-           <li><a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}">
-             Dynamic Convolution
-           </a></li>
-          </ul>
-    
-      
-          <li class="section-title">Process Chain</li>
-          <ul>
+
+            <li class="section-title">Convolution</li>
+            <li><a href="{{ url_for('convolution.convolution') }}">Convolution Calc</a></li>
+            <li><a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}">Dynamic Convolution</a></li>
+
+            <li class="section-title">Process Chain</li>
             <li><a href="{{ url_for('process_chain.show_chain') }}">Process Chain Plot</a></li>
-          </ul>
-      
-          <li class="section-title">Filter Design</li>
-          <ul>
+
+            <li class="section-title">Filter Design</li>
             <li><a href="{{ url_for('filter_design.filter_design') }}">Filter Design</a></li>
             <li><a href="{{ url_for('speech_filter_input.speech_filter_input') }}">Speech Filter Input</a></li>
-          </ul>
-          <li class="section-title">Advanced Noise Reduction</li>
-          <ul>
+
+            <li class="section-title">Advanced Noise Reduction</li>
             <li><a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a></li>
-          </ul>
-      
-          <!-- Training Section -->
-          <li class="section-title">Training</li>
-          <ul>
+
+            <li class="section-title">Training</li>
             <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Training</a></li>
             <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li>
             <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li>
           </ul>
-        </ul>
-      </div>
+        </div>
 
-      <!-- Main content area where child templates place content -->
-      <div class="main-content">
+        <!-- Discrete menu -->
+        <div id="menu-discrete" style="display: {% if request.path.startswith('/discrete') %}block{% else %}none{% endif %};">
+          <ul class="sidebar-menu">
+            <li class="section-title">Discrete Tools</li>
+            <li><a href="{{ url_for('discrete_plot_functions.plot_functions') }}">Plot Functions</a></li>
+            <li><a href="{{ url_for('discrete_fourier.fourier') }}">Discrete Fourier Transform</a></li>
+            <li><a href="{{ url_for('discrete_convolution.convolution') }}">Convolution Calculator</a></li>
+            <li><a href="{{ url_for('discrete_dynamic_convolution.dynamic_convolution') }}">Dynamic Convolution</a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <main class="main-content" style="flex:1; padding:20px;">
         {% block content %}{% endblock %}
-      </div>
+      </main>
     </div>
 
     <!-- FOOTER -->
-    <div class="footer">
+    <footer class="footer" style="text-align:center; padding:20px; border-top:1px solid #eee;">
       <p>
-        © 2025 Signal Processing Toolkit. All rights reserved. <br>
+        © 2025 Signal Processing Toolkit. All rights reserved.<br>
         For inquiries, please email:
         <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a>
       </p>
-    </div>
+    </footer>
   </div>
+
+  <script>
+    // Sidebar tab switching
+    const tabC = document.getElementById('tab-continuous');
+    const tabD = document.getElementById('tab-discrete');
+    const menuC = document.getElementById('menu-continuous');
+    const menuD = document.getElementById('menu-discrete');
+
+    tabC.addEventListener('click', () => {
+      tabC.classList.add('active');
+      tabD.classList.remove('active');
+      menuC.style.display = 'block';
+      menuD.style.display = 'none';
+    });
+    tabD.addEventListener('click', () => {
+      tabD.classList.add('active');
+      tabC.classList.remove('active');
+      menuD.style.display = 'block';
+      menuC.style.display = 'none';
+    });
+  </script>
 </body>
 </html>

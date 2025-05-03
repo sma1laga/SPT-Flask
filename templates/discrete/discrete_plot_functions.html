@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Discrete‑Time Function Plotter</h2>
+
+<form method="POST">
+  <!-- Function 1 -->
+  <div class="function-group">
+    <label>Function 1:</label>
+    <input type="text" name="func1" value="{{ func1 }}"
+           placeholder="rect(n)">
+    <button type="button" onclick="insertOperand('rect(n)',this)">Rect</button>
+    <button type="button" onclick="insertOperand('tri(n)', this)">Tri</button>
+    <button type="button" onclick="insertOperand('step(n)',this)">Step</button>
+    <button type="button" onclick="insertOperand('delta(n)',this)">Delta</button>
+    <button type="button" onclick="insertOperand('sin(n)',  this)">Sin</button>
+    <button type="button" onclick="insertOperand('cos(n)',  this)">Cos</button>
+    <button type="button" onclick="insertOperand('sign(n)', this)">Sign</button>
+    <button type="button" onclick="insertOperand('si(n)',   this)">Si</button>
+    <button type="button" onclick="insertOperand('+')">+</button>
+    <button type="button" onclick="insertOperand('-')">−</button>
+    <button type="button" onclick="insertOperand('*')">×</button>
+    <button type="button" onclick="insertOperand('/')">÷</button>
+  </div>
+
+  <!-- Function 2 -->
+  <div class="function-group">
+    <label>Function 2 (optional):</label>
+    <input type="text" name="func2" value="{{ func2 }}"
+           placeholder="tri(n)">
+    <button type="button" onclick="insertOperand('rect(n)',this)">Rect</button>
+    <button type="button" onclick="insertOperand('tri(n)', this)">Tri</button>
+    <button type="button" onclick="insertOperand('step(n)',this)">Step</button>
+    <button type="button" onclick="insertOperand('delta(n)',this)">Delta</button>
+    <button type="button" onclick="insertOperand('sin(n)',  this)">Sin</button>
+    <button type="button" onclick="insertOperand('cos(n)',  this)">Cos</button>
+    <button type="button" onclick="insertOperand('sign(n)', this)">Sign</button>
+    <button type="button" onclick="insertOperand('si(n)',   this)">Si</button>
+    <button type="button" onclick="insertOperand('+')">+</button>
+    <button type="button" onclick="insertOperand('-')">−</button>
+    <button type="button" onclick="insertOperand('*')">×</button>
+    <button type="button" onclick="insertOperand('/')">÷</button>
+  </div>
+
+  <hr>
+
+  <!-- Sampling step -->
+  <label>Sampling step Δn:</label>
+  <input type="number" step="0.1" min="0.1" name="sampling"
+         value="{{ sampling }}">
+
+  <div style="margin-top:1em;">
+    <button type="submit">Plot</button>
+    <button type="button" onclick="document.querySelector('form').reset();">
+      Clear
+    </button>
+  </div>
+</form>
+
+{% if error %}
+  <p style="color:red; margin-top:1em;">{{ error }}</p>
+{% endif %}
+
+{% if plot_data %}
+  <div style="margin-top:2em;">
+    <img src="data:image/png;base64,{{ plot_data }}" alt="Plot">
+  </div>
+{% endif %}
+
+<script>
+  // Track which input is currently focused
+  let activeField = null;
+
+  // Whenever an input gains focus, remember it
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('input[type="text"]').forEach(input => {
+      input.addEventListener('focus', () => activeField = input);
+    });
+  });
+
+  function insertOperand(text, btn) {
+    // If nothing is focused, default to the input in this button group
+    if (!activeField) {
+      activeField = btn.parentElement.querySelector('input[type="text"]');
+    }
+
+    // Compute current selection (start/end) or cursor position
+    const start = activeField.selectionStart ?? activeField.value.length;
+    const end   = activeField.selectionEnd   ?? start;
+
+    // Insert the text, replacing any selected range
+    const v = activeField.value;
+    activeField.value = v.slice(0, start) + text + v.slice(end);
+
+    // Move cursor to just after the inserted text
+    const newPos = start + text.length;
+    activeField.selectionStart = activeField.selectionEnd = newPos;
+
+    // Refocus in case we came here via button click
+    activeField.focus();
+  }
+</script>
+
+{% endblock %}

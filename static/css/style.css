@@ -372,5 +372,15 @@ body.dark-mode {
   color:            #000;
 }
 
-
+.quick-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 1em;
+}
+.quick-buttons button {
+  padding: 4px 8px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
   

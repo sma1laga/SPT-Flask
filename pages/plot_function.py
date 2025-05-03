@@ -171,3 +171,106 @@ def compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretc
     plot_data = base64.b64encode(buf.getvalue()).decode()
     plt.close(fig)
     return {"plot_data": plot_data, "transformation_label": transformation_label}
+
+
+@plot_function_bp.route("/discrete", methods=["GET", "POST"])
+def plot_function_discrete():
+    """
+    Discrete‐time version of the function plotter.
+    Exactly the same API (two inputs + shifts/stretches), but
+    plotted with a stem plot over integer n.
+    """
+    error      = None
+    plot_data  = None
+    label_text = ""
+    # reuse the same form fields from plot_function.html
+    func1_str  = request.form.get("func1", "") if request.method=="POST" else ""
+    func2_str  = request.form.get("func2", "") if request.method=="POST" else ""
+    # parse your shift/stretch/scales exactly as before
+    try:
+        shift1   = int(request.form.get("shift1", 0))
+    except:
+        shift1   = 0
+    try:
+        stretch1 = float(request.form.get("stretch1", 1))
+    except:
+        stretch1 = 1.0
+    try:
+        hscale1  = float(request.form.get("hscale1", 1))
+    except:
+        hscale1  = 1.0
+    try:
+        shift2   = int(request.form.get("shift2", 0))
+    except:
+        shift2   = 0
+    try:
+        stretch2 = float(request.form.get("stretch2", 1))
+    except:
+        stretch2 = 1.0
+    try:
+        hscale2  = float(request.form.get("hscale2", 1))
+    except:
+        hscale2  = 1.0
+
+    if request.method == "POST":
+        # build discrete-time n array
+        n = np.arange(-50, 51)  # from n=-50..50
+        # prepare local vars for eval()
+        lv1 = {"n": (n - shift1) / hscale1, "np": np,
+               "rect": rect, "tri": tri, "step": step,
+               "sin": sin, "cos": cos, "sign": sign,
+               "delta": delta, "exp_iwt": exp_iwt,
+               "inv_t": inv_t, "si": si, "exp": np.exp}
+        lv2 = {"n": (n - shift2) / hscale2, "np": np,
+               "rect": rect, "tri": tri, "step": step,
+               "sin": sin, "cos": cos, "sign": sign,
+               "delta": delta, "exp_iwt": exp_iwt,
+               "inv_t": inv_t, "si": si, "exp": np.exp}
+        try:
+            y1 = stretch1 * eval(func1_str, lv1) if func1_str.strip() else np.zeros_like(n)
+        except Exception as e:
+            error = f"Error evaluating Function 1: {e}"
+        if not error and func2_str.strip():
+            try:
+                y2 = stretch2 * eval(func2_str, lv2)
+            except Exception as e:
+                error = f"Error evaluating Function 2: {e}"
+        else:
+            y2 = None
+
+        if not error:
+            # make a stem plot
+            fig, ax = plt.subplots()
+            ax.stem(n, y1, linefmt='C0-', markerfmt='C0o', basefmt='k-',
+                    label="Function 1", use_line_collection=True)
+            if y2 is not None:
+                ax.stem(n, y2, linefmt='C1-', markerfmt='C1s',
+                        basefmt='k-', label="Function 2", use_line_collection=True)
+            ax.set_title("Discrete‐Time Plot")
+            ax.set_xlabel("n")
+            ax.set_ylabel("f[n]")
+            ax.legend()
+            buf = io.BytesIO()
+            plt.tight_layout()
+            plt.savefig(buf, format="png")
+            buf.seek(0)
+            plot_data = base64.b64encode(buf.getvalue()).decode()
+            plt.close(fig)
+            label_text = f"F1[n] shift={shift1}, scale={stretch1}, hscale={hscale1}\n" + \
+                         f"F2[n] shift={shift2}, scale={stretch2}, hscale={hscale2}"
+
+    return render_template(
+        "plot_function_discrete.html",
+        error=error,
+        plot_data=plot_data,
+        func1=func1_str,
+        func2=func2_str,
+        shift1=shift1,
+        stretch1=stretch1,
+        hscale1=hscale1,
+        shift2=shift2,
+        stretch2=stretch2,
+        hscale2=hscale2,
+        transformation_label=label_text
+    )
+
