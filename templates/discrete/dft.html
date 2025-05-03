@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Discrete Fourier Transform Plotter</h2>
+
+<!-- Comprehensive User Guide -->
+<section class="guide" style="margin-bottom:1.5em; font-size:0.95rem; color:#333;">
+  <h3>How to Use the DFT Plotter</h3>
+  <ol>
+    <li><strong>Length N:</strong> Number of time-domain samples (enter an integer <code>≥ 1</code>). The sequence<br>
+        is defined for <code>n = 0, 1, …, N-1</code>.</li>
+    <li><strong>Preset:</strong> Quick-select common sequences; this fills the <code>f(n)</code> field:
+      <ul>
+        <li><code>Rectangular</code>: <code>rect(n,N)</code> → all ones.</li>
+        <li><code>Triangular</code>: <code>tri(n,N)</code> → symmetric triangle window.</li>
+        <li><code>Step</code>: <code>step(n,N)</code> → Heaviside (1 for n ≥ 0).</li>
+        <li><code>Delta</code>: <code>delta(n,N)</code> → impulse at n = 0.</li>
+        <li><code>Signum</code>: <code>sign(n,N)</code> → sign(n).</li>
+        <li><code>Sinusoid</code>: <code>sin(2*pi*n/N)</code>.</li>
+      </ul>
+    </li>
+    <li><strong>f(n):</strong> Enter <em>any</em> valid formula in terms of <code>n</code> and <code>N</code>, using:
+      <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, constants <code>pi</code>, <code>e</code>, etc.<br>
+      <em>Examples:</em> <code>cos(pi*n/4) + 0.5</code>, <code>exp(-n/5)</code>, <code>sqrt(n)</code>.
+    </li>
+    <li><strong>Zero-pad ×:</strong> Integer factor <code>≥ 1</code>. Sequence is zero-padded to length <code>M = padFactor × N</code>,<br>
+        improving frequency resolution.</li>
+    <li>After editing any field, plots auto-update (300 ms delay). Press <strong>Compute</strong> for a full refresh.<br>
+        Use <strong>Enlarge</strong> to zoom the plots.</li>
+  </ol>
+
+  <h3>Plot Interpretation</h3>
+  <ul>
+    <li><strong>Left panel:</strong> Time-domain samples <code>x[n]</code> vs. <code>n</code> (real in blue, imaginary in red).</li>
+    <li><strong>Middle panel:</strong> Normalized magnitude spectrum <code>|X[k]|</code> vs. frequency bin <code>k</code> (0 ≤ k < M).</li>
+    <li><strong>Right panel:</strong> Phase spectrum <code>∠X[k]</code> (radians), wrapped to [−π, π],<br>
+        with negligible bins set to zero.</li>
+  </ul>
+</section>
+
+<form id="dftForm" method="POST">
+  <label for="seqLength">Length N:</label>
+  <input type="number" id="seqLength" name="N" min="1" value="{{ N }}">
+
+  <label for="preset" style="margin-left:20px;">Preset:</label>
+  <select id="preset" style="margin-right:20px;">
+    <option value="">Custom</option>
+    <option value="rect(n,N)"    {% if func=='rect(n,N)'    %}selected{% endif %}>Rectangular</option>
+    <option value="tri(n,N)"     {% if func=='tri(n,N)'     %}selected{% endif %}>Triangular</option>
+    <option value="step(n,N)"    {% if func=='step(n,N)'    %}selected{% endif %}>Step</option>
+    <option value="delta(n,N)"   {% if func=='delta(n,N)'   %}selected{% endif %}>Delta</option>
+    <option value="sign(n,N)"    {% if func=='sign(n,N)'    %}selected{% endif %}>Signum</option>
+    <option value="sin(2*pi*n/N)"{% if func=='sin(2*pi*n/N)'%}selected{% endif %}>Sinusoid</option>
+  </select>
+
+  <label for="func">f(n):</label>
+  <input type="text" id="func" name="func" size="30" value="{{ func }}">
+
+  <label for="padFactor" style="margin-left:20px;">Zero-pad ×:</label>
+  <input type="number" id="padFactor" name="padFactor" min="1" value="{{ padFactor }}">
+
+  <button type="submit" style="margin-left:20px;">Compute</button>
+</form>
+
+<div id="plotWrapper" style="position:relative; margin-top:20px;">
+  <img id="dftPlot"
+       {% if plot_data %}
+         src="data:image/png;base64,{{ plot_data }}"
+       {% else %}
+         style="display:none;"
+       {% endif %}
+       alt="DFT plot"
+       style="max-width:100%; border:1px solid #ccc; border-radius:4px;">
+  <button id="enlargeBtn" onclick="toggleEnlarge()">Enlarge</button>
+  <p id="dftLabel">{{ dft_label }}</p>
+</div>
+
+<script>
+  function getParams(){
+    return {
+      N: parseInt(document.getElementById('seqLength').value)||1,
+      func: document.getElementById('func').value,
+      padFactor: parseInt(document.getElementById('padFactor').value)||1
+    };
+  }
+
+  document.getElementById('preset').addEventListener('change', e=>{
+    const val = e.target.value;
+    if(val!==''){
+      document.getElementById('func').value = val;
+      liveUpdate();
+    }
+  });
+
+  function debounce(fn, d){
+    let t;
+    return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), d); };
+  }
+
+  const liveUpdate = debounce(()=>{
+    const p = getParams();
+    fetch("{{ url_for('discrete_fourier.update_dft') }}", {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(p)
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.plot_data){
+        const img = document.getElementById('dftPlot');
+        img.src = 'data:image/png;base64,'+data.plot_data;
+        img.style.display='block';
+        document.getElementById('dftLabel').innerText = data.dft_label;
+      }
+    }).catch(console.error);
+  }, 300);
+
+  ['seqLength','func','padFactor'].forEach(id=>
+    document.getElementById(id).addEventListener('input', liveUpdate)
+  );
+
+  document.addEventListener('DOMContentLoaded', ()=> liveUpdate());
+
+  function toggleEnlarge(){
+    document.getElementById('plotWrapper').classList.toggle('enlarged');
+  }
+</script>
+
+<style>
+  .guide h3 { margin-bottom:0.3em; }
+  .guide ol, .guide ul { margin:0.5em 0 1em 1.2em; }
+  .guide code { background:#f4f4f4; padding:2px 4px; border-radius:3px; }
+  #plotWrapper { display:inline-block; }
+  #plotWrapper.enlarged img {
+    transform: scale(1.5);
+    transform-origin: center;
+    transition: transform .3s;
+  }
+  #enlargeBtn {
+    position:absolute; top:8px; right:8px;
+    background:#007acc;color:#fff;border:none;
+    border-radius:4px;padding:4px 8px;cursor:pointer;
+  }
+  #enlargeBtn:hover { background:#005fa3; }
+  form input, form select { margin-right:10px; }
+</style>
+{% endblock %}

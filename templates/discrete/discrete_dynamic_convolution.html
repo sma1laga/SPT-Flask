@@ -1,15 +1,121 @@
 {% extends "base.html" %}
 {% block content %}
-  <h2>Discrete: Plot Functions</h2>
-  <form method="post">
-    <label>f[n] = </label>
-    <input type="text" name="func" value="{{ func }}" placeholder="n**2">
-    <button type="submit">Plot</button>
-  </form>
-  {% if error %}
-    <p style="color:red">{{ error }}</p>
-  {% endif %}
-  {% if img_data %}
-    <img src="data:image/png;base64,{{ img_data }}" alt="">
-  {% endif %}
+<h2>Discrete Dynamic Convolution Explorer</h2>
+
+<div style="margin-bottom:1em;">
+  <label>f₁[n]:</label>
+  <select id="func1">
+    <option value="">-- none --</option>
+    {% for f in functions %}
+      <option value="{{ f }}">{{ f }}</option>
+    {% endfor %}
+  </select>
+
+  <label style="margin-left:2em;">f₂[n]:</label>
+  <select id="func2">
+    <option value="">-- none --</option>
+    {% for f in functions %}
+      <option value="{{ f }}">{{ f }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div style="margin-bottom:1em;">
+  <label>Shift τ:</label>
+  <input type="range" id="tauSlider" min="-10" max="10" step="1" value="0">
+  <span id="tauValue">0</span>
+</div>
+
+<div style="max-width: 650px; margin: auto;">
+  <canvas id="topChart" height="200" style="width:100%; border:1px solid #ccc; border-radius:4px;"></canvas>
+  <canvas id="bottomChart" height="150" style="width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></canvas>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let tData = [], y1Data = [], y2Data = [], yConvData = [];
+let topChart, bottomChart;
+
+function initCharts(){
+  if(topChart) topChart.destroy();
+  if(bottomChart) bottomChart.destroy();
+  const topCtx = document.getElementById("topChart").getContext("2d");
+  const bottomCtx = document.getElementById("bottomChart").getContext("2d");
+
+  topChart = new Chart(topCtx, {
+    type: 'line',
+    data: { labels: tData,
+      datasets: [
+        { label: 'f₁[n]', data: y1Data, borderColor: 'blue', fill: false },
+        { label: 'f₂[τ−n]', data: [],     borderColor: 'orange', fill: false },
+        { label: 'f₁·f₂', data: [],     borderColor: 'red', fill: true, backgroundColor: 'rgba(255,0,0,0.2)', pointRadius: 0 }
+      ]
+    },
+    options: { animation: false, scales: { x: { title: { display: true, text: 'n' } } } }
+  });
+
+  bottomChart = new Chart(bottomCtx, {
+    type: 'line',
+    data: { labels: tData,
+      datasets: [
+        { label: '(f₁*f₂)[τ]', data: yConvData, borderColor: 'darkblue', fill: false },
+        { label: 'Marker',       data: [], pointRadius: 5, showLine: false, borderColor: 'red' }
+      ]
+    },
+    options: { animation: false, scales: { x: { title: { display: true, text: 'τ' } } } }
+  });
+}
+
+function fetchData(){
+  fetch("{{ url_for('discrete_dynamic_convolution.data') }}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      func1: document.getElementById('func1').value,
+      func2: document.getElementById('func2').value
+    })
+  })
+  .then(r => r.json().then(d => r.ok ? d : Promise.reject(d.error)))
+  .then(d => {
+    tData     = d.n;
+    y1Data    = d.y1;
+    y2Data    = d.y2;
+    yConvData = d.y_conv;
+    initCharts();
+    updatePlots();
+  })
+  .catch(e => alert('Error: ' + e));
+}
+
+function updatePlots(){
+  const τ = parseInt(document.getElementById('tauSlider').value);
+  document.getElementById('tauValue').textContent = τ;
+
+  // Shifted f2[n]
+  const y2shift = tData.map((v,i) => {
+    const j = tData.indexOf(τ - v);
+    return j >= 0 ? y2Data[j] : 0;
+  });
+  topChart.data.datasets[1].data = y2shift;
+
+  // Pointwise product
+  const yMul = y1Data.map((v,i) => v * y2shift[i]);
+  topChart.data.datasets[2].data = yMul;
+  topChart.update();
+
+  // Convolution marker
+  const idx = tData.indexOf(τ);
+  const convVal = idx >= 0 ? yConvData[idx] : 0;
+  bottomChart.data.datasets[1].data = [{ x: τ, y: convVal }];
+  bottomChart.update();
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('func1').onchange = fetchData;
+  document.getElementById('func2').onchange = fetchData;
+  document.getElementById('tauSlider').oninput = updatePlots;
+  initCharts();
+});
+</script>
 {% endblock %}

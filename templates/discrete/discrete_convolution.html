@@ -1,15 +1,77 @@
 {% extends "base.html" %}
 {% block content %}
-  <h2>Discrete: Plot Functions</h2>
-  <form method="post">
-    <label>f[n] = </label>
-    <input type="text" name="func" value="{{ func }}" placeholder="n**2">
-    <button type="submit">Plot</button>
+  <h2>Discrete Convolution Calculator</h2>
+
+  <form id="convForm" method="POST">
+    <div>
+      <label>Sampling Interval (in n-steps, decimal allowed):</label>
+      <input type="number" name="ds" min="0.1" step="0.1" value="{{ ds|default('1.0') }}">
+    </div>
+
+    <div>
+      <label>Sequence 1 (in terms of n):</label>
+      <input type="text" name="func1" value="{{ func1|default('') }}"
+             placeholder="e.g. rect(n) + step(n-2)">
+    </div>
+    <div>
+      <label>Sequence 2 (in terms of n):</label>
+      <input type="text" name="func2" value="{{ func2|default('') }}"
+             placeholder="e.g. tri(n/2)">
+    </div>
+
+    <h4>Quick Inserts</h4>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" onclick="insertOperand('rect(n)')">rect</button>
+      <button type="button" onclick="insertOperand('tri(n)')">tri</button>
+      <button type="button" onclick="insertOperand('step(n)')">step</button>
+      <button type="button" onclick="insertOperand('delta(n)')">delta</button>
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+    </div>
+
+    <div style="margin-top:10px;">
+      <button type="submit">Compute</button>
+      <button type="button" id="clearBtn">Clear</button>
+    </div>
+
+    {% if error %}
+      <div style="color:red;">Error: {{ error }}</div>
+    {% endif %}
   </form>
-  {% if error %}
-    <p style="color:red">{{ error }}</p>
-  {% endif %}
-  {% if img_data %}
-    <img src="data:image/png;base64,{{ img_data }}" alt="">
-  {% endif %}
+
+  <div id="plotWrapper" style="margin-top:20px; position:relative; display:inline-block;">
+    {% if plot_data %}
+      <img src="data:image/png;base64,{{ plot_data }}" alt="Discrete Convolution Plot" id="convPlot">
+      <button type="button" onclick="toggleEnlarge()"
+              style="position:absolute; top:5px; right:5px;">Enlarge</button>
+    {% endif %}
+  </div>
+
+  <script>
+    let activeField = null;
+    document.querySelectorAll('input[name="func1"], input[name="func2"]').forEach(el=>{
+      el.addEventListener('focus', ()=> activeField = el);
+    });
+    function insertOperand(txt) {
+      if (!activeField) return alert("Focus an input first");
+      const [start,end] = [activeField.selectionStart, activeField.selectionEnd];
+      const v = activeField.value;
+      activeField.value = v.slice(0,start) + txt + v.slice(end);
+      activeField.selectionStart = activeField.selectionEnd = start + txt.length;
+      activeField.focus();
+    }
+    document.getElementById("clearBtn").onclick = ()=> {
+      document.querySelectorAll('input[name="func1"], input[name="func2"], input[name="ds"]').forEach(i=>i.value="");
+      const img = document.getElementById("convPlot");
+      if(img) img.remove();
+    };
+    function toggleEnlarge() {
+      document.getElementById("plotWrapper").classList.toggle("enlarged");
+    }
+  </script>
+  <style>
+    #plotWrapper.enlarged { transform: scale(1.5); transform-origin:center; transition:0.3s; }
+    #convPlot { border:1px solid #ccc; max-width:100%; }
+  </style>
 {% endblock %}
