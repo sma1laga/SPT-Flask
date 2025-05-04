@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Fourier Transform Exam</h2>
+
+{% if not started %}
+  <p>Click the button below to start your timed exam of 10 questions.</p>
+  <a href="{{ url_for('exam_fourier.start_exam') }}">
+    <button type="button">Start Exam</button>
+  </a>
+
+{% else %}
+  <form method="POST">
+    <p>Your exam has started. Answer all questions and then submit.</p>
+
+    {% for prob in problems %}
+      <div style="margin-bottom:20px; border:1px solid #ccc; padding:10px;">
+        <h4>Question {{ prob.idx + 1 }} ({{ prob.direction.replace('_',' → ') }})</h4>
+        <img src="data:image/png;base64,{{ prob.img }}" alt="Problem {{ prob.idx + 1 }}">
+        <p>Select your answer:</p>
+        <label><input type="radio" name="ans_{{ prob.idx }}" value="0"> Option 1</label><br>
+        <label><input type="radio" name="ans_{{ prob.idx }}" value="1"> Option 2</label><br>
+        <label><input type="radio" name="ans_{{ prob.idx }}" value="2"> Option 3</label><br>
+        <label><input type="radio" name="ans_{{ prob.idx }}" value="3"> Option 4</label>
+      </div>
+    {% endfor %}
+
+    <button type="submit">Submit Exam</button>
+  </form>
+{% endif %}
+
+{% endblock %}

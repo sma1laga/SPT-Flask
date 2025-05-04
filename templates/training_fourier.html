@@ -1,8 +1,113 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Fourier Training Module</h2>
-<p>This module lets you practice Fourier transform concepts.
-   <!-- Insert your training logic, interactive problems, and feedback here -->
-</p>
-<p><a href="{{ url_for('home') }}">Back to Home</a></p>
+<h2>Fourier Transform Training</h2>
+
+<!-- Direction selection -->
+<div style="margin-bottom:10px;">
+  <label><input type="radio" name="direction" value="TIME_TO_FREQ" checked> Time → Frequency</label>
+  <label><input type="radio" name="direction" value="FREQ_TO_TIME"> Frequency → Time</label>
+</div>
+
+<!-- Difficulty selection -->
+<div style="margin-bottom:10px;">
+  <label><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
+  <label><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
+  <label><input type="radio" name="difficulty" value="HARD"> Hard</label>
+</div>
+
+<button id="generateBtn">Generate Problem</button>
+
+<!-- Plot container -->
+<div id="fourier-training-plot" style="position:relative; margin-top:20px; display:inline-block;">
+  <img id="fourier_plot_image" src="" alt="Training Fourier Plot" style="display:none; max-width:100%;">
+</div>
+
+<!-- Answer buttons -->
+<div style="margin-top:10px;">
+  <button class="optionBtn" data-index="0">Option 1</button>
+  <button class="optionBtn" data-index="1">Option 2</button>
+  <button class="optionBtn" data-index="2">Option 3</button>
+  <button class="optionBtn" data-index="3">Option 4</button>
+</div>
+
+<!-- Feedback -->
+<div id="feedback" style="margin-top:10px; font-size:1.1em; color:#333;"></div>
+
+<script>
+  let correctIndex = null;
+
+  document.getElementById("generateBtn").addEventListener("click", generateProblem);
+
+  document.querySelectorAll(".optionBtn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      let selectedIndex = parseInt(this.getAttribute("data-index"));
+      checkAnswer(selectedIndex);
+    });
+  });
+
+  function getDifficulty() {
+    let radios = document.getElementsByName("difficulty");
+    for (let r of radios) if (r.checked) return r.value;
+    return "EASY";
+  }
+
+  function getDirection() {
+    let radios = document.getElementsByName("direction");
+    for (let r of radios) if (r.checked) return r.value;
+    return "TIME_TO_FREQ";
+  }
+
+  function generateProblem() {
+    fetch("{{ url_for('training_fourier.generate_problem') }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        difficulty: getDifficulty(),
+        direction:  getDirection()
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        document.getElementById("feedback").innerText = "Error: " + data.error;
+      } else {
+        let img = document.getElementById("fourier_plot_image");
+        img.src = "data:image/png;base64," + data.plot_data;
+        img.style.display = "block";
+        correctIndex = data.correctIndex;
+        document.getElementById("feedback").innerText = "Problem generated. Pick the correct option!";
+      }
+    })
+    .catch(err => {
+      console.error("Error generating problem:", err);
+      document.getElementById("feedback").innerText = "Error generating problem.";
+    });
+  }
+
+  function checkAnswer(selectedIndex) {
+    if (correctIndex === null) {
+      document.getElementById("feedback").innerText = "Please generate a problem first!";
+      return;
+    }
+    fetch("{{ url_for('training_fourier.check_answer') }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        selectedIndex: selectedIndex,
+        correctIndex:  correctIndex
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("feedback").innerText = data.feedback || "No feedback received.";
+    })
+    .catch(err => {
+      console.error("Error checking answer:", err);
+      document.getElementById("feedback").innerText = "Error checking answer.";
+    });
+  }
+</script>
+
+<p>Want to take a 10-question exam? <a href="{{ url_for('exam_fourier.exam_fourier') }}">Click here!</a></p>
+
 {% endblock %}

@@ -36,6 +36,7 @@ from pages.training.training_processing_chain import training_processing_chain_b
 
 # Import training exams
 from pages.exam_convolution import exam_convolution_bp
+from pages.exam_fourier import exam_fourier_bp
 
 
 
@@ -78,6 +79,8 @@ def create_app():
     # Exams try
     app.secret_key = "some secret"  # needed for session
     app.register_blueprint(exam_convolution_bp, url_prefix="/exam/convolution")
+    app.register_blueprint(exam_fourier_bp, url_prefix='/exam/fourier')
+
     
 
 
