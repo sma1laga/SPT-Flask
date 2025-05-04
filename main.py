@@ -5,6 +5,9 @@ from pages.fourier_page import fourier_bp
 from pages.convolution import convolution_bp
 from pages.process_chain import process_chain_bp
 from pages.filter_design import filter_design_bp
+from pages.image_filter import image_filter_bp
+
+
 from pages.speech_filter_input import speech_filter_input_bp
 from pages.function_definitions import func_defs_bp
 from pages.transform_table import transform_table_bp
@@ -22,12 +25,10 @@ from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
 
 
 
-
-
-
-
 # Import advanced noise reduction blueprint
 from pages.advanced_noise_reduction import advanced_noise_reduction_bp
+
+
 
 # Import training blueprints from the training subfolder:
 from pages.training.training_convolution import training_convolution_bp
@@ -57,6 +58,9 @@ def create_app():
     app.register_blueprint(filter_design_bp, url_prefix="/filter_design")
     app.register_blueprint(func_defs_bp,     url_prefix="/function_definitions")
     app.register_blueprint(speech_filter_input_bp, url_prefix="/filter_design/speech_filter_input")
+    app.register_blueprint(image_filter_bp)
+
+
     
     app.register_blueprint(transform_table_bp, url_prefix="/transform_table")
     app.register_blueprint(theory_bp,        url_prefix="/theory")

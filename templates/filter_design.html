@@ -1,155 +1,152 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Filter Design & Experimentation</h2>
+<h2>Filter Design &amp; Experimentation</h2>
 <p>
-  Design your digital filter and experiment with noise. The generated plots below show:
-  <br>- The <strong>spectrum (FFT) of the original noise signal</strong> (magnitude vs frequency),
-  <br>- The <strong>spectrum (FFT) of the filtered noise signal</strong>,
-  <br>- And the <strong>filter's frequency response</strong>.
+  Design your digital filter and experiment with noise. The generated plots below show:<br>
+  – the <strong>spectrum (FFT) of the original noise signal</strong> (magnitude vs frequency),<br>
+  – the <strong>spectrum (FFT) of the filtered noise signal</strong>,<br>
+  – and the <strong>filter’s frequency response</strong>.
 </p>
 
 {% if error %}
-  <div style="color: red;">{{ error }}</div>
+  <div style="color:red;">{{ error }}</div>
 {% endif %}
 
 <form method="post">
-    <label for="filter_type">Filter Type:</label>
-    <select name="filter_type" id="filter_type">
-      <option value="lowpass" {% if request.form.get('filter_type','lowpass') == 'lowpass' %}selected{% endif %}>Low Pass</option>
-      <option value="highpass" {% if request.form.get('filter_type') == 'highpass' %}selected{% endif %}>High Pass</option>
-      <option value="bandpass" {% if request.form.get('filter_type') == 'bandpass' %}selected{% endif %}>Band Pass</option>
-      <option value="bandstop" {% if request.form.get('filter_type') == 'bandstop' %}selected{% endif %}>Band Stop</option>
-    </select>
-    <br>
-    <small>
-      Choose the filter type. Use low/high pass for a single cutoff value, or band pass/stop for a range.
-    </small>
-    <br><br/>
-  
-    <label for="order">Filter Order:</label>
-    <input type="number" name="order" id="order" value="{{ request.form.get('order', '4') }}" min="1" max="5" required>
-    <br>
-    <small>
-      The filter order (1–5) determines how steep the transition is. Higher order means a sharper cutoff.
-    </small>
-    <br><br/>
-  
-    <!-- Cutoff Frequency Field -->
-    <label for="cutoff">Cutoff Frequency (Hz):</label>
-    <div style="position: relative;">
+  <!-- ───────────── Filter parameters ───────────── -->
+  <label for="filter_type">Filter Type:</label>
+  <select name="filter_type" id="filter_type">
+    <option value="lowpass"  {% if request.form.get('filter_type','lowpass')=='lowpass'  %}selected{% endif %}>Low Pass</option>
+    <option value="highpass" {% if request.form.get('filter_type')=='highpass' %}selected{% endif %}>High Pass</option>
+    <option value="bandpass" {% if request.form.get('filter_type')=='bandpass' %}selected{% endif %}>Band Pass</option>
+    <option value="bandstop" {% if request.form.get('filter_type')=='bandstop' %}selected{% endif %}>Band Stop</option>
+  </select>
+  <br>
+  <small>Choose the filter type. Use low/high pass for a single cutoff value, or band pass/stop for a range.</small>
+  <br><br>
+
+  <label for="order">Filter Order:</label>
+  <input type="number" name="order" id="order"
+         value="{{ request.form.get('order','4') }}" min="1" max="5" required>
+  <br>
+  <small>The filter order (1–5) determines how steep the transition is. Higher order means a sharper cutoff.</small>
+  <br><br>
+
+  <!-- Cut‑off Frequency -->
+  <label for="cutoff">Cutoff Frequency&nbsp;(Hz):</label>
+  <div style="position:relative;">
     <input type="text" name="cutoff" id="cutoff"
-            value="{{ request.form.get('cutoff', '100') }}"
-            pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
-            title="Enter a single numeric value (e.g., 100) for low/high pass, or two numeric values separated by a comma (e.g., 100,400) for band pass/stop."
-            required
-            style="width: 100%; padding-right: 30px;">
+           value="{{ request.form.get('cutoff','100') }}"
+           pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
+           title="Single value for low/high‑pass or two comma‑separated values for band filters"
+           required style="width:100%;padding-right:30px;">
     <a href="{{ url_for('info.bandpass_order') }}" target="_blank"
-        class="info-button"
-        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); text-decoration: none; background-color: #007acc; color: #fff; border-radius: 50%; width: 20px; height: 20px; line-height: 20px; font-size: 12px; text-align: center;">
-        i
-    </a>
-    </div>
-    <br>
-    <small>
-    For low/high pass, enter a single value (up to 90,000 Hz). For band pass/stop, enter two values separated by a comma (e.g., 100,400).
-    </small>
-    <br><br/>
-    
-  
-    <label for="sample_rate">Sample Rate (Hz):</label>
-    <input type="number" name="sample_rate" id="sample_rate" value="{{ request.form.get('sample_rate', '1000') }}" min="1" max="900000" required>
-    <br>
-    <small>
-      The sample rate must be at least twice the highest frequency (Nyquist rate) and is limited to 900,000 Hz.
-    </small>
-    <br><br/>
-  
-    <label for="noise_amplitude">Noise Amplitude:</label>
-    <input type="number" name="noise_amplitude" id="noise_amplitude" value="{{ request.form.get('noise_amplitude', '1') }}" step="0.1" min="0" max="10" required>
-    <br>
-    <small>
-      Controls the intensity of the generated white noise (suggested range: 0 to 10).
-    </small>
-    <br><br/>
-  
-    <!-- Number of Samples Field -->
-    <label for="num_samples">Number of Samples:</label>
-    <div style="position: relative;">
+       class="info-button"
+       style="position:absolute;right:5px;top:50%;transform:translateY(-50%);
+              background:#007acc;color:#fff;border-radius:50%;width:20px;height:20px;
+              line-height:20px;font-size:12px;text-align:center;">i</a>
+  </div>
+  <br>
+  <small>For low/high pass, enter one value (≤ 90 kHz). For band pass/stop, enter two values like “100,400”.</small>
+  <br><br>
+
+  <label for="sample_rate">Sample Rate&nbsp;fs&nbsp;(Hz):</label>
+  <input type="number" name="sample_rate" id="sample_rate"
+         value="{{ request.form.get('sample_rate','1000') }}" min="1" max="900000" required>
+  <br>
+  <small>The sample‑rate must be at least twice the highest frequency (Nyquist) and ≤ 900 kHz.</small>
+  <br><br>
+
+  <label for="noise_amplitude">Noise Amplitude:</label>
+  <input type="number" name="noise_amplitude" id="noise_amplitude"
+         value="{{ request.form.get('noise_amplitude','1') }}" step="0.1" min="0" max="10" required>
+  <br>
+  <small>Controls the intensity of the generated white noise (0 – 10).</small>
+  <br><br>
+
+  <!-- Number of Samples -->
+  <label for="num_samples">Number of Samples:</label>
+  <div style="position:relative;">
     <input type="number" name="num_samples" id="num_samples"
-            value="{{ request.form.get('num_samples', '1000') }}"
-            min="100" max="10000" required
-            style="width: 100%; padding-right: 30px;">
+           value="{{ request.form.get('num_samples','1000') }}" min="100" max="10000" required
+           style="width:100%;padding-right:30px;">
     <a href="{{ url_for('info.sampling') }}" target="_blank"
-        class="info-button"
-        style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); text-decoration: none; background-color: #007acc; color: #fff; border-radius: 50%; width: 20px; height: 20px; line-height: 20px; font-size: 12px; text-align: center;">
-        i
-    </a>
-    </div>
-    <br>
-    <small>
-    The total number of data points in the noise signal (max 10,000).
-    </small>
-    <br><br/>
-  
-    <button type="submit">Design Filter & Apply Noise</button>
-  </form>
-  
+       class="info-button"
+       style="position:absolute;right:5px;top:50%;transform:translateY(-50%);
+              background:#007acc;color:#fff;border-radius:50%;width:20px;height:20px;
+              line-height:20px;font-size:12px;text-align:center;">i</a>
+  </div>
+  <br>
+  <small>Total data points in the noise signal (max 10 000).</small>
+  <br><br>
+
+  <!-- ───────────── Action buttons ───────────── -->
+  <button type="submit"
+          style="background:#007acc;color:#fff;padding:6px 12px;border:none;border-radius:4px;">
+    Design Filter &amp; Apply Noise
+  </button>
+
+  <!-- NEW button → Image‑Filter Lab -->
+  <button type="submit" name="go_image_filter" value="1"
+          style="background:#10b981;color:#fff;padding:6px 12px;border:none;border-radius:4px;margin-left:8px;">
+    &rarr;&nbsp;Try on an image
+  </button>
+</form>
 
 {% if plot_url %}
   <h3>Resulting Plots</h3>
-  <img src="data:image/png;base64,{{ plot_url }}" alt="Filter Design Plots">
+  <img src="data:image/png;base64,{{ plot_url }}" alt="Filter Design Plots"
+       style="max-width:800px;height:auto;border:1px solid #ccc;border-radius:4px;">
 {% endif %}
 
+<!-- ───────────── Live filtering demo ───────────── -->
 <h3>Live Filtering Simulation</h3>
 <p>
-  The image below simulates a live filtering process, reflecting the filter parameters you provided.
-  It updates approximately every 1000 ms.
+  The image below simulates a live filtering process, reflecting your current parameters.
+  It updates about every 1 s.
 </p>
-<img id="livePlot" src="{{ url_for('filter_design.live_plot') }}" alt="Live Filter Plot" style="max-width:800px; height:auto;">
+<img id="livePlot" src="{{ url_for('filter_design.live_plot') }}"
+     alt="Live Filter Plot"
+     style="max-width:800px;height:auto;">
 <br>
 <button id="toggleLiveButton">Start Live</button>
+
 <script>
-  function buildLivePlotURL() {
-    var baseUrl = "{{ url_for('filter_design.live_plot') }}";
-    var filterType = document.getElementById("filter_type").value;
-    var order = document.getElementById("order").value;
-    var cutoff = document.getElementById("cutoff").value;
-    var sampleRate = document.getElementById("sample_rate").value;
-    var noiseAmplitude = document.getElementById("noise_amplitude").value;
-    var numSamples = document.getElementById("num_samples").value;
-    return baseUrl + 
-      "?filter_type=" + encodeURIComponent(filterType) +
-      "&order=" + encodeURIComponent(order) +
-      "&cutoff=" + encodeURIComponent(cutoff) +
-      "&sample_rate=" + encodeURIComponent(sampleRate) +
-      "&noise_amplitude=" + encodeURIComponent(noiseAmplitude) +
-      "&num_samples=" + encodeURIComponent(numSamples) +
-      "&t=" + new Date().getTime();
-  }
-  
-  function refreshLivePlot() {
-    var livePlot = document.getElementById("livePlot");
-    livePlot.src = buildLivePlotURL();
-  }
-  
-  var timerId = null;
-  
-  document.getElementById("toggleLiveButton").addEventListener("click", function() {
-    if (timerId) {
-      clearInterval(timerId);
-      timerId = null;
-      this.textContent = "Start Live";
-    } else {
-      timerId = setInterval(refreshLivePlot, 1000);
-      this.textContent = "Stop Live";
-      refreshLivePlot();
-    }
+function buildLivePlotURL() {
+  const base = "{{ url_for('filter_design.live_plot') }}";
+  const params = new URLSearchParams({
+    filter_type:      document.getElementById("filter_type").value,
+    order:            document.getElementById("order").value,
+    cutoff:           document.getElementById("cutoff").value,
+    sample_rate:      document.getElementById("sample_rate").value,
+    noise_amplitude:  document.getElementById("noise_amplitude").value,
+    num_samples:      document.getElementById("num_samples").value,
+    t:                Date.now()
   });
-  
-  // Automatically start live simulation when a plot is generated.
-  {% if plot_url %}
+  return base + "?" + params.toString();
+}
+
+function refreshLivePlot() {
+  document.getElementById("livePlot").src = buildLivePlotURL();
+}
+
+let timerId = null;
+document.getElementById("toggleLiveButton").addEventListener("click", () => {
+  if (timerId) {
+    clearInterval(timerId);
+    timerId = null;
+    this.textContent = "Start Live";
+  } else {
     timerId = setInterval(refreshLivePlot, 1000);
-    document.getElementById("toggleLiveButton").textContent = "Stop Live";
-  {% endif %}
+    this.textContent = "Stop Live";
+    refreshLivePlot();
+  }
+});
+
+// Auto‑start live mode when a static plot exists.
+{% if plot_url %}
+  timerId = setInterval(refreshLivePlot, 1000);
+  document.getElementById("toggleLiveButton").textContent = "Stop Live";
+{% endif %}
 </script>
 {% endblock %}

@@ -1,17 +1,23 @@
 # pages/filter_design.py
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for
 import numpy as np
 from scipy.signal import butter, filtfilt, freqz
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 
-filter_design_bp = Blueprint("filter_design", __name__)
-
+filter_design_bp = Blueprint(
+    "filter_design",
+    __name__,
+    template_folder="../templates",
+    url_prefix="/filter_design",
+)
 @filter_design_bp.route("/", methods=["GET", "POST"])
 def filter_design():
     plot_url = None
     error = None
+    if request.form.get("go_image_filter") == "1":
+        return redirect(url_for("image_filter.home"))
     if request.method == "POST":
         try:
             # Get form data with default values

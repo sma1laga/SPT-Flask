@@ -1,0 +1,36 @@
+<!-- templates/image_filter_form.html -->
+<div class="flex flex-col gap-4">
+
+    <label class="block">
+      <span class="font-medium">Choose image</span>
+      <input type="file" name="image"
+             accept="image/*"
+             class="mt-1 block w-full text-sm file:border file:px-2 file:py-1"/>
+    </label>
+  
+    <fieldset>
+      <legend class="font-medium">Preset</legend>
+      <label class="mr-4"><input type="radio" name="preset" value="blur"> Blur</label>
+      <label class="mr-4"><input type="radio" name="preset" value="sharpen"> Sharpen</label>
+      <label><input type="radio" name="preset" value="edge"> Edge detect</label>
+    </fieldset>
+  
+    <details>
+      <summary class="cursor-pointer font-medium">Butterworth options</summary>
+      <div class="mt-2 space-y-2">
+        <label>Type
+          <select name="b_type" class="ml-2 border rounded px-1 py-0.5">
+            <option value="lowpass">low‑pass</option>
+            <option value="highpass">high‑pass</option>
+            <option value="bandpass">band‑pass</option>
+          </select>
+        </label><br>
+        <label>Cutoff&nbsp;<input name="cutoff" type="number" step="0.01" value="0.15"
+                                  class="border rounded px-1 py-0.5 w-20"></label><br>
+        <label>Order&nbsp;&nbsp;<input name="order" type="number" min="1" max="8" value="2"
+                                  class="border rounded px-1 py-0.5 w-16"></label>
+      </div>
+    </details>
+  
+  </div>
+  
