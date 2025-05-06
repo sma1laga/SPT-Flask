@@ -39,3 +39,273 @@ input[type=range]{ accent-color: #2563eb; }
   border-radius: .5rem;               /* keep rounded corners aligned */
 }
 #hilite           { pointer-events: none; }  /* overlay ignores clicks */
+
+/* ─── theory section ───────────────────────────────── */
+.theory            { margin-top: 3.5rem; }
+.theory-headline   { font-size: 1.5rem; margin-bottom: 1.4rem; }
+
+.theory-card       { background:#fff; padding:1.3rem 1.5rem; border-radius:1rem;
+                     box-shadow:0 3px 8px rgba(0,0,0,.06); margin-bottom:1.4rem; }
+.theory-card h4    { margin-top:0; font-size:1.1rem; }
+
+.sym               { font-family: "Latin Modern Math", Cambria, serif; }
+
+.theory .formula   { text-align: center; margin: .6rem 0; }
+
+.theory figure     { margin: .8rem 0 0; text-align:center; }
+.theory figcaption { font-size:.8rem; color:#666; margin-top:.4rem; }
+
+@media (min-width: 850px){
+  .theory-card     { display:grid; grid-template-columns: 1fr 1fr;
+                     gap:1.2rem; align-items:center; }
+  .theory-card h4  { grid-column: 1 / -1; }
+}
+
+
+/* ─── THEME VARIABLES ───────────────────────────────────── */
+:root {
+    --bg:       #f4f6fb;
+    --fg:       #1e293b;
+    --muted:    #64748b;
+    --accent:   #4f46e5;
+    --accent-2: #6366f1;
+    --card-bg:  #ffffff;
+    --radius:   1rem;
+    --shadow:   0 4px 12px rgba(0,0,0,0.05);
+    --transition: all 0.2s ease;
+  }
+  
+  /* ─── GLOBAL RESET & LAYOUT ───────────────────────────── */
+  body {
+    margin: 0;
+    padding: 0 1rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Inter", system-ui, sans-serif;
+    line-height: 1.6;
+  }
+  .main-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 0;
+  }
+  
+  /* ─── HEADINGS & TEXT ─────────────────────────────────── */
+  h2.headline,
+  h3.docs-headline,
+  h3.theory-headline {
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    margin-top: 2rem;
+    color: var(--accent-2);
+    font-size: 1.2rem;
+  }
+  p, li {
+    color: var(--muted);
+  }
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  
+  /* ─── CARD & CANVAS STYLING ───────────────────────────── */
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    transition: var(--transition);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  }
+  
+  .canvas-wrap {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .canvas-stack {
+    position: relative;
+    width: 300px; height: 300px;
+  }
+  /* only the original canvas has a white bg & inner shadow */
+.canvas-stack #orig {
+    position: absolute; inset: 0;
+    border-radius: .5rem;
+    background: #fff;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    image-rendering: pixelated;
+  }
+  
+  /* the highlight overlay is fully transparent */
+  .canvas-stack #hilite {
+    position: absolute; inset: 0;
+    border-radius: .5rem;
+    background: transparent;
+    pointer-events: none;
+  }
+  
+  /* ─── KERNEL GRID ─────────────────────────────────────── */
+  .kernel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 3rem);
+    gap: .5rem;
+    margin-bottom: 1rem;
+  }
+  .kernel-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: #fff;
+    border-radius: .5rem;
+    font-weight: 600;
+    cursor: default;
+    transition: var(--transition);
+  }
+  .kernel-cell:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* ─── HEATMAP CANVAS ──────────────────────────────────── */
+  #kernelCanvas {
+    display: block;
+    margin-bottom: 2rem;
+    border-radius: .5rem;
+    border: 1px solid #e2e8f0;
+  }
+  
+  /* ─── SUM READOUT & CONTROLS ───────────────────────────── */
+  .sum-readout {
+    font-family: monospace;
+    color: var(--fg);
+    margin-bottom: 1.5rem;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 3rem;
+  }
+  .controls button,
+  .controls select {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: .5rem;
+    padding: .5rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .controls button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .controls button:hover:not(:disabled),
+  .controls select:hover {
+    background: var(--accent-2);
+  }
+  .speed-label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  input[type="range"] {
+    accent-color: var(--accent);
+  }
+  
+  /* ─── DOCS & THEORY SECTIONS ──────────────────────────── */
+  .docs, .theory {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+  }
+  .docs-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(14rem,1fr));
+  }
+  .doc-card, .theory-card {
+    background: #fafbff;
+    padding: 1.2rem 1.5rem;
+    border-radius: .75rem;
+    transition: var(--transition);
+  }
+  .doc-card:hover, .theory-card:hover {
+    background: #f0f4ff;
+  }
+  .doc-card header, .theory-card h4 {
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: .6rem;
+  }
+  .doc-step {
+    background: var(--accent-2);
+    color: #fff;
+  }
+  .theory .formula {
+    background: #f3f4f6;
+    padding: 1rem;
+    border-radius: .5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  
+  /* ─── RESPONSIVE TWEAKS ───────────────────────────────── */
+  @media (min-width: 800px) {
+    .controls { justify-content: flex-start; }
+    .theory-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+  }
+  
+  :root {
+    /* blue-themed accents */
+    --accent:   #1e3a8a;  /* dark blue */
+    --accent-2: #3b82f6;  /* sky-blue */
+    /* light-blue page background */
+    --bg:       #eff6ff;
+    /* card and text colors stay the same */
+  }
+  
+  /* center & constrain everything */
+  .main-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  /* adjust the overall page bg */
+  body {
+    background: var(--bg);
+  }
+  
+  /* canvas-cards: center them within the container */
+  .canvas-wrap {
+    justify-content: center; /* was flex-start */
+  }
+  
+  /* controls row: center on narrow screens, spaced on wide */
+  @media (min-width: 600px) {
+    .controls {
+      justify-content: space-between;
+    }
+  }
+  

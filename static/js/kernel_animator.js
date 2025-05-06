@@ -20,9 +20,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- preset kernels ------------------------- */
   const kernels = {
-    blur:    { kw: [[1,1,1],[1,1,1],[1,1,1]],         norm: 9 },
-    sharpen: { kw: [[0,-1,0],[-1,5,-1],[0,-1,0]],     norm: 1 },
-    edge:    { kw: [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]], norm: 1 }
+    /* 3×3 kernels  ----------------------------------------------------------- */
+    identity : { kw: [[0,0,0],[0,1,0],[0,0,0]],                       norm: 1 },
+  
+    /* average box‑blur */
+    blur     : { kw: [[1,1,1],[1,1,1],[1,1,1]],                       norm: 9 },
+  
+    /* Gaussian blur (σ ≈ 0.85) */
+    gauss    : { kw: [[1,2,1],[2,4,2],[1,2,1]],                       norm: 16 },
+  
+    sharpen  : { kw: [[0,-1,0],[-1,5,-1],[0,-1,0]],                  norm: 1 },
+  
+    /* Laplacian‑like edge detector */
+    edge     : { kw: [[-1,-1,-1],[-1,8,-1],[-1,-1,-1]],              norm: 1 },
+  
+    /* emboss / height‑map */
+    emboss   : { kw: [[-2,-1,0],[-1,1,1],[0,1,2]],                   norm: 1 },
+  
+    /* simple outline (zero‑sum) */
+    outline  : { kw: [[1,1,1],[1,-8,1],[1,1,1]],              norm: 1 }
   };
   let kernel = kernels.blur;
 

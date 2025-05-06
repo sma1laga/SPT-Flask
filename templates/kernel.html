@@ -3,7 +3,7 @@
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/kernel.css') }}">
-
+<div class="main-container">
 <h2 class="headline">Convolution Explorer</h2>
 
 <!-- canvases ---------------------------------------------------- -->
@@ -37,9 +37,13 @@
 <!-- controls ---------------------------------------------------- -->
 <div class="controls">
   <select id="kernel-select">
-    <option value="blur">Blur</option>
+    <option value="identity">Identity</option>
+    <option value="blur">Box‑Blur 3×3</option>
+    <option value="gauss">Gaussian 3×3</option>
     <option value="sharpen">Sharpen</option>
     <option value="edge">Edge Detect</option>
+    <option value="emboss">Emboss</option>
+    <option value="outline">Outline</option>
   </select>
 
   <button id="play">Play ▶</button>
@@ -50,6 +54,125 @@
     <input type="range" id="speed" min="1" max="50" value="8">
   </label>
 </div>
+</div>
+<!-- ─────────────────────  THEORY  ───────────────────── -->
+<section class="theory">
+
+  <h3 class="theory-headline">How a 3 × 3 convolution really works</h3>
+
+  <article class="theory-card">
+    <h4>1 Discrete convolution</h4>
+    <p>
+      For every pixel location <em>(x, y)</em> we slide the kernel
+      over the image and compute
+    </p>
+    <p class="formula">
+      $$\;g(x,y)=\frac{1}{N}\sum_{i=-1}^{1}\sum_{j=-1}^{1}
+          k(i,j)\;f\bigl(x+i,\;y+j\bigr)$$
+    </p>
+    <p>
+      where <span class="sym">f</span> is the original image,
+      <span class="sym">k</span> the 3 × 3 kernel,
+      <span class="sym">g</span> the filtered image&nbsp;and&nbsp;
+      \(N = \mathrm{norm}\).
+    </p>
+    <p>
+      The demo evaluates that equation on <em>all three colour
+      channels</em> independently, so hues survive blurs and emboss.
+    </p>
+  </article>
+
+  <article class="theory-card">
+    <h4>2 Why the <em>norm</em> matters</h4>
+    <p>
+      Without the divisor <span class="sym">N</span>,
+      even a simple blur would brighten the image – nine positive numbers
+      sum to something bigger than the originals.
+      Setting <span class="sym">N = ∑ k(i,j)</span>
+      preserves the average brightness.
+    </p>
+    <figure class="blur-demo">
+      <!-- left: original mid‑grey • right: same square after 3×3 box‑blur -->
+      <svg width="220" height="100" viewBox="0 0 220 100"
+           xmlns="http://www.w3.org/2000/svg">
+        <!-- original -->
+        <rect x="0"  y="10" width="80" height="80" fill="#808080"/>
+        <!-- blurred copy -->
+        <defs>
+          <filter id="blur3" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="8"/>
+          </filter>
+        </defs>
+        <rect x="110" y="10" width="80" height="80" fill="#808080"
+              filter="url(#blur3)"/>
+        <!-- labels -->
+        <text x="40"  y="95" text-anchor="middle" font-size="10"
+              fill="#555">original</text>
+        <text x="150" y="95" text-anchor="middle" font-size="10"
+              fill="#555">blurred</text>
+      </svg>
+    
+      <figcaption>
+        Box‑Blur with norm = 9 keeps mid‑grey unchanged.
+      </figcaption>
+    </figure>
+    
+  </article>
+
+  <article class="theory-card">
+    <h4>3 Negative weights &amp; edges</h4>
+    <p>
+      Kernels whose weights sum to&nbsp;0 act as <em>high‑pass filters</em>:
+      positive cells amplify intensity jumps while negative cells suppress
+      flat regions. That makes edges pop out:
+    </p>
+    <p class="formula">
+      $$\small
+        \left[\begin{array}{rrr}
+        -1&-1&-1\\[-4pt]-1&\phantom{-}8&-1\\[-4pt]-1&-1&-1
+        \end{array}\right] * f
+        \;=\;\text{bright outline}
+      $$
+    </p>
+    <p>
+      Flip all signs and you get a dark outline instead (our
+      <em>Outline</em> preset).
+    </p>
+  </article>
+
+  <article class="theory-card">
+    <h4>4 Separable kernels</h4>
+    <p>
+      Some blurs (e.g.&nbsp;Gaussian) can be written as the outer product
+      of two 1‑D vectors:
+    </p>
+    <p class="formula">
+      $$\small
+        \begin{bmatrix}1\\2\\1\end{bmatrix}
+        \begin{bmatrix}1&2&1\end{bmatrix} =
+        \begin{bmatrix}1&2&1\\2&4&2\\1&2&1\end{bmatrix}
+      $$
+    </p>
+    <p>
+      Convolving first along x, then along y runs in
+      \(2 × 3\) operations per pixel instead of \(3 × 3 = 9\).
+      Our demo keeps the maths transparent, but real‑time filters
+      (camera apps, GPUs) always exploit that trick.
+    </p>
+  </article>
+
+  <article class="theory-card">
+    <h4>5 Stability &amp; clamping</h4>
+    <p>
+      After summation we clamp each channel to 0‒255.
+      That prevents overflow (“wraparound”) and underflow
+      (“negative light”). With float textures you’d omit
+      the clamp to keep full dynamic range for later passes.
+    </p>
+  </article>
+
+</section>
+
 {% endblock %}
 
 {% block scripts %}
