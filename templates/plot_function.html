@@ -1,5 +1,14 @@
 {% extends "base.html" %}
+{% block title %}Interactive Function Plotter{% endblock %}
+
+{% block head %}
+  <meta name="description" content="Interactive tool for plotting mathematical functions with transformations such as shift, stretch, and horizontal scaling.">
+{% endblock %}
 {% block content %}
+<h1>Interactive Function Plotter</h1>
+<p>Enter one or two mathematical functions and apply transformations—shifting, stretching, and horizontal scaling—to see a live-updating plot.</p>
+
+<form id="plotForm" method="POST">
 <form id="plotForm" method="POST">
   <!-- Function 1 Group -->
   <div class="function-group">
