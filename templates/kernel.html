@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Convolution Explorer{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/kernel.css') }}">
+
+<h2 class="headline">Convolution Explorer</h2>
+
+<!-- canvases ---------------------------------------------------- -->
+<div class="canvas-wrap">
+  <div class="card">
+    <h4>Original</h4>
+
+    <!-- stacked canvases: image + transparent overlay -->
+    <div class="canvas-stack">
+      <canvas id="orig"   width="300" height="300"></canvas>
+      <canvas id="hilite" width="300" height="300"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>Filtered</h4>
+    <canvas id="result" width="300" height="300"></canvas>
+  </div>
+</div>
+
+<!-- kernel grid & heatmap -------------------------------------- -->
+<h4 class="section-title">Kernel (3 × 3)</h4>
+<div id="kernel-ui" class="kernel-grid"></div>
+<canvas id="kernelCanvas" width="90" height="90"></canvas>
+
+<!-- Σ readout --------------------------------------------------- -->
+<p class="sum-readout">
+  Σ&nbsp;=&nbsp;<span id="sum-val">0</span>
+</p>
+
+<!-- controls ---------------------------------------------------- -->
+<div class="controls">
+  <select id="kernel-select">
+    <option value="blur">Blur</option>
+    <option value="sharpen">Sharpen</option>
+    <option value="edge">Edge Detect</option>
+  </select>
+
+  <button id="play">Play ▶</button>
+  <button id="step">Step ➔</button>
+
+  <label class="speed-label">
+    Patches / frame
+    <input type="range" id="speed" min="1" max="50" value="8">
+  </label>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>const DEMO_SRC = "{{ demo_img }}";</script>
+<script src="{{ url_for('static', filename='js/kernel_animator.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,41 @@
+/* basic reset */
+:root { font-family: "Inter", system-ui, sans-serif; line-height: 1.5; }
+body  { margin: 0 4vw 4vw; background: #fafbff; color: #222; }
+
+.headline       { font-size: 1.75rem; margin: 1.25rem 0; }
+.section-title  { margin: .75rem 0 .25rem; }
+
+.canvas-wrap    { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+.card           { background: #fff; padding: 1rem; border-radius: 1rem;
+                  box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+canvas          { border-radius: .5rem; image-rendering: pixelated;
+                  border: 1px solid #ccd; }
+
+.kernel-grid    { display: grid; grid-template-columns: repeat(3, 2.8em);
+                  gap: .25em; margin-bottom: .6em; }
+.kernel-cell    { display: flex; align-items: center; justify-content: center;
+                  width: 2.8em; height: 2.8em; font-weight: 600; font-size: .9em;
+                  color: #fff; border-radius: .3em; user-select: none; }
+
+.sum-readout    { font-family: monospace; margin: .4em 0 1em; }
+
+.controls       { display: flex; gap: .75rem; flex-wrap: wrap;
+                  align-items: center; margin-top: .5rem; }
+button, select  { padding: .35em .9em; border-radius: .4em; border: none;
+                  background: #2563eb; color: #fff; font-weight: 600;
+                  cursor: pointer; transition: background .15s; }
+button:hover,
+select:hover    { background: #1d4ed8; }
+button:disabled { opacity: .55; cursor: default; }
+.speed-label    { display: flex; align-items: center; gap: .4em; }
+input[type=range]{ accent-color: #2563eb; }
+
+#kernelCanvas   { display:block; margin-bottom: .8em; border: 1px solid #ccd;
+                  border-radius: .25em; image-rendering: pixelated; }
+
+                  .canvas-stack      { position: relative; width: 300px; height: 300px; }
+.canvas-stack canvas {
+  position: absolute; inset: 0;
+  border-radius: .5rem;               /* keep rounded corners aligned */
+}
+#hilite           { pointer-events: none; }  /* overlay ignores clicks */

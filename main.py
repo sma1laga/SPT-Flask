@@ -6,6 +6,7 @@ from pages.convolution import convolution_bp
 from pages.process_chain import process_chain_bp
 from pages.filter_design import filter_design_bp
 from pages.image_filter import image_filter_bp
+from pages.kernel_animator import bp as kernel_bp
 
 
 from pages.speech_filter_input import speech_filter_input_bp
@@ -59,6 +60,7 @@ def create_app():
     app.register_blueprint(func_defs_bp,     url_prefix="/function_definitions")
     app.register_blueprint(speech_filter_input_bp, url_prefix="/filter_design/speech_filter_input")
     app.register_blueprint(image_filter_bp)
+    app.register_blueprint(kernel_bp)
 
 
     

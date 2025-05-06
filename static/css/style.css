@@ -383,4 +383,36 @@ body.dark-mode {
   font-size: 0.9em;
   cursor: pointer;
 }
+
+/* kernel UI as a 3×3 grid */
+.kernel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 2.5em);
+  gap: 0.2em;
+  margin-bottom: 0.5em;
+}
+.kernel-cell {
+  position: relative;
+  width: 2.5em; height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  border-radius: 0.2em;
+  cursor: default;
+}
+.kernel-cell[data-val]:hover::after {
+  content: attr(data-val);
+  position: absolute;
+  top: -1.5em; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 0.2em 0.4em;
+  border-radius: 0.2em;
+  font-size: 0.75em;
+  white-space: nowrap;
+}
+
   

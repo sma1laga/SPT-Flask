@@ -1,5 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  /* when an image is the one showing, scale it up a bit */
+  #plotContainer img {
+    transition: transform .2s ease;
+  }
+  #plotContainer img.active {
+    transform: scale(1.1);
+  }
+  .plot-theory {
+    max-width: 500px;
+    margin: 1em auto 2em;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #333;
+  }
+  .plot-theory h4 {
+    margin-bottom: 0.3em;
+    font-weight: 600;
+  }
+  
+</style>
 <div style="max-width:800px; margin:0 auto; padding:20px;">
   <h1 style="text-align:center; font-size:1.8rem; margin-bottom:1rem;">
     Image-Filter Playground
@@ -104,7 +125,7 @@
     </div>
 
     <!-- Plot + Mask + Difference -->
-    <div style="max-width:266px; margin:0 auto 3rem;">
+    <div id="plotContainer" style="max-width:500px; margin:0 auto 3rem; overflow:visible;">
       <div style="text-align:center; margin-bottom:10px;">
         <label style="margin:0 4px;"><input type="radio" name="plot_view" value="dft" checked> |DFT|</label>
         <label style="margin:0 4px;"><input type="radio" name="plot_view" value="acorr"> Autocorr</label>
@@ -116,11 +137,58 @@
       </div>
       <div style="border:1px solid #ccc; border-radius:4px; overflow:hidden;">
         <img id="dftPlot"   src="{{ dft_img }}"   style="width:100%;display:block;">
+        <div class="plot-theory">
+          <h4>Theory: 2D Fourier Transform</h4>
+          <p>
+            The 2D DFT decomposes the spatial image into sinusoidal basis functions.  Bright
+            values at the center correspond to low‐frequency (smooth) components; values
+            further out represent high‐frequency details (edges, noise).  By inspecting the
+            log‐magnitude, you see which bands your filter attenuates or boosts.
+          </p>
+        </div>
         <img id="acorrPlot" src="{{ acorr_img }}" style="width:100%;display:none;">
+        <div class="plot-theory">
+          <h4>Theory: Autocorrelation</h4>
+          <p>
+            Autocorrelation measures how similar an image is to a shifted version of itself.
+            A sharp central peak indicates strong self‐similarity at zero shift, while
+            surrounding patterns reveal periodic textures or repeating structures.
+          </p>
+        </div>
         <img id="psdPlot"   src="{{ psd_img }}"   style="width:100%;display:none;">
+        <div class="plot-theory">
+          <h4>Theory: 1D Power Spectral Density</h4>
+          <p>
+            The PSD shows how energy is distributed across spatial frequencies along the
+            selected row.  Peaks reveal dominant frequencies (e.g. texture spacing), while
+            valleys show the bands your filter suppresses.
+          </p>
+        </div>
         <img id="maskPlot"  src="{{ mask_img }}"  style="width:100%;display:none;">
+        <div class="plot-theory">
+          <h4>Theory: Filter Mask</h4>
+          <p>
+            In the spatial domain, this mask is the convolution kernel (e.g. sharpen, blur).
+            In the frequency domain, it shows which frequencies pass (bright) vs. attenuate
+            (dark)—the “transfer function” of your filter.
+          </p>
+        </div>
+        <div class="my-3 text-center">
+          <a href="{{ url_for('kernel_animator.show_animator') }}"
+             class="btn btn-primary">
+            ▶ Try the Kernel Animator
+          </a>
+        </div>
         {% if diff_img %}
           <img id="diffPlot" src="{{ diff_img }}" style="width:100%;display:none;">
+          <div class="plot-theory">
+            <h4>Theory: Difference Image</h4>
+            <p>
+              By taking <code>|filtered − original|</code>, this image highlights exactly
+              where and how strongly pixels changed.  Bright edges mean substantial filtering
+              effects (e.g. edge‐enhancement or smoothing artifacts).
+            </p>
+          </div>
         {% endif %}
       </div>
       <div id="plotDesc" style="margin-top:8px; text-align:center; color:#555; font-size:0.9rem;">
@@ -132,8 +200,16 @@
     {% if orig_prof|length > 2 and filt_prof|length > 2 %}
       <div style="margin-top:1.5rem; text-align:center; max-width:266px; margin-left:auto; margin-right:auto;">
         <h3 style="margin-bottom:0.5rem;">Radial Frequency Response</h3>
-        <canvas id="radialChart" width="266" height="200"
-                style="border:1px solid #ddd;border-radius:4px;"></canvas>
+        <canvas id="radialChart" width="500" height="300"
+            style="border:1px solid #ddd;border-radius:4px;"></canvas>
+            <div class="plot-theory">
+              <h4>Theory: Radial Frequency Response</h4>
+              <p>
+                Averaging the log‐magnitude over concentric circles collapses the 2D spectrum
+                into a 1D profile.  The x‑axis is radius (frequency), and the two curves let
+                you compare original vs. filtered band‑responses at a glance.
+              </p>
+            </div>
       </div>
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     {% endif %}
@@ -197,7 +273,12 @@ document.querySelectorAll('input[name="plot_view"]').forEach(r=>{
     const view = document.querySelector('input[name="plot_view"]:checked').value;
     ['dft','acorr','psd','mask','diff'].forEach(k=>{
       const el = document.getElementById(k+'Plot');
-      if(el) el.style.display = (k===view)?'block':'none';
+      if(!el) return;
+      const isActive = (k===view);
+      el.style.display = isActive ? 'block':'none';
+      // toggle the CSS class so it slightly enlarges
+      if(isActive) el.classList.add('active');
+      else         el.classList.remove('active');
     });
     const desc = {
       dft  : 'Log-scaled 2D FFT magnitude of the filtered image.',
