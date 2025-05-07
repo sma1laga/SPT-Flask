@@ -1,0 +1,120 @@
+/* fft.css */
+
+/* Container for the FFT theory section */
+.fft-theory {
+    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(245,245,255,0.95));
+    border-left: 6px solid #4F46E5;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .fft-theory h3 {
+    color: #4338CA;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .fft-theory h4 {
+    color: #4F46E5;
+    font-size: 1.25rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .fft-theory p {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Styling for inline math blocks */
+  .math {
+    display: block;
+    background: #f9fafb;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    font-family: 'Source Code Pro', monospace;
+    margin: 1rem 0;
+  }
+  
+  /* Quick-buttons styling */
+  .function-group .quick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  
+  .function-group .quick-buttons button {
+    background: #6366F1;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background 0.2s ease;
+  }
+  
+  .function-group .quick-buttons button:hover {
+    background: #4F46E5;
+  }
+  
+  /* Plot containers */
+  #mag-plot,
+  #phase-plot {
+    width: 100%;
+    height: 300px;
+    margin-bottom: 2rem;
+  }
+  
+  /* Input fields */
+  input[type="text"],
+  input[type="number"] {
+    border: 1px solid #D1D5DB;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: border-color 0.2s ease;
+  }
+  
+  input[type="text"]:focus,
+  input[type="number"]:focus {
+    outline: none;
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  }
+  
+  /* Compute button */
+  button[type="submit"] {
+    background: #10B981;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    transition: background 0.2s ease;
+  }
+  
+  button[type="submit"]:hover {
+    background: #059669;
+  }
+  
+  /* List styling in "How to Use" section */
+  .bg-gray-100 ol.list-decimal li {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Headings in content section */
+  .text-2xl.font-bold {
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .text-xl.font-semibold,
+  .text-lg.font-semibold {
+    font-family: 'Poppins', sans-serif;
+    color: #1F2937;
+  }
+  

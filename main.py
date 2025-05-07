@@ -23,6 +23,7 @@ from pages.discrete_plot_functions import discrete_plot_functions_bp
 from pages.dft_page import discrete_fourier_bp
 from pages.discrete_convolution import discrete_convolution_bp
 from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
+from pages.fft import fft_bp
 
 
 
@@ -73,6 +74,8 @@ def create_app():
     app.register_blueprint(discrete_fourier_bp, url_prefix="/discrete/dft")        
     app.register_blueprint(discrete_convolution_bp, url_prefix="/discrete/convolution")
     app.register_blueprint(discrete_dynamic_convolution_bp, url_prefix='/discrete/dynamic')
+    app.register_blueprint(fft_bp, url_prefix='/discrete/fft')
+
 
     # Register training pages (each with its own sub-URL)
     app.register_blueprint(training_convolution_bp, url_prefix="/training/convolution")

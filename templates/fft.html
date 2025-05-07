@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="max-w-xl mx-auto p-4">
+    <h2 class="text-2xl font-bold mb-4">Interactive FFT Demo</h2>
+
+    <!-- How to Use Section -->
+    <div class="bg-gray-100 p-4 rounded mb-6">
+      <h3 class="text-lg font-semibold mb-2">How to Use This FFT Demo</h3>
+      <ol class="list-decimal list-inside space-y-2 text-gray-700">
+        <li><strong>Build your signal:</strong> Use the <em>Expression</em> field below or click the function/operator buttons to insert common components.</li>
+        <li><strong>Set sampling parameters:</strong> Adjust <em>Sampling Rate</em>, <em>Duration</em>, and <em>Number of Samples</em> to control resolution and length.</li>
+        <li><strong>Compute FFT:</strong> Click <code>Compute FFT</code> to get both magnitude and phase spectra.</li>
+        <li><strong>Interpret results:</strong> The <em>Magnitude Spectrum</em> shows amplitude vs. frequency; the <em>Phase Spectrum</em> shows angle vs. frequency.</li>
+      </ol>
+    </div>
+
+    <form id="fftForm" method="post" class="space-y-4">
+      <!-- Signal Expression with Quick Buttons -->
+      <div class="function-group">
+        <label class="block font-semibold" for="expression">Signal Expression (use functions and <code>t</code>):</label>
+        <input
+          type="text"
+          id="expression"
+          name="expression"
+          value="{{ result.expr if result else 'np.sin(2*np.pi*50*t) + 0.5*np.sin(2*np.pi*120*t)' }}"
+          placeholder="e.g., np.sin(2*np.pi*50*t)"
+          onfocus="setActiveField(this)"
+          class="w-full border rounded px-2 py-1 mb-2"
+        />
+        <div class="quick-buttons">
+          <button type="button" onclick="insertOperand('np.sin(2*np.pi*50*t)')" class="px-3 py-1 bg-blue-600 text-white rounded">Sin</button>
+          <button type="button" onclick="insertOperand('np.cos(2*np.pi*50*t)')" class="px-3 py-1 bg-blue-600 text-white rounded">Cos</button>
+          <button type="button" onclick="insertOperand('np.exp(-t)')" class="px-3 py-1 bg-blue-600 text-white rounded">Exp</button>
+          <button type="button" onclick="insertOperand('np.sinc(t)')" class="px-3 py-1 bg-blue-600 text-white rounded">Si</button>
+          <button type="button" onclick="insertOperand('+')" class="px-3 py-1 bg-gray-300 text-black rounded">+</button>
+          <button type="button" onclick="insertOperand('-')" class="px-3 py-1 bg-gray-300 text-black rounded">-</button>
+          <button type="button" onclick="insertOperand('*')" class="px-3 py-1 bg-gray-300 text-black rounded">*</button>
+          <button type="button" onclick="insertOperand('/')" class="px-3 py-1 bg-gray-300 text-black rounded">/</button>
+        </div>
+      </div>
+
+      <!-- FFT Parameters -->
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block font-semibold" for="fs">Sampling Rate (Hz)</label>
+          <input id="fs" name="fs" type="number" step="any" value="{{ result.fs if result else 500 }}" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label class="block font-semibold" for="duration">Duration (s)</label>
+          <input id="duration" name="duration" type="number" step="any" value="{{ result.T if result else 1 }}" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label class="block font-semibold" for="n_samples"># Samples</label>
+          <input id="n_samples" name="n_samples" type="number" value="{{ result.N if result else 1024 }}" class="w-full border rounded px-2 py-1" />
+        </div>
+      </div>
+
+      <button type="submit" class="mt-2 px-4 py-2 bg-green-600 text-white rounded">Compute FFT</button>
+    </form>
+
+    {% if result %}
+      <h3 class="text-xl font-semibold mt-8">Magnitude Spectrum</h3>
+      <div id="mag-plot" class="mt-4"></div>
+      <h3 class="text-xl font-semibold mt-8">Phase Spectrum</h3>
+      <div id="phase-plot" class="mt-4"></div>
+
+      <div class="fft-theory mt-8 p-6 bg-white rounded shadow">
+        <h3 class="text-xl font-semibold mb-4">Theory Behind the FFT</h3>
+
+        <h4 class="text-lg font-semibold mb-2">1. Discrete Fourier Transform (DFT)</h4>
+        <p>The core of the FFT is the Discrete Fourier Transform, which converts a discrete time-domain signal \(x[n]\) into its frequency-domain representation \(X[k]\):</p>
+        <p class="math">\[
+          X[k] = \sum_{n=0}^{N-1} x[n] \, e^{-j 2 \pi \frac{k n}{N}},
+          \quad k = 0,1,\dots,N-1
+        \]</p>
+        <p>Here, \(N\) is the number of samples, \(j\) the imaginary unit, and \(k\) indexes frequency bins.</p>
+
+        <h4 class="text-lg font-semibold mb-2">2. Frequency Bins &amp; Resolution</h4>
+        <p>Each bin \(k\) maps to a physical frequency:</p>
+        <p class="math">\[
+          f_k = \frac{k}{N} f_s,
+        \]</p>
+        <p>The bin spacing (resolution) is \(\Delta f = f_s / N\).</p>
+
+        <h4 class="text-lg font-semibold mb-2">3. Sampling Parameters &amp; Their Effects</h4>
+        <p><strong>Sampling Rate \(f_s\):</strong> Must exceed twice the highest frequency to avoid aliasing (Nyquist). Too low \(f_s\) folds high-frequency content into low bins.</p>
+        <p><strong>Duration \(T\):</strong> Total time \(T = N / f_s\). Longer \(T\) yields finer resolution \(\Delta f\).</p>
+        <p><strong>Number of Samples \(N\):</strong> More samples improve detail and resolution but increase computation \(O(N \log N)\). Zero-padding adds interpolation without extra data.</p>
+
+        <h4 class="text-lg font-semibold mb-2">4. Windowing &amp; Spectral Leakage</h4>
+        <p>Truncating signals acts like a rectangular window, creating side lobes. Apply windows (Hann, Hamming) to reduce leakage at the expense of main-lobe width.</p>
+
+        <h4 class="text-lg font-semibold mb-2">5. Magnitude &amp; Phase Spectra</h4>
+        <p><strong>Magnitude:</strong> \(|X[k]| = \sqrt{(\Re\{X[k]\})^2 + (\Im\{X[k]\})^2}\) shows component amplitudes.</p>
+        <p><strong>Phase:</strong> \(\angle X[k] = \operatorname{atan2}(\Im\{X[k]\},\Re\{X[k]\})\) indicates timing shifts.</p>
+
+        <h4 class="text-lg font-semibold mb-2">6. Practical Applications</h4>
+        <p>Used in audio analysis, communications, image filtering, vibration diagnostics, radar/sonar, and biomedical signals (ECG/EEG).</p>
+
+        <h4 class="text-lg font-semibold mb-2">7. Understanding the Plots</h4>
+        <p>Frequency on x-axis, magnitude or phase on y-axis. For real signals, spectrum is symmetric—display up to \(f_s/2\). DC (k=0) shows signal mean.</p>
+
+        <h4 class="text-lg font-semibold mb-2">8. Tips &amp; Best Practices</h4>
+        <ul class="list-disc list-inside text-gray-700">
+          <li>Pick \(f_s\) much greater than signal bandwidth</li>
+          <li>Use power-of-two \(N\) for optimal FFT performance</li>
+          <li>Apply windows to balance leakage and resolution</li>
+          <li>Normalize single-sided spectra by \(2/N\)</li>
+          <li>Use zero-padding for smoother spectral plots</li>
+        </ul>
+      </div>
+
+      <!-- Plotly & MathJax -->
+      <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+      <script>
+        const freqs = {{ result.freqs | tojson }};
+        const mags = {{ result.magnitudes | tojson }};
+        const phases = {{ result.phases | tojson }};
+        Plotly.newPlot('mag-plot', [{ x: freqs, y: mags, type: 'bar' }], {
+          title: `Magnitude |FFT| of {{ result.expr }}`,
+          xaxis: { title: 'Frequency (Hz)' }, yaxis: { title: 'Magnitude' }
+        });
+        Plotly.newPlot('phase-plot', [{ x: freqs, y: phases, type: 'bar' }], {
+          title: `Phase ∠FFT of {{ result.expr }}`,
+          xaxis: { title: 'Frequency (Hz)' }, yaxis: { title: 'Phase (radians)' }
+        });
+      </script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    {% endif %}
+  </div>
+
+  <!-- Quick-buttons JS & CSS -->
+  <script>
+    let activeField = null;
+    function setActiveField(field) { activeField = field; }
+    function insertOperand(operand) {
+      if (!activeField) return;
+      const start = activeField.selectionStart ?? activeField.value.length;
+      const end = activeField.selectionEnd ?? start;
+      const val = activeField.value;
+      activeField.value = val.slice(0, start) + operand + val.slice(end);
+      const pos = start + operand.length;
+      activeField.selectionStart = activeField.selectionEnd = pos;
+      activeField.focus();
+    }
+  </script>
+  <style>
+    .function-group { margin-bottom: 1rem; }
+    .quick-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+{% endblock %}
