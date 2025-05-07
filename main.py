@@ -8,6 +8,7 @@ from pages.filter_design import filter_design_bp
 from pages.image_filter import image_filter_bp
 from pages.kernel_animator import bp as kernel_bp
 from pages.modulation import mod_bp
+from pages.digital_modulation import dig_bp
 
 
 from pages.speech_filter_input import speech_filter_input_bp
@@ -25,6 +26,7 @@ from pages.dft_page import discrete_fourier_bp
 from pages.discrete_convolution import discrete_convolution_bp
 from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
 from pages.fft import fft_bp
+
 
 
 
@@ -56,6 +58,8 @@ def create_app():
     app.register_blueprint(convolution_bp,   url_prefix="/convolution")
     app.register_blueprint(dynamic_convolution_bp, url_prefix="/convolution/dynamic")
     app.register_blueprint(mod_bp, url_prefix='/modulation')
+    app.register_blueprint(dig_bp, url_prefix='/digital_modulation')
+
     
     app.register_blueprint(process_chain_bp, url_prefix="/process_chain")
     

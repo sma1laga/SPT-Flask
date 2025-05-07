@@ -1,0 +1,84 @@
+/* digital_modulation.css - Theory Section Styling */
+
+.theory-section {
+    max-width: 900px;
+    margin: 4rem auto;
+    padding: 3rem 2rem;
+    background: #fcfcfc;
+    border-left: 6px solid #ff8c00;
+    border-radius: 0.75rem;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    transition: background 0.3s;
+  }
+  
+  .theory-section:hover {
+    background: #fffaf0;
+  }
+  
+  .theory-section h2,
+  .theory-section h3 {
+    text-align: center;
+    text-transform: uppercase;
+    color: #ff8c00;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  .theory-section p {
+    text-align: justify;
+    line-height: 1.8;
+    color: #333;
+    margin-bottom: 1.8rem;
+    padding: 0 0.5rem;
+  }
+  
+  .theory-section ul {
+    columns: 2;
+    column-gap: 2.5rem;
+    margin: 1rem 0 2rem 1.5rem;
+    padding: 0;
+  }
+  
+  .theory-section li {
+    margin-bottom: 1.5rem;
+    color: #333;
+    position: relative;
+    padding-left: 1.2em;
+  }
+  
+  .theory-section li::marker {
+    color: #ff8c00;
+    font-size: 1.2em;
+  }
+  
+  .theory-section .formula {
+    display: block;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #fff7e6, #ffffff);
+    padding: 1rem 1.5rem;
+    margin: 1.5rem auto;
+    border-radius: 0.5rem;
+    border: 1px solid #ffe4b5;
+    max-width: 85%;
+    line-height: 1.4;
+  }
+  
+  .text-center {
+    text-align: center;
+    color: #555;
+    font-style: italic;
+    margin-top: 2.5rem;
+  }
+  
+  @media (max-width: 768px) {
+    .theory-section ul {
+      columns: 1;
+      column-gap: 0;
+    }
+    .theory-section {
+      padding: 2rem 1rem;
+    }
+  }
+  
