@@ -1,0 +1,21 @@
+.signal-definition {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border-left: 4px solid #3b82f6;
+    background: #f0f4ff;
+    border-radius: 4px;
+  }
+  .sig-text {
+    flex: 1;
+    padding-right: 1rem;
+  }
+  .sig-plot img {
+    max-width: 200px;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  

@@ -1,6 +1,40 @@
 {% extends "base.html" %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/definitions.css') }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+{% endblock %}
+
 {% block content %}
-<h2>Function Definitions</h2>
-<p>TODO: Provide definitions of rect(t), tri(t), step(t), etc.</p>
-<p><a href="/">Back to Main Menu</a></p>
+<div class="container">
+  <h2>Signal Function Definitions</h2>
+
+  <h3>Continuous-Time Signals</h3>
+  {% for sig in continuous_signals %}
+  <div class="signal-definition">
+    <div class="sig-text">
+      <h4>{{ sig.name }}</h4>
+      <p>$$ {{ sig.definition }} $$</p>
+      <code>{{ sig.python }}</code>
+    </div>
+    <div class="sig-plot">
+      <img src="data:image/png;base64,{{ sig.plot_data }}" alt="Plot of {{ sig.name }}">
+    </div>
+  </div>
+  {% endfor %}
+
+  <h3>Discrete-Time Signals</h3>
+  {% for sig in discrete_signals %}
+  <div class="signal-definition">
+    <div class="sig-text">
+      <h4>{{ sig.name }}</h4>
+      <p>$$ {{ sig.definition }} $$</p>
+      <code>{{ sig.python }}</code>
+    </div>
+    <div class="sig-plot">
+      <img src="data:image/png;base64,{{ sig.plot_data }}" alt="Plot of {{ sig.name }}">
+    </div>
+  </div>
+  {% endfor %}
+</div>
 {% endblock %}
