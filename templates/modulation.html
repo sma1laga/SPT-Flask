@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Modulation Explorer{% endblock %}
+
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modulation.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h1 class="mb-4">Modulation &amp; Demodulation Playground</h1>
+
+  <!-- Modulation Selector -->
+  <div class="form-group">
+    <label for="mod_type"><strong>Modulation Type:</strong></label>
+    <select id="mod_type" class="form-control w-auto" onchange="updateModControls()">
+      <optgroup label="Analog">
+        <option value="AM">AM</option>
+        <option value="FM">FM</option>
+        <option value="PM">PM</option>
+      </optgroup>
+      <optgroup label="Pulse">
+        <option value="PAM">PAM</option>
+        <option value="PWM">PWM</option>
+        <option value="PPM">PPM</option>
+        <option value="PCM">PCM</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <!-- Control Panels -->
+  <div class="row" id="mod_controls">
+    <!-- AM -->
+    <div id="am_controls" class="col-lg-6 mb-4 mod-block">
+      <div class="card shadow-sm">
+        <div class="card-header">AM Modulation</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="am_fc">Carrier freq (Hz):
+              <span id="am_fc_val">100</span>
+            </label>
+            <input id="am_fc" type="range"
+                   class="form-control-range"
+                   min="10" max="1000" step="1" value="100"
+                   oninput="updateSliderValue('am_fc')">
+          </div>
+          <div class="form-group">
+            <label for="am_fm">Message freq (Hz):
+              <span id="am_fm_val">5</span>
+            </label>
+            <input id="am_fm" type="range"
+                   class="form-control-range"
+                   min="1" max="100" step="1" value="5"
+                   oninput="updateSliderValue('am_fm')">
+          </div>
+          <div class="form-group">
+            <label for="am_m">Mod index:
+              <span id="am_m_val">0.5</span>
+            </label>
+            <input id="am_m" type="range"
+                   class="form-control-range"
+                   min="0" max="1" step="0.01" value="0.5"
+                   oninput="updateSliderValue('am_m')">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FM / PM -->
+    <div id="fm_controls" class="col-lg-6 mb-4 mod-block" style="display:none;">
+      <div class="card shadow-sm">
+        <div class="card-header" id="fm_header">FM Modulation</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="fm_fc">Carrier freq (Hz):
+              <span id="fm_fc_val">100</span>
+            </label>
+            <input id="fm_fc" type="range"
+                   class="form-control-range"
+                   min="10" max="1000" step="1" value="100"
+                   oninput="updateSliderValue('fm_fc')">
+          </div>
+          <div class="form-group">
+            <label for="fm_fm">Message freq (Hz):
+              <span id="fm_fm_val">5</span>
+            </label>
+            <input id="fm_fm" type="range"
+                   class="form-control-range"
+                   min="1" max="100" step="1" value="5"
+                   oninput="updateSliderValue('fm_fm')">
+          </div>
+          <div class="form-group">
+            <label for="fm_beta" id="beta_label">Beta (Hz dev):
+              <span id="fm_beta_val">5</span>
+            </label>
+            <input id="fm_beta" type="range"
+                   class="form-control-range"
+                   min="0" max="20" step="0.1" value="5"
+                   oninput="updateSliderValue('fm_beta')">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pulse Mods: PAM, PWM, PPM, PCM -->
+    <div id="pulse_controls" class="col-lg-6 mb-4 mod-block" style="display:none;">
+      <div class="card shadow-sm">
+        <div class="card-header" id="pulse_header">PAM Modulation</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="pm_prf">Pulse Rate (Hz):
+              <span id="pm_prf_val">50</span>
+            </label>
+            <input id="pm_prf" type="range"
+                   class="form-control-range"
+                   min="1" max="200" step="1" value="50"
+                   oninput="updateSliderValue('pm_prf')">
+          </div>
+          <div class="form-group">
+            <label for="pm_fm">Message freq (Hz):
+              <span id="pm_fm_val">5</span>
+            </label>
+            <input id="pm_fm" type="range"
+                   class="form-control-range"
+                   min="1" max="100" step="1" value="5"
+                   oninput="updateSliderValue('pm_fm')">
+          </div>
+          <div id="pcm_levels_group" class="form-group" style="display:none;">
+            <label for="pm_levels">Quantization Levels:
+              <span id="pm_levels_val">8</span>
+            </label>
+            <input id="pm_levels" type="range"
+                   class="form-control-range"
+                   min="2" max="16" step="1" value="8"
+                   oninput="updateSliderValue('pm_levels')">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plot Buttons & Graphs -->
+  <button class="btn btn-primary mb-3" onclick="plotMod()">Generate &amp; Plot</button>
+  <div id="mod_plot" style="height:300px;"></div>
+
+  <hr class="my-5">
+
+  <div class="form-group">
+    <label for="demod_type"><strong>Demodulation Type:</strong></label>
+    <select id="demod_type" class="form-control w-auto" onchange="plotDemod()">
+      <optgroup label="Analog">
+        <option value="AM">AM</option>
+        <option value="FM">FM</option>
+        <option value="PM">PM</option>
+      </optgroup>
+      <optgroup label="Pulse">
+        <option value="PAM">PAM</option>
+        <option value="PWM">PWM</option>
+        <option value="PPM">PPM</option>
+        <option value="PCM">PCM</option>
+      </optgroup>
+    </select>
+  </div>
+  <button class="btn btn-primary mb-3" onclick="plotDemod()">Demodulate &amp; Plot</button>
+  <div id="demod_plot" style="height:300px;"></div>
+
+  <!-- Theory Section -->
+  <h2 class="mt-5">Theory &amp; Background</h2>
+  <section id="theory" class="theory-section">
+
+    <h3>What Is Modulation?</h3>
+    <p>
+      Modulation is the process of encoding information (the <em>message</em> signal)
+      onto a higher-frequency carrier so it can be efficiently transmitted over physical
+      media (wire, air, fiber). At the receiver, a <strong>demodulator</strong> extracts
+      the original message from the composite waveform.
+    </p>
+
+    <h3>Analog Modulation</h3>
+    <p>
+      In analog modulation we vary one continuous property of the carrier:
+    </p>
+    <ul>
+      <li>
+        <strong>AM (Amplitude Modulation):</strong>
+        vary the carrier’s amplitude.
+        <div class="formula">
+          \(s_{\mathrm{AM}}(t) = \bigl[1 + m\,x(t)\bigr]\cos\bigl(2\pi f_c t\bigr)\)
+        </div>
+      </li>
+      <li>
+        <strong>FM (Frequency Modulation):</strong>
+        vary the instantaneous frequency.
+        <div class="formula">
+          \(s_{\mathrm{FM}}(t) = \cos\!\Bigl(2\pi f_c t + 2\pi k_f \!\int_0^t x(\tau)d\tau\Bigr)\)
+        </div>
+      </li>
+      <li>
+        <strong>PM (Phase Modulation):</strong>
+        vary the carrier’s phase directly.
+        <div class="formula">
+          \(s_{\mathrm{PM}}(t) = \cos\!\Bigl(2\pi f_c t + k_p\,x(t)\Bigr)\)
+        </div>
+      </li>
+    </ul>
+
+    <h3>Pulse Modulation</h3>
+    <p>
+      Instead of a continuous carrier, pulse modulation varies properties of
+      periodic pulses:
+    </p>
+    <ul>
+      <li><strong>PAM (Pulse Amplitude Modulation):</strong> pulses whose amplitude tracks the message.</li>
+      <li><strong>PWM (Pulse Width Modulation):</strong> fixed-height pulses whose width (duty cycle) is proportional to the message.</li>
+      <li><strong>PPM (Pulse Position Modulation):</strong> pulses that shift in time according to the message value.</li>
+      <li><strong>PCM (Pulse Code Modulation):</strong> samples the message and quantizes each sample to a digital level.</li>
+    </ul>
+
+    <h3>Why &amp; When to Use Each?</h3>
+    <p>
+      <strong>AM</strong> is simple but bandwidth-inefficient and noise-sensitive.
+      <strong>FM</strong> offers better noise immunity at the cost of wider bandwidth.
+      <strong>PM</strong> is closely related to FM (both vary phase), and is used
+      extensively in digital schemes (PSK).
+    </p>
+    <p>
+      <strong>PAM</strong> and <strong>PCM</strong> form the basis of modern digital
+      audio and data links—PCM is literally how your voice is digitized for phone calls.
+      <strong>PWM</strong> is common in power control (e.g. LED dimming, motor drives).
+      <strong>PPM</strong> finds use in remote-control and time-of-flight systems.
+    </p>
+
+    <h3>Key Trade-Offs</h3>
+    <ul>
+      <li><strong>Bandwidth:</strong> FM &amp; PM use more spectrum than AM.</li>
+      <li><strong>Complexity:</strong> PM/FM demodulators are more complex than AM envelope detectors.</li>
+      <li><strong>Noise Immunity:</strong> FM/PM outperform AM in noisy channels.</li>
+      <li><strong>Digital vs. Analog:</strong> PCM requires A/D converters; PAM can remain analog.</li>
+    </ul>
+
+    <p class="text-center">
+      <em>Experiment with each technique above to see these behaviors for yourself!</em>
+    </p>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="{{ url_for('static', filename='js/modulation.js') }}"></script>
+{% endblock %}

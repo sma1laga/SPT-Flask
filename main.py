@@ -7,6 +7,7 @@ from pages.process_chain import process_chain_bp
 from pages.filter_design import filter_design_bp
 from pages.image_filter import image_filter_bp
 from pages.kernel_animator import bp as kernel_bp
+from pages.modulation import mod_bp
 
 
 from pages.speech_filter_input import speech_filter_input_bp
@@ -54,6 +55,7 @@ def create_app():
     app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
     app.register_blueprint(convolution_bp,   url_prefix="/convolution")
     app.register_blueprint(dynamic_convolution_bp, url_prefix="/convolution/dynamic")
+    app.register_blueprint(mod_bp, url_prefix='/modulation')
     
     app.register_blueprint(process_chain_bp, url_prefix="/process_chain")
     
