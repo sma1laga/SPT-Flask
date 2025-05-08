@@ -1,113 +1,137 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Fourier Transform Training</h2>
+  <!-- Page Header -->
+  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Fourier Transform Training</h1>
+    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
+      Practice converting between time and frequency domains by selecting the correct Fourier transform.
+    </p>
+  </div>
 
-<!-- Direction selection -->
-<div style="margin-bottom:10px;">
-  <label><input type="radio" name="direction" value="TIME_TO_FREQ" checked> Time → Frequency</label>
-  <label><input type="radio" name="direction" value="FREQ_TO_TIME"> Frequency → Time</label>
-</div>
+  <!-- Controls -->
+  <div class="controls" style="max-width: 700px; margin: 0 auto 30px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; text-align: center;">
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="direction" value="TIME_TO_FREQ" checked> Time → Frequency</label>
+      <label class="radio-label"><input type="radio" name="direction" value="FREQ_TO_TIME"> Frequency → Time</label>
+    </div>
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
+      <label class="radio-label"><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
+      <label class="radio-label"><input type="radio" name="difficulty" value="HARD"> Hard</label>
+    </div>
+    <button id="generateBtn" class="action-btn">Generate Problem</button>
+  </div>
 
-<!-- Difficulty selection -->
-<div style="margin-bottom:10px;">
-  <label><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
-  <label><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
-  <label><input type="radio" name="difficulty" value="HARD"> Hard</label>
-</div>
+  <!-- Plot Container -->
+  <div class="plot-container" style="text-align: center; margin-bottom: 20px;">
+    <img id="fourier_plot_image" src="" alt="Training Fourier Plot" style="display: none; max-width: 100%; border: 1px solid #ccd0d5; border-radius: 4px;">
+  </div>
 
-<button id="generateBtn">Generate Problem</button>
+  <!-- Answer Options -->
+  <div class="options" style="max-width: 700px; margin: 0 auto 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+    <button class="option-btn action-btn" data-index="0">Option 1</button>
+    <button class="option-btn action-btn" data-index="1">Option 2</button>
+    <button class="option-btn action-btn" data-index="2">Option 3</button>
+    <button class="option-btn action-btn" data-index="3">Option 4</button>
+  </div>
 
-<!-- Plot container -->
-<div id="fourier-training-plot" style="position:relative; margin-top:20px; display:inline-block;">
-  <img id="fourier_plot_image" src="" alt="Training Fourier Plot" style="display:none; max-width:100%;">
-</div>
+  <!-- Feedback -->
+  <div id="feedback" class="feedback" style="text-align: center; color: #333; font-size: 1.1em; min-height: 1.4em;"></div>
 
-<!-- Answer buttons -->
-<div style="margin-top:10px;">
-  <button class="optionBtn" data-index="0">Option 1</button>
-  <button class="optionBtn" data-index="1">Option 2</button>
-  <button class="optionBtn" data-index="2">Option 3</button>
-  <button class="optionBtn" data-index="3">Option 4</button>
-</div>
+  <!-- Exam Link -->
+  <p style="text-align: center; margin-top: 30px;">
+    Want a 10-question exam? <a href="{{ url_for('exam_fourier.exam_fourier') }}" class="link-btn">Take the Fourier Exam</a>
+  </p>
 
-<!-- Feedback -->
-<div id="feedback" style="margin-top:10px; font-size:1.1em; color:#333;"></div>
+  <script>
+    let correctIndex = null;
 
-<script>
-  let correctIndex = null;
-
-  document.getElementById("generateBtn").addEventListener("click", generateProblem);
-
-  document.querySelectorAll(".optionBtn").forEach(btn => {
-    btn.addEventListener("click", function() {
-      let selectedIndex = parseInt(this.getAttribute("data-index"));
-      checkAnswer(selectedIndex);
+    document.getElementById("generateBtn").addEventListener("click", generateProblem);
+    document.querySelectorAll(".option-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const selectedIndex = parseInt(this.getAttribute("data-index"));
+        checkAnswer(selectedIndex);
+      });
     });
-  });
 
-  function getDifficulty() {
-    let radios = document.getElementsByName("difficulty");
-    for (let r of radios) if (r.checked) return r.value;
-    return "EASY";
-  }
-
-  function getDirection() {
-    let radios = document.getElementsByName("direction");
-    for (let r of radios) if (r.checked) return r.value;
-    return "TIME_TO_FREQ";
-  }
-
-  function generateProblem() {
-    fetch("{{ url_for('training_fourier.generate_problem') }}", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        difficulty: getDifficulty(),
-        direction:  getDirection()
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.error) {
-        document.getElementById("feedback").innerText = "Error: " + data.error;
-      } else {
-        let img = document.getElementById("fourier_plot_image");
-        img.src = "data:image/png;base64," + data.plot_data;
-        img.style.display = "block";
-        correctIndex = data.correctIndex;
-        document.getElementById("feedback").innerText = "Problem generated. Pick the correct option!";
-      }
-    })
-    .catch(err => {
-      console.error("Error generating problem:", err);
-      document.getElementById("feedback").innerText = "Error generating problem.";
-    });
-  }
-
-  function checkAnswer(selectedIndex) {
-    if (correctIndex === null) {
-      document.getElementById("feedback").innerText = "Please generate a problem first!";
-      return;
+    function getDifficulty() {
+      return Array.from(document.getElementsByName("difficulty")).find(r => r.checked).value;
     }
-    fetch("{{ url_for('training_fourier.check_answer') }}", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        selectedIndex: selectedIndex,
-        correctIndex:  correctIndex
+    function getDirection() {
+      return Array.from(document.getElementsByName("direction")).find(r => r.checked).value;
+    }
+
+    function generateProblem() {
+      fetch("{{ url_for('training_fourier.generate_problem') }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          difficulty: getDifficulty(),
+          direction: getDirection()
+        })
       })
-    })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("feedback").innerText = data.feedback || "No feedback received.";
-    })
-    .catch(err => {
-      console.error("Error checking answer:", err);
-      document.getElementById("feedback").innerText = "Error checking answer.";
-    });
-  }
-</script>
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById("feedback").innerText = "Error: " + data.error;
+        } else {
+          const img = document.getElementById("fourier_plot_image");
+          img.src = "data:image/png;base64," + data.plot_data;
+          img.style.display = "block";
+          correctIndex = data.correctIndex;
+          document.getElementById("feedback").innerText = "Problem generated. Pick the correct option!";
+        }
+      })
+      .catch(err => {
+        console.error("Error generating problem:", err);
+        document.getElementById("feedback").innerText = "Error generating problem.";
+      });
+    }
 
-<p>Want to take a 10-question exam? <a href="{{ url_for('exam_fourier.exam_fourier') }}">Click here!</a></p>
+    function checkAnswer(selectedIndex) {
+      if (correctIndex === null) {
+        document.getElementById("feedback").innerText = "Please generate a problem first!";
+        return;
+      }
+      fetch("{{ url_for('training_fourier.check_answer') }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ selectedIndex, correctIndex })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("feedback").innerText = data.feedback || "";
+      })
+      .catch(err => {
+        console.error("Error checking answer:", err);
+        document.getElementById("feedback").innerText = "Error checking answer.";
+      });
+    }
+  </script>
 
+  <style>
+    .radio-group { display: flex; gap: 15px; }
+    .radio-label { font-size: 1em; }
+    .radio-label input { margin-right: 6px; }
+    .action-btn {
+      padding: 10px 20px;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.2s ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    .action-btn:hover { background-color: #005fa3; }
+    .feedback { min-height: 1.4em; margin-top: 10px; }
+    .link-btn {
+      color: #007acc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .link-btn:hover { text-decoration: underline; }
+  </style>
 {% endblock %}

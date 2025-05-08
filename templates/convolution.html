@@ -1,117 +1,189 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Convolution Calculator</h2>
-
-<form id="convForm" method="POST">
-  <div style="margin-bottom: 10px;">
-    <label>Function 1:</label>
-    <input type="text" id="func1" name="func1" value="{{ func1|default('') }}" placeholder="e.g. rect(t+2)">
+  <!-- Page Header -->
+  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Convolution Calculator</h1>
+    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
+      Compute the convolution of two time-domain functions. Enter each function below or use the quick-buttons to auto-insert common signals and operators.
+    </p>
   </div>
-  <div style="margin-bottom: 10px;">
-    <label>Function 2:</label>
-    <input type="text" id="func2" name="func2" value="{{ func2|default('') }}" placeholder="e.g. tri(t/2)">
+
+  <form id="convForm" method="POST" style="max-width: 700px; margin: 0 auto; text-align: center;">
+    <div class="function-group" style="margin-bottom: 20px;">
+      <label for="func1" style="display: block; font-weight: bold; margin-bottom: 5px;">Function 1:</label>
+      <input type="text" id="func1" name="func1" 
+             value="{{ func1|default('') }}" 
+             placeholder="e.g., rect(t+2)" 
+             onfocus="setActiveField(this)">
+    </div>
+    <div class="function-group" style="margin-bottom: 20px;">
+      <label for="func2" style="display: block; font-weight: bold; margin-bottom: 5px;">Function 2:</label>
+      <input type="text" id="func2" name="func2" 
+             value="{{ func2|default('') }}" 
+             placeholder="e.g., tri(t/2)" 
+             onfocus="setActiveField(this)">
+    </div>
+
+    <!-- Quick Functions & Operators -->
+    <div class="quick-functions" style="margin-bottom: 30px;">
+      <!-- first row: functions -->
+      <div class="quick-buttons" style="margin-bottom: 10px;">
+        <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+        <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+        <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+        <button type="button" onclick="insertOperand('step(t)')">Step</button>
+        <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+        <button type="button"onclick="insertOperand('sign(t)')">Sign</button>
+        <button type="button"onclick="insertOperand('delta(t)')">Delta</button>
+        <button type="button"onclick="insertOperand('exp(t)')">Exp</button>
+        <button type="button"onclick="insertOperand('si(t)')">Si</button>
+      </div>
+      <!-- second row: operators -->
+      <div class="quick-buttons">
+        <button type="button" onclick="insertOperand('+')">+</button>
+        <button type="button" onclick="insertOperand('-')">-</button>
+        <button type="button" onclick="insertOperand('*')">*</button>
+        <button type="button" onclick="insertOperand('/')">/</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 30px;">
+      <button type="submit" class="action-btn">Compute Convolution</button>
+      <button type="button" id="clearBtn" class="action-btn">Clear</button>
+    </div>
+
+    {% if error %}
+      <div style="color:red; font-weight: bold;">Error: {{ error }}</div>
+    {% endif %}
+  </form>
+
+  <!-- Plot Container -->
+  <div id="conv-plot-wrapper">
+    {% if plot_data %}
+      <img id="conv_plot_image" src="data:image/png;base64,{{ plot_data }}" alt="Convolution Plot">
+    {% else %}
+      <img id="conv_plot_image" src="" alt="Convolution Plot will appear here" style="display:none;">
+    {% endif %}
+    <button type="button" id="enlargeBtn" onclick="toggleEnlarge()">Enlarge Plot</button>
   </div>
-  
-<!-- Quick Functions / Operators -->
-<h4>Quick Functions & Operators</h4>
-<div id="quick-functions" style="margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">
-  <!-- first row: functions -->
-  <div style="display:flex; flex-wrap:wrap; gap:14px;">
-    <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-    <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-    <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-    <button type="button" onclick="insertOperand('step(t)')">Step</button>
-    <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-    <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
-    <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-    <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-    <button type="button" onclick="insertOperand('si(t)')">Si</button>
-  </div>
-  <!-- second row: operators -->
-  <div style="display:flex; flex-wrap:wrap; gap:14px;">
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">-</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
-  </div>
-</div>
 
-<div style="margin-bottom: 10px;">
-  <button type="submit">Compute Convolution</button>
-  <button type="button" id="clearBtn">Clear</button>
-</div>
+  <script>
+    // Track active input
+    var activeField = null;
+    let f1 = document.getElementById("func1");
+    let f2 = document.getElementById("func2");
+    f1.addEventListener("focus", ()=>{ activeField = f1; });
+    f2.addEventListener("focus", ()=>{ activeField = f2; });
 
-
-  {% if error %}
-  <div style="color:red;">Error: {{ error }}</div>
-  {% endif %}
-</form>
-
-<!-- Plot Container -->
-<div id="conv-plot-wrapper" style="position: relative; margin-top:20px; display:inline-block;">
-  {% if plot_data %}
-    <img id="conv_plot_image" src="data:image/png;base64,{{ plot_data }}" alt="Convolution Plot">
-  {% else %}
-    <img id="conv_plot_image" src="" alt="Convolution Plot will appear here" style="display:none;">
-  {% endif %}
-  <!-- Enlarge button at top-right corner -->
-  <button type="button" id="enlargeBtn" onclick="toggleEnlarge()" style="position:absolute; top:10px; right:10px;">
-    Enlarge Plot
-  </button>
-</div>
-
-<script>
-  var activeField = null;
-  let f1 = document.getElementById("func1");
-  let f2 = document.getElementById("func2");
-
-  // Insert quick function/operator into whichever input is active
-  function insertOperand(operand) {
-    if(!activeField) {
-      alert("Select an input field first.");
-      return;
+    function insertOperand(operand) {
+      if (!activeField) { alert("Select an input field first."); return; }
+      let start = activeField.selectionStart;
+      let end = activeField.selectionEnd;
+      let val = activeField.value;
+      activeField.value = val.slice(0,start) + operand + val.slice(end);
+      activeField.selectionStart = activeField.selectionEnd = start + operand.length;
+      activeField.focus();
     }
-    let start = activeField.selectionStart;
-    let end = activeField.selectionEnd;
-    let current = activeField.value;
-    activeField.value = current.substring(0, start) + operand + current.substring(end);
-    activeField.selectionStart = activeField.selectionEnd = start + operand.length;
-    activeField.focus();
-  }
 
-  // Track which field is active
-  f1.addEventListener("focus", ()=>{ activeField=f1; });
-  f2.addEventListener("focus", ()=>{ activeField=f2; });
+    // Clear form and plot
+    document.getElementById("clearBtn").addEventListener("click", function() {
+      f1.value = "";
+      f2.value = "";
+      let img = document.getElementById("conv_plot_image");
+      img.src = "";
+      img.style.display = "none";
+    });
 
-  // Clear button
-  document.getElementById("clearBtn").addEventListener("click", function(){
-    f1.value = "";
-    f2.value = "";
-    let img = document.getElementById("conv_plot_image");
-    img.src = "";
-    img.style.display = "none";
-  });
+    // Toggle enlarge
+    function toggleEnlarge() {
+      document.getElementById("conv-plot-wrapper").classList.toggle("enlarged");
+    }
+  </script>
 
-  // Toggle enlarge by applying a class to the wrapper
-  function toggleEnlarge(){
-    let wrapper = document.getElementById("conv-plot-wrapper");
-    if(!wrapper) return;
-    wrapper.classList.toggle("enlarged");
-  }
-</script>
+  <style>
+    /* Header */
+    .page-header h1 { font-weight: bold; }
+    .page-header p { line-height: 1.4; }
 
-<style>
-  /* Enlarge the entire wrapper via transform scale, from center */
-  #conv-plot-wrapper.enlarged {
-    transform: scale(1.5);
-    transform-origin: center center;
-    transition: transform 0.3s ease;
-  }
-  #conv_plot_image {
-    display: block;
-    max-width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-</style>
+    /* Inputs */
+    .function-group input[type="text"] {
+      width: 100%; max-width: 300px;
+      padding: 8px;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      font-size: 1em;
+      margin-top: 5px;
+    }
+
+    /* Quick buttons */
+    .quick-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .quick-buttons button {
+      padding: 6px 12px;
+      font-size: 0.9em;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .quick-buttons button:hover {
+      background-color: #005fa3;
+    }
+
+    /* Action buttons */
+    .action-btn {
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      color: #fff;
+    }
+    #convForm .action-btn:first-child {
+      background-color: #007acc;
+      margin-right: 10px;
+    }
+    #convForm .action-btn:first-child:hover { background-color: #005fa3; }
+    #clearBtn { background-color: #f44336; }
+    #clearBtn:hover { background-color: #d32f2f; }
+
+    /* Plot wrapper */
+    #conv-plot-wrapper {
+      position: relative;
+      text-align: center;
+      margin: 30px auto;
+      max-width: 90%;
+    }
+    #conv_plot_image {
+      max-width: 100%;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      display: block;
+    }
+    #conv-plot-wrapper.enlarged {
+      transform: scale(1.5);
+      transform-origin: center center;
+      transition: transform 0.3s ease;
+    }
+    #enlargeBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 6px 10px;
+      font-size: 0.9em;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #enlargeBtn:hover { background-color: #005fa3; }
+  </style>
 {% endblock %}

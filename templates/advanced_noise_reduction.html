@@ -1,87 +1,163 @@
-<!-- templates/advanced_noise_reduction.html -->
-
 {% extends "base.html" %}
 {% block content %}
-<h2>Advanced Noise Reduction Module</h2>
-
-{% if error %}
-  <div style="color:red;">{{ error }}</div>
-{% endif %}
-
-<form method="post" enctype="multipart/form-data">
-  <label>
-    <input type="radio" name="audio_choice" value="default" checked>
-    Use Example Audio
-  </label>
-  <label style="margin-left:1em;">
-    <input type="radio" name="audio_choice" value="upload">
-    Upload Your Own
-  </label>
-  <br><br>
-
-  <div id="uploadDiv" style="display:none;">
-    <label for="audio_file">Audio (WAV, ≤10 s):</label>
-    <input type="file" name="audio_file" id="audio_file" accept=".wav">
-    <br><br>
+  <!-- Page Header -->
+  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Advanced Noise Reduction Module</h1>
+    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
+      Choose or upload an audio clip, select a noise reduction method, and explore time-domain, frequency-domain, and gain visualizations.
+    </p>
   </div>
 
-  <label for="method">Noise Reduction Method:</label>
-  <select name="method" id="method">
-    <option value="wiener">Wiener Filter</option>
-    <option value="spectral">Spectral Subtraction</option>
-    <option value="wavelet">Wavelet Denoising</option>
-  </select>
-  <br><br>
+  <form method="post" enctype="multipart/form-data" style="max-width: 700px; margin: 0 auto; text-align: center;">
+    <!-- Audio Choice -->
+    <div class="form-group audio-choice-group" style="display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 30px;">
+      <label class="radio-label">
+        <input type="radio" name="audio_choice" value="default" checked> Use Example Audio
+      </label>
+      <label class="radio-label">
+        <input type="radio" name="audio_choice" value="upload"> Upload Your Own
+      </label>
+    </div>
 
-  <button type="submit">Apply Noise Reduction</button>
-</form>
+    <!-- Upload Picker -->
+    <div id="uploadDiv" class="form-group" style="display: none; margin-bottom: 30px;">
+      <label for="audio_file" style="font-weight: bold; display: block; margin-bottom: 5px;">Audio File (WAV, ≤10s):</label>
+      <input type="file" name="audio_file" id="audio_file" accept=".wav">
+    </div>
 
-<script>
-  const radios = document.getElementsByName("audio_choice"),
-        uploadDiv = document.getElementById("uploadDiv"),
-        fileIn = document.getElementById("audio_file");
-  radios.forEach(r => r.addEventListener("change", () => {
-    if (r.value === "upload" && r.checked) {
-      uploadDiv.style.display = "block";
-      fileIn.required = true;
-    } else if (r.value === "default" && r.checked) {
-      uploadDiv.style.display = "none";
-      fileIn.required = false;
+    {% if error %}
+      <div style="color: #f44336; font-weight: bold; text-align: center; margin-bottom: 30px;">{{ error }}</div>
+    {% endif %}
+
+    <!-- Method Selection -->
+    <div class="form-group method-group" style="margin-bottom: 30px;">
+      <label for="method" style="font-weight: bold; display: block; margin-bottom: 5px;">Noise Reduction Method:</label>
+      <select name="method" id="method" style="width: 100%; max-width: 300px;">
+        <option value="wiener" {% if method=='wiener' %}selected{% endif %}>Wiener Filter</option>
+        <option value="spectral" {% if method=='spectral' %}selected{% endif %}>Spectral Subtraction</option>
+        <option value="wavelet" {% if method=='wavelet' %}selected{% endif %}>Wavelet Denoising</option>
+      </select>
+    </div>
+
+    <!-- Apply Button -->
+    <div class="form-group apply-group" style="margin-bottom: 40px;">
+      <button type="submit" class="action-btn">Apply Noise Reduction</button>
+    </div>
+  </form>
+
+  {% if time_plot and freq_plot and gain_plot %}
+    <div class="viz-section" style="max-width: 800px; margin: 40px auto;">
+      <h3 style="text-align: center; margin-bottom: 20px;">Visualization</h3>
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+        <div style="flex: 1 1 250px;">
+          <h4 style="text-align: center;">Time Domain</h4>
+          <img src="data:image/png;base64,{{ time_plot }}" alt="Time Domain Plot" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
+        </div>
+        <div style="flex: 1 1 250px;">
+          <h4 style="text-align: center;">Frequency Domain</h4>
+          <img src="data:image/png;base64,{{ freq_plot }}" alt="Frequency Domain Plot" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
+        </div>
+        <div style="flex: 1 1 250px;">
+          <h4 style="text-align: center;">Effective Gain (dB)</h4>
+          <img src="data:image/png;base64,{{ gain_plot }}" alt="Gain Plot" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if coef_plot %}
+    <div class="coef-section" style="max-width: 400px; margin: 20px auto; text-align: center;">
+      <h3>Wavelet Coefficient Comparison</h3>
+      <img src="data:image/png;base64,{{ coef_plot }}" alt="Wavelet Coefficients" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
+    </div>
+  {% endif %}
+
+  {% if output_audio %}
+    <div class="audio-section" style="max-width: 600px; margin: 20px auto; text-align: center;">
+      <h3>Listen & Download</h3>
+      <audio controls style="width: 100%; margin-bottom: 15px;"><source src="data:audio/wav;base64,{{ output_audio }}" type="audio/wav"></audio>
+      <div>
+        <a href="data:audio/wav;base64,{{ output_audio }}" download="denoised.wav" class="action-btn">Download Denoised Audio</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Theory Section -->
+  <div class="theory-section" style="max-width: 800px; margin: 40px auto;">
+    <h3 style="text-align: center; margin-bottom: 20px;">Theoretical Background</h3>
+    <p><strong>Noise Reduction Filters</strong> are designed to attenuate unwanted components in an audio signal while preserving the desired content. Each method operates on the signal in a specific domain and uses assumptions about signal and noise characteristics.</p>
+    <h4>1. Wiener Filter</h4>
+    <p>The Wiener filter is optimal in the mean-square-error sense. It uses the estimated power spectra of the signal and noise to compute a frequency-dependent gain <em>H(f)</em>:</p>
+    <pre style="background:#f7f7f7; padding:10px; border-radius:4px;">H(f) = S_xx(f) / [S_xx(f) + S_nn(f)]</pre>
+    <p>where <em>S_xx</em> and <em>S_nn</em> are the signal and noise power spectral densities, respectively. In practice, it attenuates frequencies dominated by noise.</p>
+    <h4>2. Spectral Subtraction</h4>
+    <p>Spectral subtraction estimates noise by averaging silent segments and subtracts this from the noisy spectrum. The result is:</p>
+    <pre style="background:#f7f7f7; padding:10px; border-radius:4px;">|Y(f)| = max(|X(f)| - |N(f)|, β·|N(f)|)</pre>
+    <p>where <em>|X(f)|</em> is the noisy magnitude spectrum, <em>|N(f)|</em> the noise estimate, and <em>β</em> a small floor to avoid negative values.</p>
+    <h4>3. Wavelet Denoising</h4>
+    <p>Wavelet denoising transforms the signal into the wavelet domain, where noise often concentrates in small coefficients. By applying a threshold <em>θ</em> to coefficients:</p>
+    <pre style="background:#f7f7f7; padding:10px; border-radius:4px;">w' = sign(w)·max(|w| - θ, 0)</pre>
+    <p>and then inverting the transform, noise is reduced while preserving signal features.</p>
+    <h4>Interpreting the Plots</h4>
+    <ul>
+      <li><strong>Time Domain:</strong> shows the waveform amplitude over time before and after filtering.</li>
+      <li><strong>Frequency Domain:</strong> illustrates the magnitude spectrum; filters appear as frequency‑dependent gains.</li>
+      <li><strong>Effective Gain (dB):</strong> plots the filter’s attenuation (in dB) across frequencies—a gain of 0 dB means no attenuation, negative values indicate suppression of noise bands.</li>
+    </ul>
+  </div>
+
+  <script>
+    // Toggle upload picker
+    const radios = document.getElementsByName("audio_choice"),
+          uploadDiv = document.getElementById("uploadDiv"),
+          fileIn = document.getElementById("audio_file");
+    radios.forEach(r => r.addEventListener("change", () => {
+      if (r.value === "upload" && r.checked) {
+        uploadDiv.style.display = "block";
+        fileIn.required = true;
+      } else {
+        uploadDiv.style.display = "none";
+        fileIn.required = false;
+      }
+    }));
+  </script>
+
+  <style>
+    .page-header h1 { font-weight: bold; }
+    .page-header p { line-height: 1.4; }
+    .form-group input,
+    .form-group select {
+      padding: 8px;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      font-size: 1em;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      display: block;
     }
-  }));
-</script>
-
-{% if time_plot and freq_plot and gain_plot %}
-  <h3>Visualization</h3>
-  <div style="display:flex;gap:20px;flex-wrap:wrap;">
-    <div style="flex:1 1 30%;">
-      <h4>Time Domain</h4>
-      <img src="data:image/png;base64,{{ time_plot }}" alt="Time Domain Plot">
-    </div>
-    <div style="flex:1 1 30%;">
-      <h4>Frequency Domain</h4>
-      <img src="data:image/png;base64,{{ freq_plot }}" alt="Freq Domain Plot">
-    </div>
-    <div style="flex:1 1 30%;">
-      <h4>Effective Gain (dB)</h4>
-      <img src="data:image/png;base64,{{ gain_plot }}" alt="Gain Plot">
-    </div>
-  </div>
-{% endif %}
-
-{% if coef_plot %}
-  <h3>Wavelet Coefficient Comparison</h3>
-  <img src="data:image/png;base64,{{ coef_plot }}" alt="Wavelet Coefs">
-{% endif %}
-
-{% if output_audio %}
-  <h3>Listen to Processed Audio</h3>
-  <audio controls>
-    <source src="data:audio/wav;base64,{{ output_audio }}" type="audio/wav">
-  </audio>
-  <h3>Download</h3>
-  <a href="data:audio/wav;base64,{{ output_audio }}" download="denoised.wav">
-    Download Denoised Audio
-  </a>
-{% endif %}
+    /* Audio choice radios */
+    .audio-choice-group label { font-size: 1em; }
+    .audio-choice-group input { margin-right: 8px; }
+    /* Apply button centered */
+    .apply-group { text-align: center; }
+    .action-btn {
+      padding: 10px 20px;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      display: inline-block;
+      margin: 0;
+      text-decoration: none;
+    }
+    .action-btn:hover { background-color: #005fa3; }
+    /* Theory section styling */
+    .theory-section h3 { font-weight: bold; }
+    .theory-section h4 { margin-top: 20px; }
+    .theory-section p, .theory-section ul { font-size: 1em; color: #333; line-height: 1.6; }
+    .theory-section pre { font-family: monospace; font-size: 0.9em; }
+  </style>
 {% endblock %}

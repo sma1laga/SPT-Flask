@@ -1,102 +1,111 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Convolution Training</h2>
+  <!-- Page Header -->
+  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Convolution Training</h1>
+    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
+      Practice computing convolutions with customizable difficulty. Generate problems, inspect the plot, and select the correct answer.</p>
+  </div>
 
-<!-- Difficulty selection -->
-<div style="margin-bottom:10px;">
-  <label><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
-  <label><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
-  <label><input type="radio" name="difficulty" value="HARD"> Hard</label>
-</div>
+  <!-- Controls -->
+  <div class="controls" style="max-width: 700px; margin: 0 auto 30px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; text-align: center;">
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
+      <label class="radio-label"><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
+      <label class="radio-label"><input type="radio" name="difficulty" value="HARD"> Hard</label>
+    </div>
+    <button id="generateBtn" class="action-btn">Generate Problem</button>
+  </div>
 
-<button id="generateBtn">Generate Problem</button>
+  <!-- Plot Container -->
+  <div class="plot-container" style="text-align: center; margin-bottom: 20px;">
+    <img id="conv_plot_image" src="" alt="Training Convolution Plot" style="display:none; max-width:100%; border:1px solid #ccd0d5; border-radius:4px;">
+  </div>
 
-<!-- Plot container -->
-<div id="conv-training-plot" style="position:relative; margin-top:20px; display:inline-block;">
-  <img id="conv_plot_image" src="" alt="Training Convolution Plot" style="display:none;">
-</div>
+  <!-- Answer Options -->
+  <div class="options" style="max-width: 700px; margin: 0 auto 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+    <button class="option-btn action-btn" data-index="0">Option 1</button>
+    <button class="option-btn action-btn" data-index="1">Option 2</button>
+    <button class="option-btn action-btn" data-index="2">Option 3</button>
+    <button class="option-btn action-btn" data-index="3">Option 4</button>
+  </div>
 
-<!-- Answer buttons -->
-<div style="margin-top:10px;">
-  <button class="optionBtn" data-index="0">Option 1</button>
-  <button class="optionBtn" data-index="1">Option 2</button>
-  <button class="optionBtn" data-index="2">Option 3</button>
-  <button class="optionBtn" data-index="3">Option 4</button>
-</div>
+  <!-- Feedback -->
+  <div id="feedback" class="feedback" style="text-align: center; font-size: 1.1em; color: #333; min-height: 1.2em;"></div>
 
-<!-- Feedback -->
-<div id="feedback" style="margin-top:10px; font-size:1.1em; color:#333;"></div>
+  <!-- Exam Link -->
+  <p style="text-align: center; margin-top: 30px;">
+    Want a 10-question exam? <a href="{{ url_for('exam_convolution.exam_convolution') }}" class="link-btn">Take the Convolution Exam</a>
+  </p>
 
-<script>
-  let correctIndex = null;
-
-  document.getElementById("generateBtn").addEventListener("click", generateProblem);
-
-  // For each of the 4 answer buttons:
-  let optionButtons = document.querySelectorAll(".optionBtn");
-  optionButtons.forEach(btn => {
-    btn.addEventListener("click", function(){
-      let selectedIndex = parseInt(btn.getAttribute("data-index"));
-      checkAnswer(selectedIndex);
+  <!-- Scripts -->
+  <script>
+    let correctIndex = null;
+    document.getElementById('generateBtn').addEventListener('click', generateProblem);
+    document.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
     });
-  });
 
-  function getDifficulty() {
-    let radios = document.getElementsByName("difficulty");
-    for(let i=0; i<radios.length; i++){
-      if(radios[i].checked) return radios[i].value;
+    function getDifficulty() {
+      return document.querySelector('input[name="difficulty"]:checked').value;
     }
-    return "EASY";
-  }
 
-  function generateProblem() {
-    let diff = getDifficulty();
-    fetch("{{ url_for('training_convolution.generate_problem') }}", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ difficulty: diff })
-    })
-    .then(resp => resp.json())
-    .then(data => {
-      if(data.error) {
-        document.getElementById("feedback").innerText = "Error: " + data.error;
-      } else {
-        // Display the plot
-        let img = document.getElementById("conv_plot_image");
-        img.src = "data:image/png;base64," + data.plot_data;
-        img.style.display = "block";
+    function generateProblem() {
+      const diff = getDifficulty();
+      fetch("{{ url_for('training_convolution.generate_problem') }}", {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ difficulty: diff })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) return showFeedback('Error: ' + data.error);
+        const img = document.getElementById('conv_plot_image');
+        img.src = 'data:image/png;base64,' + data.plot_data;
+        img.style.display = 'block';
         correctIndex = data.correctIndex;
-        document.getElementById("feedback").innerText = "Problem generated. Pick the correct option!";
-      }
-    })
-    .catch(err => {
-      console.error("Generate problem error:", err);
-      document.getElementById("feedback").innerText = "Error generating problem.";
-    });
-  }
-
-  function checkAnswer(selectedIndex) {
-    if(correctIndex === null) {
-      document.getElementById("feedback").innerText = "Please generate a problem first!";
-      return;
+        showFeedback('Problem generated. Select the correct option.');
+      })
+      .catch(() => showFeedback('Error generating problem.'));
     }
-    fetch("{{ url_for('training_convolution.check_answer') }}", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ selectedIndex: selectedIndex, correctIndex: correctIndex })
-    })
-    .then(resp => resp.json())
-    .then(data => {
-      document.getElementById("feedback").innerText = data.feedback || "No feedback received.";
-    })
-    .catch(err => {
-      console.error("Check answer error:", err);
-      document.getElementById("feedback").innerText = "Error checking answer.";
-    });
-  }
-</script>
-<p>Want to take a 10-question exam? 
-  <a href="{{ url_for('exam_convolution.exam_convolution') }}">Click here!</a>
-</p>
 
+    function checkAnswer(selected) {
+      if (correctIndex === null) return showFeedback('Please generate a problem first!');
+      fetch("{{ url_for('training_convolution.check_answer') }}", {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ selectedIndex: selected, correctIndex: correctIndex })
+      })
+      .then(res => res.json())
+      .then(data => showFeedback(data.feedback || ''))
+      .catch(() => showFeedback('Error checking answer.'));
+    }
+
+    function showFeedback(msg) {
+      document.getElementById('feedback').innerText = msg;
+    }
+  </script>
+
+  <!-- Styles -->
+  <style>
+    .radio-group { display: flex; gap: 15px; }
+    .radio-label { font-size: 1em; }
+    .radio-label input { margin-right: 6px; }
+    .action-btn {
+      padding: 10px 20px;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.2s ease;
+    }
+    .action-btn:hover { background-color: #005fa3; }
+    .feedback { min-height: 1.4em; margin-top: 10px; }
+    .link-btn {
+      color: #007acc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .link-btn:hover { text-decoration: underline; }
+  </style>
 {% endblock %}

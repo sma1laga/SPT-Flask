@@ -1,149 +1,148 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Dynamic Convolution Explorer</h2>
-
-<div style="margin-bottom:1em;">
-  <label>f₁(t):</label>
-  <select id="func1">
-    <option value="">-- none --</option>
-    {% for f in functions %}<option>{{f}}</option>{% endfor %}
-  </select>
-
-  <label style="margin-left:2em;">f₂(t):</label>
-  <select id="func2">
-    <option value="">-- none --</option>
-    {% for f in functions %}<option>{{f}}</option>{% endfor %}
-  </select>
-</div>
-
-<div style="margin-bottom:1em;">
-  <label>Shift τ:</label>
-  <input type="range" id="tauSlider" min="-10" max="10" step="0.1" value="0">
-  <span id="tauValue">0.0</span>
-</div>
-
-<div style="max-width: 650px; margin: auto;">
-    <canvas id="topChart"
-            height="200"
-            style="width: 100%; display: block; border: 1px solid #ccc; border-radius:4px;">
-    </canvas>
-  
-    <canvas id="bottomChart"
-            height="150"
-            style="width: 100%; margin-top: 1em; display: block; border: 1px solid #ccc; border-radius:4px;">
-    </canvas>
+  <!-- Page Header -->
+  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Dynamic Convolution Explorer</h1>
+    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
+      Slide τ to see how the overlap between two signals f₁(t) and f₂(t) changes over time and how that generates their convolution in real-time.
+    </p>
   </div>
-  
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-let tData, y1Data, y2Data, yConvData;
-let topChart, bottomChart;
+  <!-- Controls -->
+  <div id="dynamic-form" style="max-width: 700px; margin: 0 auto; text-align: center;">
+    <div class="inputs" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-bottom: 30px;">
+      <div>
+        <label for="func1" style="font-weight: bold;">f₁(t):</label><br>
+        <select id="func1">
+          <option value="">-- none --</option>
+          {% for f in functions %}<option>{{ f }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="func2" style="font-weight: bold;">f₂(t):</label><br>
+        <select id="func2">
+          <option value="">-- none --</option>
+          {% for f in functions %}<option>{{ f }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="tauSlider" style="font-weight: bold;">Shift τ:</label><br>
+        <input type="range" id="tauSlider" min="-10" max="10" step="0.1" value="0">
+        <span id="tauValue" style="display: inline-block; width: 40px;">0.0</span>
+      </div>
+    </div>
+  </div>
 
-function fetchData(){
-  const f1 = document.getElementById("func1").value;
-  const f2 = document.getElementById("func2").value;
-  fetch("{{ url_for('dynamic_convolution.dynamic_data') }}", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ func1:f1, func2:f2 })
-  })
-  .then(r=>r.json().then(d=> r.ok ? d : Promise.reject(d.error)))
-  .then(d=>{
-    tData      = d.t;
-    y1Data     = d.y1;
-    y2Data     = d.y2;
-    yConvData  = d.y_conv;
+  <!-- Plots -->
+  <div id="dynamic-plot-wrapper" style="max-width: 650px; margin: auto;">
+    <canvas id="topChart" height="200" style="width: 100%; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
+    <canvas id="bottomChart" height="150" style="width: 100%; margin-top: 1em; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let tData, y1Data, y2Data, yConvData;
+    let topChart, bottomChart;
+
+    function fetchData(){
+      const f1 = document.getElementById("func1").value;
+      const f2 = document.getElementById("func2").value;
+      fetch("{{ url_for('dynamic_convolution.dynamic_data') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ func1: f1, func2: f2 })
+      })
+      .then(r => r.json().then(d => r.ok ? d : Promise.reject(d.error)))
+      .then(d => {
+        tData     = d.t;
+        y1Data    = d.y1;
+        y2Data    = d.y2;
+        yConvData = d.y_conv;
+        initCharts();
+        updatePlots();
+      })
+      .catch(e => alert("Error: " + e));
+    }
+
+    function initCharts(){
+      const topCtx    = document.getElementById("topChart").getContext("2d");
+      const bottomCtx = document.getElementById("bottomChart").getContext("2d");
+
+      if(topChart)    topChart.destroy();
+      if(bottomChart) bottomChart.destroy();
+
+      topChart = new Chart(topCtx, {
+        type: 'line',
+        data: {
+          labels: tData,
+          datasets: [
+            { label: "f₁(t)", data: y1Data, borderColor: 'blue', fill:false },
+            { label: "f₂(τ−t)", data: [], borderColor: 'orange', fill:false },
+            { label: "f₁·f₂", data: [], borderColor: 'red', fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
+          ]
+        },
+        options: { animation:false, scales:{ x:{ type:'linear', min:-10, max:10 } } }
+      });
+
+      bottomChart = new Chart(bottomCtx, {
+        type: 'line',
+        data: {
+          labels: tData,
+          datasets: [
+            { label: "(f₁*f₂)(τ)", data: yConvData, borderColor: 'darkblue', fill:false },
+            { label: "Marker", data: [], pointRadius:5, showLine:false, borderColor:'red' }
+          ]
+        },
+        options: { animation:false, scales:{ x:{ type:'linear', min:-10, max:10 } } }
+      });
+    }
+
+    function updatePlots(){
+      const τ = parseFloat(document.getElementById("tauSlider").value);
+      document.getElementById("tauValue").textContent = τ.toFixed(1);
+
+      const N  = tData.length;
+      const dt = tData[1] - tData[0];
+      let y2shift = Array(N);
+      for(let i=0;i<N;i++){
+        const want = τ - tData[i];
+        const idx  = (want - tData[0]) / dt;
+        const lo   = Math.floor(idx), hi = Math.ceil(idx);
+        y2shift[i] = (lo<0||hi>=N) ? 0 : y2Data[lo]*(1-(idx-lo)) + y2Data[hi]*(idx-lo);
+      }
+      topChart.data.datasets[1].data = y2shift;
+      topChart.data.datasets[2].data = y1Data.map((v,i) => v*y2shift[i]);
+      topChart.update();
+
+      const idx = (τ - tData[0]) / dt;
+      let convAt = 0;
+      if(idx>=0 && idx<=N-1){ const lo=Math.floor(idx), hi=Math.ceil(idx), w=idx-lo; convAt = yConvData[lo]*(1-w)+yConvData[hi]*w; }
+      bottomChart.data.datasets[1].data = [{ x: τ, y: convAt }];
+      bottomChart.update();
+    }
+
+    document.getElementById("func1").onchange   = fetchData;
+    document.getElementById("func2").onchange   = fetchData;
+    document.getElementById("tauSlider").oninput = updatePlots;
+
     initCharts();
-    updatePlots();
-  })
-  .catch(e=>alert("Error: "+e));
-}
+  </script>
 
-function initCharts(){
-  const topCtx = document.getElementById("topChart").getContext("2d");
-  const bottomCtx = document.getElementById("bottomChart").getContext("2d");
+  <!-- Styles -->
+  <style>
+    .page-header h1 { font-weight: bold; }
+    .page-header p { line-height: 1.4; }
 
-  if(topChart) topChart.destroy();
-  if(bottomChart) bottomChart.destroy();
-
-  topChart = new Chart(topCtx, {
-    type: 'line',
-    data: {
-      labels: tData,
-      datasets: [
-        { label: "f₁(t)",       data: y1Data,  borderColor: 'blue',   fill:false },
-        { label: "f₂(τ−t)",     data: [],      borderColor: 'orange', fill:false },
-        { label: "f₁·f₂",       data: [],      borderColor: 'red',     fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
-      ]
-    },
-    options: {
-      animation: false,
-      scales: { x:{ type:'linear', min:-10, max:10 } }
+    #dynamic-form select,
+    #dynamic-form input[type="range"] {
+      padding: 6px;
+      border: 1px solid #ccd0d5;
+      border-radius: 4px;
+      font-size: 1em;
     }
-  });
+    #tauValue { font-weight: bold; }
 
-  bottomChart = new Chart(bottomCtx, {
-    type: 'line',
-    data: {
-      labels: tData,
-      datasets: [
-        { label: "(f₁*f₂)(τ)", data: yConvData, borderColor: 'darkblue', fill:false},
-        { label: "Marker",       data: [],  pointRadius: 5, showLine:false, borderColor:'red' }
-      ]
-    },
-    options: {
-      animation: false,
-      scales: { x:{ type:'linear', min:-10, max:10 } }
-    }
-  });
-}
-
-function updatePlots(){
-  const τ = parseFloat(document.getElementById("tauSlider").value);
-  document.getElementById("tauValue").textContent = τ.toFixed(1);
-
-  // compute shifted y2: y2(τ - t[i])
-  const N = tData.length;
-  let y2shift = new Array(N);
-  const dt = tData[1] - tData[0];
-  for(let i=0;i<N;i++){
-    const want = τ - tData[i];
-    const idx  = (want - tData[0]) / dt;
-    const lo = Math.floor(idx), hi = Math.ceil(idx);
-    if(lo<0 || hi>=N) y2shift[i]=0;
-    else {
-      const w = idx - lo;
-      y2shift[i] = y2Data[lo]*(1-w) + y2Data[hi]*w;
-    }
-  }
-
-  // update shifted dataset
-  topChart.data.datasets[1].data = y2shift;
-
-  // compute pointwise multiplication with a stronger highlight
-  let yMul = y1Data.map((v,i) => v * y2shift[i]);
-  topChart.data.datasets[2].data = yMul;
-  topChart.update();
-
-  // bottom marker: convolution value at τ
-  const idx = (τ - tData[0]) / dt;
-  let convAt = 0;
-  if(idx>=0 && idx<=N-1){
-    const lo = Math.floor(idx), hi = Math.ceil(idx), w = idx - lo;
-    convAt = yConvData[lo]*(1-w)+yConvData[hi]*w;
-  }
-  bottomChart.data.datasets[1].data = [ { x:τ, y:convAt } ];
-  bottomChart.update();
-}
-
-// wire up
-document.getElementById("func1").onchange = fetchData;
-document.getElementById("func2").onchange = fetchData;
-document.getElementById("tauSlider").oninput = updatePlots;
-
-// initial empty charts
-initCharts();
-</script>
+    #dynamic-plot-wrapper { position: relative; }
+  </style>
 {% endblock %}
