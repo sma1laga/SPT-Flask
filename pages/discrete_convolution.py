@@ -74,7 +74,7 @@ def compute_discrete_convolution(func1_str, func2_str, ds):
 
     # discrete convolution
     y_conv = np.convolve(y1, y2, mode="full")
-    n_conv = np.arange(2*n.min(), 2*n.max() + ds, ds)
+    n_conv = np.arange(len(y_conv)) * ds + 2 * n.min()
 
     # plot
     fig = plt.figure(figsize=(12, 8))
