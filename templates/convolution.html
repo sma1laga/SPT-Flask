@@ -3,64 +3,47 @@
 <div class="page-header" style="margin-bottom:30px; text-align:center;">
   <h1 style="font-size:2.5em;">Convolution Calculator</h1>
   <p style="color:#555; max-width:600px; margin:0 auto;">
-    Gib zwei Zeitfunktionen ein und berechne deren diskrete Faltung interaktiv mit Plotly.
+    Enter two time-domain functions and compute their discrete convolution interactively with Plotly.
   </p>
 </div>
 
-<form id="convForm" style="max-width:700px; margin:0 auto; text-align:center;">
-  <!-- Function 1 -->
-  <div class="function-group" style="margin-bottom:20px;">
-    <label style="font-weight:bold; display:block; margin-bottom:5px;">Function 1:</label>
-    <input type="text" id="func1" placeholder="z.B. rect(t)" onfocus="setActiveField(this)"
-           style="width:100%; max-width:300px; padding:10px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
-    <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
-      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-      <button type="button" onclick="insertOperand('step(t)')">Step</button>
-      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
-      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
-      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
-      <button type="button" onclick="insertOperand('si(t)')">Si</button>
-      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
-    </div>
-    <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:5px;">
-      <button type="button" onclick="insertOperand('+')">+</button>
-      <button type="button" onclick="insertOperand('-')">-</button>
-      <button type="button" onclick="insertOperand('*')">*</button>
-      <button type="button" onclick="insertOperand('/')">/</button>
-    </div>
+<form id="convForm" style="max-width:800px; margin:0 auto; text-align:center;">
+  <!-- Zwei Inputs nebeneinander mit leicht erhöhtem Sternchen -->
+  <div class="function-group"
+       style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:20px;">
+    <input type="text" id="func1" placeholder="f₁(t)"
+           onfocus="setActiveField(this)"
+           style="width:45%; padding:8px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
+    <span style="font-size:1.5em; font-weight:bold; position:relative; top:-4px;">*</span>
+    <input type="text" id="func2" placeholder="f₂(t)"
+           onfocus="setActiveField(this)"
+           style="width:45%; padding:8px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
   </div>
 
-  <!-- Function 2 -->
-  <div class="function-group" style="margin-bottom:20px;">
-    <label style="font-weight:bold; display:block; margin-bottom:5px;">Function 2:</label>
-    <input type="text" id="func2" placeholder="z.B. tri(t)" onfocus="setActiveField(this)"
-           style="width:100%; max-width:300px; padding:10px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
-    <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
-      <!-- dieselben Buttons wie oben -->
-      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-      <button type="button" onclick="insertOperand('step(t)')">Step</button>
-      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
-      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
-      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
-      <button type="button" onclick="insertOperand('si(t)')">Si</button>
-      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
-    </div>
-    <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:5px;">
-      <button type="button" onclick="insertOperand('+')">+</button>
-      <button type="button" onclick="insertOperand('-')">-</button>
-      <button type="button" onclick="insertOperand('*')">*</button>
-      <button type="button" onclick="insertOperand('/')">/</button>
-    </div>
+  <!-- Funktions-Buttons in einer Zeile -->
+  <div class="quick-buttons functions"
+       style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">
+    <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+    <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+    <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+    <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+    <button type="button" onclick="insertOperand('step(t)')">Step</button>
+    <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+    <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+    <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
+    <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+    <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+    <button type="button" onclick="insertOperand('si(t)')">Si</button>
+    <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+  </div>
+
+  <!-- Operator-Buttons in der nächsten Zeile -->
+  <div class="quick-buttons operators"
+       style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:20px;">
+    <button type="button" onclick="insertOperand('+')">+</button>
+    <button type="button" onclick="insertOperand('-')">-</button>
+    <button type="button" onclick="insertOperand('*')">*</button>
+    <button type="button" onclick="insertOperand('/')">/</button>
   </div>
 
   <!-- Compute / Clear -->
@@ -79,72 +62,66 @@
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-let activeField = null;
-function setActiveField(f){ activeField = f; }
-document.getElementById("func1").addEventListener("focus", e=>activeField=e.target);
-document.getElementById("func2").addEventListener("focus", e=>activeField=e.target);
+  let activeField = null;
+  function setActiveField(f) { activeField = f; }
+  document.getElementById("func1").addEventListener("focus", e => activeField = e.target);
+  document.getElementById("func2").addEventListener("focus", e => activeField = e.target);
 
-function insertOperand(op) {
-  if (!activeField) return alert("Klicke zuerst in das Textfeld!");
-  const s = activeField.selectionStart, e = activeField.selectionEnd, v = activeField.value;
-  activeField.value = v.slice(0,s) + op + v.slice(e);
-  activeField.selectionStart = activeField.selectionEnd = s + op.length;
-  activeField.focus();
-}
+  function insertOperand(op) {
+    if (!activeField) return alert("Click in an input field first.");
+    const s = activeField.selectionStart, e = activeField.selectionEnd, v = activeField.value;
+    activeField.value = v.slice(0, s) + op + v.slice(e);
+    activeField.selectionStart = activeField.selectionEnd = s + op.length;
+    activeField.focus();
+  }
 
-function getValues() {
-  return {
-    func1: document.getElementById("func1").value,
-    func2: document.getElementById("func2").value
-  };
-}
+  function getValues() {
+    return {
+      func1: document.getElementById("func1").value,
+      func2: document.getElementById("func2").value
+    };
+  }
 
-function updatePlots() {
-  fetch("{{ url_for('convolution.convolution_update') }}", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(getValues())
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    if(data.error) return console.error(data.error);
-    const lc = { margin:{t:30}, showlegend:true };
+  function updatePlots() {
+    fetch("{{ url_for('convolution.convolution_update') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(getValues())
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) return console.error(data.error);
+      const lc = { margin: { t: 30 }, showlegend: true };
 
-    Plotly.newPlot("plot1", [{
-      x:data.t, y:data.y1,
-      type:"scatter", mode:"lines", name:"f₁(t)",
-      line:{width:3, color:"blue"}
-    }], {
-      ...lc, title:"Function 1", xaxis:{title:"t"}, yaxis:{title:"f₁(t)"}
-    });
+      Plotly.newPlot("plot1", [{
+        x: data.t, y: data.y1,
+        type: "scatter", mode: "lines", name: "f₁(t)",
+        line: { width: 3, color: "#1f77b4" }
+      }], { ...lc, title: "Function 1", xaxis: { title: "t" }, yaxis: { title: "f₁(t)" } });
 
-    Plotly.newPlot("plot2", [{
-      x:data.t, y:data.y2,
-      type:"scatter", mode:"lines", name:"f₂(t)",
-      line:{width:3, color:"green"}
-    }], {
-      ...lc, title:"Function 2", xaxis:{title:"t"}, yaxis:{title:"f₂(t)"}
-    });
+      Plotly.newPlot("plot2", [{
+        x: data.t, y: data.y2,
+        type: "scatter", mode: "lines", name: "f₂(t)",
+        line: { width: 3, color: "#ff7f0e" }
+      }], { ...lc, title: "Function 2", xaxis: { title: "t" }, yaxis: { title: "f₂(t)" } });
 
-    Plotly.newPlot("plotConv", [{
-      x:data.t, y:data.y_conv,
-      type:"scatter", mode:"lines", name:"Convolution",
-      line:{width:3, color:"black"}
-    }], {
-      ...lc, title:"f₁ * f₂ (Convolution)", xaxis:{title:"t"}, yaxis:{title:"(f₁*f₂)(t)"}
-    });
-  })
-  .catch(console.error);
-}
+      Plotly.newPlot("plotConv", [{
+        x: data.t, y: data.y_conv,
+        type: "scatter", mode: "lines", name: "Convolution",
+        line: { width: 3, color: "#2ca02c" }
+      }], { ...lc, title: "f₁ * f₂ (Convolution)", xaxis: { title: "t" }, yaxis: { title: "(f₁*f₂)(t)" } });
+    })
+    .catch(console.error);
+  }
 
-document.getElementById("computeBtn").addEventListener("click", updatePlots);
-document.getElementById("clearBtn").addEventListener("click", ()=>{
-  document.getElementById("func1").value="";
-  document.getElementById("func2").value="";
-  Plotly.purge("plot1");
-  Plotly.purge("plot2");
-  Plotly.purge("plotConv");
-});
+  document.getElementById("computeBtn").addEventListener("click", updatePlots);
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    document.getElementById("func1").value = "";
+    document.getElementById("func2").value = "";
+    Plotly.purge("plot1");
+    Plotly.purge("plot2");
+    Plotly.purge("plotConv");
+  });
 </script>
 
 <style>
@@ -191,5 +168,4 @@ document.getElementById("clearBtn").addEventListener("click", ()=>{
     background-color: #c82333;
   }
 </style>
-
 {% endblock %}
