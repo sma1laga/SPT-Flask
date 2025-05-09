@@ -1,189 +1,195 @@
 {% extends "base.html" %}
 {% block content %}
-  <!-- Page Header -->
-  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
-    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Convolution Calculator</h1>
-    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
-      Compute the convolution of two time-domain functions. Enter each function below or use the quick-buttons to auto-insert common signals and operators.
-    </p>
+<div class="page-header" style="margin-bottom:30px; text-align:center;">
+  <h1 style="font-size:2.5em;">Convolution Calculator</h1>
+  <p style="color:#555; max-width:600px; margin:0 auto;">
+    Gib zwei Zeitfunktionen ein und berechne deren diskrete Faltung interaktiv mit Plotly.
+  </p>
+</div>
+
+<form id="convForm" style="max-width:700px; margin:0 auto; text-align:center;">
+  <!-- Function 1 -->
+  <div class="function-group" style="margin-bottom:20px;">
+    <label style="font-weight:bold; display:block; margin-bottom:5px;">Function 1:</label>
+    <input type="text" id="func1" placeholder="z.B. rect(t)" onfocus="setActiveField(this)"
+           style="width:100%; max-width:300px; padding:10px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
+    <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
+      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+      <button type="button" onclick="insertOperand('step(t)')">Step</button>
+      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
+      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)')">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+    </div>
+    <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:5px;">
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+      <button type="button" onclick="insertOperand('/')">/</button>
+    </div>
   </div>
 
-  <form id="convForm" method="POST" style="max-width: 700px; margin: 0 auto; text-align: center;">
-    <div class="function-group" style="margin-bottom: 20px;">
-      <label for="func1" style="display: block; font-weight: bold; margin-bottom: 5px;">Function 1:</label>
-      <input type="text" id="func1" name="func1" 
-             value="{{ func1|default('') }}" 
-             placeholder="e.g., rect(t+2)" 
-             onfocus="setActiveField(this)">
+  <!-- Function 2 -->
+  <div class="function-group" style="margin-bottom:20px;">
+    <label style="font-weight:bold; display:block; margin-bottom:5px;">Function 2:</label>
+    <input type="text" id="func2" placeholder="z.B. tri(t)" onfocus="setActiveField(this)"
+           style="width:100%; max-width:300px; padding:10px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
+    <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
+      <!-- dieselben Buttons wie oben -->
+      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+      <button type="button" onclick="insertOperand('step(t)')">Step</button>
+      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
+      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)')">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
     </div>
-    <div class="function-group" style="margin-bottom: 20px;">
-      <label for="func2" style="display: block; font-weight: bold; margin-bottom: 5px;">Function 2:</label>
-      <input type="text" id="func2" name="func2" 
-             value="{{ func2|default('') }}" 
-             placeholder="e.g., tri(t/2)" 
-             onfocus="setActiveField(this)">
+    <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:5px;">
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+      <button type="button" onclick="insertOperand('/')">/</button>
     </div>
-
-    <!-- Quick Functions & Operators -->
-    <div class="quick-functions" style="margin-bottom: 30px;">
-      <!-- first row: functions -->
-      <div class="quick-buttons" style="margin-bottom: 10px;">
-        <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-        <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-        <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-        <button type="button" onclick="insertOperand('step(t)')">Step</button>
-        <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-        <button type="button"onclick="insertOperand('sign(t)')">Sign</button>
-        <button type="button"onclick="insertOperand('delta(t)')">Delta</button>
-        <button type="button"onclick="insertOperand('exp(t)')">Exp</button>
-        <button type="button"onclick="insertOperand('si(t)')">Si</button>
-      </div>
-      <!-- second row: operators -->
-      <div class="quick-buttons">
-        <button type="button" onclick="insertOperand('+')">+</button>
-        <button type="button" onclick="insertOperand('-')">-</button>
-        <button type="button" onclick="insertOperand('*')">*</button>
-        <button type="button" onclick="insertOperand('/')">/</button>
-      </div>
-    </div>
-
-    <div style="margin-bottom: 30px;">
-      <button type="submit" class="action-btn">Compute Convolution</button>
-      <button type="button" id="clearBtn" class="action-btn">Clear</button>
-    </div>
-
-    {% if error %}
-      <div style="color:red; font-weight: bold;">Error: {{ error }}</div>
-    {% endif %}
-  </form>
-
-  <!-- Plot Container -->
-  <div id="conv-plot-wrapper">
-    {% if plot_data %}
-      <img id="conv_plot_image" src="data:image/png;base64,{{ plot_data }}" alt="Convolution Plot">
-    {% else %}
-      <img id="conv_plot_image" src="" alt="Convolution Plot will appear here" style="display:none;">
-    {% endif %}
-    <button type="button" id="enlargeBtn" onclick="toggleEnlarge()">Enlarge Plot</button>
   </div>
 
-  <script>
-    // Track active input
-    var activeField = null;
-    let f1 = document.getElementById("func1");
-    let f2 = document.getElementById("func2");
-    f1.addEventListener("focus", ()=>{ activeField = f1; });
-    f2.addEventListener("focus", ()=>{ activeField = f2; });
+  <!-- Compute / Clear -->
+  <div style="margin-bottom:30px;">
+    <button type="button" id="computeBtn" class="action-btn">Compute</button>
+    <button type="button" id="clearBtn"   class="action-btn">Clear</button>
+  </div>
+</form>
 
-    function insertOperand(operand) {
-      if (!activeField) { alert("Select an input field first."); return; }
-      let start = activeField.selectionStart;
-      let end = activeField.selectionEnd;
-      let val = activeField.value;
-      activeField.value = val.slice(0,start) + operand + val.slice(end);
-      activeField.selectionStart = activeField.selectionEnd = start + operand.length;
-      activeField.focus();
-    }
+<!-- Plotly-Container -->
+<div id="plotly-container" style="max-width:1200px; margin:0 auto;">
+  <div id="plot1"      style="height:350px;"></div>
+  <div id="plot2"      style="height:350px; margin-top:20px;"></div>
+  <div id="plotConv"   style="height:350px; margin-top:20px;"></div>
+</div>
 
-    // Clear form and plot
-    document.getElementById("clearBtn").addEventListener("click", function() {
-      f1.value = "";
-      f2.value = "";
-      let img = document.getElementById("conv_plot_image");
-      img.src = "";
-      img.style.display = "none";
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+let activeField = null;
+function setActiveField(f){ activeField = f; }
+document.getElementById("func1").addEventListener("focus", e=>activeField=e.target);
+document.getElementById("func2").addEventListener("focus", e=>activeField=e.target);
+
+function insertOperand(op) {
+  if (!activeField) return alert("Klicke zuerst in das Textfeld!");
+  const s = activeField.selectionStart, e = activeField.selectionEnd, v = activeField.value;
+  activeField.value = v.slice(0,s) + op + v.slice(e);
+  activeField.selectionStart = activeField.selectionEnd = s + op.length;
+  activeField.focus();
+}
+
+function getValues() {
+  return {
+    func1: document.getElementById("func1").value,
+    func2: document.getElementById("func2").value
+  };
+}
+
+function updatePlots() {
+  fetch("{{ url_for('convolution.convolution_update') }}", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(getValues())
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.error) return console.error(data.error);
+    const lc = { margin:{t:30}, showlegend:true };
+
+    Plotly.newPlot("plot1", [{
+      x:data.t, y:data.y1,
+      type:"scatter", mode:"lines", name:"f₁(t)",
+      line:{width:3, color:"blue"}
+    }], {
+      ...lc, title:"Function 1", xaxis:{title:"t"}, yaxis:{title:"f₁(t)"}
     });
 
-    // Toggle enlarge
-    function toggleEnlarge() {
-      document.getElementById("conv-plot-wrapper").classList.toggle("enlarged");
-    }
-  </script>
+    Plotly.newPlot("plot2", [{
+      x:data.t, y:data.y2,
+      type:"scatter", mode:"lines", name:"f₂(t)",
+      line:{width:3, color:"green"}
+    }], {
+      ...lc, title:"Function 2", xaxis:{title:"t"}, yaxis:{title:"f₂(t)"}
+    });
 
-  <style>
-    /* Header */
-    .page-header h1 { font-weight: bold; }
-    .page-header p { line-height: 1.4; }
+    Plotly.newPlot("plotConv", [{
+      x:data.t, y:data.y_conv,
+      type:"scatter", mode:"lines", name:"Convolution",
+      line:{width:3, color:"black"}
+    }], {
+      ...lc, title:"f₁ * f₂ (Convolution)", xaxis:{title:"t"}, yaxis:{title:"(f₁*f₂)(t)"}
+    });
+  })
+  .catch(console.error);
+}
 
-    /* Inputs */
-    .function-group input[type="text"] {
-      width: 100%; max-width: 300px;
-      padding: 8px;
-      border: 1px solid #ccd0d5;
-      border-radius: 4px;
-      font-size: 1em;
-      margin-top: 5px;
-    }
+document.getElementById("computeBtn").addEventListener("click", updatePlots);
+document.getElementById("clearBtn").addEventListener("click", ()=>{
+  document.getElementById("func1").value="";
+  document.getElementById("func2").value="";
+  Plotly.purge("plot1");
+  Plotly.purge("plot2");
+  Plotly.purge("plotConv");
+});
+</script>
 
-    /* Quick buttons */
-    .quick-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-    }
-    .quick-buttons button {
-      padding: 6px 12px;
-      font-size: 0.9em;
-      background-color: #007acc;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    .quick-buttons button:hover {
-      background-color: #005fa3;
-    }
+<style>
+  /* Quick-Buttons (Functions & Operators) – etwas kompakter */
+  .quick-buttons.functions button,
+  .quick-buttons.operators button {
+    padding: 8px 12px;        /* etwas weniger Innenabstand */
+    font-size: 0.9em;         /* kleinere Schrift */
+    min-width: 60px;          /* geringere Mindestbreite */
+    border-radius: 4px;
+    background-color: #007acc;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .quick-buttons.functions button:hover,
+  .quick-buttons.operators button:hover {
+    background-color: #005fa3;
+  }
 
-    /* Action buttons */
-    .action-btn {
-      padding: 10px 20px;
-      font-size: 1em;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      color: #fff;
-    }
-    #convForm .action-btn:first-child {
-      background-color: #007acc;
-      margin-right: 10px;
-    }
-    #convForm .action-btn:first-child:hover { background-color: #005fa3; }
-    #clearBtn { background-color: #f44336; }
-    #clearBtn:hover { background-color: #d32f2f; }
+  /* Action-Buttons (Compute / Clear) – etwas kompakter */
+  .action-btn {
+    padding: 8px 20px;        /* weniger Innenabstand */
+    font-size: 0.9em;         /* kleinere Schrift */
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  #computeBtn {
+    background-color: #28a745;
+    color: #fff;
+    margin-right: 6px;
+  }
+  #computeBtn:hover {
+    background-color: #218838;
+  }
+  #clearBtn {
+    background-color: #dc3545;
+    color: #fff;
+  }
+  #clearBtn:hover {
+    background-color: #c82333;
+  }
+</style>
 
-    /* Plot wrapper */
-    #conv-plot-wrapper {
-      position: relative;
-      text-align: center;
-      margin: 30px auto;
-      max-width: 90%;
-    }
-    #conv_plot_image {
-      max-width: 100%;
-      border: 1px solid #ccd0d5;
-      border-radius: 4px;
-      display: block;
-    }
-    #conv-plot-wrapper.enlarged {
-      transform: scale(1.5);
-      transform-origin: center center;
-      transition: transform 0.3s ease;
-    }
-    #enlargeBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 6px 10px;
-      font-size: 0.9em;
-      background-color: #007acc;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #enlargeBtn:hover { background-color: #005fa3; }
-  </style>
 {% endblock %}
