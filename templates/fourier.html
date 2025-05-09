@@ -1,252 +1,178 @@
 {% extends "base.html" %}
 {% block content %}
-  <!-- Page Header -->
-  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
-    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Fourier Transform Visualizer</h1>
-    <p style="font-size: 1.1em; color: #555; max-width: 600px; margin: 0 auto;">
-      Enter a time-domain function to compute and visualize its Fourier transform. Use the quick buttons for common functions, adjust phase shift, and toggle zero-edge display for deeper analysis.
-    </p>
+<div class="page-header" style="margin-bottom:30px; text-align:center;">
+  <h1 style="font-size:2.5em;">Fourier Transform Visualizer</h1>
+  <p style="color:#555; max-width:600px; margin:0 auto;">
+    Gib eine Zeitfunktion ein, verschiebe die Phase, und visualisiere das Ergebnis interaktiv.
+  </p>
+</div>
+
+<form id="fourierForm" style="max-width:700px; margin:0 auto; text-align:center;">
+  <div class="function-group" style="margin-bottom:20px;">
+    <label style="font-weight:bold;">Function:</label>
+    <input type="text" id="func" placeholder="e.g., sin(t) + 3*rect(t)" onfocus="setActiveField(this)">
+<div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:15px;">
+      <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
+      <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
+      <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
+      <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
+      <button type="button" onclick="insertOperand('step(t)')">Step</button>
+      <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
+      <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
+      <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
+      <button type="button" onclick="insertOperand('si(t)')">Si</button>
+      <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
+      <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
+      </div>
+  <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
+      <button type="button" onclick="insertOperand('+')">+</button>
+      <button type="button" onclick="insertOperand('-')">-</button>
+      <button type="button" onclick="insertOperand('*')">*</button>
+      <button type="button" onclick="insertOperand('/')">/</button>
+    </div>
   </div>
 
-  <form id="fourierForm" method="POST" style="max-width: 700px; margin: 0 auto; text-align: center;">
-    <div class="function-group" style="margin-bottom: 20px;">
-      <label for="func" style="display: block; font-weight: bold; margin-bottom: 5px;">Function:</label>
-      <input type="text" id="func" name="func"
-             value="{{ func|default('') }}"
-             placeholder="e.g., sin(t) + 3*rect(t)"
-             onfocus="setActiveField(this)">
-      <!-- First line: function operands -->
-      <div class="quick-buttons" style="margin-top: 10px;">
-        <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-        <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-        <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-        <button type="button" onclick="insertOperand('step(t)')">Step</button>
-        <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-        <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
-        <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-        <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
-        <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-        <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
-        <button type="button" onclick="insertOperand('si(t)')">Si</button>
-        <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
-      </div>
-      <!-- Second line: operators -->
-      <div class="quick-buttons" style="margin-top: 5px;">
-        <button type="button" onclick="insertOperand('+')">+</button>
-        <button type="button" onclick="insertOperand('-')">-</button>
-        <button type="button" onclick="insertOperand('*')">*</button>
-        <button type="button" onclick="insertOperand('/')">/</button>
-      </div>
+  <div class="options-group" style="display:flex; gap:20px; justify-content:center; margin-bottom:30px;">
+    <div>
+      <label style="font-weight:bold;">Phase Shift (°):</label>
+      <input type="number" id="phase" value="0">
     </div>
-
-    <div class="options-group" style="display: flex; gap: 20px; justify-content: center; align-items: center; margin-bottom: 30px;">
-      <div>
-        <label for="phase" style="font-weight: bold;">Phase Shift (°):</label>
-        <input type="number" id="phase" name="phase" value="{{ phase|default(0) }}" placeholder="0">
-      </div>
-      <div>
-        <input type="checkbox" id="showZeros" name="showZeros" {% if show_zeros %}checked{% endif %}>
-        <label for="showZeros">Show Zeros (Edges)</label>
-      </div>
+    <div>
+      <input type="checkbox" id="showZeros">
+      <label for="showZeros">Show Zeros</label>
     </div>
-
-    <div style="margin-bottom: 30px;">
-      <button type="submit" class="action-btn">Compute</button>
-      <button type="button" id="clearBtn" class="action-btn">Clear</button>
-    </div>
-  </form>
-
-  <div id="fourier-plot-wrapper">
-    {% if plot_data %}
-      <img id="fourier_plot_image" src="data:image/png;base64,{{ plot_data }}" alt="Fourier Plot">
-    {% else %}
-      <img id="fourier_plot_image" src="" alt="Fourier Plot will appear here" style="display:none;">
-    {% endif %}
-    <button type="button" id="enlargeBtn" onclick="toggleEnlargePlot()">Enlarge Plot</button>
-    <p id="fourier_transformation_label">{{ transformation_label }}</p>
   </div>
 
-  <script>
-  var activeField = null;
-  function setActiveField(field) {
-      activeField = field;
+  <div style="margin-bottom:30px;">
+    <button type="button" id="computeBtn" class="action-btn">Compute</button>
+    <button type="button" id="clearBtn" class="action-btn">Clear</button>
+  </div>
+</form>
+
+<div id="plotly-container" style="max-width:1200px; margin:0 auto;">
+  <div id="timePlot" style="height:400px;"></div>
+  <div id="magPlot" style="height:400px; margin-top:20px;"></div>
+  <div id="phasePlot" style="height:400px; margin-top:20px;"></div>
+</div>
+
+<p id="fourier_transformation_label" style="text-align:center; margin-top:20px; font-weight:bold;"></p>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+let activeField = null;
+function setActiveField(f){ activeField = f; }
+document.getElementById("func").addEventListener("focus", e=>activeField=e.target);
+
+function insertOperand(op) {
+  if (!activeField) {
+    alert("Klicke zuerst in das Textfeld!");
+    return;
   }
-  document.getElementById("func").addEventListener("focus", function() { activeField = this; });
-  
-  function insertOperand(operand) {
-      if (activeField) {
-          let start = activeField.selectionStart;
-          let end = activeField.selectionEnd;
-          let current = activeField.value;
-          activeField.value = current.substring(0, start) + operand + current.substring(end);
-          activeField.selectionStart = activeField.selectionEnd = start + operand.length;
-          activeField.focus();
-          updateFourierLive();
-      } else {
-          alert("Click in an input field first.");
-      }
-  }
-  
-  function debounce(func, wait) {
-      let timeout;
-      return function() {
-          clearTimeout(timeout);
-          timeout = setTimeout(() => func.apply(this, arguments), wait);
-      };
-  }
-  
-  function getFourierValues() {
-      return {
-          func: document.getElementById("func").value,
-          phase: document.getElementById("phase").value,
-          showZeros: document.getElementById("showZeros").checked
-      };
-  }
-  
-  var updateFourierLive = debounce(function() {
-      let values = getFourierValues();
-      fetch("{{ url_for('fourier.update_fourier') }}", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values)
-      })
-      .then(resp => resp.json())
-      .then(data => {
-          if(data.plot_data) {
-              let img = document.getElementById("fourier_plot_image");
-              img.src = "data:image/png;base64," + data.plot_data;
-              img.style.display = "block";
-              document.getElementById("fourier_transformation_label").innerText = data.transformation_label;
-          }
-      })
-      .catch(err => {
-          console.error("Error updating plot:", err);
-      });
-  }, 400);
-  
-  document.getElementById("phase").addEventListener("input", updateFourierLive);
-  document.getElementById("func").addEventListener("keyup", updateFourierLive);
-  document.getElementById("showZeros").addEventListener("change", updateFourierLive);
-  
-  document.getElementById("clearBtn").addEventListener("click", function() {
-      document.getElementById("func").value = "";
-      document.getElementById("fourier_plot_image").src = "";
-      document.getElementById("fourier_plot_image").style.display = "none";
-      document.getElementById("phase").value = 0;
-      document.getElementById("showZeros").checked = false;
-  });
-  
-  // Toggle enlarge by applying a class to the whole plot wrapper.
-  function toggleEnlargePlot() {
-      let wrapper = document.getElementById("fourier-plot-wrapper");
-      if (!wrapper) {
-          console.error("Plot wrapper not found.");
-          return;
-      }
-      wrapper.classList.toggle("enlarged");
-  }
+  // aktuelle Cursor-Positionen
+  const start = activeField.selectionStart;
+  const end   = activeField.selectionEnd;
+  const val   = activeField.value;
+
+  // Text splitten und den Operand einfügen
+  activeField.value =
+    val.slice(0, start) +
+    op +
+    val.slice(end);
+
+  // Cursor nach dem eingefügten Text positionieren
+  activeField.selectionStart = activeField.selectionEnd = start + op.length;
+  activeField.focus();
+}
+
+function getValues(){
+  return {
+    func: document.getElementById("func").value,
+    phase: document.getElementById("phase").value,
+    showZeros: document.getElementById("showZeros").checked
+  };
+}
+
+function updatePlots(){
+  fetch("{{ url_for('fourier.update_fourier') }}", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(getValues())
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(data.error) return console.error(data.error);
+    const lc={margin:{t:30},showlegend:true};
+    Plotly.newPlot("timePlot", [
+      {x:data.t, y:data.y_real, type:"scatter", mode:"lines", name:"Re", line: { color: "navy" }},
+      {x:data.t, y:data.y_imag, type:"scatter", mode:"lines", name:"Im", line:{dash:"dot"}}
+    ], {...lc, title:"Time-Domain", xaxis:{title:"t"}, yaxis:{title:"y(t)"}});
+    Plotly.newPlot("magPlot", [
+      {x:data.f, y:data.magnitude, type:"scatter", mode:"lines", name:"|Y|", line: { color: "navy" }}
+    ], {...lc, title:"Magnitude Spectrum", xaxis:{title:"f"}, yaxis:{title:"|Y(f)|"}});
+    Plotly.newPlot("phasePlot", [
+      {x:data.f, y:data.phase, type:"scatter", mode:"lines", name:"Phase", line: { color: "blue"}}
+    ], {...lc, title:"Phase Spectrum", xaxis:{title:"f"}, yaxis:{title:"∠Y(f)" ,range:[-Math.PI,Math.PI]}});
+    document.getElementById("fourier_transformation_label").innerText = data.transformation_label;
+  })
+  .catch(console.error);
+}
+
+document.getElementById("computeBtn").addEventListener("click", updatePlots);
+document.getElementById("phase").addEventListener("input", updatePlots);
+document.getElementById("showZeros").addEventListener("change", updatePlots);
+document.getElementById("clearBtn").addEventListener("click", ()=>{
+  document.getElementById("func").value="";
+  document.getElementById("phase").value=0;
+  document.getElementById("showZeros").checked=false;
+  Plotly.purge("timePlot"); Plotly.purge("magPlot"); Plotly.purge("phasePlot");
+  document.getElementById("fourier_transformation_label").innerText="";
+});
 </script>
 
-  <style>
-    /* Header */
-    .page-header h1 { font-weight: bold; }
-    .page-header p { line-height: 1.4; }
+<style>
+  /* Quick-Buttons (Functions & Operators) – moderat vergrößert */
+  .quick-buttons.functions button,
+  .quick-buttons.operators button {
+    padding: 12px 18px;       /* moderater Innenabstand */
+    font-size: 1.1em;         /* leicht größere Schrift */
+    min-width: 80px;          /* Mindestbreite */
+    border-radius: 5px;
+    background-color: #007acc;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  .quick-buttons.functions button:hover,
+  .quick-buttons.operators button:hover {
+    background-color: #005fa3;
+  }
 
-    /* Input styling */
-    .function-group input[type="text"], .options-group input[type="number"] {
-      width: 100%;
-      max-width: 300px;
-      padding: 8px;
-      border: 1px solid #ccd0d5;
-      border-radius: 4px;
-      font-size: 1em;
-      margin-top: 5px;
-    }
+  /* Action-Buttons (Compute / Clear) – moderat vergrößert */
+  .action-btn {
+    padding: 12px 28px;       /* moderater Innenabstand */
+    font-size: 1.1em;         /* leicht größere Schrift */
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+  #computeBtn {
+    background-color: #28a745;
+    color: #fff;
+    margin-right: 8px;
+  }
+  #computeBtn:hover {
+    background-color: #218838;
+  }
+  #clearBtn {
+    background-color: #dc3545;
+    color: #fff;
+  }
+  #clearBtn:hover {
+    background-color: #c82333;
+  }
+</style>
 
-    /* Quick buttons */
-    .quick-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      justify-content: center;
-    }
-    .quick-buttons button {
-      padding: 6px 10px;
-      font-size: 0.9em;
-      background-color: #007acc;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    .quick-buttons button:hover {
-      background-color: #005fa3;
-    }
-
-    /* Action buttons */
-    .action-btn {
-      padding: 10px 20px;
-      font-size: 1em;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    /* Compute button (first .action-btn) */
-    #fourierForm .action-btn:first-child {
-      background-color: #007acc;
-      color: #fff;
-      margin-right: 10px;
-    }
-    #fourierForm .action-btn:first-child:hover {
-      background-color: #005fa3;
-    }
-    /* Clear button */
-    #clearBtn {
-      background-color: #f44336;
-      color: #fff;
-    }
-    #clearBtn:hover {
-      background-color: #d32f2f;
-    }
-
-    /* Plot wrapper */
-    #fourier-plot-wrapper {
-      position: relative;
-      text-align: center;
-      margin: 30px auto;
-      max-width: 90%;
-    }
-    #fourier_plot_image {
-      max-width: 100%;
-      border: 1px solid #ccd0d5;
-      border-radius: 4px;
-    }
-    #fourier-plot-wrapper.enlarged {
-      transform: scale(1.5);
-      transform-origin: center center;
-      transition: transform 0.3s ease;
-    }
-    #enlargeBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 6px 10px;
-      font-size: 0.9em;
-      background-color: #007acc;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #enlargeBtn:hover {
-      background-color: #005fa3;
-    }
-    #fourier_transformation_label {
-      margin-top: 15px;
-      white-space: pre-line;
-      color: #333;
-    }
-  </style>
 {% endblock %}
