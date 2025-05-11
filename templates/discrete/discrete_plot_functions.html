@@ -1,104 +1,188 @@
 {% extends "base.html" %}
+{% block title %}Discrete-Time Function Plotter{% endblock %}
+
 {% block content %}
+<div class="page-header" style="text-align:center;margin-bottom:26px;">
+  <h1 style="font-size:2.4em;">Discrete-Time Function Plotter</h1>
+</div>
 
-<h2>Discrete‑Time Function Plotter</h2>
-
-<form method="POST">
-  <!-- Function 1 -->
-  <div class="function-group">
-    <label>Function 1:</label>
-    <input type="text" name="func1" value="{{ func1 }}"
-           placeholder="rect(n)">
-    <button type="button" onclick="insertOperand('rect(n)',this)">Rect</button>
-    <button type="button" onclick="insertOperand('tri(n)', this)">Tri</button>
-    <button type="button" onclick="insertOperand('step(n)',this)">Step</button>
-    <button type="button" onclick="insertOperand('delta(n)',this)">Delta</button>
-    <button type="button" onclick="insertOperand('sin(n)',  this)">Sin</button>
-    <button type="button" onclick="insertOperand('cos(n)',  this)">Cos</button>
-    <button type="button" onclick="insertOperand('sign(n)', this)">Sign</button>
-    <button type="button" onclick="insertOperand('si(n)',   this)">Si</button>
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">−</button>
-    <button type="button" onclick="insertOperand('*')">×</button>
-    <button type="button" onclick="insertOperand('/')">÷</button>
+<form id="plotForm" style="max-width:960px;margin:0 auto;text-align:center;">
+  <!-- INPUTS ------------------------------------------------------ -->
+  <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:20px;">
+    <input id="func1" placeholder="f₁(n)"  onfocus="setActiveField(this)"
+           style="flex:1 1 300px;padding:8px;" />
+    <input id="func2" placeholder="f₂(n) (optional)" onfocus="setActiveField(this)"
+           style="flex:1 1 300px;padding:8px;" />
   </div>
 
-  <!-- Function 2 -->
-  <div class="function-group">
-    <label>Function 2 (optional):</label>
-    <input type="text" name="func2" value="{{ func2 }}"
-           placeholder="tri(n)">
-    <button type="button" onclick="insertOperand('rect(n)',this)">Rect</button>
-    <button type="button" onclick="insertOperand('tri(n)', this)">Tri</button>
-    <button type="button" onclick="insertOperand('step(n)',this)">Step</button>
-    <button type="button" onclick="insertOperand('delta(n)',this)">Delta</button>
-    <button type="button" onclick="insertOperand('sin(n)',  this)">Sin</button>
-    <button type="button" onclick="insertOperand('cos(n)',  this)">Cos</button>
-    <button type="button" onclick="insertOperand('sign(n)', this)">Sign</button>
-    <button type="button" onclick="insertOperand('si(n)',   this)">Si</button>
+  <!-- QUICK BUTTONS ---------------------------------------------- -->
+  <div class="quick-buttons"
+       style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px;">
+    {% for lbl in ['rect(n)','tri(n)','step(n)','delta(n)','sin(n)',
+                   'cos(n)','sign(n)','si(n)'] %}
+      <button type="button" onclick="insertOperand('{{ lbl }}')">
+        {{ lbl.split('(')[0]|capitalize }}
+      </button>
+    {% endfor %}
     <button type="button" onclick="insertOperand('+')">+</button>
     <button type="button" onclick="insertOperand('-')">−</button>
-    <button type="button" onclick="insertOperand('*')">×</button>
-    <button type="button" onclick="insertOperand('/')">÷</button>
+    <button type="button" onclick="insertOperand('*')">*</button>
+    <button type="button" onclick="insertOperand('/')">/</button>
   </div>
 
-  <hr>
+  <!-- Δn SAMPLING SLIDER ----------------------------------------- -->
+  <fieldset class="sampling-box" style="margin-bottom:22px;">
+    <legend>Sampling step Δn</legend>
+    <div class="slider-row">
+      <input id="sampling" type="range" min="0.1" max="2" step="0.1" value="1">
+      <span id="samplingVal">1.0</span>
+    </div>
+  </fieldset>
 
-  <!-- Sampling step -->
-  <label>Sampling step Δn:</label>
-  <input type="number" step="0.1" min="0.1" name="sampling"
-         value="{{ sampling }}">
+  <!-- TWO SHIFTER GROUPS ----------------------------------------- -->
+  <div class="transform-wrapper">
+    <!-- f1 -->
+    <fieldset class="transform-box"><legend style="color:#1f77b4;">f₁</legend>
+      {% for name in ['shift','amp','width'] %}
+        <div class="slider-row">
+          <label>{{ name|capitalize }}</label>
+          <input id="{{ name }}1" type="range"
+                 {% if name=='shift' %}min="-20" max="20" step="1" value="0"
+                 {% elif name=='amp' %}min="0.1" max="5" step="0.1" value="1"
+                 {% else %}min="0.2" max="5" step="0.1" value="1"{% endif %}>
+          <span></span>
+        </div>
+      {% endfor %}
+    </fieldset>
 
-  <div style="margin-top:1em;">
-    <button type="submit">Plot</button>
-    <button type="button" onclick="document.querySelector('form').reset();">
-      Clear
-    </button>
+    <!-- f2 -->
+    <fieldset class="transform-box"><legend style="color:#ff7f0e;">f₂</legend>
+      {% for name in ['shift','amp','width'] %}
+        <div class="slider-row">
+          <label>{{ name|capitalize }}</label>
+          <input id="{{ name }}2" type="range"
+                 {% if name=='shift' %}min="-20" max="20" step="1" value="0"
+                 {% elif name=='amp' %}min="0.1" max="5" step="0.1" value="1"
+                 {% else %}min="0.2" max="5" step="0.1" value="1"{% endif %}>
+          <span></span>
+        </div>
+      {% endfor %}
+    </fieldset>
+  </div>
+
+  <!-- ACTIONS ---------------------------------------------------- -->
+  <div style="margin:26px 0;">
+    <button id="computeBtn" type="button" class="action-btn green">Compute</button>
+    <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
   </div>
 </form>
 
-{% if error %}
-  <p style="color:red; margin-top:1em;">{{ error }}</p>
-{% endif %}
+<!-- PLOT --------------------------------------------------------- -->
+<div id="plot" style="max-width:1200px;height:460px;margin:0 auto;"></div>
 
-{% if plot_data %}
-  <div style="margin-top:2em;">
-    <img src="data:image/png;base64,{{ plot_data }}" alt="Plot">
-  </div>
-{% endif %}
-
+<!-- SCRIPTS ------------------------------------------------------ -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-  // Track which input is currently focused
-  let activeField = null;
+  /* ----------------------------------------------------------------
+     active-field + quick buttons
+  ---------------------------------------------------------------- */
+  let activeField = document.getElementById("func1");
+  function setActiveField(f){ activeField = f; }
 
-  // Whenever an input gains focus, remember it
-  document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('input[type="text"]').forEach(input => {
-      input.addEventListener('focus', () => activeField = input);
-    });
-  });
-
-  function insertOperand(text, btn) {
-    // If nothing is focused, default to the input in this button group
-    if (!activeField) {
-      activeField = btn.parentElement.querySelector('input[type="text"]');
-    }
-
-    // Compute current selection (start/end) or cursor position
-    const start = activeField.selectionStart ?? activeField.value.length;
-    const end   = activeField.selectionEnd   ?? start;
-
-    // Insert the text, replacing any selected range
-    const v = activeField.value;
-    activeField.value = v.slice(0, start) + text + v.slice(end);
-
-    // Move cursor to just after the inserted text
-    const newPos = start + text.length;
-    activeField.selectionStart = activeField.selectionEnd = newPos;
-
-    // Refocus in case we came here via button click
+  function insertOperand(op){
+    if(!activeField) return;
+    const s = activeField.selectionStart, e = activeField.selectionEnd, v=activeField.value;
+    activeField.value = v.slice(0,s)+op+v.slice(e);
+    activeField.selectionStart = activeField.selectionEnd = s + op.length;
     activeField.focus();
   }
+
+  /* ----------------------------------------------------------------
+     slider wiring (Δn + 6 shifters)
+  ---------------------------------------------------------------- */
+  const sliderIds = ["shift1","amp1","width1","shift2","amp2","width2"];
+  sliderIds.forEach(id=>{
+    const s = document.getElementById(id);
+    const span = s.nextElementSibling;
+    span.textContent = parseFloat(s.value).toFixed(1);
+    s.addEventListener("input", ()=>{ span.textContent = parseFloat(s.value).toFixed(1); updatePlots(); });
+  });
+
+  const samplingSlider = document.getElementById("sampling");
+  const samplingVal    = document.getElementById("samplingVal");
+  samplingVal.textContent = parseFloat(samplingSlider.value).toFixed(1);
+  samplingSlider.addEventListener("input", ()=>{ samplingVal.textContent = parseFloat(samplingSlider.value).toFixed(1); updatePlots(); });
+
+  /* ----------------------------------------------------------------
+     collect form -> json
+  ---------------------------------------------------------------- */
+  function collect(){
+    const d = { func1:func1.value, func2:func2.value, sampling:sampling.value };
+    sliderIds.forEach(id=> d[id]=document.getElementById(id).value );
+    return d;
+  }
+
+  /* ----------------------------------------------------------------
+     fetch + plot
+  ---------------------------------------------------------------- */
+  function updatePlots(){
+    fetch("{{ url_for('discrete_plot_functions.plot_functions_update') }}", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(collect())
+    })
+    .then(r=>r.json()).then(data=>{
+      if(data.error){ console.error(data.error); return; }
+
+      const tr = [{
+        x:data.x1, y:data.y1, name:"f₁(n)", mode:"markers+lines",
+        line:{width:0}, marker:{size:6,color:"#1f77b4"}
+      }];
+      if(data.x2){
+        tr.push({
+          x:data.x2, y:data.y2, name:"f₂(n)", mode:"markers+lines",
+          line:{width:0}, marker:{size:6,color:"#ff7f0e",symbol:"square"}
+        });
+      }
+      Plotly.newPlot("plot", tr, {
+        margin:{t:30}, showlegend:true,
+        xaxis:{title:"n (Δn = "+data.Δn+")", range:[-20,20]},
+        yaxis:{title:"Amplitude", zeroline:false}
+      });
+    }).catch(console.error);
+  }
+
+  /* buttons */
+  computeBtn.onclick = updatePlots;
+  clearBtn.onclick = ()=> {
+    func1.value = func2.value = "";
+    [...sliderIds,"sampling"].forEach(id=>{
+      const s=document.getElementById(id);
+      s.value = id.includes("amp")||id.includes("width")?1:0;
+      if(id==="sampling") s.value=1;
+      s.nextElementSibling && (s.nextElementSibling.textContent=parseFloat(s.value).toFixed(1));
+    });
+    Plotly.purge("plot");
+  };
 </script>
 
+<!-- STYLES ------------------------------------------------------- -->
+<style>
+  .quick-buttons button{
+    padding:8px 12px;font-size:0.9em;border-radius:4px;background:#007acc;
+    color:#fff;border:none;cursor:pointer;transition:background-color .15s;
+  }
+  .quick-buttons button:hover{ background:#005fa3; }
+
+  .action-btn{ padding:8px 22px;font-size:0.9em;border:none;border-radius:4px;cursor:pointer; }
+  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
+  .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
+
+  fieldset{ border:1px solid #d9dee3;border-radius:8px;padding:14px 20px;background:#f8fafc; }
+  .slider-row{ display:flex;align-items:center;gap:10px;margin-top:8px; }
+  .slider-row label{ width:80px;text-align:right;font-weight:600; }
+  .slider-row span{ width:46px;text-align:center;border:1px solid #ccd0d5;border-radius:4px;background:#fff; }
+  input[type=range]{ flex:1;appearance:none;height:4px;border-radius:2px;background:#007acc;cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb{ appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #007acc; }
+</style>
 {% endblock %}

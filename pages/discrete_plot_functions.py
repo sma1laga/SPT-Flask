@@ -1,107 +1,83 @@
-from flask import Blueprint, render_template, request
-import io, base64
+# pages/discrete_plot_functions.py
+from flask import Blueprint, render_template, request, jsonify
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
-from utils.math_utils import rect, tri, step, delta, dsi
-
-discrete_plot_functions_bp = Blueprint(
-    'discrete_plot_functions',
-    __name__,
-    template_folder='templates/discrete'
+from utils.math_utils import (
+    rect, tri, step, delta, dsi       # discrete-time helpers you already have
 )
 
+discrete_plot_functions_bp = Blueprint(
+    "discrete_plot_functions", __name__, template_folder="templates/discrete"
+)
+
+# -------------------------------------------------------------------- #
+# page
+# -------------------------------------------------------------------- #
+@discrete_plot_functions_bp.route("/", methods=["GET"], endpoint="plot_functions")
+def discrete_plot_functions():
+    return render_template("discrete_plot_functions.html")
 
 
-@discrete_plot_functions_bp.route('/', methods=['GET', 'POST'])
-def plot_functions():
-    # 1) Initialize before anything else to avoid NameError
-    error = None
-    plot_data = None
+# -------------------------------------------------------------------- #
+# AJAX update
+# -------------------------------------------------------------------- #
+@discrete_plot_functions_bp.route("/update", methods=["POST"],
+                                   endpoint="plot_functions_update")
+def discrete_plot_functions_update():
+    data = request.get_json(force=True) or {}
 
-    # ---- form fields ----
-    func1_str = request.form.get("func1", "")
-    func2_str = request.form.get("func2", "")
+    func1_str, func2_str = data.get("func1", ""), data.get("func2", "")
+
+    # sliders (per-function)
+    s1  = float(data.get("shift1", 0)); a1 = float(data.get("amp1",   1)); w1 = float(data.get("width1", 1))
+    s2  = float(data.get("shift2", 0)); a2 = float(data.get("amp2",   1)); w2 = float(data.get("width2", 1))
+
+    # global sampling slider
     try:
-        step_val = float(request.form.get("sampling", 1.0))
-        if step_val <= 0:
-            raise ValueError("must be positive")
+        Δn = float(data.get("sampling", 1))
+        if Δn <= 0: raise ValueError
     except ValueError:
-        step_val = 1.0
-        error = "Sampling step must be positive."
+        return jsonify({"error": "Δn must be positive."}), 400
 
-    # Only try to build & plot on a POST with no prior error
-    if request.method == "POST" and not error:
-        # integer index
-        # decide how far in "real time" you want to see:
-        max_n = 10.0
+    # integer index → sample locations
+    MAX_N = 20.0                      # span −20 … +20  (matches continuous page)
+    k_max = int(MAX_N / Δn)
+    k     = np.arange(-k_max, k_max + 1)
+    n     = k * Δn                    # base grid
 
-        # compute how many integer steps that is at your current sampling:
-        num_steps = int(max_n / step_val)
-
-        # build k so that n = k * Δn will span [-max_n, +max_n]
-        k = np.arange(-num_steps, num_steps + 1)
-        n = k * step_val
-
-        # 2) Bind both scaled time 'n' and raw index 'k' in the context
-        ctx = {
-            "n":      n,
-            "k":      k,
-            "np":     np,
-            "rect":   rect,
-            "tri":    tri,
-            "step":   step,
-            "delta":  delta,
-            "sin":    np.sin,
-            "cos":    np.cos,
-            "sign":   np.sign,
-            "si":     dsi,
-        }
-
-        # Evaluate function 1 (or default to zero)
-        try:
-            y1 = eval(func1_str, {}, ctx) if func1_str.strip() \
-                 else np.zeros_like(n)
-        except Exception as e:
-            error = f"Function 1 error: {e}"
-
-        # Evaluate function 2, if provided
-        if not error and func2_str.strip():
-            try:
-                y2 = eval(func2_str, {}, ctx)
-            except Exception as e:
-                error = f"Function 2 error: {e}"
-        else:
-            y2 = None
-
-        # If everything succeeded, draw and encode the plot
-        if not error:
-            fig, ax = plt.subplots()
-            ax.stem(n, y1, linefmt="#003366", markerfmt="o",
-                    basefmt="k-", label="F1")
-            if y2 is not None:
-                ax.stem(n, y2, linefmt="#336600", markerfmt="s",
-                        basefmt="k-", label="F2")
-            ax.set_title(f"Discrete Plot (Δn = {step_val})")
-            ax.set_xlabel("n")
-            ax.set_ylabel("Amplitude")
-            ax.legend()
-            plt.tight_layout()
-
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png")
-            buf.seek(0)
-            plot_data = base64.b64encode(buf.read()).decode()
-            plt.close(fig)
-
-    # Finally render, with error and plot_data always defined
-    return render_template(
-        'discrete/discrete_plot_functions.html',
-        error=error,
-        plot_data=plot_data,
-        func1=func1_str,
-        func2=func2_str,
-        sampling=step_val
+    # evaluation namespace
+    ctx = dict(
+        n=n, k=k, np=np,
+        rect=rect, tri=tri, step=step, delta=delta, sin=np.sin, cos=np.cos,
+        sign=np.sign, si=dsi
     )
+
+    # -------------- evaluate --------------------------------------------------
+    try:
+        y1 = eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(n)
+    except Exception as e:
+        return jsonify({"error": f"f₁ error: {e}"}), 400
+
+    y2 = None
+    if func2_str.strip():
+        try:
+            y2 = eval(func2_str, ctx)
+        except Exception as e:
+            return jsonify({"error": f"f₂ error: {e}"}), 400
+
+    # -------------- transform -------------------------------------------------
+    x1 = n * w1 + s1
+    y1 = y1 * a1
+
+    if y2 is not None:
+        x2 = n * w2 + s2
+        y2 = y2 * a2
+    else:
+        x2 = None
+
+    return jsonify({
+        "x1": x1.tolist(), "y1": y1.tolist(),
+        "x2": x2.tolist() if x2 is not None else None,
+        "y2": y2.tolist() if y2 is not None else None,
+        "Δn": Δn
+    })
