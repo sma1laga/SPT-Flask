@@ -1,110 +1,66 @@
-from flask import Blueprint, render_template, request
-import io, base64
+# pages/discrete_convolution.py
+from flask import Blueprint, render_template, request, jsonify
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
-from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
-
-discrete_convolution_bp = Blueprint(
-    "discrete_convolution", __name__, template_folder="../templates/discrete"
+from utils.math_utils import (
+    rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
 )
 
-@discrete_convolution_bp.route("/", methods=["GET", "POST"])
+# ──────────────────────────────────────────────────────────────────────────────
+# Blueprint
+# ──────────────────────────────────────────────────────────────────────────────
+discrete_convolution_bp = Blueprint("discrete_convolution", __name__,
+                                    template_folder="templates")
+
+# ------------------------------------------------------------------ page view
+@discrete_convolution_bp.route("/", methods=["GET"])
 def discrete_convolution():
-    error     = None
-    plot_data = None
-    func1_str = ""
-    func2_str = ""
-    ds_str    = "1.0"
+    return render_template("discrete_convolution.html")
 
-    if request.method == "POST":
-        func1_str = request.form.get("func1", "").strip()
-        func2_str = request.form.get("func2", "").strip()
-        ds_str    = request.form.get("ds",  "1.0").strip()
+# ----------------------------------------------------------------- AJAX calc
+@discrete_convolution_bp.route("/update", methods=["POST"])
+def discrete_convolution_update():
+    data       = request.get_json(force=True) or {}
+    func1_str  = data.get("func1", "").strip()
+    func2_str  = data.get("func2", "").strip()
 
-        # allow decimal sampling interval
-        try:
-            ds = float(ds_str)
-            if ds <= 0:
-                raise ValueError("must be > 0")
-        except Exception as e:
-            error = f"Invalid sampling interval: {e}"
+    # optional sampling step  Δn
+    try:
+        ds = float(data.get("ds", 1.0))
+        if ds <= 0:
+            raise ValueError("Δn must be > 0")
+    except Exception as e:
+        return jsonify(error=f"Invalid Δn: {e}"), 400
 
-        if error is None:
-            result = compute_discrete_convolution(func1_str, func2_str, ds)
-            if "error" in result:
-                error = result["error"]
-            else:
-                plot_data = result["plot_data"]
+    # base index axis  n = -20 … 20
+    n = np.arange(-20, 20 + ds, ds)
 
-    return render_template(
-        "discrete_convolution.html",
-        error=error,
-        plot_data=plot_data,
-        func1=func1_str,
-        func2=func2_str,
-        ds=ds_str
-    )
-
-def compute_discrete_convolution(func1_str, func2_str, ds):
-    # build n = -10…10 in steps of ds (allows fractional)
-    n = np.arange(-10, 10 + ds, ds)
-
-    safe_ctx = {
+    ctx = {
         "n": n, "np": np,
         "rect": rect, "tri": tri, "step": step,
-        "cos": cos, "sin": sin, "sign": sign,
-        "delta": delta, "exp_iwt": exp_iwt, "inv_t": inv_t,
-        "si": si
+        "cos": cos,   "sin": sin, "sign": sign,
+        "delta": delta, "exp_iwt": exp_iwt,
+        "inv_t": inv_t, "si": si, "exp": np.exp
     }
 
-    # evaluate sequence 1
+    # evaluate sequences
     try:
-        y1 = eval(func1_str, safe_ctx) if func1_str else np.zeros_like(n, dtype=float)
+        y1 = eval(func1_str, ctx) if func1_str else np.zeros_like(n)
     except Exception as e:
-        return {"error": f"Error evaluating Sequence 1: {e}"}
-
-    # evaluate sequence 2
+        return jsonify(error=f"Error in sequence 1: {e}"), 400
     try:
-        y2 = eval(func2_str, safe_ctx) if func2_str else np.zeros_like(n, dtype=float)
+        y2 = eval(func2_str, ctx) if func2_str else np.zeros_like(n)
     except Exception as e:
-        return {"error": f"Error evaluating Sequence 2: {e}"}
+        return jsonify(error=f"Error in sequence 2: {e}"), 400
 
     # discrete convolution
     y_conv = np.convolve(y1, y2, mode="full")
-    n_conv = np.arange(len(y_conv)) * ds + 2 * n.min()
+    n_conv = np.arange(len(y_conv)) * ds + (n[0] + n[0])  # start at n_min+n_min
 
-    # plot
-    fig = plt.figure(figsize=(12, 8))
-    gs  = fig.add_gridspec(2, 2, height_ratios=[1,1])
-
-    ax1 = fig.add_subplot(gs[0,0])
-    ax2 = fig.add_subplot(gs[0,1])
-    axc = fig.add_subplot(gs[1,:])
-
-    ax1.stem(n, y1)
-    ax1.set_title("Sequence 1")
-    ax1.set_xlabel("n")
-    ax1.grid(True)
-
-    ax2.stem(n, y2)
-    ax2.set_title("Sequence 2")
-    ax2.set_xlabel("n")
-    ax2.grid(True)
-
-    axc.stem(n_conv, y_conv)
-    axc.set_title("Discrete Convolution")
-    axc.set_xlabel("n")
-    axc.grid(True)
-
-    fig.tight_layout()
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    img_b64 = base64.b64encode(buf.getvalue()).decode()
-    plt.close(fig)
-
-    return {"plot_data": img_b64}
+    return jsonify(
+        n=n.tolist(),
+        y1=y1.tolist(),
+        y2=y2.tolist(),
+        n_conv=n_conv.tolist(),
+        y_conv=y_conv.tolist(),
+        ds=ds
+    )
