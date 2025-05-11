@@ -30,7 +30,7 @@ The goal is to provide a **practical, hands-on toolkit** to support university c
 
 - Interactive signal generation (time domain)
 - Fourier Transform visualization (frequency domain)
-- Convolution and correlation examples
+- Convolution Calculator
 - Signal filtering basics
 - Downloadable plots and signal data
 
@@ -73,10 +73,9 @@ Pull requests are welcome! If you want to propose a feature or fix a bug:
 5. Open a Pull Request
 
 ## 👤 License
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the Apache 2.0 License. See `LICENSE` for more information.
 
 ---
 
 Feel free to contribute, report issues, and help grow this project!
 
-> “Learning Signal Processing should be visual, intuitive, and fun.” — sma1laga

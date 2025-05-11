@@ -1,276 +1,66 @@
 # pages/plot_function.py
 from flask import Blueprint, render_template, request, jsonify
-import io, base64
 import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker  # Added import for ticker
-from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+from utils.math_utils import (
+    rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+)
 
-plot_function_bp = Blueprint("plot_function", __name__)
+plot_function_bp = Blueprint("plot_function", __name__,
+                             template_folder="templates")
 
-@plot_function_bp.route("/", methods=["GET", "POST"])
+
+@plot_function_bp.route("/", methods=["GET"])
 def plot_function():
-    error = None
-    plot_data = None
-    func1_str = request.form.get("func1", "") if request.method == "POST" else ""
-    func2_str = request.form.get("func2", "") if request.method == "POST" else ""
-    try:
-        shift1 = float(request.form.get("shift1", 0))
-    except:
-        shift1 = 0.0
-    try:
-        stretch1 = float(request.form.get("stretch1", 1))
-    except:
-        stretch1 = 1.0
-    try:
-        hscale1 = float(request.form.get("hscale1", 1))
-    except:
-        hscale1 = 1.0
-    try:
-        shift2 = float(request.form.get("shift2", 0))
-    except:
-        shift2 = 0.0
-    try:
-        stretch2 = float(request.form.get("stretch2", 1))
-    except:
-        stretch2 = 1.0
-    try:
-        hscale2 = float(request.form.get("hscale2", 1))
-    except:
-        hscale2 = 1.0
+    return render_template("plot_function.html")
 
-    transformation_label = ""
-    if request.method == "POST":
-        result = compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretch2, hscale2)
-        if "error" in result:
-            error = result["error"]
-        else:
-            plot_data = result["plot_data"]
-            transformation_label = result["transformation_label"]
-    return render_template(
-        "plot_function.html",
-        error=error,
-        plot_data=plot_data,
-        func1=func1_str,
-        func2=func2_str,
-        shift1=shift1,
-        stretch1=stretch1,
-        hscale1=hscale1,
-        shift2=shift2,
-        stretch2=stretch2,
-        hscale2=hscale2,
-        transformation_label=transformation_label,
-    )
 
 @plot_function_bp.route("/update", methods=["POST"])
-def update_plot():
-    data = request.get_json(force=True)
-    func1_str = data.get("func1", "")
-    func2_str = data.get("func2", "")
-    try:
-        shift1 = float(data.get("shift1", 0))
-    except:
-        shift1 = 0.0
-    try:
-        stretch1 = float(data.get("stretch1", 1))
-    except:
-        stretch1 = 1.0
-    try:
-        hscale1 = float(data.get("hscale1", 1))
-    except:
-        hscale1 = 1.0
-    try:
-        shift2 = float(data.get("shift2", 0))
-    except:
-        shift2 = 0.0
-    try:
-        stretch2 = float(data.get("stretch2", 1))
-    except:
-        stretch2 = 1.0
-    try:
-        hscale2 = float(data.get("hscale2", 1))
-    except:
-        hscale2 = 1.0
+def plot_function_update():
+    data = request.get_json(force=True) or {}
 
-    result = compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretch2, hscale2)
-    if "error" in result:
-        return jsonify({"error": result["error"]}), 400
-    return jsonify(result)
+    func1_str, func2_str = data.get("func1", ""), data.get("func2", "")
 
-def compute_plot(func1_str, func2_str, shift1, stretch1, hscale1, shift2, stretch2, hscale2):
-    t = np.linspace(-10, 10, 2000)
-    # Local variables for function 1
-    local_vars1 = {
-        "t": (t - shift1) / hscale1,
-        "np": np,
-        "rect": rect,
-        "tri": tri,
-        "step": step,
-        "cos": cos,
-        "sin": sin,
-        "sign": sign,
-        "delta": delta,
-        "exp_iwt": exp_iwt,
-        "inv_t": inv_t,
-        "si": si,
-        "exp": np.exp,
-    }
-    # Local variables for function 2
-    local_vars2 = {
-        "t": (t - shift2) / hscale2,
-        "np": np,
-        "rect": rect,
-        "tri": tri,
-        "step": step,
-        "cos": cos,
-        "sin": sin,
-        "sign": sign,
-        "delta": delta,
-        "exp_iwt": exp_iwt,
-        "inv_t": inv_t,
-        "si": si,
-        "exp": np.exp,
-    }
+    # f₁ sliders ----------------------------------------------------
+    s1  = float(data.get("shift1", 0))
+    a1  = float(data.get("amp1",   1))
+    w1  = float(data.get("width1", 1))
+
+    # f₂ sliders ----------------------------------------------------
+    s2  = float(data.get("shift2", 0))
+    a2  = float(data.get("amp2",   1))
+    w2  = float(data.get("width2", 1))
+
+    # base grid
+    t = np.linspace(-20, 20, 4000)
+
+    ns = dict(t=t, np=np, rect=rect, tri=tri, step=step, cos=cos, sin=sin,
+              sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t, si=si, exp=np.exp)
+
+    # evaluate, catching errors individually
     try:
-        y1 = stretch1 * eval(func1_str, local_vars1) if func1_str.strip() != "" else np.zeros_like(t)
+        y1 = eval(func1_str, ns) if func1_str.strip() else np.zeros_like(t)
     except Exception as e:
-        return {"error": f"Error evaluating Function 1: {e}"}
-    if func2_str.strip() != "":
-        try:
-            y2 = stretch2 * eval(func2_str, local_vars2)
-        except Exception as e:
-            return {"error": f"Error evaluating Function 2: {e}"}
-    else:
-        y2 = None
+        return jsonify({"error": f"Error in f₁(t): {e}"}), 400
 
-    # Build the plot
-    fig, ax = plt.subplots()
-    ax.plot(t, y1, label="Function 1", color="blue")
+    y2 = None
+    if func2_str.strip():
+        try:
+            y2 = eval(func2_str, ns)
+        except Exception as e:
+            return jsonify({"error": f"Error in f₂(t): {e}"}), 400
+
+    # apply separate transforms
+    t1 = t * w1 + s1
+    y1 = y1 * a1
+
     if y2 is not None:
-        ax.plot(t, y2, label="Function 2", color="green")
-    ax.set_title("Plot of Functions")
-    ax.set_xlabel("Time (t)")
-    ax.set_ylabel("f(t)")
-    ax.grid(True)
-    ax.legend()
+        t2 = t * w2 + s2
+        y2 = y2 * a2
+    else:
+        t2 = None
 
-    # Force whole number ticks on x and y axes
-    ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-
-    transformation_label = (
-        f"F1: y = {stretch1:.2f} · f((t - {shift1:.2f}) / {hscale1:.2f})\n"
-        f"F2: y = {stretch2:.2f} · f((t - {shift2:.2f}) / {hscale2:.2f})"
-    )
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png")
-    buf.seek(0)
-    plot_data = base64.b64encode(buf.getvalue()).decode()
-    plt.close(fig)
-    return {"plot_data": plot_data, "transformation_label": transformation_label}
-
-
-@plot_function_bp.route("/discrete", methods=["GET", "POST"])
-def plot_function_discrete():
-    """
-    Discrete‐time version of the function plotter.
-    Exactly the same API (two inputs + shifts/stretches), but
-    plotted with a stem plot over integer n.
-    """
-    error      = None
-    plot_data  = None
-    label_text = ""
-    # reuse the same form fields from plot_function.html
-    func1_str  = request.form.get("func1", "") if request.method=="POST" else ""
-    func2_str  = request.form.get("func2", "") if request.method=="POST" else ""
-    # parse your shift/stretch/scales exactly as before
-    try:
-        shift1   = int(request.form.get("shift1", 0))
-    except:
-        shift1   = 0
-    try:
-        stretch1 = float(request.form.get("stretch1", 1))
-    except:
-        stretch1 = 1.0
-    try:
-        hscale1  = float(request.form.get("hscale1", 1))
-    except:
-        hscale1  = 1.0
-    try:
-        shift2   = int(request.form.get("shift2", 0))
-    except:
-        shift2   = 0
-    try:
-        stretch2 = float(request.form.get("stretch2", 1))
-    except:
-        stretch2 = 1.0
-    try:
-        hscale2  = float(request.form.get("hscale2", 1))
-    except:
-        hscale2  = 1.0
-
-    if request.method == "POST":
-        # build discrete-time n array
-        n = np.arange(-50, 51)  # from n=-50..50
-        # prepare local vars for eval()
-        lv1 = {"n": (n - shift1) / hscale1, "np": np,
-               "rect": rect, "tri": tri, "step": step,
-               "sin": sin, "cos": cos, "sign": sign,
-               "delta": delta, "exp_iwt": exp_iwt,
-               "inv_t": inv_t, "si": si, "exp": np.exp}
-        lv2 = {"n": (n - shift2) / hscale2, "np": np,
-               "rect": rect, "tri": tri, "step": step,
-               "sin": sin, "cos": cos, "sign": sign,
-               "delta": delta, "exp_iwt": exp_iwt,
-               "inv_t": inv_t, "si": si, "exp": np.exp}
-        try:
-            y1 = stretch1 * eval(func1_str, lv1) if func1_str.strip() else np.zeros_like(n)
-        except Exception as e:
-            error = f"Error evaluating Function 1: {e}"
-        if not error and func2_str.strip():
-            try:
-                y2 = stretch2 * eval(func2_str, lv2)
-            except Exception as e:
-                error = f"Error evaluating Function 2: {e}"
-        else:
-            y2 = None
-
-        if not error:
-            # make a stem plot
-            fig, ax = plt.subplots()
-            ax.stem(n, y1, linefmt='C0-', markerfmt='C0o', basefmt='k-',
-                    label="Function 1", use_line_collection=True)
-            if y2 is not None:
-                ax.stem(n, y2, linefmt='C1-', markerfmt='C1s',
-                        basefmt='k-', label="Function 2", use_line_collection=True)
-            ax.set_title("Discrete‐Time Plot")
-            ax.set_xlabel("n")
-            ax.set_ylabel("f[n]")
-            ax.legend()
-            buf = io.BytesIO()
-            plt.tight_layout()
-            plt.savefig(buf, format="png")
-            buf.seek(0)
-            plot_data = base64.b64encode(buf.getvalue()).decode()
-            plt.close(fig)
-            label_text = f"F1[n] shift={shift1}, scale={stretch1}, hscale={hscale1}\n" + \
-                         f"F2[n] shift={shift2}, scale={stretch2}, hscale={hscale2}"
-
-    return render_template(
-        "plot_function_discrete.html",
-        error=error,
-        plot_data=plot_data,
-        func1=func1_str,
-        func2=func2_str,
-        shift1=shift1,
-        stretch1=stretch1,
-        hscale1=hscale1,
-        shift2=shift2,
-        stretch2=stretch2,
-        hscale2=hscale2,
-        transformation_label=label_text
-    )
-
+    return jsonify({
+        "t1": t1.tolist(), "y1": y1.tolist(),
+        "t2": t2.tolist() if t2 is not None else None,
+        "y2": y2.tolist() if y2 is not None else None
+    })
