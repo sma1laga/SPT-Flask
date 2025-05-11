@@ -1,146 +1,181 @@
 {% extends "base.html" %}
+{% block title %}Discrete Fourier Transform Plotter{% endblock %}
+
 {% block content %}
-<h2>Discrete Fourier Transform Plotter</h2>
-
-<!-- Comprehensive User Guide -->
-<section class="guide" style="margin-bottom:1.5em; font-size:0.95rem; color:#333;">
-  <h3>How to Use the DFT Plotter</h3>
-  <ol>
-    <li><strong>Length N:</strong> Number of time-domain samples (enter an integer <code>≥ 1</code>). The sequence<br>
-        is defined for <code>n = 0, 1, …, N-1</code>.</li>
-    <li><strong>Preset:</strong> Quick-select common sequences; this fills the <code>f(n)</code> field:
-      <ul>
-        <li><code>Rectangular</code>: <code>rect(n,N)</code> → all ones.</li>
-        <li><code>Triangular</code>: <code>tri(n,N)</code> → symmetric triangle window.</li>
-        <li><code>Step</code>: <code>step(n,N)</code> → Heaviside (1 for n ≥ 0).</li>
-        <li><code>Delta</code>: <code>delta(n,N)</code> → impulse at n = 0.</li>
-        <li><code>Signum</code>: <code>sign(n,N)</code> → sign(n).</li>
-        <li><code>Sinusoid</code>: <code>sin(2*pi*n/N)</code>.</li>
-      </ul>
-    </li>
-    <li><strong>f(n):</strong> Enter <em>any</em> valid formula in terms of <code>n</code> and <code>N</code>, using:
-      <code>sin</code>, <code>cos</code>, <code>exp</code>, <code>log</code>, <code>sqrt</code>, constants <code>pi</code>, <code>e</code>, etc.<br>
-      <em>Examples:</em> <code>cos(pi*n/4) + 0.5</code>, <code>exp(-n/5)</code>, <code>sqrt(n)</code>.
-    </li>
-    <li><strong>Zero-pad ×:</strong> Integer factor <code>≥ 1</code>. Sequence is zero-padded to length <code>M = padFactor × N</code>,<br>
-        improving frequency resolution.</li>
-    <li>After editing any field, plots auto-update (300 ms delay). Press <strong>Compute</strong> for a full refresh.<br>
-        Use <strong>Enlarge</strong> to zoom the plots.</li>
-  </ol>
-
-  <h3>Plot Interpretation</h3>
-  <ul>
-    <li><strong>Left panel:</strong> Time-domain samples <code>x[n]</code> vs. <code>n</code> (real in blue, imaginary in red).</li>
-    <li><strong>Middle panel:</strong> Normalized magnitude spectrum <code>|X[k]|</code> vs. frequency bin <code>k</code> (0 ≤ k < M).</li>
-    <li><strong>Right panel:</strong> Phase spectrum <code>∠X[k]</code> (radians), wrapped to [−π, π],<br>
-        with negligible bins set to zero.</li>
-  </ul>
-</section>
-
-<form id="dftForm" method="POST">
-  <label for="seqLength">Length N:</label>
-  <input type="number" id="seqLength" name="N" min="1" value="{{ N }}">
-
-  <label for="preset" style="margin-left:20px;">Preset:</label>
-  <select id="preset" style="margin-right:20px;">
-    <option value="">Custom</option>
-    <option value="rect(n,N)"    {% if func=='rect(n,N)'    %}selected{% endif %}>Rectangular</option>
-    <option value="tri(n,N)"     {% if func=='tri(n,N)'     %}selected{% endif %}>Triangular</option>
-    <option value="step(n,N)"    {% if func=='step(n,N)'    %}selected{% endif %}>Step</option>
-    <option value="delta(n,N)"   {% if func=='delta(n,N)'   %}selected{% endif %}>Delta</option>
-    <option value="sign(n,N)"    {% if func=='sign(n,N)'    %}selected{% endif %}>Signum</option>
-    <option value="sin(2*pi*n/N)"{% if func=='sin(2*pi*n/N)'%}selected{% endif %}>Sinusoid</option>
-  </select>
-
-  <label for="func">f(n):</label>
-  <input type="text" id="func" name="func" size="30" value="{{ func }}">
-
-  <label for="padFactor" style="margin-left:20px;">Zero-pad ×:</label>
-  <input type="number" id="padFactor" name="padFactor" min="1" value="{{ padFactor }}">
-
-  <button type="submit" style="margin-left:20px;">Compute</button>
-</form>
-
-<div id="plotWrapper" style="position:relative; margin-top:20px;">
-  <img id="dftPlot"
-       {% if plot_data %}
-         src="data:image/png;base64,{{ plot_data }}"
-       {% else %}
-         style="display:none;"
-       {% endif %}
-       alt="DFT plot"
-       style="max-width:100%; border:1px solid #ccc; border-radius:4px;">
-  <button id="enlargeBtn" onclick="toggleEnlarge()">Enlarge</button>
-  <p id="dftLabel">{{ dft_label }}</p>
+<div class="page-header" style="text-align:center;margin-bottom:28px;">
+  <h1 style="font-size:2.4em;">Discrete-Time DFT Visualizer</h1>
+<p style="max-width:720px;margin:8px auto 0;color:#555;font-size:0.95em;">
+  <strong>1 — Size:</strong> pick a sequence length <strong>N</strong> and, if you want a smoother
+  spectrum, a zero-pad factor.<br>
+  <strong>2 — Formula:</strong> type any Python-style expression that uses <em>n</em> (and <em>N</em>)
+  to define <em>x[n]</em>&nbsp;— e.g.&nbsp;<code>sin(2*pi*n/N)</code>, <code>rect(n,N)</code>, or
+  <code>0.8**n * step(n,N)</code>.<br>
+  <strong>3 — Sliders:</strong> drag Shift, Amplitude, or Width to translate, rescale, or
+  stretch the sequence live.<br>
+  <strong>4 — Compute:</strong> click <b>Compute</b> (or just keep typing) and the page
+  instantly replots the time-domain samples together with their magnitude and
+  phase spectra.
+</p>
 </div>
 
+<form id="dftForm" style="max-width:960px;margin:0 auto;text-align:center;">
+  <!-- BASIC INPUTS ------------------------------------------------ -->
+  <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:18px;">
+    <label><b>Length&nbsp;N:</b></label>
+    <input id="N" type="number" min="1" value="8" style="width:80px;">
+    <label><b>Zero-pad&nbsp;×:</b></label>
+    <input id="padFactor" type="number" min="1" value="10" style="width:80px;">
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <input id="func" type="text" placeholder="f(n)  e.g.  sin(2*pi*n/N)"
+           onfocus="activeField=this" style="width:90%;padding:8px;">
+  </div>
+
+  <!-- QUICK BUTTONS ---------------------------------------------- -->
+  <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
+    {% for lbl in ['rect(n,N)','tri(n,N)','step(n,N)','delta(n,N)',
+                   'sign(n,N)','sin(2*pi*n/N)','cos(2*pi*n/N)'] %}
+      <button type="button" onclick="insertOperand('{{ lbl }}')">
+        {{ lbl.split('(')[0]|capitalize }}
+      </button>
+    {% endfor %}
+    <button type="button" onclick="insertOperand('+')">+</button>
+    <button type="button" onclick="insertOperand('-')">−</button>
+    <button type="button" onclick="insertOperand('*')">*</button>
+    <button type="button" onclick="insertOperand('/')">/</button>
+  </div>
+
+  <!-- 3 SHIFTERS -------------------------------------------------- -->
+  <fieldset class="transform-box" style="margin-bottom:24px;">
+    <legend style="font-weight:600;">Transform Controls</legend>
+    <div class="slider-row">
+      <label>Shift (←/→)</label>
+      <input id="shift" type="range" min="-20" max="20" step="1" value="0"><span></span>
+    </div>
+    <div class="slider-row">
+      <label>Amplitude ×</label>
+      <input id="amp" type="range" min="0.1" max="5" step="0.1" value="1"><span></span>
+    </div>
+    <div class="slider-row">
+      <label>Width ↔</label>
+      <input id="width" type="range" min="0.2" max="5" step="0.1" value="1"><span></span>
+    </div>
+  </fieldset>
+
+  <!-- ACTION BUTTONS --------------------------------------------- -->
+  <div style="margin-bottom:26px;">
+    <button id="computeBtn" type="button" class="action-btn green">Compute</button>
+    <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
+  </div>
+</form>
+
+<!-- PLOTLY PANELS ------------------------------------------------ -->
+<div id="plots" style="max-width:1200px;margin:0 auto;">
+  <div id="timePlot"  style="height:380px;"></div>
+  <div id="magPlot"   style="height:380px;margin-top:22px;"></div>
+  <div id="phasePlot" style="height:380px;margin-top:22px;"></div>
+</div>
+
+<p id="dftLabel" style="text-align:center;margin-top:20px;font-weight:bold;"></p>
+
+<!-- SCRIPTS ------------------------------------------------------ -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
-  function getParams(){
-    return {
-      N: parseInt(document.getElementById('seqLength').value)||1,
-      func: document.getElementById('func').value,
-      padFactor: parseInt(document.getElementById('padFactor').value)||1
-    };
-  }
+/* active-field & quick buttons ---------------------------------- */
+let activeField = document.getElementById("func");
+function insertOperand(op){
+  if(!activeField) return;
+  const s = activeField.selectionStart, e = activeField.selectionEnd,
+        v = activeField.value;
+  activeField.value = v.slice(0,s)+op+v.slice(e);
+  activeField.selectionStart = activeField.selectionEnd = s+op.length;
+  activeField.focus();
+}
 
-  document.getElementById('preset').addEventListener('change', e=>{
-    const val = e.target.value;
-    if(val!==''){
-      document.getElementById('func').value = val;
-      liveUpdate();
-    }
+/* slider wiring ------------------------------------------------- */
+["shift","amp","width"].forEach(id=>{
+  const s   = document.getElementById(id);
+  const val = s.nextElementSibling;
+  val.textContent = parseFloat(s.value).toFixed(1);
+  s.addEventListener("input", ()=>{ val.textContent = parseFloat(s.value).toFixed(1); updatePlots(); });
+});
+
+/* helpers ------------------------------------------------------- */
+function params(){
+  return {
+    N: N.value, padFactor: padFactor.value, func: func.value,
+    shift: shift.value, amp: amp.value, width: width.value
+  };
+}
+
+/* fetch + plot -------------------------------------------------- */
+function updatePlots(){
+  fetch("{{ url_for('discrete_fourier.update_dft') }}", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(params())
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){ console.error(d.error); return; }
+
+    const lc = {margin:{t:30},showlegend:true};
+    Plotly.newPlot("timePlot", [
+      {x:d.n, y:d.x_real, mode:"markers+lines", name:"Re", marker:{color:"#1f77b4"}},
+      {x:d.n, y:d.x_imag, mode:"markers+lines", name:"Im", marker:{symbol:"square",color:"#ff7f0e"}}
+    ], {...lc,title:"Time-Domain x[n]",xaxis:{title:"n"},yaxis:{title:"Amplitude"}});
+
+    Plotly.newPlot("magPlot", [
+      {x:d.k, y:d.mag, mode:"markers+lines", name:"|X[k]|", marker:{color:"#1f77b4"}}
+    ], {...lc,title:"Magnitude Spectrum",xaxis:{title:"k"},yaxis:{title:"|X|"}});
+
+    Plotly.newPlot("phasePlot", [
+      {x:d.k, y:d.phase, mode:"markers+lines", name:"Phase", marker:{color:"#ff7f0e"}}
+    ], {...lc,title:"Phase Spectrum",xaxis:{title:"k"},yaxis:{title:"∠X  (rad)",range:[-Math.PI,Math.PI]}});
+    
+    dftLabel.textContent = d.label;
+  })
+  .catch(console.error);
+}
+
+/* buttons ------------------------------------------------------- */
+computeBtn.onclick = updatePlots;
+clearBtn.onclick = ()=>{
+  func.value=""; N.value=8; padFactor.value=10;
+  ["shift","amp","width"].forEach(id=>{
+    const s=document.getElementById(id);
+    s.value=(id==="amp"||id==="width")?1:0;
+    s.nextElementSibling.textContent=parseFloat(s.value).toFixed(1);
   });
+  Plotly.purge("timePlot"); Plotly.purge("magPlot"); Plotly.purge("phasePlot");
+  dftLabel.textContent="";
+};
 
-  function debounce(fn, d){
-    let t;
-    return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), d); };
-  }
+/* live-update on typing ----------------------------------------- */
+["N","padFactor","func"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", ()=>{ clearTimeout(window._tu); window._tu=setTimeout(updatePlots,300); });
+});
 
-  const liveUpdate = debounce(()=>{
-    const p = getParams();
-    fetch("{{ url_for('discrete_fourier.update_dft') }}", {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(p)
-    })
-    .then(r=>r.json())
-    .then(data=>{
-      if(data.plot_data){
-        const img = document.getElementById('dftPlot');
-        img.src = 'data:image/png;base64,'+data.plot_data;
-        img.style.display='block';
-        document.getElementById('dftLabel').innerText = data.dft_label;
-      }
-    }).catch(console.error);
-  }, 300);
-
-  ['seqLength','func','padFactor'].forEach(id=>
-    document.getElementById(id).addEventListener('input', liveUpdate)
-  );
-
-  document.addEventListener('DOMContentLoaded', ()=> liveUpdate());
-
-  function toggleEnlarge(){
-    document.getElementById('plotWrapper').classList.toggle('enlarged');
-  }
+/* initial render ------------------------------------------------ */
+document.addEventListener("DOMContentLoaded", updatePlots);
 </script>
 
+<!-- STYLES ------------------------------------------------------- -->
 <style>
-  .guide h3 { margin-bottom:0.3em; }
-  .guide ol, .guide ul { margin:0.5em 0 1em 1.2em; }
-  .guide code { background:#f4f4f4; padding:2px 4px; border-radius:3px; }
-  #plotWrapper { display:inline-block; }
-  #plotWrapper.enlarged img {
-    transform: scale(1.5);
-    transform-origin: center;
-    transition: transform .3s;
+  .quick-buttons button{
+    padding:8px 12px;font-size:0.9em;border-radius:4px;background:#007acc;
+    color:#fff;border:none;cursor:pointer;transition:background-color .15s;
   }
-  #enlargeBtn {
-    position:absolute; top:8px; right:8px;
-    background:#007acc;color:#fff;border:none;
-    border-radius:4px;padding:4px 8px;cursor:pointer;
-  }
-  #enlargeBtn:hover { background:#005fa3; }
-  form input, form select { margin-right:10px; }
+  .quick-buttons button:hover{ background:#005fa3; }
+  .action-btn{ padding:8px 22px;font-size:0.9em;border:none;border-radius:4px;cursor:pointer; }
+  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
+  .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
+  fieldset{ border:1px solid #d9dee3;border-radius:8px;padding:14px 20px;background:#f8fafc; }
+  .slider-row{ display:flex;align-items:center;gap:10px;margin-top:8px; }
+  .slider-row label{ width:100px;text-align:right;font-weight:600; }
+  .slider-row span{ width:46px;text-align:center;border:1px solid #ccd0d5;border-radius:4px;background:#fff; }
+  input[type=range]{ flex:1;appearance:none;height:4px;border-radius:2px;background:#007acc;cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb{ appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #007acc; }
 </style>
 {% endblock %}
