@@ -198,7 +198,7 @@ def generate_problem_plot(problem, highlight_index=None, correct_index=None):
     dt = t[1]-t[0]
 
     def convme(a,b):
-        return convolve(a,b, mode='same')*dt
+        return convolve(a,b, mode='same')
 
     y1 = scale1*func_dict[f1_name](t - shift1)
     y2 = scale2*func_dict[f2_name](t - shift2)
@@ -234,6 +234,7 @@ def generate_problem_plot(problem, highlight_index=None, correct_index=None):
 
     # We'll build a new 'shuffled' array where the correct conv is at c_idx
     # and the others fill the remaining slots
+    
     new_options = [None,None,None,None]
     new_options[c_idx] = correct_conv
     distracts = [dconv1, dconv2, dconv3]
@@ -242,7 +243,12 @@ def generate_problem_plot(problem, highlight_index=None, correct_index=None):
         if new_options[j] is None:
             new_options[j] = distracts[d_i]
             d_i+=1
-
+    all_opt_vals = np.concatenate(new_options)
+    y_min, y_max = all_opt_vals.min(), all_opt_vals.max()
+    pad = 0.05 * (y_max - y_min if y_max != y_min else 1.0)
+    y_min -= pad
+    y_max += pad
+    
     # Now create the figure
     fig = plt.figure(figsize=(8,8))
     gs = fig.add_gridspec(nrows=3,ncols=2,hspace=0.5,wspace=0.3)
@@ -290,6 +296,7 @@ def generate_problem_plot(problem, highlight_index=None, correct_index=None):
         ax.set_title(f"Option {i+1}")
         ax.grid(True)
         ax.set_xlim(t[0], t[-1])
+        ax.set_ylim(y_min, y_max)
 
     fig.tight_layout()
     buf = io.BytesIO()
