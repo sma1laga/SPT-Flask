@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from .chain_transforms import (
     apply_addition, apply_subtraction, apply_multiplication,
+    apply_real,      apply_imag,
     apply_derivative, apply_hilbert, apply_filter,
-    apply_generic, no_op, rect, tri
+    apply_generic, no_op, rect, tri, 
+    apply_conj, apply_integrator, apply_power
 )
 
 
@@ -80,6 +82,11 @@ def interpret_chain(chain_data, until_block=None):
         elif typ in ["Derivative","d/dt"]: y = apply_derivative(x_sig, p, w)
         elif typ == "Hilbert":        y = apply_hilbert(x_sig, p, w)
         elif typ == "Filter":         y = apply_filter(x_sig, p, w)
+        elif typ == "Re":          y = apply_real(x_sig,  p, w)   
+        elif typ == "Im":          y = apply_imag(x_sig,  p, w)   
+        elif typ == "Integrator":   y = apply_integrator(x_sig, p, w)
+        elif typ == "Power":        y = apply_power(x_sig, p, w)
+        elif typ == "Conjugate":    y = apply_conj(x_sig, p, w)
         else:                          y = apply_generic(x_sig, p, w)
         signals[bid] = y
         if until_block is not None and bid == until_block:

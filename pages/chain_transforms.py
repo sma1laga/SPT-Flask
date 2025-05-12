@@ -122,3 +122,11 @@ def apply_generic(signal,param,w):
     safe={"np":np,"w":w,"x":signal,"rect":rect,"tri":tri}
     return eval(param,{"__builtins__":{}},safe)
 def no_op(signal,param,w): return signal
+
+
+def apply_integrator(sig, param, w):
+    eps = 1e-12
+    return sig / (1j*w + eps)
+
+def apply_power    (sig, p, w):  return np.abs(sig)**2
+def apply_conj     (sig, p, w):  return np.conj(sig)

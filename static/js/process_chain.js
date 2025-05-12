@@ -399,7 +399,9 @@ function getMousePos(e) {
 /*  Modals                                                          */
 /* ================================================================ */
 function openBlockModal(b){
-  if (["Hilbert","Derivative","d/dt","Re","Im", "Input", "Output", "Addition", "Subtraction"].includes(b.type)) return;
+  if (["Hilbert","Derivative","d/dt","Re","Im",
+     "Integrator","Power","Conjugate","Input",
+     "Output","Addition","Subtraction"].includes(b.type)) return;
   if(b.type==="Filter")        openFilterModal(b);
   else if(b.type==="Multiplication") openMultiplicationModal(b);
   else{

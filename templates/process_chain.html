@@ -11,28 +11,41 @@
   • Or click <em>Comppute</em> to plot the full chain output y(jω).<br>
   • Use <em>Delete</em> to remove a selected block or arrow; <em>Clear</em> to reset everything.
 </div>
-<div class="toolbar" style="margin-bottom:10px; display:flex; flex-wrap:wrap; gap:8px;">
 
-  <!-- Input expression field -->
-  <label>Input x(t):</label>
-  <input type="text" id="inputExpression" placeholder="e.g., rect(w/3)" size="15">
-  
-  <!-- Buttons to add blocks -->
+<style>
+  .toolbar       {display:flex; flex-wrap:wrap; gap:8px;
+                  border:1px solid #ddd; border-radius:6px;
+                  padding:8px; margin-bottom:12px;}
+
+  .toolbar h4    {margin:0 0 6px 0;       /* 6 px gap under the title   */
+                  width:100%;             /* force title onto its own row */
+                  font:600 0.95rem/1 Roboto, sans-serif;
+                  color:#444;}
+</style>
+
+<label for="inputExpression">Input X(ω):</label>
+<input  id="inputExpression" type="text"
+        placeholder="e.g., rect(w/3)" size="15">
+        
+<div class="toolbar">
+  <h4>Blocks</h4>
   <button onclick="addBlock('Addition','+')">Add Addition</button>
   <button onclick="addBlock('Subtraction','-')">Add Subtraction</button>
   <button onclick="addBlock('Multiplication','×')">Add Multiplication</button>
   <button onclick="addBlock('Filter','Filter')">Add Filter</button>
   <button onclick="addBlock('Hilbert','Hilbert')">Add Hilbert</button>
   <button onclick="addBlock('Derivative','d/dt')">Add d/dt</button>
-  
-  <!-- Add Dot or Misc. -->
+  <button onclick="addBlock('Re','Re')">Add Re</button>
+  <button onclick="addBlock('Im','Im')">Add Im</button>
+  <button onclick="addBlock('Integrator','∫')">Add Integrator</button>
+  <button onclick="addBlock('Power','|·|²')">Add Power</button>
+  <button onclick="addBlock('Conjugate','Conj')">Add Conj</button>
+</div>
+  <div class="toolbar">
+  <h4>Operations</h4>
   <button id="btnConnect" onclick="toggleConnectMode()">Connect</button>
-  
-  <!-- Deletion / Clear -->
   <button onclick="deleteSelected()">Delete</button>
   <button onclick="clearAll()">Clear</button>
-  
-  <!-- (Optionally) a 'Compute' or 'Plot' button that triggers an AJAX to the server -->
   <button onclick="computeChain()">Compute</button>
 </div>
 
