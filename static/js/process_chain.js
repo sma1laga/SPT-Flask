@@ -629,6 +629,60 @@ window.clearAll = () => {
   drawAll();
 };
 
+/* ================================================================ */
+/*  Save / Load scene                                               */
+/* ================================================================ */
+
+/* ---------- download ---------- */
+window.downloadScene = () => {
+  const payload = {
+    blocks,                      // current block array
+    lines,                       // current connections
+    canvas: { w: canvas.width, h: canvas.height },   // optional
+    version: "1.0"
+  };
+
+  const blob = new Blob(
+      [ JSON.stringify(payload, null, 2) ],
+      { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement("a");
+  a.href = url;
+  a.download = "process_chain.chain";    // custom extension
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+
+/* ---------- upload ---------- */
+window.uploadScene = evt => {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const state = JSON.parse(e.target.result);
+
+      /* re-hydrate core arrays (fall back to empty if missing) */
+      blocks = state.blocks || [];
+      lines  = state.lines  || [];
+
+      /* you can restore extra view settings here if you add them later */
+      drawAll();                 // redraw everything
+    }
+    catch (err) {
+      alert("Could not load chain: " + err.message);
+    }
+    evt.target.value = "";       // allow re-selecting the same file
+  };
+  reader.readAsText(file);
+};
+
+
 window.computeChain = () => {
   fetch("/process_chain/compute", {
     method: "POST",

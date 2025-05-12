@@ -48,7 +48,18 @@
   <button onclick="clearAll()">Clear</button>
   <button onclick="computeChain()">Compute</button>
 </div>
+<!-- ── Save / Load scene ─────────────────────────────── -->
+<button onclick="downloadScene()">Save Chain</button>
 
+<input  type="file"
+        id="fileInput"
+        accept=".chain,.json"
+        style="display:none"
+        onchange="uploadScene(event)">
+
+<button onclick="document.getElementById('fileInput').click()">
+  Load Chain
+</button>
 <!-- Canvas for the chain UI -->
 <canvas id="chainCanvas" width="900" height="500"
   style="border:1px solid #ccc;">
