@@ -1,0 +1,137 @@
+{
+  "blocks": [
+    {
+      "id": 1,
+      "type": "Input",
+      "label": "x(t)",
+      "x": 20,
+      "y": 225,
+      "width": 100,
+      "height": 50,
+      "param": null,
+      "displayExpr": null,
+      "nonDeletable": true,
+      "selected": false
+    },
+    {
+      "id": 2,
+      "type": "Output",
+      "label": "y(t)",
+      "x": 780,
+      "y": 225,
+      "width": 100,
+      "height": 50,
+      "param": null,
+      "displayExpr": null,
+      "nonDeletable": true,
+      "selected": false
+    },
+    {
+      "id": 4,
+      "type": "Subtraction",
+      "label": "-",
+      "x": 278,
+      "y": 224,
+      "width": 100,
+      "height": 50,
+      "param": null,
+      "displayExpr": null,
+      "nonDeletable": false,
+      "selected": false
+    },
+    {
+      "id": 6,
+      "type": "Multiplication",
+      "label": "×",
+      "x": 148,
+      "y": 387,
+      "width": 100,
+      "height": 50,
+      "param": "cos:3,3",
+      "displayExpr": "3 cos(3ω t)",
+      "nonDeletable": false,
+      "selected": false
+    },
+    {
+      "id": 7,
+      "type": "Multiplication",
+      "label": "×",
+      "x": 155,
+      "y": 53,
+      "width": 100,
+      "height": 50,
+      "param": "sin:3,2,2",
+      "displayExpr": "3 sin(2ω t)",
+      "nonDeletable": false,
+      "selected": false
+    },
+    {
+      "id": 8,
+      "type": "Hilbert",
+      "label": "Hilbert",
+      "x": 459,
+      "y": 227,
+      "width": 100,
+      "height": 50,
+      "param": null,
+      "displayExpr": null,
+      "nonDeletable": false,
+      "selected": false
+    },
+    {
+      "id": 9,
+      "type": "Filter",
+      "label": "Filter\n(bandpass:1,2)",
+      "x": 622,
+      "y": 222,
+      "width": 100,
+      "height": 50,
+      "param": "bandpass:1,2",
+      "displayExpr": null,
+      "nonDeletable": false,
+      "selected": true
+    }
+  ],
+  "lines": [
+    {
+      "fromId": 1,
+      "toId": 7,
+      "letter": "a"
+    },
+    {
+      "fromId": 7,
+      "toId": 4,
+      "letter": "b"
+    },
+    {
+      "fromId": 4,
+      "toId": 8,
+      "letter": "c"
+    },
+    {
+      "fromId": 1,
+      "toId": 6,
+      "letter": "e"
+    },
+    {
+      "fromId": 6,
+      "toId": 4,
+      "letter": "f"
+    },
+    {
+      "fromId": 8,
+      "toId": 9,
+      "letter": "g"
+    },
+    {
+      "fromId": 9,
+      "toId": 2,
+      "letter": "h"
+    }
+  ],
+  "canvas": {
+    "w": 900,
+    "h": 500
+  },
+  "version": "1.0"
+}
