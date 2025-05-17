@@ -21,6 +21,14 @@
                   width:100%;             /* force title onto its own row */
                   font:600 0.95rem/1 Roboto, sans-serif;
                   color:#444;}
+  .scene-controls{
+    display:flex;          /* lay items out in one row   */
+    gap:12px;              /* space between every item   */
+    flex-wrap:wrap;        /* line-break on small screens*/
+    align-items:center;    /* nice vertical alignment    */
+    margin-bottom:12px;    /* a little air above canvas  */
+  }
+
 </style>
 
 <label for="inputExpression">Input X(ω):</label>
@@ -49,31 +57,33 @@
   <button onclick="computeChain()">Compute</button>
 </div>
 <!-- ── Save / Load scene ─────────────────────────────── -->
-<button onclick="downloadScene()">Save Chain</button>
+<div class="scene-controls">
+  <button onclick="downloadScene()">Save Chain</button>
 
-<input  type="file"
-        id="fileInput"
-        accept=".chain,.json"
-        style="display:none"
-        onchange="uploadScene(event)">
+  <input  type="file"
+          id="fileInput"
+          accept=".chain,.json"
+          style="display:none"
+          onchange="uploadScene(event)">
 
-<button onclick="document.getElementById('fileInput').click()">
-  Load Chain
-</button>
-<!-- ▼ Pre-loaded chains dropdown ▼ -->
-<select id="preloadedSelect"
-        style="margin-left:8px; padding:4px;"
-        onchange="loadSelectedPreloaded(this)">
-  <option value="">⟐ Pre-loaded chain ⟐</option>
-  {% for fname in preloaded_chains %}
-    <option value="{{ url_for('static',
-                              filename='chains_preloaded/' + fname) }}">
-      {{ fname }}
-    </option>
-  {% endfor %}
-</select>
+  <button onclick="document.getElementById('fileInput').click()">
+    Load Chain
+  </button>
+
+  <select id="preloadedSelect"
+          onchange="loadSelectedPreloaded(this)">
+    <option value="">⟐ Pre-loaded chain ⟐</option>
+    {% for fname in preloaded_chains %}
+      <option value="{{ url_for('static',
+                                filename='chains_preloaded/' + fname) }}">
+        {{ fname }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
 <!-- Canvas for the chain UI -->
-<canvas id="chainCanvas" width="900" height="500"
+<canvas id="chainCanvas" width="900" height="900"
   style="border:1px solid #ccc;">
   Your browser does not support Canvas.
 </canvas>
