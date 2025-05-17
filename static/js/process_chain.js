@@ -682,6 +682,25 @@ window.uploadScene = evt => {
   reader.readAsText(file);
 };
 
+/* Load a pre-packaged .chain file chosen in <select> */
+function loadSelectedPreloaded(sel) {
+  const url = sel.value;
+  if (!url) { return; }                  // user picked the placeholder line
+
+  fetch(url)
+    .then(r => r.text())
+    .then(text => {
+      /* fake a “file-input change” event so we can re-use uploadScene() */
+      const blob   = new Blob([text], {type: "application/json"});
+      const file   = new File([blob], "from_preloaded.chain");
+      const event  = { target: { files: [file] } };
+      uploadScene(event);
+      sel.selectedIndex = 0;             // reset dropdown label
+    })
+    .catch(err => alert("Could not load chain:\n" + err));
+}
+
+
 
 window.computeChain = () => {
   fetch("/process_chain/compute", {

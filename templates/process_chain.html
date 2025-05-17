@@ -60,6 +60,18 @@
 <button onclick="document.getElementById('fileInput').click()">
   Load Chain
 </button>
+<!-- ▼ Pre-loaded chains dropdown ▼ -->
+<select id="preloadedSelect"
+        style="margin-left:8px; padding:4px;"
+        onchange="loadSelectedPreloaded(this)">
+  <option value="">⟐ Pre-loaded chain ⟐</option>
+  {% for fname in preloaded_chains %}
+    <option value="{{ url_for('static',
+                              filename='chains_preloaded/' + fname) }}">
+      {{ fname }}
+    </option>
+  {% endfor %}
+</select>
 <!-- Canvas for the chain UI -->
 <canvas id="chainCanvas" width="900" height="500"
   style="border:1px solid #ccc;">
