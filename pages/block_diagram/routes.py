@@ -7,6 +7,9 @@ POST /block_diagram/compile   → JSON API: graph-in, TF/SS/ODE-out
 from flask import render_template, request, jsonify
 from . import block_diagram_bp as bp 
 from .services import compile_diagram
+import control
+import numpy as np
+
 
 
 @bp.route("/", methods=["GET"], endpoint="diagram_page")
@@ -26,3 +29,11 @@ def compile_diagram_api():
         return jsonify(result)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
+
+@bp.route('/simulate', methods=['POST'])
+def simulate():
+    tf_json = request.get_json()
+    num, den = tf_json["num"], tf_json["den"]
+    sys = control.TransferFunction(num, den)
+    t, y = control.step_response(sys, T=np.linspace(0, 10, 500))
+    return jsonify(time=t.tolist(), y=y.tolist())

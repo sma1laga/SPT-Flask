@@ -9,6 +9,8 @@ const srcSelect = document.getElementById("srcSelect");
 const srcCustom = document.getElementById("srcCustom");
 const srcNum    = document.getElementById("srcNum");
 const srcDen    = document.getElementById("srcDen");
+const btnSimulate = document.getElementById("btnSimulate");
+const simCanvas  = document.getElementById("simCanvas");
 
 
 /* -----------  side selection & geometry helpers  ------------------- */
@@ -195,43 +197,135 @@ else if (editTarget.type === "Input") {          // NEW
 };
 
 
-/* ---------------- compile --------------------------------------------- */
+let lastOutputTf = null;  // <-- up at top of file
+let simChart = null;
+
 function compileDiagram(){
   const domain = document.getElementById("domainSel").value;
-
-  // detach KaTeX div refs before serialising
-  const serialNodes = nodes.map(n=>{
-    const copy = {...n};
-    delete copy.latexEl;
-    return copy;
-  });
+  const serial = {
+    nodes: nodes.map(n => { let c={...n}; delete c.latexEl; return c; }),
+    edges, domain
+  };
 
   fetch("/block_diagram/compile", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nodes:serialNodes, edges, domain})
+    body:JSON.stringify(serial)
   })
   .then(r=>r.json())
-    .then(js=>{
-      const box = document.getElementById("resultsBox");
-      if (js.error) { box.textContent = "Error: " + js.error; return; }
+  .then(js=>{
+    const box = document.getElementById("resultsBox");
+    if(js.error){
+      box.textContent = "Error: " + js.error;
+      return;
+    }
 
-      // clear old content
-      box.innerHTML = `
-        <h5>Transfer&nbsp;Function</h5>
-        <div id="tfOut"  class="kx"></div>
-        <h5 class="mt-3">State-Space&nbsp;form</h5>
-        <div id="ssOut"  class="kx"></div>
-        <h5 class="mt-3">Differential / Difference&nbsp;Eq.</h5>
-        <div id="odeOut" class="kx"></div>
-      `;
-      katex.render(js.transfer_function.latex, document.getElementById("tfOut"));
-      katex.render(js.state_space.latex,      document.getElementById("ssOut"),
-                   {displayMode:true});
-      katex.render(js.ode_latex,              document.getElementById("odeOut"));
+    // remember for simulate
+    lastOutputTf = js.output_tf;
+
+    // build new HTML
+    box.innerHTML = `
+      <h5>Loop Transfer Function</h5>
+      <div id="loopOut" class="kx"></div>
+
+      <h5 class="mt-3">Input X(s)</h5>
+      <div id="inOut" class="kx"></div>
+
+      <h5 class="mt-3">Output Y(s)</h5>
+      <div id="outOut" class="kx"></div>
+
+      <h5 class="mt-3">State-Space Form</h5>
+      <div id="ssOut" class="kx"></div>
+
+      <h5 class="mt-3">Differential / Difference Eq.</h5>
+      <div id="odeOut" class="kx"></div>
+    `;
+
+    // render each one
+    katex.render(js.loop_tf.latex,  document.getElementById("loopOut"));
+    katex.render(js.input_tf.latex, document.getElementById("inOut"));
+    katex.render(js.output_tf.latex,document.getElementById("outOut"));
+    // if you want LaTeX for SS or ODE you'll need to return them too
+    // for now show the raw text:
+    // now render LaTeX for state-space and ODE
+    katex.render(js.state_space.latex, document.getElementById("ssOut"),
+                 {displayMode:true});
+    katex.render(js.ode_latex,     document.getElementById("odeOut"),
+                 {displayMode:false});
+
+    // show simulate button
+    document.getElementById("btnSimulate").style.display = "inline-block";
   })
-  .catch(alert);
+  .catch(err => alert(err));
 }
+
+// simulate handler (unchanged, except now lastOutputTf is set)
+btnSimulate.onclick = async () => {
+  if(!lastOutputTf) return alert("Nothing to simulate!");
+  const resp = await fetch("/block_diagram/simulate", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(lastOutputTf)
+  });
+  const sim = await resp.json();
+  simCanvas.style.display = "block";
+    // ① tear down old chart
+    if (simChart) {
+    simChart.destroy();
+    }
+    // ② draw & save new chart
+    simChart = new Chart(simCanvas.getContext("2d"), {
+    type: "line",
+    data: {
+        labels: sim.time,
+        datasets: [{ label: "y(t)", data: sim.y, fill: false, borderWidth: 2 }]
+    },
+    options: {
+        scales: {
+        x: { title: { display: true, text: "Time (s)" } },
+        y: { title: { display: true, text: "Response" } }
+        }
+    }
+    });
+
+};
+
+
+btnSimulate.onclick = async () => {
+  // 1) Grab the last output_tf object you received
+  //    (you may want to store it in a module-level variable inside compileDiagram)
+  const tf = lastOutputTf;  
+
+  // 2) Call the new simulate endpoint
+  const resp = await fetch("/block_diagram/simulate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(tf)
+  });
+  const sim = await resp.json();  // { time: [...], y: [...] }
+
+  // 3) Un-hide the canvas
+  simCanvas.style.display = "block";
+
+  // 4) Draw with Chart.js
+  new Chart(simCanvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: sim.time,
+      datasets: [{
+        label: "y(t)",
+        data: sim.y,
+        fill: false,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      scales: { x: { title: { display: true, text: "Time (s)" } },
+                y: { title: { display: true, text: "Response" } } }
+    }
+  });
+};
+
 
 /* ---------------- helper fns ------------------------------------------ */
 function mouse(ev){const r=canvas.getBoundingClientRect();

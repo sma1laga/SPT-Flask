@@ -9,8 +9,12 @@ Utility helpers for the Block-Diagram module
 from typing import List, Tuple
 
 import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-import control  # python-control (add to requirements.txt if missing)
+import control  
+from sympy.parsing.sympy_parser import (
+    parse_expr,
+    standard_transformations,
+    implicit_multiplication_application
+)
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -21,7 +25,8 @@ def parse_poly(poly_str: str) -> List[float]:
     """
     poly_str = poly_str.replace("^", "**")          # allow caret notation
     s, z = sp.symbols("s z")
-    expr = parse_expr(poly_str, local_dict={"s": s, "z": z})
+    transformations = standard_transformations + (implicit_multiplication_application,)
+    expr = parse_expr(poly_str, local_dict={"s": s, "z": z}, transformations=transformations)
     poly = sp.Poly(expr, s if "s" in poly_str else z)
     return [float(c) for c in poly.all_coeffs()]
 
