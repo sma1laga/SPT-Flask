@@ -55,8 +55,8 @@ function addNode(type, label, x = 120, y = 80) {
 
 /* default source & sink ------------------------------------------------ */
 (() => {
-  addNode("Input",  "x(t)", 40, canvas.height/2 - 60);
-  addNode("Output", "y(t)", canvas.width - 120, canvas.height/2 - 60);
+  addNode("Input",  "X(s)", 40, canvas.height/2 - 60);
+  addNode("Output", "Y(s)", canvas.width - 120, canvas.height/2 - 60);
 })();
 
 /* ---------------- connection mode & drag ------------------------------ */
@@ -243,8 +243,8 @@ function toggleConnect(){connectMode=!connectMode;
   if(!connectMode)connectFrom=null;}
 function clearScene(){nodes=[];edges=[];nextId=1;
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
-  (()=>{addNode("Input","x(t)",40,canvas.height/2-60);
-        addNode("Output","y(t)",canvas.width-120,canvas.height/2-60);})();
+  (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
+        addNode("Output","Y(s)",canvas.width-120,canvas.height/2-60);})();
 }
 
 /* ---------------- drawing --------------------------------------------- */
@@ -278,7 +278,7 @@ function drawAll(){
         else if (n.params.kind === "custom" &&
                 n.params.num && n.params.den)
                 expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
-        renderLatex(n, expr || (n.type === "Input" ? "x(t)" : "SRC"));
+        renderLatex(n, expr || (n.type === "Input" ? "X(s)" : "SRC"));
         }
     else if (n.type === "Input") {                   // NEW
     let expr;
@@ -287,7 +287,7 @@ function drawAll(){
     else if (n.params.kind === "custom" &&
             n.params.num && n.params.den)
             expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
-    renderLatex(n, expr || "x(t)");
+    renderLatex(n, expr || "X(s)");
     }
 
     else {
