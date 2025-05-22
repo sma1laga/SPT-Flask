@@ -259,36 +259,6 @@ function compileDiagram(){
   .catch(err => alert(err));
 }
 
-// simulate handler (unchanged, except now lastOutputTf is set)
-btnSimulate.onclick = async () => {
-  if(!lastOutputTf) return alert("Nothing to simulate!");
-  const resp = await fetch("/block_diagram/simulate", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(lastOutputTf)
-  });
-  const sim = await resp.json();
-  simCanvas.style.display = "block";
-    // ① tear down old chart
-    if (simChart) {
-    simChart.destroy();
-    }
-    // ② draw & save new chart
-    simChart = new Chart(simCanvas.getContext("2d"), {
-    type: "line",
-    data: {
-        labels: sim.time,
-        datasets: [{ label: "y(t)", data: sim.y, fill: false, borderWidth: 2 }]
-    },
-    options: {
-        scales: {
-        x: { title: { display: true, text: "Time (s)" } },
-        y: { title: { display: true, text: "Response" } }
-        }
-    }
-    });
-
-};
 
 
 btnSimulate.onclick = async () => {
@@ -493,6 +463,44 @@ document.getElementById("btnAddDelay").onclick=()=>addNode("Delay","z⁻¹");
 document.getElementById("btnAddTF").onclick=()=>addNode("TF","",180,80);  // NEW
 document.getElementById("btnClear").onclick=clearScene;
 document.getElementById("btnCompile").onclick=compileDiagram;
+
+
+document.getElementById("btnSimulate").onclick = async () => {
+  if (!lastOutputTf) return alert("Nothing to simulate!");
+
+  // 1) POST the most recent TF
+  const resp = await fetch("/block_diagram/simulate", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(lastOutputTf)
+  });
+  const sim = await resp.json();
+
+  // 2) Reveal and clear out old chart
+  simCanvas.style.display = "block";
+  if (simChart) simChart.destroy();
+
+  // 3) Draw new one and save the instance
+  simChart = new Chart(simCanvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: sim.time,
+      datasets: [{
+        label:       "y(t)",
+        data:        sim.y,
+        fill:        false,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      scales: {
+        x: { title: { display: true, text: "Time (s)" } },
+        y: { title: { display: true, text: "Response" } }
+      }
+    }
+  });
+};
+
 
 /* initial paint */
 drawAll();
