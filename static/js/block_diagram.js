@@ -11,6 +11,28 @@ const srcNum    = document.getElementById("srcNum");
 const srcDen    = document.getElementById("srcDen");
 
 
+/* -----------  side selection & geometry helpers  ------------------- */
+const DIRS = {E:[1,0], W:[-1,0], N:[0,-1], S:[0,1]};
+
+/* first free face in a fixed priority order */
+function chooseSide(node, isOut){
+  const used = edges
+     .filter(e => (isOut ? e.from===node.id : e.to===node.id))
+     .map (e => isOut ? e.outSide : e.inSide);
+  const pref = isOut ? ["E","S","N","W"] : ["W","N","S","E"];
+  return pref.find(p => !used.includes(p)) || pref[0];
+}
+
+function portPos(node, side){
+  switch(side){
+    case "E": return {x: node.x + node.w,     y: node.y + node.h/2};
+    case "W": return {x: node.x,              y: node.y + node.h/2};
+    case "N": return {x: node.x + node.w/2,   y: node.y};
+    case "S": return {x: node.x + node.w/2,   y: node.y + node.h};
+  }
+}
+
+
 /* ---------------- internal graph model -------------------------------- */
 let nodes = [];
 let edges = [];
@@ -48,7 +70,14 @@ canvas.addEventListener("mousedown", ev => {
   if (connectMode) {
     if (!n) return;
     if (!connectFrom) { connectFrom = n; return; }
-    if (n !== connectFrom) edges.push({from:connectFrom.id, to:n.id, sign: "+"});
+    if (n !== connectFrom) 
+        edges.push({
+        from: connectFrom.id,
+        to:   n.id,
+        sign: "+",
+        outSide: chooseSide(connectFrom, /*out =*/true),
+        inSide:  chooseSide(n,          /*out =*/false)
+        });
     connectFrom = null;
     drawAll(); return;
   }
@@ -223,27 +252,14 @@ function drawAll(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue('--arrow-col').trim() || "#000";
 
-  /* edges */
-  ctx.strokeStyle="#000";ctx.lineWidth=2;edges.forEach(e=>{
-    const a=nodes.find(n=>n.id===e.from);
-    const b=nodes.find(n=>n.id===e.to);
-    if(!a||!b)return;
-    const ax=a.x+a.w, ay=a.y+a.h/2, bx=b.x, by=b.y+b.h/2;
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();
-    arrow(ax,ay,bx,by);
-  /* draw ⊖ badge on a negative edge */
-  if (e.sign === "–") {
-    ctx.fillStyle = "#fff";
-    ctx.strokeStyle = "#000";
-    ctx.beginPath();
-    ctx.arc((ax + bx) / 2, (ay + by) / 2, 7, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#000";
-    ctx.font = "12px sans-serif";
-    ctx.fillText("–", (ax + bx) / 2 - 3, (ay + by) / 2 + 4);
-  }
-  });
+  /* --------- edges (orthogonal) ------------------------------------ */
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth   = 2;
+  ctx.lineJoin    = "round";
+  ctx.lineCap     = "round";
+
+  edges.forEach(e => drawOrthEdge(ctx, e));
+
 
   /* nodes */
   nodes.forEach(n=>{
@@ -314,6 +330,64 @@ function arrow(x0,y0,x1,y1){
   ctx.lineTo(x1-len*Math.cos(ang+Math.PI/6),
              y1-len*Math.sin(ang+Math.PI/6));
   ctx.closePath();ctx.fill();
+}
+
+/* ------------------------------------------------------------------- */
+/*  orthogonal routing that honours chosen faces                       */
+/* ------------------------------------------------------------------- */
+
+function orthRoute(p, q, exitSide){
+  const gap = 30;                       // basic clearance
+  const pts = [p];
+
+  /* 1) step out of the source by 'gap'                                    */
+  pts.push({
+    x: p.x + DIRS[exitSide][0]*gap,
+    y: p.y + DIRS[exitSide][1]*gap
+  });
+
+  /* 2) L-shaped jog to align with destination y OR x                      */
+  if (exitSide === "E" || exitSide === "W"){
+    pts.push({ x: pts[1].x, y: q.y });
+  } else {
+    pts.push({ x: q.x,      y: pts[1].y });
+  }
+
+  /* 3) finally straight into the target                                   */
+  pts.push(q);
+  return pts;
+}
+
+function drawOrthEdge(ctx, e){
+  const a = nodes.find(n => n.id === e.from);
+  const b = nodes.find(n => n.id === e.to);
+  if (!a || !b) return;
+
+  const from = portPos(a, e.outSide);
+  const to   = portPos(b, e.inSide);
+  const pts  = orthRoute(from, to, e.outSide);
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+
+  /* arrow-head on final leg */
+  const n = pts.length;
+  arrow(pts[n-2].x, pts[n-2].y, pts[n-1].x, pts[n-1].y);
+
+  /* ⊖ badge on negative edges – halfway down the 2nd segment */
+  if (e.sign === "–"){
+    const mid = {
+      x:(pts[1].x + pts[2].x)/2,
+      y:(pts[1].y + pts[2].y)/2
+    };
+    ctx.fillStyle="#fff"; ctx.strokeStyle="#000";
+    ctx.beginPath(); ctx.arc(mid.x, mid.y, 7, 0, 2*Math.PI);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle="#000"; ctx.font="12px sans-serif";
+    ctx.fillText("–", mid.x-3, mid.y+4);
+  }
 }
 
 /* ---------------- toolbar hooks --------------------------------------- */
