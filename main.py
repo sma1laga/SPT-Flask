@@ -4,6 +4,7 @@ from pages.plot_function import plot_function_bp
 from pages.fourier_page import fourier_bp
 from pages.convolution import convolution_bp
 from pages.process_chain import process_chain_bp
+from pages.block_diagram import block_diagram_bp
 from pages.filter_design import filter_design_bp
 from pages.image_filter import image_filter_bp
 from pages.kernel_animator import bp as kernel_bp
@@ -62,6 +63,7 @@ def create_app():
 
     
     app.register_blueprint(process_chain_bp, url_prefix="/process_chain")
+    app.register_blueprint(block_diagram_bp, url_prefix="/block_diagram")  
     
     app.register_blueprint(filter_design_bp, url_prefix="/filter_design")
     app.register_blueprint(func_defs_bp,     url_prefix="/function_definitions")

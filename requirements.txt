@@ -4,3 +4,8 @@ matplotlib>=3.3
 scipy>=1.6
 sympy>=1.13.3
 PyWavelets>=1.8.0
+control>=0.9.4
+sympy>=1.12
+jsonschema>=4.19
+networkx>=3.0
+

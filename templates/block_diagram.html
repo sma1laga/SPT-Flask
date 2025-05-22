@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Block-Diagram (Transfer-Function)</h2>
+
+<div class="toolbar">
+  <button id="btnAddSource">Add Source</button>
+  <button id="btnAddAdder">Add Σ</button>
+  <button id="btnAddGain">Add Gain</button>
+  <button id="btnAddTF">Add TF ⟂</button>         <!-- NEW -->
+  <button id="btnAddIntegrator">Add Integrator</button>
+  <button id="btnAddDelay">Add Delay</button>
+
+
+  <span style="margin:0 12px">Domain:</span>
+  <select id="domainSel">
+    <option value="s">Laplace (continuous)</option>
+    <option value="z">Z-Transform (discrete)</option>
+  </select>
+
+  <button id="btnConnect" onclick="toggleConnect()">Connect</button>
+  <button id="btnCompile">Compile ⇢ TF / SS / ODE</button>
+  <button id="btnClear">Clear</button>
+</div>
+
+<canvas id="diagramCanvas" width="900" height="900"
+        style="border:1px solid #bbb; position:relative; z-index:0"></canvas>
+
+<!-- ─────────────── Unified edit-modal ──────────────── -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Edit</h5>
+      </div>
+
+      <div class="modal-body">
+        <!-- --- Transfer-Function fields --- -->
+        <div id="tfFields">
+          <label class="form-label">Numerator N(s) or N(z)</label>
+          <input id="numInput" class="form-control" placeholder="s^2 + 4">
+          <label class="form-label mt-2">Denominator D(s) or D(z)</label>
+          <input id="denInput" class="form-control" placeholder="s^3 + 1">
+        </div>
+
+        <!-- --- Gain field --- -->
+        <div id="gainFields">
+          <label class="form-label">Gain K</label>
+          <input id="gainInput" type="number" step="any"
+                 class="form-control" placeholder="4">
+        </div>
+
+        <!-- --- Source / Input fields --- -->
+        <div id="srcFields">
+          <label class="form-label">Input type</label>
+          <select id="srcSelect" class="form-select">
+            <option value="step">Step (1/s)</option>
+            <option value="impulse">Impulse (1)</option>
+            <option value="custom">Custom N/D</option>
+          </select>
+
+          <div id="srcCustom" class="mt-2">
+            <label class="form-label">Numerator</label>
+            <input id="srcNum" class="form-control" placeholder="e.g. 3">
+            <label class="form-label mt-2">Denominator</label>
+            <input id="srcDen" class="form-control" placeholder="e.g. s+2">
+          </div>
+        </div>
+      </div> <!-- /.modal-body -->
+
+      <div class="modal-footer">
+        <button id="btnModalSave" class="btn btn-primary">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ─────────── End unified edit-modal ───────────── -->
+
+
+<h3>Results</h3>
+<div id="resultsBox" class="results card p-3">(nothing compiled yet)</div>
+
+<!-- libs -->
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/block_diagram.css') }}">
+<script defer
+        src="{{ url_for('static', filename='js/block_diagram.js') }}"></script>
+{% endblock %}
