@@ -2,20 +2,78 @@
 {% block content %}
 <h2>Block-Diagram (Transfer-Function)</h2>
 
+<!-- ─── User Manual─────────────────────────────────── -->
+<div id="userManual"
+     style="margin:8px 0 12px 0;
+            padding:10px 12px;
+            background:#f9f9f9; border:1px solid #ddd;
+            font-size:0.9em; line-height:1.4;">
+
+  <strong>What you can do on this page</strong>
+  <ul style="margin:4px 0 8px 18px; padding:0;">
+    <li><b>Build block diagrams</b> with <code>Source</code>, <code>Σ</code>,
+        <code>Gain K</code>, <code>TF N(s)/D(s)</code>,
+        <code>Integrator 1/s</code> and <code>Derivative s</code>.</li>
+    <li><b>Compute</b> the overall Transfer-Function, State-Space matrices
+        and ODE after one click.</li>
+    <li><b>Plot a Laplace step response</b> immediately.</li>
+    <li><b>Export / copy-paste</b> every result in LaTeX.</li>
+  </ul>
+
+  <strong>How to use it</strong>
+  <ol style="margin:0 0 8px 18px; padding:0;">
+    <li><b>Add blocks</b> from the toolbar.  Drag them to reposition.</li>
+    <li><b>Wire blocks</b>  
+        <code>Connect ► click source ► click destination ► Connect</code> again
+        to leave wiring mode.  Wires route automatically; double-click the
+        <b>+</b>/<b>–</b> badge to switch sign.</li>
+    <li><b>Edit a block</b> &nbsp;⇢&nbsp; double-click it.<br>
+        • <b>Gain</b> ⇒ enter <em>K</em><br>
+        • <b>TF</b>   ⇒ edit numerator / denominator polynomials<br>
+        • <b>Source</b> ⇒ choose <em>step</em>, <em>impulse</em> or
+          a custom <em>N(s)/D(s)</em></li>
+    <li><b>Select</b> a block or wire (single click → red highlight) and press
+        <kbd>Delete</kbd> or the <em>Delete ⌫</em> button to remove it.
+        Use <em>Clear</em> to start from scratch.</li>
+    <li>When the diagram is ready press
+        <em>Compile ⇢ TF&nbsp;/&nbsp;SS&nbsp;/&nbsp;ODE</em>.  
+        Results appear in the panel below in fully-typeset KaTeX.</li>
+    <li>The <em>Simulate Step Response</em> button appears after a successful
+        compile; click it again whenever you change the model and re-compile.
+    </li>
+  </ol>
+
+  <strong>Good to know</strong>
+  <ul style="margin:0 0 0 18px; padding:0;">
+    <li>This page works in the continuous Laplace domain (<i>s</i>) only.</li>
+    <li>Arrow-heads always stay on top; wires reroute live as you drag.</li>
+    <li>Keyboard shortcut summary:&nbsp;
+        <kbd>Esc</kbd>&nbsp;= leave connect mode,&nbsp;
+        <kbd>Delete</kbd>&nbsp;= remove selection.</li>
+  </ul>
+</div>
+<!-- ─── End user-manual ───────────────────────────────────────────── -->
+
+
+
 <div class="toolbar">
+  <h4>Blocks</h4>
   <button id="btnAddSource">Add Source</button>
   <button id="btnAddAdder">Add Σ</button>
   <button id="btnAddGain">Add Gain</button>
-  <button id="btnAddTF">Add TF ⟂</button>         <!-- NEW -->
-  <button id="btnAddIntegrator">Add Integrator</button>
-  <button id="btnAddDerivative">Add Derivative</button>
+  <button id="btnAddTF">Add TF N(s)/D(s)</button>
+  <button id="btnAddIntegrator">Add Integrator 1/s</button>
+  <button id="btnAddDerivative">Add Derivative s</button>
+</div>
 
 
-
-  <button id="btnConnect" onclick="toggleConnect()">Connect</button>
-  <button id="btnCompile">Compile ⇢ TF / SS / ODE</button>
+<div class="toolbar">
+  <h4>Operations</h4>
+  <button id="btnConnect"  onclick="toggleConnect()">Connect</button>
+  <button id="btnDelete">Delete ⌫</button>
   <button id="btnClear">Clear</button>
-  <button id="btnDelete">Delete ⌫</button> 
+  <button id="btnCompile">Compile ⇢ TF / SS / ODE</button>
+  <!-- the simulate button stays down near the results section -->
 </div>
 
 <canvas id="diagramCanvas" width="900" height="900"
@@ -87,6 +145,16 @@
 <canvas id="simCanvas" width="600" height="240"
         style="border:1px solid #ddd; display:none; margin-top:10px">
 </canvas>
+<style>
+  .toolbar       {display:flex; flex-wrap:wrap; gap:8px;
+                  border:1px solid #ddd; border-radius:6px;
+                  padding:8px; margin-bottom:12px;}
+
+  .toolbar h4    {margin:0 0 6px 0;        /* 6 px gap under the title   */
+                  width:100%;              /* put the title on its own row */
+                  font:600 0.95rem/1 Roboto, sans-serif;
+                  color:#444;}
+</style>
 
 <!-- libs -->
 <link rel="stylesheet"
