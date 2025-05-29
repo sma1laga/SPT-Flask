@@ -322,6 +322,43 @@ btnSimulate.onclick = async () => {
 };
 
 
+/* ── Save / Load ------------------------------------------------------ */
+function downloadDiagram(){
+  /* strip the KaTeX overlay handles so JSON is clean                     */
+  const cleanNodes = nodes.map(({latexEl, ...rest}) => rest);
+  const blob = new Blob(
+      [JSON.stringify({nodes: cleanNodes, edges}, null, 2)],
+      {type: "application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "diagram.bdiag";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function uploadDiagram(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      /* wipe existing overlays */
+      document.querySelectorAll(".latexNode").forEach(el=>el.remove());
+      nodes   = data.nodes || [];
+      edges   = data.edges || [];
+      nextId  = nodes.reduce((m,n)=>Math.max(m,n.id), 0) + 1;
+      selectedNode = selectedEdge = null;
+      drawAll();
+    }catch(err){ alert("Invalid diagram file"); }
+  };
+  reader.readAsText(file);
+  /* reset the <input> so the same file can be picked twice in a row */
+  ev.target.value = "";
+}
+
+
+
 /* ---------------- helper fns ------------------------------------------ */
 function mouse(ev){const r=canvas.getBoundingClientRect();
   return {x:ev.clientX - r.left, y:ev.clientY - r.top};}
@@ -334,6 +371,26 @@ function clearScene(){nodes=[];edges=[];nextId=1;selectedNode = selectedEdge = n
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
   (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
         addNode("Output","Y(s)",canvas.width-120,canvas.height/2-60);})();
+}
+/* ── Load an example chosen in the <select> ───────────────────────── */
+function loadSelectedPre(sel){
+  const url = sel.value;
+  if(!url) return;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      /* clear live KaTeX overlays */
+      document.querySelectorAll(".latexNode").forEach(el => el.remove());
+
+      nodes  = data.nodes || [];
+      edges  = data.edges || [];
+      nextId = nodes.reduce((m,n) => Math.max(m,n.id), 0) + 1;
+      selectedNode = selectedEdge = null;
+      drawAll();
+      sel.value = "";              // reset drop-down text
+    })
+    .catch(() => alert("Could not load example diagram."));
 }
 
 /* ---------------- drawing --------------------------------------------- */

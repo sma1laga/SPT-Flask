@@ -1,0 +1,97 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Input",
+      "label": "X(s)",
+      "x": 40,
+      "y": 180,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    },
+    {
+      "id": 2,
+      "type": "Adder",
+      "label": "Σ",
+      "x": 267,
+      "y": 107,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    },
+    {
+      "id": 3,
+      "type": "TF",
+      "label": "",
+      "x": 228,
+      "y": 319,
+      "w": 90,
+      "h": 45,
+      "params": {
+        "num": "Kd*s^2 + Kp*s + Ki",
+        "den": "s"
+      }
+    },
+    {
+      "id": 4,
+      "type": "TF",
+      "label": "",
+      "x": 539,
+      "y": 339,
+      "w": 90,
+      "h": 45,
+      "params": {
+        "num": "1",
+        "den": "s^2 + 2*zeta*wn*s + wn^2"
+      }
+    },
+    {
+      "id": 5,
+      "type": "Output",
+      "label": "Y(s)",
+      "x": 600,
+      "y": 180,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    }
+  ],
+  "edges": [
+    {
+      "from": 1,
+      "to": 2,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 5,
+      "to": 2,
+      "sign": "–",
+      "outSide": "W",
+      "inSide": "S"
+    }
+  ]
+}

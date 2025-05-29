@@ -76,6 +76,33 @@
   <!-- the simulate button stays down near the results section -->
 </div>
 
+<!-- ── Save / Load diagram ─────────────────────────────── -->
+<div class="scene-controls">
+  <button onclick="downloadDiagram()">Save Diagram</button>
+
+  <input  type="file"
+          id="fileDiagInput"
+          accept=".bdiag,.json"
+          style="display:none"
+          onchange="uploadDiagram(event)">
+
+  <button onclick="document.getElementById('fileDiagInput').click()">
+    Load Diagram
+  </button>
+
+  <!-- NEW : pick a built-in example -->
+  <select id="preDiagSelect"
+          onchange="loadSelectedPre(this)">
+    <option value="">⟐ Pre-loaded diagram ⟐</option>
+    {% for fname in preloaded_diagrams %}
+      <option value="{{ url_for('static',
+                                filename='blocks_preloaded/' + fname) }}">
+        {{ fname }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
 <canvas id="diagramCanvas" width="900" height="900"
         style="border:1px solid #bbb; position:relative; z-index:0"></canvas>
 
@@ -154,6 +181,10 @@
                   width:100%;              /* put the title on its own row */
                   font:600 0.95rem/1 Roboto, sans-serif;
                   color:#444;}
+  .scene-controls{
+      display:flex;  gap:12px;  flex-wrap:wrap;  align-items:center;
+      margin-bottom:12px;
+    }
 </style>
 
 <!-- libs -->

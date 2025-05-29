@@ -1,0 +1,132 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Input",
+      "label": "R(s)",
+      "x": 38,
+      "y": 194,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    },
+    {
+      "id": 2,
+      "type": "Adder",
+      "label": "Σ₁",
+      "x": 201,
+      "y": 96,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    },
+    {
+      "id": 3,
+      "type": "Gain",
+      "label": "K",
+      "x": 178,
+      "y": 357,
+      "w": 90,
+      "h": 45,
+      "params": {
+        "k": "K"
+      }
+    },
+    {
+      "id": 4,
+      "type": "Adder",
+      "label": "Σ₂",
+      "x": 428,
+      "y": 403,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    },
+    {
+      "id": 5,
+      "type": "TF",
+      "label": "",
+      "x": 690,
+      "y": 277,
+      "w": 90,
+      "h": 45,
+      "params": {
+        "num": "1",
+        "den": "s^2 + 2*zeta*wn*s + wn^2"
+      }
+    },
+    {
+      "id": 6,
+      "type": "Output",
+      "label": "Y(s)",
+      "x": 737,
+      "y": 52,
+      "w": 90,
+      "h": 45,
+      "params": {}
+    },
+    {
+      "id": 7,
+      "type": "Source",
+      "label": "D(s)",
+      "x": 348,
+      "y": 211,
+      "w": 90,
+      "h": 45,
+      "params": {
+        "kind": "step"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": 1,
+      "to": 2,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "sign": "–",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "sign": "+",
+      "outSide": "E",
+      "inSide": "W"
+    },
+    {
+      "from": 6,
+      "to": 2,
+      "sign": "–",
+      "outSide": "W",
+      "inSide": "S"
+    },
+    {
+      "from": 7,
+      "to": 4,
+      "sign": "+",
+      "outSide": "S",
+      "inSide": "N"
+    }
+  ]
+}

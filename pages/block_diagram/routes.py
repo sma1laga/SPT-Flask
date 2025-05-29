@@ -4,18 +4,23 @@ URL endpoints
 GET  /block_diagram/          → HTML page with the canvas
 POST /block_diagram/compile   → JSON API: graph-in, TF/SS/ODE-out
 """
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, current_app
 from . import block_diagram_bp as bp 
 from .services import compile_diagram
 import control
 import numpy as np
+from pathlib import Path
 
 
 
 @bp.route("/", methods=["GET"], endpoint="diagram_page")
 def diagram_page():
-    """Return the canvas UI (same look-and-feel as process_chain)."""
-    return render_template("block_diagram.html")
+    """Return the canvas UI plus the list of built-in example files."""
+    static_root = Path(current_app.static_folder)        # <-- never None
+    preload_dir = static_root / "blocks_preloaded"
+    preloaded   = sorted(p.name for p in preload_dir.glob("*.bdiag"))
+    return render_template("block_diagram.html",
+                           preloaded_diagrams=preloaded)
 
 
 @bp.route("/compile", methods=["POST"])

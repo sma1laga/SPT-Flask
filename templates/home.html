@@ -59,9 +59,19 @@
       <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform Calculator</a></li>
       <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot</a></li>
       <li><a href="{{ url_for('convolution.convolution') }}">Convolution</a></li>
-      <li><a href="{{ url_for('process_chain.show_chain') }}">Process Chain Plot</a></li>
     </ul>
   </div>
+
+  <!-- System-level Modeling & Control -->
+<div class="card">
+  <h2>System Modeling & Control</h2>
+  <ul>
+    <li><a href="{{ url_for('process_chain.show_chain') }}">
+        Process Chain Plot</a></li>
+    <li><a href="{{ url_for('block_diagram.diagram_page') }}">
+        Block-Diagram Editor</a></li>
+  </ul>
+</div>
   
   <!-- Filter Design Category Card -->
   <div class="card">
