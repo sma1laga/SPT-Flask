@@ -40,6 +40,9 @@ let nodes = [];
 let edges = [];
 let nextId = 1;
 
+let selectedNode = null, selectedEdge = null;
+
+
 /* ---------------- palette helpers ------------------------------------ */
 function addNode(type, label, x = 120, y = 80) {
   nodes.push({
@@ -77,26 +80,34 @@ canvas.addEventListener("mousedown", ev => {
         from: connectFrom.id,
         to:   n.id,
         sign: "+",
-        outSide: chooseSide(connectFrom, /*out =*/true),
-        inSide:  chooseSide(n,          /*out =*/false)
+
         });
     connectFrom = null;
     drawAll(); return;
   }
 
-  /* drag or edit */
-  if (n) {
-    if (n && ev.detail === 2 && (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "Source")) openEditModal(n); // double-click
-    else {  // drag
-      dragNode = n;
-      dragOffset = {x:p.x - n.x, y:p.y - n.y};
-      canvas.style.cursor = "grabbing";
-    }
+/* drag, select or edit */
+if (n) {                                  // clicked a block
+  if (ev.detail === 2 &&                 // double-click → open editor
+      (n.type === "TF" || n.type === "Gain" ||
+       n.type === "Input" || n.type === "Source")) {
+    openEditModal(n);
+  } else {                               // single-click → select block
+    selectedNode = n; selectedEdge = null;
+    dragNode = n;                     // start drag on mouse-move
+    dragOffset = { x: p.x - n.x, y: p.y - n.y };
+    canvas.style.cursor = "grabbing";
   }
+} else {                                 // maybe we hit a wire
+  const eHit = edgeAt(p.x, p.y);
+  selectedEdge = eHit; selectedNode = null;
+}
+drawAll();
+
 });
 
 canvas.addEventListener("dblclick", ev=>{
-  const {x, y} = mousePos(ev);
+  const {x, y} = mouse(ev);
   const hit = edges.find(e=>{
     const a = nodes.find(n=>n.id===e.from);
     const b = nodes.find(n=>n.id===e.to);
@@ -121,6 +132,21 @@ canvas.addEventListener("mousemove", ev => {
 canvas.addEventListener("mouseup", () => {
   dragNode = null; canvas.style.cursor = "default";
 });
+
+
+/* hit-test an edge centre-line - same bbox math you already use in dbl-click */
+function edgeAt(x, y) {
+  return edges.find(e => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return false;
+    const ax = a.x + a.w,         ay = a.y + a.h / 2;
+    const bx = b.x,               by = b.y + b.h / 2;
+    const minX = Math.min(ax, bx) - 4, maxX = Math.max(ax, bx) + 4;
+    const minY = Math.min(ay, by) - 4, maxY = Math.max(ay, by) + 4;
+    return x >= minX && x <= maxX && y >= minY && y <= maxY;
+  });
+}
 
 
 
@@ -201,11 +227,10 @@ let lastOutputTf = null;  // <-- up at top of file
 let simChart = null;
 
 function compileDiagram(){
-  const domain = document.getElementById("domainSel").value;
-  const serial = {
-    nodes: nodes.map(n => { let c={...n}; delete c.latexEl; return c; }),
-    edges, domain
-  };
+  const domain = "s";          
+  const serial = { nodes: nodes.map(n => { let c={...n}; delete c.latexEl; return c; }),
+                 edges,
+                 domain };
 
   fetch("/block_diagram/compile", {
     method:"POST",
@@ -305,7 +330,7 @@ function nodeAt(x,y){return nodes.find(n=>x>=n.x&&x<=n.x+n.w &&
 function toggleConnect(){connectMode=!connectMode;
   document.getElementById("btnConnect").classList.toggle("active",connectMode);
   if(!connectMode)connectFrom=null;}
-function clearScene(){nodes=[];edges=[];nextId=1;
+function clearScene(){nodes=[];edges=[];nextId=1;selectedNode = selectedEdge = null;
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
   (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
         addNode("Output","Y(s)",canvas.width-120,canvas.height/2-60);})();
@@ -322,19 +347,26 @@ function drawAll(){
   ctx.lineJoin    = "round";
   ctx.lineCap     = "round";
 
-  edges.forEach(e => drawOrthEdge(ctx, e));
+ 
 
 
   /* nodes */
   nodes.forEach(n=>{
-    ctx.fillStyle="#fff";ctx.strokeStyle="#000";ctx.lineWidth=2;
-    ctx.fillRect(n.x,n.y,n.w,n.h);ctx.strokeRect(n.x,n.y,n.w,n.h);
+    const sel = n === selectedNode;
+    ctx.fillStyle  = "#fff";
+    ctx.strokeStyle = sel ? "#d9534f" : "#000";   // red when selected
+    ctx.lineWidth   = sel ? 3 : 2;
+    ctx.fillRect(n.x, n.y, n.w, n.h);
+    ctx.strokeRect(n.x, n.y, n.w, n.h);
 
     if (n.type === "TF" && n.params.num && n.params.den) {
       renderLatex(n, `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`);
-    } else if (n.type === "Gain" && Number.isFinite(n.params.k)) {          // NEW
+    } else if (n.type === "Gain" && Number.isFinite(n.params.k)) {          
       renderLatex(n, String(n.params.k));
     } 
+    else if (n.type === "Derivative") {         
+          renderLatex(n, "s");
+    }
     else if (n.type === "Source" || n.type === "Input") {
         let expr;
         if      (n.params.kind === "step")    expr = "\\frac{1}{s}";
@@ -362,9 +394,10 @@ function drawAll(){
     }
 
   });
+
+   edges.forEach(e => drawOrthEdge(ctx, e));
 }
 
-/* render LaTeX inside/above block (DOM overlay) ------------------------ */
 /* render LaTeX inside/above block (DOM overlay) –– centred ---------- */
 function renderLatex(node, expr) {
   if (!node.latexEl) {
@@ -422,14 +455,58 @@ function orthRoute(p, q, exitSide){
   return pts;
 }
 
+
+/* ------------------------------------------------------------------ */
+/*  automatically pick the best sides and route a neat 3-segment path */
+/* ------------------------------------------------------------------ */
+
+function autoSides(ax, ay, bx, by){
+  /* choose horizontal faces when blocks are left-vs-right, otherwise vertical */
+  if (Math.abs(bx - ax) >= Math.abs(by - ay))
+    return { out: (bx >= ax ? "E" : "W"),
+             inn: (bx >= ax ? "W" : "E") };
+  else
+    return { out: (by >= ay ? "S" : "N"),
+             inn: (by >= ay ? "N" : "S") };
+}
+
+function smartRoute(p, q, outSide, inSide){
+  const GAP = 30;                    // clearance away from the block face
+  const pts = [p];
+
+  /* 1) step clear of the source block                                  */
+  pts.push({ x: p.x + DIRS[outSide][0]*GAP,
+             y: p.y + DIRS[outSide][1]*GAP });
+
+  /* 2) orthogonal jog that lines us up with the entry face             */
+  if (outSide === "E" || outSide === "W")
+       pts.push({ x: pts[1].x, y: q.y });
+  else pts.push({ x: q.x,      y: pts[1].y });
+
+  /* 3) straight into the destination                                   */
+  pts.push(q);
+  return pts;
+}
+
+
 function drawOrthEdge(ctx, e){
   const a = nodes.find(n => n.id === e.from);
   const b = nodes.find(n => n.id === e.to);
+  ctx.strokeStyle = (e === selectedEdge) ? "#d9534f" : "#000";
+  ctx.lineWidth   = (e === selectedEdge) ? 3 : 2;
   if (!a || !b) return;
 
-  const from = portPos(a, e.outSide);
-  const to   = portPos(b, e.inSide);
-  const pts  = orthRoute(from, to, e.outSide);
+  /* centre-points for relative geometry -------------------------------- */
+  const ac = { x: a.x + a.w/2, y: a.y + a.h/2 };
+  const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
+
+  /* faces decided fresh every frame – no more “wrong side” wires ------- */
+  const face = autoSides(ac.x, ac.y, bc.x, bc.y);
+
+  const from = portPos(a, face.out);
+  const  to  = portPos(b, face.inn);
+
+  const pts  = smartRoute(from, to, face.out, face.inn);
 
   ctx.beginPath();
   ctx.moveTo(pts[0].x, pts[0].y);
@@ -440,7 +517,7 @@ function drawOrthEdge(ctx, e){
   const n = pts.length;
   arrow(pts[n-2].x, pts[n-2].y, pts[n-1].x, pts[n-1].y);
 
-  /* ⊖ badge on negative edges – halfway down the 2nd segment */
+  /* badge on negative edges – halfway down the 2nd segment */
   if (e.sign === "–"){
     const mid = {
       x:(pts[1].x + pts[2].x)/2,
@@ -459,10 +536,31 @@ document.getElementById("btnAddSource").onclick = () => addNode("Source", "", 60
 document.getElementById("btnAddGain").onclick =() => addNode("Gain", "", 180, 80);
 document.getElementById("btnAddAdder").onclick=()=>addNode("Adder","Σ");
 document.getElementById("btnAddIntegrator").onclick=()=>addNode("Integrator","1/s");
-document.getElementById("btnAddDelay").onclick=()=>addNode("Delay","z⁻¹");
+document.getElementById("btnAddDerivative").onclick=()=>addNode("Derivative","s");
 document.getElementById("btnAddTF").onclick=()=>addNode("TF","",180,80);  // NEW
 document.getElementById("btnClear").onclick=clearScene;
 document.getElementById("btnCompile").onclick=compileDiagram;
+
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Delete" && ev.key !== "Backspace") return;
+
+  if (selectedNode) {
+    // remove latex overlay first
+    if (selectedNode.latexEl) selectedNode.latexEl.remove();
+    nodes  = nodes.filter(n => n !== selectedNode);
+    edges  = edges.filter(e => e.from !== selectedNode.id && e.to !== selectedNode.id);
+    selectedNode = null;
+  } else if (selectedEdge) {
+    edges = edges.filter(e => e !== selectedEdge);
+    selectedEdge = null;
+  }
+  drawAll();
+});
+
+/* toolbar button does the same */
+document.getElementById("btnDelete").onclick =
+  () => document.dispatchEvent(new KeyboardEvent("keydown",{key:"Delete"}));
+
 
 
 document.getElementById("btnSimulate").onclick = async () => {

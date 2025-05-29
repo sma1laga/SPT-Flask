@@ -125,6 +125,9 @@ def tf_from_block(node):
 
     if t == "Integrator":        # 1/s
         return TransferFunction([1], [1, 0])
+    
+    if t == "Derivative":          #   s
+        return TransferFunction([1, 0], [1])
 
     if t == "Delay":             # z-¹  (treat as discrete 1-step delay)
         return TransferFunction([1, 0], [0, 1])
@@ -185,6 +188,8 @@ def gain_expr(node, domain="s"):
         return 1/var
     if t == "Delay":
         return var**-1
+    if t == "Derivative":
+        return var  
     if t == "Source":
         kind = p.get("kind", "step")
         if kind == "impulse": return 1

@@ -8,18 +8,14 @@
   <button id="btnAddGain">Add Gain</button>
   <button id="btnAddTF">Add TF ⟂</button>         <!-- NEW -->
   <button id="btnAddIntegrator">Add Integrator</button>
-  <button id="btnAddDelay">Add Delay</button>
+  <button id="btnAddDerivative">Add Derivative</button>
 
 
-  <span style="margin:0 12px">Domain:</span>
-  <select id="domainSel">
-    <option value="s">Laplace (continuous)</option>
-    <option value="z">Z-Transform (discrete)</option>
-  </select>
 
   <button id="btnConnect" onclick="toggleConnect()">Connect</button>
   <button id="btnCompile">Compile ⇢ TF / SS / ODE</button>
   <button id="btnClear">Clear</button>
+  <button id="btnDelete">Delete ⌫</button> 
 </div>
 
 <canvas id="diagramCanvas" width="900" height="900"
