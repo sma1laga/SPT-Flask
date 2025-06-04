@@ -168,6 +168,7 @@
             <li><a href="{{ url_for('home') }}">Home</a></li>
             <li><a href="{{ url_for('info.about') }}">About</a></li>
             <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
+            <li><a href="{{ url_for('direct_plot.direct_plot') }}">Direct Form</a></li>
             <li><button id="dark-mode-toggle">Dark Mode</button></li>
           </ul>
         </nav>
@@ -204,7 +205,7 @@
             <li class="section-title">Process Chain</li>
             <li><a href="{{ url_for('process_chain.show_chain') }}">Process Chain Plot</a></li>
             <li><a href="{{ url_for('block_diagram.diagram_page') }}">Block-Diagram Editor</a></li>
-
+            <li><a href="{{ url_for('direct_plot.direct_plot') }}">Direct-Form Visualiser</a></li>
             <li class="section-title">Filter Design</li>
             <li><a href="{{ url_for('filter_design.filter_design') }}">Filter Design</a></li>
             <li><a href="{{ url_for('speech_filter_input.speech_filter_input') }}">Speech Filter Input</a></li>
