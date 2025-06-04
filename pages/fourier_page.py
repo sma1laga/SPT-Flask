@@ -60,6 +60,9 @@ def compute_fourier(func_str, phase_rad, show_zeros=False):
     threshold = 0.01 * np.max(magnitude) if np.max(magnitude) > 0 else 0
     phase_wrapped[magnitude < threshold] = 0
 
+    # Phase in Einheiten von π darstellen
+    phase_norm = phase_wrapped / np.pi
+
     # 6. Normierung
     if np.max(magnitude) > 0:
         magnitude /= np.max(magnitude)
@@ -70,6 +73,6 @@ def compute_fourier(func_str, phase_rad, show_zeros=False):
         "y_imag": y.imag.tolist(),
         "f": f_shifted.tolist(),
         "magnitude": magnitude.tolist(),
-        "phase": phase_wrapped.tolist(),
+        "phase": phase_norm.tolist(),
         "transformation_label": f"Phase Shift: {np.rad2deg(phase_rad):.2f}°"
     }

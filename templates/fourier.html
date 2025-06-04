@@ -112,7 +112,7 @@ function updatePlots(){
     ], {...lc, title:"Magnitude Spectrum", xaxis:{title:"f"}, yaxis:{title:"|Y(f)|"}});
     Plotly.newPlot("phasePlot", [
       {x:data.f, y:data.phase, type:"scatter", mode:"lines", name:"Phase", line: { color: "blue"}}
-    ], {...lc, title:"Phase Spectrum", xaxis:{title:"f"}, yaxis:{title:"∠Y(f)" ,range:[-Math.PI,Math.PI]}});
+    ], {...lc, title:"Phase Spectrum", xaxis:{title:"f"}, yaxis:{title:"∠Y(f)/π" ,range:[-1,1]}});
     document.getElementById("fourier_transformation_label").innerText = data.transformation_label;
   })
   .catch(console.error);

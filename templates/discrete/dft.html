@@ -18,6 +18,11 @@
 </p>
 </div>
 
+<div style="text-align:center;margin-bottom:20px;">
+  <a href="{{ url_for('fft.fft') }}" class="action-btn green">Fast Fourier Transform Demo</a>
+</div>
+
+
 <form id="dftForm" style="max-width:960px;margin:0 auto;text-align:center;">
   <!-- BASIC INPUTS ------------------------------------------------ -->
   <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:18px;">
@@ -168,8 +173,10 @@ document.addEventListener("DOMContentLoaded", updatePlots);
     color:#fff;border:none;cursor:pointer;transition:background-color .15s;
   }
   .quick-buttons button:hover{ background:#005fa3; }
-  .action-btn{ padding:8px 22px;font-size:0.9em;border:none;border-radius:4px;cursor:pointer; }
-  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
+  .action-btn{
+    padding:8px 22px;font-size:0.9em;border:none;border-radius:4px;
+    cursor:pointer;display:inline-block;text-decoration:none;
+  }  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
   .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
   fieldset{ border:1px solid #d9dee3;border-radius:8px;padding:14px 20px;background:#f8fafc; }
   .slider-row{ display:flex;align-items:center;gap:10px;margin-top:8px; }
