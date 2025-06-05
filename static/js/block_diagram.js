@@ -4,6 +4,7 @@
 
 const canvas = document.getElementById("diagramCanvas");
 const ctx    = canvas.getContext("2d");
+let arrowCol = "#000";   // current colour for connections
 function getArrowColor(){
   const val = getComputedStyle(canvas).getPropertyValue('--arrow-col').trim();
   if (val) return val;
@@ -401,10 +402,11 @@ function loadSelectedPre(sel){
 /* ---------------- drawing --------------------------------------------- */
 function drawAll(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  const arrowCol = getArrowColor();
+  arrowCol = getArrowColor();
 
   /* --------- edges (orthogonal) ------------------------------------ */
   ctx.strokeStyle = arrowCol;
+  ctx.fillStyle   = arrowCol;
   ctx.lineWidth   = 2;
   ctx.lineJoin    = "round";
   ctx.lineCap     = "round";
@@ -554,7 +556,8 @@ function smartRoute(p, q, outSide, inSide){
 function drawOrthEdge(ctx, e){
   const a = nodes.find(n => n.id === e.from);
   const b = nodes.find(n => n.id === e.to);
-  ctx.strokeStyle = (e === selectedEdge) ? "#d9534f" : arrowCol;;
+  ctx.strokeStyle = (e === selectedEdge) ? "#d9534f" : arrowCol;
+  ctx.fillStyle   = (e === selectedEdge) ? "#d9534f" : arrowCol;
   ctx.lineWidth   = (e === selectedEdge) ? 3 : 2;
   if (!a || !b) return;
 
