@@ -60,7 +60,7 @@
   <div id="plotConv"   style="height:350px; margin-top:20px;"></div>
 </div>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
   let activeField = null;
   function setActiveField(f) { activeField = f; }

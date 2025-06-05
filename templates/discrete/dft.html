@@ -85,7 +85,7 @@
 <p id="dftLabel" style="text-align:center;margin-top:20px;font-weight:bold;"></p>
 
 <!-- SCRIPTS ------------------------------------------------------ -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
 /* active-field & quick buttons ---------------------------------- */
 let activeField = document.getElementById("func");

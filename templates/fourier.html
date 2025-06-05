@@ -58,7 +58,7 @@
 
 <p id="fourier_transformation_label" style="text-align:center; margin-top:20px; font-weight:bold;"></p>
 
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
 let activeField = null;
 function setActiveField(f){ activeField = f; }
