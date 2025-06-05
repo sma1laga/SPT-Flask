@@ -13,7 +13,8 @@ from pages.image_filter import image_filter_bp
 from pages.kernel_animator import bp as kernel_bp
 from pages.modulation import mod_bp
 from pages.digital_modulation import dig_bp
-
+# analytics
+from analytics import analytics_bp
 
 from pages.speech_filter_input import speech_filter_input_bp
 from pages.function_definitions import func_defs_bp
@@ -53,6 +54,7 @@ from pages.exam_fourier import exam_fourier_bp
 
 def create_app():
     app = Flask(__name__)
+    app.register_blueprint(analytics_bp)
 
     # Register regular pages
     app.register_blueprint(plot_function_bp, url_prefix="/plot_function")
