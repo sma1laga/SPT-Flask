@@ -185,6 +185,23 @@
       display:flex;  gap:12px;  flex-wrap:wrap;  align-items:center;
       margin-bottom:12px;
     }
+    
+  /* Dark mode adjustments */
+  body.dark-mode input[type="text"],
+  body.dark-mode input[type="number"],
+  body.dark-mode select {
+    background:#2a2a2a;
+    color:#f5f5f5;
+    border-color:#555;
+  }
+  body.dark-mode .toolbar,
+  body.dark-mode #resultsBox,
+  body.dark-mode .scene-controls,
+  body.dark-mode .modal-content {
+    background:#1f1f1f;
+    color:#f5f5f5;
+    border-color:#444;
+  }
 </style>
 
 <!-- libs -->

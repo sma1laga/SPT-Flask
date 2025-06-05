@@ -153,11 +153,31 @@
       margin: 0;
       text-decoration: none;
     }
-    .action-btn:hover { background-color: #005fa3; }
-    /* Theory section styling */
-    .theory-section h3 { font-weight: bold; }
-    .theory-section h4 { margin-top: 20px; }
-    .theory-section p, .theory-section ul { font-size: 1em; color: #333; line-height: 1.6; }
-    .theory-section pre { font-family: monospace; font-size: 0.9em; }
+     .action-btn:hover { background-color: #005fa3; }
+  /* Theory section styling */
+  .theory-section h3 { font-weight: bold; }
+  .theory-section h4 { margin-top: 20px; }
+  .theory-section p, .theory-section ul { font-size: 1em; color: #333; line-height: 1.6; }
+  .theory-section pre { font-family: monospace; font-size: 0.9em; }
+
+  /* Dark mode adjustments */
+  body.dark-mode input[type="text"],
+  body.dark-mode input[type="number"],
+  body.dark-mode input[type="file"],
+  body.dark-mode select {
+    background:#2a2a2a;
+    color:#f5f5f5;
+    border-color:#555;
+  }
+  body.dark-mode .page-header,
+  body.dark-mode .form-group,
+  body.dark-mode .viz-section,
+  body.dark-mode .coef-section,
+  body.dark-mode .audio-section,
+  body.dark-mode .theory-section {
+    background:#1f1f1f;
+    color:#f5f5f5;
+    border-color:#444;
+  }
   </style>
 {% endblock %}
