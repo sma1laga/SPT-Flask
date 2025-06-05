@@ -1,0 +1,3 @@
+/* Arrow color variable for canvas lines */
+canvas { --arrow-col: #000; }
+body.dark-mode canvas { --arrow-col: #ddd; }

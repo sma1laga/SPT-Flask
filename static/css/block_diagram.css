@@ -30,3 +30,4 @@ canvas > * {  /* only the drawn rectangles */
 
 /* darker arrows for better contrast */
 canvas { --arrow-col: #444; }
+body.dark-mode canvas { --arrow-col: #ccc; }

@@ -24,6 +24,11 @@ let blockInMultModal   = null;   // multiplication
 // cached DOM
 const canvas           = document.getElementById("chainCanvas");
 const ctx              = canvas.getContext("2d");
+function getArrowColor(){
+  const val = getComputedStyle(canvas).getPropertyValue('--arrow-col').trim();
+  if (val) return val;
+  return document.body.classList.contains('dark-mode') ? '#ddd' : '#000';
+}
 
 const multType         = document.getElementById("multType");
 const multParamDiv     = document.getElementById("multParamDiv");
@@ -150,11 +155,12 @@ function connPt(a, b) {
 ------------------------------------------------------------------ */
 function drawAll () {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const arrowCol = getArrowColor();
 
   /* ========== draw connecting lines (with arrow heads) ========== */
-  ctx.strokeStyle = "black";
+  ctx.strokeStyle = arrowCol;
   ctx.lineWidth   = 2;
-  ctx.fillStyle   = "black";
+  ctx.fillStyle   = arrowCol;
 
   for (const l of lines) {
     const a = getBlock(l.fromId), b = getBlock(l.toId);
@@ -162,7 +168,7 @@ function drawAll () {
 
     const p1 = connPt(a, b);          // start point on block a
     const p2 = connPt(b, a);          // end   point on block b
-    ctx.strokeStyle = l.selected ? "red" : "black";
+    ctx.strokeStyle = l.selected ? "red" : arrowCol;
 
     /* main segment */
     ctx.beginPath();
@@ -174,7 +180,7 @@ function drawAll () {
     my = (p1.y + p2.y) / 2;
 
     ctx.font = "15px sans-serif";
-    ctx.fillStyle = l.selected ? "red" : "black";
+    ctx.fillStyle = l.selected ? "red" : arrowCol;
     ctx.fillText(`${l.letter}(t)`, mx + 6, my - 6);
 
     /* arrow head (size 6 px) at p2, pointing towards b */
@@ -202,7 +208,7 @@ function drawAll () {
     const cy = b.y + b.height / 2;
 
     ctx.lineWidth   = b.selected ? 4 : 3;
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = arrowCol;
     ctx.fillStyle   = "#fff";
 
     /* --- Multiplication circle -------------------------- */
@@ -220,7 +226,7 @@ function drawAll () {
 
       /* expression + arrow from above */
       if (b.displayExpr) {
-        ctx.font = "16px serif"; ctx.fillStyle = "black";
+        ctx.font = "16px serif"; ctx.fillStyle = arrowCol;
         const tw   = ctx.measureText(b.displayExpr).width;
         const txtY = b.y - 30;                    // 30 px above top
         ctx.fillText(b.displayExpr, cx - tw / 2, txtY);

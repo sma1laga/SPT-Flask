@@ -4,6 +4,11 @@
 
 const canvas = document.getElementById("diagramCanvas");
 const ctx    = canvas.getContext("2d");
+function getArrowColor(){
+  const val = getComputedStyle(canvas).getPropertyValue('--arrow-col').trim();
+  if (val) return val;
+  return document.body.classList.contains('dark-mode') ? '#ddd' : '#000';
+}
 /* --- modal DOM shortcuts (must exist before we call openEditModal) --- */
 const srcSelect = document.getElementById("srcSelect");
 const srcCustom = document.getElementById("srcCustom");
@@ -396,10 +401,10 @@ function loadSelectedPre(sel){
 /* ---------------- drawing --------------------------------------------- */
 function drawAll(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue('--arrow-col').trim() || "#000";
+  const arrowCol = getArrowColor();
 
   /* --------- edges (orthogonal) ------------------------------------ */
-  ctx.strokeStyle = "#000";
+  ctx.strokeStyle = arrowCol;
   ctx.lineWidth   = 2;
   ctx.lineJoin    = "round";
   ctx.lineCap     = "round";
@@ -411,7 +416,7 @@ function drawAll(){
   nodes.forEach(n=>{
     const sel = n === selectedNode;
     ctx.fillStyle  = "#fff";
-    ctx.strokeStyle = sel ? "#d9534f" : "#000";   // red when selected
+    ctx.strokeStyle = sel ? "#d9534f" : arrowCol;   // red when selected
     ctx.lineWidth   = sel ? 3 : 2;
     ctx.fillRect(n.x, n.y, n.w, n.h);
     ctx.strokeRect(n.x, n.y, n.w, n.h);
@@ -549,7 +554,7 @@ function smartRoute(p, q, outSide, inSide){
 function drawOrthEdge(ctx, e){
   const a = nodes.find(n => n.id === e.from);
   const b = nodes.find(n => n.id === e.to);
-  ctx.strokeStyle = (e === selectedEdge) ? "#d9534f" : "#000";
+  ctx.strokeStyle = (e === selectedEdge) ? "#d9534f" : arrowCol;;
   ctx.lineWidth   = (e === selectedEdge) ? 3 : 2;
   if (!a || !b) return;
 
