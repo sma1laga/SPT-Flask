@@ -210,12 +210,20 @@ def bode_plot():
     ax2.grid(True, which="both", linestyle="--")
     
     # Annotate crossover frequencies on the plots
+    legend_lines = []
+    legend_labels = []
     if np.isfinite(wp):
-        ax1.axvline(wp, color="r", linestyle="--")
+        phase_line = ax1.axvline(wp, color="r", linestyle="--")
         ax2.axvline(wp, color="r", linestyle="--")
+        legend_lines.append(phase_line)
+        legend_labels.append("Phase crossover")
     if np.isfinite(wg):
-        ax1.axvline(wg, color="orange", linestyle="--")
+        gain_line = ax1.axvline(wg, color="orange", linestyle="--")
         ax2.axvline(wg, color="orange", linestyle="--")
+        legend_lines.append(gain_line)
+        legend_labels.append("Gain crossover")
+    if legend_lines:
+        ax1.legend(legend_lines, legend_labels, loc="best")
     plt.tight_layout()
     
     buf = BytesIO()
