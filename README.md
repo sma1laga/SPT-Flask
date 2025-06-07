@@ -1,6 +1,6 @@
 # Signal Processing Toolkit (SPT-Flask)
 
-Welcome to **Signal Processing Toolkit (SPT-Flask)** — a web-based learning platform designed for students to explore and understand essential signal processing techniques interactively.
+**Signal Processing Toolkit (SPT-Flask)** is an interactive, browser-based environment for exploring classic and modern DSP concepts.  The project grew from a simple plotting tool into a full learning platform with simulation and training modules.
 
 **GitHub Repository:** [SPT-Flask](https://github.com/sma1laga/SPT-Flask)
 
@@ -8,13 +8,15 @@ Welcome to **Signal Processing Toolkit (SPT-Flask)** — a web-based learning pl
 
 ## 📚 About the Project
 
-SPT-Flask offers a simple and intuitive web interface where users can:
+The application exposes a collection of blueprints that cover a broad range of signal processing topics.  Students and hobbyists can:
 
-- Visualize fundamental signal types (e.g., sinusoids, square waves, impulse signals)
-- Apply operations like convolution, correlation, and Fourier transforms
-- Experiment with signal manipulation and observe the real-time results
+- Plot fundamental signals and observe the results in real time
+- Perform convolutions and Fourier analysis—both continuous and discrete
+- Model systems using process chains or editable block diagrams
+- Design filters and experiment with various modulation schemes
 
-The goal is to provide a **practical, hands-on toolkit** to support university courses and self-learning in Signal Processing, Communications, and Electrical Engineering.
+The goal is a **practical, hands-on toolkit** that supports university courses and self-study alike.
+
 
 
 ## 🔧 Built With
@@ -22,17 +24,40 @@ The goal is to provide a **practical, hands-on toolkit** to support university c
 - [Python 3](https://www.python.org/)
 - [Flask](https://flask.palletsprojects.com/)
 - [NumPy](https://numpy.org/)
+- [SciPy](https://scipy.org/)
 - [Matplotlib](https://matplotlib.org/)
-- [Bootstrap](https://getbootstrap.com/) (for UI)
-
+- [PyWavelets](https://pywavelets.readthedocs.io/)
+- [control](https://python-control.readthedocs.io/) (for Bode plots)
+- [Bootstrap](https://getbootstrap.com/) – responsive UI with optional dark mode
 
 ## ✨ Features
 
-- Interactive signal generation (time domain)
-- Fourier Transform visualization (frequency domain)
-- Convolution Calculator
-- Signal filtering basics
-- Downloadable plots and signal data
+### Plotting & Analysis
+- Time‑domain function plotter with interactive controls
+- Fourier Transform calculators (including FFT and DFT viewers)
+- Bode‑plot generator for control system analysis
+
+### Convolution & Filtering
+- Convolution calculator and dynamic convolution demo
+- Custom filter designer and speech filter input
+- Advanced noise reduction module using wavelet processing
+
+### System Modeling
+- Process‑chain simulator for chaining basic DSP blocks
+- Block‑diagram editor with direct‑form visualiser
+
+### Modulation
+- Analog and digital modulation examples
+
+### Discrete Tools
+- Discrete‑time plotting and convolution utilities
+- FFT and discrete convolution demonstrations
+
+### Learning Aids
+- Training modules for convolution, Fourier transforms and processing chains
+- Small exam modules for practice sessions
+
+All pages include downloadable plots/data, and the interface offers an optional dark mode.
 
 
 ## 🔄 Installation
