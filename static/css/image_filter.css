@@ -1,0 +1,176 @@
+/* styles for image_filter page */
+.image-filter-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: var(--card-background, #fff);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow, 0 2px 4px rgba(0,0,0,0.1));
+}
+
+.image-filter-wrapper h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.image-filter-form fieldset {
+  margin-bottom: 1rem;
+  padding: 10px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+}
+
+.image-filter-form label.inline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.image-filter-form input[type=file] {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+}
+
+.image-filter-form select,
+.image-filter-form input[type=number],
+.image-filter-form input[type=text] {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+}
+
+.image-filter-form button {
+  background: var(--primary-color, #2563eb);
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.preview-images {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 2rem;
+}
+
+.preview-images div {
+  width: 266px;
+  position: relative;
+}
+
+#plotContainer {
+  max-width: 500px;
+  margin: 0 auto 3rem;
+  overflow: visible;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  padding-bottom: 10px;
+}
+
+#plotContainer img {
+  width: 100%;
+  display: block;
+  transition: transform .2s ease;
+}
+#plotContainer img.active {
+  transform: scale(1.05);
+}
+
+.plot-theory {
+  max-width: 500px;
+  margin: 1em auto 2em;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+}
+
+.blend-control {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.blend-control input[type=range] {
+  width: 60%;
+  margin-left: 1rem;
+}
+.alert-error {
+  background:#fee2e2;
+  color:#b91c1c;
+  border:1px solid #fca5a5;
+  padding:10px;
+  border-radius:4px;
+  margin-bottom:1rem;
+}
+
+.block-title {
+  font-weight:bold;
+  margin-bottom:0.5rem;
+  display:block;
+}
+
+.preset-block, .custom-block {
+  padding:10px;
+  border:1px solid var(--border-color, #ccc);
+  border-radius:6px;
+  margin-bottom:1rem;
+}
+
+.grid-3 {
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+
+.submit-row {
+  text-align:center;
+  margin-top:1rem;
+}
+
+.image-wrap {
+  width:266px;
+  position:relative;
+}
+
+.plot-options {
+  text-align:center;
+  margin-bottom:10px;
+}
+
+.plot-area {
+  border:1px solid var(--border-color, #ccc);
+  border-radius:4px;
+  overflow:hidden;
+}
+
+.plot-desc {
+  margin-top:8px;
+  text-align:center;
+  color:#555;
+  font-size:0.9rem;
+}
+
+.radial-container {
+  margin-top:1.5rem;
+  text-align:center;
+  max-width:266px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.chart-canvas {
+  border:1px solid #ddd;
+  border-radius:4px;
+}
+
+.label-text {
+  margin-left:8px;
+  font-weight:bold;
+}
