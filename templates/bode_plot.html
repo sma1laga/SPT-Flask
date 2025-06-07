@@ -78,5 +78,24 @@
       >Download CSV</a>
     </div>
   {% endif %}
+  
+  {% if pz_pairs %}
+    <div style="max-width:300px;margin:20px auto;">
+      <h3 style="text-align:center;">Poles &amp; Zeros</h3>
+      <table style="width:100%;border-collapse:collapse;text-align:center;">
+        <tr><th>Zero</th><th>Pole</th></tr>
+        {% for z,p in pz_pairs %}
+          <tr><td>{{ z }}</td><td>{{ p }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% endif %}
+
+  {% if gm is not none and pm is not none %}
+    <div style="text-align:center; margin-top:10px;">
+      <p>Gain margin: {{ '%.3g'|format(gm) }} at ω = {{ '%.3g'|format(wg) }} rad/s</p>
+      <p>Phase margin: {{ '%.3g'|format(pm) }}° at ω = {{ '%.3g'|format(wp) }} rad/s</p>
+    </div>
+  {% endif %}
   {% endblock %}
 

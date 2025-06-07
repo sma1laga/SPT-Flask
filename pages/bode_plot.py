@@ -8,6 +8,8 @@ import re
 import sympy as sp
 import csv
 import io
+import control
+from itertools import zip_longest
 
 bode_plot_bp = Blueprint('bode_plot', __name__, template_folder='templates')
 
@@ -94,6 +96,14 @@ def format_polynomial(coeffs, var="s"):
             poly_str += "+" + term
     return poly_str
 
+def format_complex(val: complex) -> str:
+    """Format a complex number with a small imaginary threshold."""
+    if abs(val.imag) < 1e-6:
+        return f"{val.real:.3g}"
+    sign = "+" if val.imag >= 0 else "-"
+    return f"{val.real:.3g}{sign}{abs(val.imag):.3g}j"
+
+
 @bode_plot_bp.route('/bode_plot', methods=['GET', 'POST'])
 def bode_plot():
     error = ""
@@ -121,8 +131,15 @@ def bode_plot():
             error=None,
             default_num=default_num,
             default_den=default_den,
-            function_str=None
-    )
+            function_str=None,
+            zeros=None,
+            poles=None,
+            pz_pairs=None,
+            gm=None,
+            pm=None,
+            wg=None,
+            wp=None,
+        )
     
     if request.method == 'POST':
         user_num = request.form.get('numerator', default_num)
@@ -147,8 +164,21 @@ def bode_plot():
                 den_disp = den_raw
             function_str = f"H(s) = \\frac{{{num_disp}}}{{{den_disp}}}"
         else:
-            return render_template("bode_plot.html", error=error, plot_url=None,
-                                   default_num=user_num, default_den=user_den, function_str=None)
+            return render_template(
+                "bode_plot.html",
+                error=error,
+                plot_url=None,
+                default_num=user_num,
+                default_den=user_den,
+                function_str=None,
+                zeros=None,
+                poles=None,
+                pz_pairs=None,
+                gm=None,
+                pm=None,
+                wg=None,
+                wp=None,
+            )
     
     # Generate frequency axis (0.1 to 100 rad/s) and compute H(s) with s = jω.
     w = np.logspace(-1, 2, 500)
@@ -157,6 +187,15 @@ def bode_plot():
     
     magnitude = 20 * np.log10(np.abs(H))
     phase = np.angle(H, deg=True)
+    
+    # Poles and zeros
+    zeros = np.roots(num)
+    poles = np.roots(den)
+
+    # Gain and phase margins
+    sys = control.TransferFunction(num, den)
+    gm, pm, wg, wp = control.margin(sys)
+
     
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
     ax1.semilogx(w, magnitude)
@@ -169,6 +208,14 @@ def bode_plot():
     ax2.set_xlabel("Frequency (rad/s)")
     ax2.set_ylabel("Phase (degrees)")
     ax2.grid(True, which="both", linestyle="--")
+    
+    # Annotate crossover frequencies on the plots
+    if np.isfinite(wp):
+        ax1.axvline(wp, color="r", linestyle="--")
+        ax2.axvline(wp, color="r", linestyle="--")
+    if np.isfinite(wg):
+        ax1.axvline(wg, color="orange", linestyle="--")
+        ax2.axvline(wg, color="orange", linestyle="--")
     plt.tight_layout()
     
     buf = BytesIO()
@@ -177,8 +224,26 @@ def bode_plot():
     image_base64 = base64.b64encode(buf.getvalue()).decode("utf8")
     plt.close(fig)
     
-    return render_template("bode_plot.html", plot_url=image_base64, error=error,
-                           default_num=user_num, default_den=user_den, function_str=function_str)
+    # Prepare pole/zero strings for display
+    zero_list = [format_complex(z) for z in zeros]
+    pole_list = [format_complex(p) for p in poles]
+    pz_pairs = list(zip_longest(zero_list, pole_list, fillvalue=""))
+
+    return render_template(
+        "bode_plot.html",
+        plot_url=image_base64,
+        error=error,
+        default_num=user_num,
+        default_den=user_den,
+        function_str=function_str,
+        zeros=zero_list,
+        poles=pole_list,
+        pz_pairs=pz_pairs,
+        gm=gm,
+        pm=pm,
+        wg=wg,
+        wp=wp,
+    )
     
 
 @bode_plot_bp.route('/download_csv')
