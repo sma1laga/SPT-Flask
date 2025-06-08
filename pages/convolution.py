@@ -23,7 +23,7 @@ def convolution_update():
 
 def compute_convolution(func1_str, func2_str):
     # 1. Basis-Zeitachse
-    t = np.linspace(-10, 10, 400)
+    t = np.linspace(-10, 10, 800)
     dt = t[1] - t[0]
 
     # 2. Safe-Eval-Kontext

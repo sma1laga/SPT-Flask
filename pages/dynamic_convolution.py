@@ -26,7 +26,7 @@ def dynamic_data():
     f2_str = data.get("func2", "")
 
     # time axis
-    t = np.linspace(-10, 10, 400)
+    t = np.linspace(-10, 10, 800)
     dt = t[1] - t[0]
 
     # safe eval context
@@ -71,8 +71,8 @@ def dynamic_data():
 
 
     return jsonify({
-        "t":     np.round(t, 4).tolist(),
-        "y1":    np.round(y1, 4).tolist(),
-        "y2":    np.round(y2, 4).tolist(),
-        "y_conv":np.round(y_conv,4).tolist()
+        "t":     t.tolist(),
+        "y1":    y1.tolist(),
+        "y2":    y2.tolist(),
+        "y_conv": y_conv.tolist()
     })
