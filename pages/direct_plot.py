@@ -39,18 +39,19 @@ def _normalise(num, den):
 
 # ─────────────────── diagram drawing ───────────────────────────────────────
 def _circle(ax, xy, r=0.17):
-    ax.add_patch(Circle(xy, r, fill=False, lw=1.4))
-
+    """Draw an adder node (circle with a plus sign)."""
+    ax.add_patch(Circle(xy, r, fill=False, lw=1.4, zorder=3))
+    ax.text(xy[0], xy[1], "+", ha="center", va="center", fontsize=12, zorder=3)
 
 def _box(ax, xy, w=0.6, h=0.35, text=""):
     x, y = xy
-    ax.add_patch(Rectangle((x - w / 2, y - h / 2), w, h, fill=False, lw=1.4))
+    ax.add_patch(Rectangle((x - w / 2, y - h / 2), w, h, fill=False, lw=1.4, zorder=2))
     if text:
-        ax.text(x, y, text, ha="center", va="center", fontsize=10)
+        ax.text(x, y, text, ha="center", va="center", fontsize=10, zorder=2)
 
 
 def _dot(ax, xy):
-    ax.add_patch(Circle(xy, 0.04, color="k"))
+    ax.add_patch(Circle(xy, 0.04, color="k", zorder=3))
 
 
 def _arrow(ax, src, dst):
@@ -59,6 +60,8 @@ def _arrow(ax, src, dst):
         xy=dst,
         xytext=src,
         arrowprops=dict(arrowstyle="->", lw=1.2, shrinkA=1, shrinkB=1),
+        zorder=1,
+
     )
 
 
@@ -216,7 +219,7 @@ def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
         if idx < len(b):
             coef = b[-(idx+1)]
             _box(ax, (X_GL, y), text=rf"${coef:g}$")
-            _arrow(ax, (X_L, y), (X_GL - 0.3, y))
+            _arrow(ax, (X_L + r_add, y), (X_GL - 0.3, y))
             _arrow(ax, (X_GL + 0.3, y), (X_INT, y))
 
     # integrator chain
