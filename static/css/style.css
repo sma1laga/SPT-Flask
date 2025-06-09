@@ -119,6 +119,22 @@
     text-decoration: none;
     transition: color 0.2s ease;
   }
+  .footer .social-icons {
+    margin-bottom: 10px;
+  }
+  .footer .social-icons a {
+    margin: 0 8px;
+    display: inline-block;
+  }
+  .footer .social-icons a img {
+    width: 24px;
+    height: 24px;
+    filter: var(--icon-filter, none);
+    transition: filter 0.2s ease;
+  }
+  .footer .social-icons a:hover img {
+    filter: brightness(1.2);
+  }
   .footer a:hover {
     color: var(--primary-gradient-end);
     text-decoration: underline;
