@@ -31,6 +31,7 @@ from pages.dft_page import discrete_fourier_bp
 from pages.discrete_convolution import discrete_convolution_bp
 from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
 from pages.fft import fft_bp
+from pages.discrete_transform_intuition import transform_intuition_bp
 
 
 
@@ -89,6 +90,7 @@ def create_app():
     app.register_blueprint(discrete_convolution_bp, url_prefix="/discrete/convolution")
     app.register_blueprint(discrete_dynamic_convolution_bp, url_prefix='/discrete/dynamic')
     app.register_blueprint(fft_bp, url_prefix='/discrete/fft')
+    app.register_blueprint(transform_intuition_bp, url_prefix='/discrete/transform_intuition')
 
 
     # Register training pages (each with its own sub-URL)

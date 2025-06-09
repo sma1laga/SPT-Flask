@@ -1,0 +1,50 @@
+/* Styles for the DFT/DTFT/Z-transform intuition page */
+.checkbox-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-color, #333);
+  cursor: pointer;
+}
+.checkbox-group input[type="number"] {
+  width: 60px;
+}
+.checkbox-group input[type="checkbox"] {
+  appearance: none;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--primary-color, #007acc);
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+}
+.checkbox-group input[type="checkbox"]::after {
+  content: "\2713";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  color: #fff;
+  font-size: 0.75em;
+  transition: transform 0.15s ease;
+}
+.checkbox-group input[type="checkbox"]:checked {
+  background: var(--primary-color, #007acc);
+}
+.checkbox-group input[type="checkbox"]:checked::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+.plot-container {
+  height: 600px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
