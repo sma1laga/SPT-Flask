@@ -27,7 +27,7 @@ def apply_multiplication(signal, param, w):
       * sin[:J],A,ω0                if J=='j'  ⇒  j·A·sin(ω0 t)
       * cos[:J],A,ω0                if J=='j'  ⇒  j·A·cos(ω0 t)
       * exponential:K,sign,ω0       K·e^{±jω0t}  (sign = + | -)
-      * sampling:T                  comb factor
+      * sampling:T                  comb factor (1/T amplitude)
       * raw python expression       (fallback)
     """
 
@@ -40,7 +40,7 @@ def apply_multiplication(signal, param, w):
     if p.startswith("sampling:"):
         T = float(p.split(":")[1])
         tol = T / 10
-        mask = np.where(np.abs(w - np.round(w/T)*T) < tol, 1.0, 0.0)
+        mask = np.where(np.abs(w - np.round(w/T)*T) < tol, 1.0/T, 0.0)
         return signal * mask
 
     # helper for spectral shift
