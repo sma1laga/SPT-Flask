@@ -609,6 +609,10 @@ document.getElementById("btnCompile").onclick=compileDiagram;
 document.addEventListener("keydown", ev => {
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
 
+  // dot delete anything while the edit modal is open
+  const modal = document.getElementById("editModal");
+  if (modal && modal.classList.contains("show")) return;
+
   if (selectedNode) {
     // remove latex overlay first
     if (selectedNode.latexEl) selectedNode.latexEl.remove();

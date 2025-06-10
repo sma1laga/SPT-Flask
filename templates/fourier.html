@@ -38,10 +38,6 @@
       <label style="font-weight:bold;">Phase Shift (°):</label>
       <input type="number" id="phase" value="0">
     </div>
-    <div>
-      <input type="checkbox" id="showZeros">
-      <label for="showZeros">Show Zeros</label>
-    </div>
   </div>
 
   <div style="margin-bottom:30px;">
@@ -88,8 +84,7 @@ function insertOperand(op) {
 function getValues(){
   return {
     func: document.getElementById("func").value,
-    phase: document.getElementById("phase").value,
-    showZeros: document.getElementById("showZeros").checked
+    phase: document.getElementById("phase").value
   };
 }
 
@@ -120,11 +115,9 @@ function updatePlots(){
 
 document.getElementById("computeBtn").addEventListener("click", updatePlots);
 document.getElementById("phase").addEventListener("input", updatePlots);
-document.getElementById("showZeros").addEventListener("change", updatePlots);
 document.getElementById("clearBtn").addEventListener("click", ()=>{
   document.getElementById("func").value="";
   document.getElementById("phase").value=0;
-  document.getElementById("showZeros").checked=false;
   Plotly.purge("timePlot"); Plotly.purge("magPlot"); Plotly.purge("phasePlot");
   document.getElementById("fourier_transformation_label").innerText="";
 });

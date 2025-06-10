@@ -18,14 +18,13 @@ def update_fourier():
         phase_deg = float(data.get("phase", 0))
     except:
         phase_deg = 0.0
-    show_zeros = data.get("showZeros", False)
 
-    result = compute_fourier(func_str, np.deg2rad(phase_deg), show_zeros)
+    result = compute_fourier(func_str, np.deg2rad(phase_deg))
     if "error" in result:
         return jsonify({"error": result["error"]}), 400
     return jsonify(result)
 
-def compute_fourier(func_str, phase_rad, show_zeros=False):
+def compute_fourier(func_str, phase_rad):
     # 1. Zeitachse auf [-20,20]
     t = np.linspace(-20, 20, 4000)
     dt = t[1] - t[0]

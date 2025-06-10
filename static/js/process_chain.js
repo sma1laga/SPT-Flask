@@ -2,8 +2,15 @@
    Process‑Chain front‑end  (canvas UI + modals)
 ------------------------------------------------------------------ */
 
-let letterCounter = 0;                   // a, b, c ...
-const nextLetter  = () => String.fromCharCode(97 + (letterCounter++));
+// Return the first unused connection letter algotithm
+function nextLetter() {
+  const used = new Set(lines.map(l => l.letter.toLowerCase()));
+  let code = 'a'.charCodeAt(0);
+  while (used.has(String.fromCharCode(code))) {
+    code++;
+  }
+  return String.fromCharCode(code);
+}
 let lineSelected  = null;                // currently highlighted line
 
 let blocks = [];            // all block objects
@@ -296,7 +303,7 @@ canvas.addEventListener("mousedown", e => {
               lines.push({
                 fromId: connectStart.id,
                 toId:   b.id,
-                letter: nextLetter()            // ← assign "a", then "b", then "c", …
+                letter: nextLetter()            // reuse first available letter
               });
               connectStart.selected = false;
               connectStart = null;
@@ -627,7 +634,6 @@ function deleteSelected() {
 window.deleteSelected = deleteSelected;
 
 window.clearAll = () => {
-  letterCounter = 0;  // reset letters
   blocks = blocks.filter(b => b.nonDeletable);
   lines  = [];
   selectedId   = null;
