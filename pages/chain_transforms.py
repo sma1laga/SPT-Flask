@@ -103,8 +103,9 @@ def apply_multiplication(signal, param, w):
 def apply_derivative(signal,param,w): return 1j*w*signal
 def apply_hilbert   (signal,param,w): return -1j*np.sign(w)*signal
 def apply_real(sig,param,w): return np.real(sig)
-def apply_imag(sig,param,w): return 1j*np.imag(sig)   # keep j for chain
-# -----------------------------------------------------------
+def apply_imag(sig,param,w):
+    """Return the imaginary component as a real-valued signal."""
+    return np.imag(sig)# -----------------------------------------------------------
 def apply_filter(signal,param,w):
     if not param: param="lowpass:1"
     mode,rest=param.lower().split(":")
