@@ -144,9 +144,10 @@
           line:{width:0}, marker:{size:6,color:"#ff7f0e",symbol:"square"}
         });
       }
+      const xrange = data.xrange || [-20,20];
       Plotly.newPlot("plot", tr, {
         margin:{t:30}, showlegend:true,
-        xaxis:{title:"n (Δn = "+data.Δn+")", range:[-20,20]},
+        xaxis:{title:"n (Δn = "+data.Δn+")", range:xrange},
         yaxis:{title:"Amplitude", zeroline:false}
       });
     }).catch(console.error);
