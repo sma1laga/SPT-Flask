@@ -9,4 +9,5 @@ sympy>=1.12
 jsonschema>=4.19
 networkx>=3.0
 requests>=2.0
+pytest>=8.4.0
 
