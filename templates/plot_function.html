@@ -115,9 +115,10 @@
         });
       }
 
+      const xrange = data.xrange || [-20, 20];
       Plotly.newPlot("plot", traces,
-        {margin:{t:30}, showlegend:true, xaxis:{title:"t", range:[-20, 20]}, yaxis:{title:"f(t)"}} );
-    })
+        {margin:{t:30}, showlegend:true,
+         xaxis:{title:"t", range:xrange}, yaxis:{title:"f(t)"}} );    })
     .catch(console.error);
   }
 

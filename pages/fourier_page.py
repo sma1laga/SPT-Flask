@@ -25,21 +25,35 @@ def update_fourier():
     return jsonify(result)
 
 def compute_fourier(func_str, phase_rad):
-    # 1. Zeitachse auf [-20,20]
-    t = np.linspace(-20, 20, 4000)
-    dt = t[1] - t[0]
+    """Compute Fourier transform with dynamic centering."""
+    # broad axis for centre estimation
+    t_broad = np.linspace(-100, 100, 8000)
 
-    # 2. Sandbox für eval
-    local_vars = {
-        "t": t, "np": np,
-        "rect": rect, "tri": tri, "step": step,
-        "cos": cos, "sin": sin, "sign": sign,
-        "delta": delta, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si, "exp": np.exp
+    sandbox = {
+        "np": np, "rect": rect, "tri": tri, "step": step,
+        "cos": cos, "sin": sin, "sign": sign, "delta": delta,
+        "exp_iwt": exp_iwt, "inv_t": inv_t, "si": si, "exp": np.exp
     }
+    sandbox["t"] = t_broad
 
     try:
-        y = eval(func_str, local_vars) * np.exp(1j * phase_rad)
+        y_broad = eval(func_str, sandbox) * np.exp(1j * phase_rad)
+    except Exception as e:
+        return {"error": f"Error evaluating function: {e}"}
+
+    mag = np.abs(y_broad)
+    if mag.sum() == 0:
+        center = 0.0
+    else:
+        center = float(np.sum(t_broad * mag) / mag.sum())
+
+    t = np.linspace(center - 20, center + 20, 4000)
+    dt = t[1] - t[0]
+
+    sandbox["t"] = t
+    
+    try:
+        y = eval(func_str, sandbox) * np.exp(1j * phase_rad)
     except Exception as e:
         return {"error": f"Error evaluating function: {e}"}
 
