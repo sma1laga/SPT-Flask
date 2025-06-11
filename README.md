@@ -87,6 +87,14 @@ python main.py
 ### 5. Open the application
 Navigate to [http://127.0.0.1:5000/](http://127.0.0.1:5000/) in your browser.
 
+## 🧪 Running Tests
+Install dependencies and run `pytest`. The included GitHub Actions workflow
+executes the test suite automatically on every push and pull request.
+
+```bash
+pip install -r requirements.txt
+pytest -q
+```
 
 ## 🚀 Contributing
 Pull requests are welcome! If you want to propose a feature or fix a bug:
