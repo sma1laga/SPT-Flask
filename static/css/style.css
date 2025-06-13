@@ -271,8 +271,11 @@
 /* Base Dark Mode Overrides */
 /* ------------------------ */
 body.dark-mode {
-    background-color: #121212; 
+    background-color: #121212;
     color: #f5f5f5;
+    --text-color: #f5f5f5;
+    --subtext-color: #bbbbbb;
+    --border-color: #333;
   }
   
   /* Outer Wrapper */
