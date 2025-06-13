@@ -198,6 +198,21 @@
     font-size: 12px;
   }
   
+  /* User-manual sections shared by block diagram and process chain */
+  #userManual {
+    margin: 8px 0 12px;
+    padding: 10px 12px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    font-size: 0.9em;
+    line-height: 1.4;
+  }
+  body.dark-mode #userManual {
+    background: #1f1f1f;
+    color: var(--text-color);
+    border-color: #444;
+  }
+  
   /* Grid Layout for Home and Other Pages */
   .menu-container {
     display: grid;
