@@ -37,6 +37,14 @@ function getArrowColor(){
   return document.body.classList.contains('dark-mode') ? '#ddd' : '#000';
 }
 
+function getBlockFillColor(){
+  return document.body.classList.contains('dark-mode') ? '#2a2a2a' : '#fff';
+}
+
+function getTextColor(){
+  return document.body.classList.contains('dark-mode') ? '#f5f5f5' : '#000';
+}
+
 const multType         = document.getElementById("multType");
 const multParamDiv     = document.getElementById("multParamDiv");
 const multParamValue   = document.getElementById("multParamValue");
@@ -163,6 +171,8 @@ function connPt(a, b) {
 function drawAll () {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const arrowCol = getArrowColor();
+  const fillCol  = getBlockFillColor();
+  const textCol  = getTextColor();
 
   /* ========== draw connecting lines (with arrow heads) ========== */
   ctx.strokeStyle = arrowCol;
@@ -216,7 +226,7 @@ function drawAll () {
 
     ctx.lineWidth   = b.selected ? 4 : 3;
     ctx.strokeStyle = arrowCol;
-    ctx.fillStyle   = "#fff";
+    ctx.fillStyle   = fillCol;
 
     /* --- Multiplication circle -------------------------- */
     if (b.type === "Multiplication") {
@@ -272,7 +282,7 @@ function drawAll () {
       ctx.fillRect(b.x, b.y, b.width, b.height);
       ctx.strokeRect(b.x, b.y, b.width, b.height);
 
-      ctx.font = "17px serif"; ctx.fillStyle = "black";
+      ctx.font = "17px serif"; ctx.fillStyle = textCol;
       const tw = ctx.measureText(b.label).width;
       ctx.fillText(b.label, cx - tw / 2, cy + 6);
     }

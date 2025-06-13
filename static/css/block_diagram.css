@@ -31,3 +31,7 @@ canvas > * {  /* only the drawn rectangles */
 /* darker arrows for better contrast */
 canvas { --arrow-col: #444; }
 body.dark-mode canvas { --arrow-col: #ccc; }
+
+/* ensure block labels remain visible in dark mode */
+.latexNode { color:#000; }
+body.dark-mode .latexNode { color:#000; }
