@@ -8,39 +8,39 @@
     </p>
   </div>
 
-  <form method="post" enctype="multipart/form-data" style="max-width: 700px; margin: 0 auto;">
+  <form id="filterForm" style="max-width: 700px; margin: 0 auto;">
     <!-- Audio Choice -->
     <div class="form-group" style="margin-bottom: 20px;">
       <label class="radio-label">
-        <input type="radio" name="audio_choice" value="default" {% if audio_choice=='default' %}checked{% endif %}> Use Example Audio
+        <input type="radio" name="audio_choice" value="default" checked> Use Example Audio
       </label>
       <label class="radio-label" style="margin-left: 20px;">
-        <input type="radio" name="audio_choice" value="upload" {% if audio_choice=='upload' %}checked{% endif %}> Upload Your Own
+        <input type="radio" name="audio_choice" value="upload"> Upload Your Own
       </label>
     </div>
 
     <!-- Upload Picker -->
-    <div id="uploadDiv" class="form-group" style="display: {{ 'block' if audio_choice=='upload' else 'none' }};">
+    <div id="uploadDiv" class="form-group" style="display: none;">
       <label for="audio_file" style="font-weight: bold;">Audio File (WAV, ≤10s):</label>
-      <input type="file" name="audio_file" id="audio_file" accept=".wav" {% if audio_choice=='upload' %}required{% endif %}>
+      <input type="file" name="audio_file" id="audio_file" accept=".wav">
     </div>
 
     <!-- Standard Filter Toggle -->
     <div class="form-group" style="margin-bottom: 20px;">
       <label>
-        <input type="checkbox" id="use_standard_filter" name="use_standard_filter" {% if use_standard_filter %}checked{% endif %}> Use Standard Filter
+        <input type="checkbox" id="use_standard_filter" name="use_standard_filter"> Use Standard Filter
       </label>
     </div>
 
-    <div id="standard_filter_div" class="form-group" style="display: {{ 'block' if use_standard_filter else 'none' }};">
+    <div id="standard_filter_div" class="form-group" style="display: none;">
       <label for="standard_filter" style="font-weight: bold;">Standard Filter:</label>
       <select name="standard_filter" id="standard_filter">
-        <option value="lowpass_std" {% if standard_filter=='lowpass_std' %}selected{% endif %}>Lowpass (1kHz, Order 3)</option>
-        <option value="bandpass_std" {% if standard_filter=='bandpass_std' %}selected{% endif %}>Bandpass Speech (300–3400Hz, Order 4)</option>
-        <option value="highpass_std" {% if standard_filter=='highpass_std' %}selected{% endif %}>Highpass (80Hz, Order 2)</option>
-        <option value="telephone_filter" {% if standard_filter=='telephone_filter' %}selected{% endif %}>Telephone (300–3400Hz, Order 4)</option>
-        <option value="podcast_filter" {% if standard_filter=='podcast_filter' %}selected{% endif %}>Podcast (3kHz, Order 3)</option>
-        <option value="noise_cancel_filter" {% if standard_filter=='noise_cancel_filter' %}selected{% endif %}>Noise Cancel (50–150Hz, Order 2)</option>
+        <option value="lowpass_std">Lowpass (1kHz, Order 3)</option>
+        <option value="bandpass_std">Bandpass Speech (300–3400Hz, Order 4)</option>
+        <option value="highpass_std">Highpass (80Hz, Order 2)</option>
+        <option value="telephone_filter">Telephone (300–3400Hz, Order 4)</option>
+        <option value="podcast_filter">Podcast (3kHz, Order 3)</option>
+        <option value="noise_cancel_filter">Noise Cancel (50–150Hz, Order 2)</option>
       </select>
     </div>
 
@@ -49,19 +49,19 @@
       <div class="form-group">
         <label for="filter_type" style="font-weight: bold;">Filter Type:</label>
         <select name="filter_type" id="filter_type">
-          <option value="lowpass" {% if filter_type=='lowpass' %}selected{% endif %}>Low Pass</option>
-          <option value="highpass" {% if filter_type=='highpass' %}selected{% endif %}>High Pass</option>
-          <option value="bandpass" {% if filter_type=='bandpass' %}selected{% endif %}>Band Pass</option>
-          <option value="bandstop" {% if filter_type=='bandstop' %}selected{% endif %}>Band Stop</option>
+          <option value="lowpass">Low Pass</option>
+          <option value="highpass">High Pass</option>
+          <option value="bandpass">Band Pass</option>
+          <option value="bandstop">Band Stop</option>
         </select>
       </div>
       <div class="form-group">
         <label for="order" style="font-weight: bold;">Filter Order (1–5):</label>
-        <input type="number" name="order" id="order" value="{{ order }}" min="1" max="5" required>
+        <input type="number" name="order" id="order" value="4" min="1" max="5" required>
       </div>
       <div class="form-group">
         <label for="cutoff" style="font-weight: bold;">Cutoff Frequency (Hz):</label>
-        <input type="text" name="cutoff" id="cutoff" value="{{ cutoff }}" pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$" title="e.g. 100 or 100,400" required>
+        <input type="text" name="cutoff" id="cutoff" value="100,400" pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$" title="e.g. 100 or 100,400" required>
       </div>
     </div>
 
@@ -70,113 +70,42 @@
       <button type="submit" class="action-btn">Apply Filter</button>
     </div>
 
-    {% if error %}
-      <div style="color: #f44336; font-weight: bold; text-align: center;">Error: {{ error }}</div>
-    {% endif %}
+    <div id="errorMsg" style="color: #f44336; font-weight: bold; text-align: center;"></div>
+
   </form>
 
   <!-- Visualizations & Audio -->
-  {% if spec_plot and wave_plot %}
-    <div class="viz-section" style="max-width: 800px; margin: 40px auto;">
-      <h3 style="text-align: center;">Visualization</h3>
-      <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-        <div style="flex: 1 1 45%;">
-          <h4>Spectrogram</h4>
-          <img src="data:image/png;base64,{{ spec_plot }}" alt="Spectrogram" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
-        </div>
-        <div style="flex: 1 1 45%;">
-          <h4>Waveform</h4>
-          <img src="data:image/png;base64,{{ wave_plot }}" alt="Waveform" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
-        </div>
+ <div id="vizSection" class="viz-section" style="max-width: 800px; margin: 40px auto; display:none;">
+    <h3 style="text-align: center;">Visualization</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+      <div style="flex: 1 1 45%;">
+        <h4>Spectrogram</h4>
+        <div id="specPlot" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;"></div>
+      </div>
+      <div style="flex: 1 1 45%;">
+        <h4>Waveform</h4>
+        <div id="wavePlot" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;"></div>
       </div>
     </div>
-  {% endif %}
+  </div>
 
-  {% if output_audio_data %}
-    <div class="audio-section" style="max-width: 600px; margin: 20px auto; text-align: center;">
-      <h3>Listen & Download</h3>
-      <audio controls style="width: 100%; margin-bottom: 10px;"><source src="data:audio/wav;base64,{{ output_audio_data }}" type="audio/wav"></audio>
-      <br>
-      <a href="data:audio/wav;base64,{{ output_audio_data }}" download="filtered.wav" class="action-btn" style="text-decoration:none;">Download Filtered Audio</a>
-      <br><br>
-      <button type="button" class="action-btn" onclick="reapplyFilter()">Reapply Filter</button>
-    </div>
-  {% endif %}
 
-  {% if pz_plot %}
-    <div class="pz-section" style="max-width: 400px; margin: 20px auto; text-align: center;">
-      <h3>Pole–Zero Plot</h3>
-      <img src="data:image/png;base64,{{ pz_plot }}" alt="Pole–Zero" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;">
-    </div>
-  {% endif %}
+  <div id="audioSection" class="audio-section" style="max-width: 600px; margin: 20px auto; text-align: center; display:none;">
+    <h3>Listen & Download</h3>
+    <audio id="liveAudio" controls style="width: 100%; margin-bottom: 10px;"></audio><br>
+    <a id="downloadLink" class="action-btn" style="text-decoration:none;" download="filtered.wav">Download Filtered Audio</a>
+    <br><br>
+    <button type="button" class="action-btn" id="reapplyBtn">Reapply Filter</button>
+  </div>
 
-  <script>
-    // Toggle upload picker
-    const aRad = document.getElementsByName("audio_choice"),
-          uDiv = document.getElementById("uploadDiv"),
-          fIn = document.getElementById("audio_file");
-    aRad.forEach(r => r.addEventListener("change", ()=>{
-      if (r.value==="upload" && r.checked) {
-        uDiv.style.display="block";  fIn.required=true;
-      } else if (r.value==="default" && r.checked) {
-        uDiv.style.display="none";   fIn.required=false;
-      }
-    }));
+  <div id="pzSection" class="pz-section" style="max-width: 400px; margin: 20px auto; text-align: center; display:none;">
+    <h3>Pole–Zero Plot</h3>
+    <div id="pzPlot" style="width: 100%; border:1px solid #ccd0d5; border-radius:4px;"></div>
+  </div>
+{% endblock %}
 
-    // Toggle standard-filter dropdown
-    document.getElementById("use_standard_filter").addEventListener("change", function(){
-      document.getElementById("standard_filter_div").style.display = this.checked ? "block" : "none";
-      document.getElementById("custom_filter_div").style.display = this.checked ? "none" : "block";
-    });
-
-    // Live reapply logic
-    function buildLiveURL(){
-      let url = "{{ url_for('speech_filter_input.live_audio') }}?t="+Date.now();
-      if (document.getElementById("use_standard_filter").checked) {
-        url += "&use_standard_filter=1&standard_filter=" + encodeURIComponent(document.getElementById("standard_filter").value);
-      } else {
-        url += "&filter_type=" + encodeURIComponent(document.getElementById("filter_type").value)
-            + "&order=" + encodeURIComponent(document.getElementById("order").value)
-            + "&cutoff=" + encodeURIComponent(document.getElementById("cutoff").value);
-      }
-      return url;
-    }
-    function reapplyFilter(){
-      fetch(buildLiveURL())
-        .then(r=>r.json())
-        .then(d=>{
-          document.querySelector('#specPlot').src = "data:image/png;base64,"+d.spec_plot;
-          document.querySelector('#wavePlot').src = "data:image/png;base64,"+d.wave_plot;
-          document.querySelector('#pzPlot')?.setAttribute('src', "data:image/png;base64,"+d.pz_plot);
-          document.getElementById("liveAudio").src = "data:audio/wav;base64,"+d.audio;
-          document.querySelector('a[download]').href = "data:audio/wav;base64,"+d.audio;
-        }).catch(console.error);
-    }
-  </script>
-
-  <style>
-    .form-group input,
-    .form-group select,
-    .form-group button {
-      font-size: 1em;
-    }
-    .radio-label input {
-      margin-right: 6px;
-    }
-    .action-btn {
-      padding: 10px 20px;
-      background-color: #007acc;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      text-decoration: none;
-      display: inline-block;
-      margin-top: 10px;
-    }
-    .action-btn:hover {
-      background-color: #005fa3;
-    }
-  </style>
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/speech_filter_input.js') }}"></script>
 {% endblock %}
