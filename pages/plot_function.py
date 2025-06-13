@@ -30,7 +30,7 @@ def plot_function_update():
     a2  = float(data.get("amp2",   1))
     w2  = float(data.get("width2", 1))
 
-    # initial broad grid to estimate centre of mass
+    # initial broad grid to estimate a suitable centre
     t_broad = np.linspace(-100, 100, 8000)
 
     ns_broad = dict(t=t_broad, np=np, rect=rect, tri=tri, step=step, cos=cos, sin=sin,
@@ -53,17 +53,32 @@ def plot_function_update():
     t1_broad = t_broad * w1 + s1
     t2_broad = t_broad * w2 + s2 if y2_broad is not None else None
 
-    def center_of_mass(t_arr, y_arr):
+    def center_point(t_arr, y_arr):
+        """Heuristic centre for plotting.
+
+        For signals that start from (near) zero and then rise (e.g. step or
+        ramp), the arithmetic centre of mass can drift far from the interesting
+        region.  We first look for such a "starting" edge and fall back to the
+        magnitude centre of mass if none is found.
+        """
         if y_arr is None:
             return None, 0
+        
         mag = np.abs(y_arr)
         total = np.sum(mag)
         if total == 0:
             return None, 0
+
+        # detect a leading region of (near) zeros followed by activity
+        thresh = mag.max() * 1e-3
+        nz = np.where(mag > thresh)[0]
+        if len(nz) > 0 and nz[0] > 0 and np.all(mag[:nz[0]] < thresh):
+            return float(t_arr[nz[0]]), total
+
         return float(np.sum(t_arr * mag) / total), total
 
-    c1, m1 = center_of_mass(t1_broad, y1_broad)
-    c2, m2 = center_of_mass(t2_broad, y2_broad)
+    c1, m1 = center_point(t1_broad, y1_broad)
+    c2, m2 = center_point(t2_broad, y2_broad)
 
     if c1 is None and c2 is None:
         center = 0.0

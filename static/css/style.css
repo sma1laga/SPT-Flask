@@ -341,8 +341,18 @@ body.dark-mode {
   }
   
   /* Links (generic) */
-  body.dark-mode a {
+body.dark-mode a {
     color: #82aaff;
+  }
+  
+  /* Theory sections in dark mode */
+  body.dark-mode .theory-section,
+  body.dark-mode .theory-card,
+  body.dark-mode .fft-theory,
+  body.dark-mode .plot-theory {
+    background-color: #1f1f1f;
+    color: var(--text-color);
+    border-color: var(--border-color);
   }
   
   /* Optional: Add transitions for a smoother switch */
@@ -434,4 +444,13 @@ body.dark-mode {
   white-space: nowrap;
 }
 
-  
+/* Ensure formulas remain readable in both themes */
+.theory-section pre,
+.theory-section .formula {
+  color: #333;
+}
+
+body.dark-mode .theory-section pre,
+body.dark-mode .theory-section .formula {
+  color: #222;
+}
