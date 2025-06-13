@@ -42,7 +42,6 @@ let correctIndex = null;
 let latexSignal = "";
 let latexTransform = "";
 let propMsg = "";
-let streak = 0;
 
 function getDifficulty(){
   return Array.from(document.getElementsByName('difficulty')).find(r=>r.checked).value;
@@ -60,9 +59,6 @@ document.querySelectorAll('.option-btn').forEach(btn=>{
   });
 });
 
-function updateStreak(){
-  document.getElementById('streakCount').innerText = streak;
-}
 
 function generateProblem(){
   fetch("{{ url_for('training_fourier.generate_problem') }}",{
@@ -84,8 +80,11 @@ function generateProblem(){
     propMsg=data.property_msg;
     document.getElementById('feedback').innerText='Pick the correct option!';
     document.getElementById('explanation').style.display='none';
-    document.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('correct','incorrect'));
-  }).catch(e=>{
+    document.querySelectorAll('.option-btn').forEach(b=>{
+      b.classList.remove('correct','incorrect');
+      b.disabled=false;
+    });
+    }).catch(e=>{
     document.getElementById('feedback').innerText='Error generating problem.';
     console.error(e);
   });
@@ -105,11 +104,8 @@ function checkAnswer(selected){
     buttons[correctIndex].classList.add('correct');
     if(selected!==correctIndex){
       buttons[selected].classList.add('incorrect');
-      streak=0;
-    } else {
-      streak+=1;
+
     }
-    updateStreak();
     document.getElementById('feedback').innerText=data.feedback;
     document.getElementById('latexSignal').innerHTML='$$'+latexSignal+'$$';
     document.getElementById('latexTransform').innerHTML='$$'+latexTransform+'$$';
