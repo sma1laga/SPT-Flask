@@ -13,7 +13,18 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import inspect
 
+# Matplotlib 3.10 removed the ``use_line_collection`` argument from ``stem``.
+# Check the signature so we can remain compatible with both new and old
+# versions.
+_STEM_HAS_LINE_COLLECTION = "use_line_collection" in inspect.signature(plt.stem).parameters
+
+def _stem(ax: matplotlib.axes.Axes, x, y, **kwargs):
+    """Wrapper for ``Axes.stem`` that adds ``use_line_collection`` when supported."""
+    if _STEM_HAS_LINE_COLLECTION:
+        kwargs.setdefault("use_line_collection", True)
+    return ax.stem(x, y, **kwargs)
 
 
 @dataclass
@@ -287,8 +298,8 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
             for i, opt in enumerate(shuffled):
                 ax = fig.add_subplot(gs[1 + i // 2, i % 2])
                 if np.count_nonzero(opt) <= 5:
-                    ax.stem(omega, np.abs(opt), basefmt=" ", use_line_collection=True)
-                    ax.stem(omega, np.angle(opt), basefmt=" ", linefmt="r--", markerfmt="ro", use_line_collection=True)
+                    _stem(ax, omega, np.abs(opt), basefmt=" ")
+                    _stem(ax, omega, np.angle(opt), basefmt=" ", linefmt="r--", markerfmt="ro")
                 else:
                     ax.plot(omega, np.abs(opt), label="|X|")
                     ax.plot(omega, np.angle(opt), "--", label="∠X")
@@ -299,8 +310,8 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
             gs = fig.add_gridspec(nrows=3, ncols=2)
             ax0 = fig.add_subplot(gs[0, :])
             if np.count_nonzero(X) <= 5:
-                ax0.stem(omega, np.abs(X), basefmt=" ", use_line_collection=True)
-                ax0.stem(omega, np.angle(X), basefmt=" ", linefmt="r--", markerfmt="ro", use_line_collection=True)
+                _stem(ax0, omega, np.abs(X), basefmt=" ")
+                _stem(ax0, omega, np.angle(X), basefmt=" ", linefmt="r--", markerfmt="ro")
             else:
                 ax0.plot(omega, np.abs(X), label="|X|")
                 ax0.plot(omega, np.angle(X), "--", label="∠X")
