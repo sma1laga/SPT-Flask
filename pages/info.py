@@ -1,6 +1,9 @@
 # pages/info.py
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
+import json
+import time
 
+CONTACT_LOG_FILE = 'contact.log'
 info_bp = Blueprint('info', __name__)
 
 @info_bp.route('/bandpass_order')
@@ -27,6 +30,27 @@ def noise_reduction():
 def about():
     return render_template('about.html')  # Create about.html template
 
-@info_bp.route('/contact')
+@info_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
-    return render_template('contact.html')  # Create contact.html template
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        message = request.form.get('message', '').strip()
+        if '@' not in email:
+            error = 'Please enter a valid email address.'
+            return render_template('contact.html', error=error, name=name,
+                                   email=email, message=message)
+        data = {
+            'timestamp': time.time(),
+            'name': name,
+            'email': email,
+            'message': message,
+        }
+        try:
+            with open(CONTACT_LOG_FILE, 'a') as f:
+                f.write(json.dumps(data) + '\n')
+        except Exception:
+            pass
+        success = 'Thank you for your message!'
+        return render_template('contact.html', success=success)
+    return render_template('contact.html')

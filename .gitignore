@@ -123,6 +123,7 @@ htmlcov/
 # Logs and analytics
 *.log
 analytics.log
+contact.log
 
 # Mac stuff
 .DS_Store

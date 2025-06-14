@@ -8,18 +8,24 @@
   </p>
   
   <h2>Send a Message</h2>
+    {% if error %}
+  <p style="color:red">{{ error }}</p>
+  {% endif %}
+  {% if success %}
+  <p style="color:green">{{ success }}</p>
+  {% endif %}
   <form action="{{ url_for('info.contact') }}" method="post">
     <div style="margin-bottom: 10px;">
       <label for="name">Name:</label>
-      <input type="text" name="name" id="name" style="width: 100%; padding: 8px;" required>
+      <input type="text" name="name" id="name" value="{{ name|default('') }}" style="width: 100%; padding: 8px;" required>
     </div>
     <div style="margin-bottom: 10px;">
       <label for="email">Email:</label>
-      <input type="email" name="email" id="email" style="width: 100%; padding: 8px;" required>
+      <input type="email" name="email" id="email" value="{{ email|default('') }}" style="width: 100%; padding: 8px;" required>
     </div>
     <div style="margin-bottom: 10px;">
       <label for="message">Message:</label>
-      <textarea name="message" id="message" rows="4" style="width: 100%; padding: 8px;" required></textarea>
+      <textarea name="message" id="message" rows="4" style="width: 100%; padding: 8px;" required>{{ message|default('') }}</textarea>
     </div>
     <button type="submit" style="padding: 10px 20px;">Send Message</button>
   </form>
