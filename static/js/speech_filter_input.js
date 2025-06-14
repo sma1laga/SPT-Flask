@@ -2,6 +2,10 @@
 const ctx = new (window.AudioContext || window.webkitAudioContext)();
 let originalSignal = null;
 let sampleRate = 44100;
+let recorder = null;
+let recordedSignal = null;
+let recordedSampleRate = 44100;
+let isRecording = false;
 
 const fft = (re, im) => {
   const n = re.length;
@@ -89,17 +93,28 @@ async function loadAudio() {
   if (choice === 'default') {
     const resp = await fetch('/static/audio/example.wav');
     arrayBuffer = await resp.arrayBuffer();
-  } else {
+    const decoded = await ctx.decodeAudioData(arrayBuffer);
+    sampleRate = decoded.sampleRate;
+    const ch0 = decoded.numberOfChannels > 1
+      ? decoded.getChannelData(0).map((v, i) => (v + decoded.getChannelData(1)[i]) / 2)
+      : decoded.getChannelData(0);
+    originalSignal = new Float32Array(ch0);
+  } else if (choice === 'upload') {
     const file = document.getElementById('audio_file').files[0];
     if (!file) throw new Error('Please select an audio file.');
     arrayBuffer = await file.arrayBuffer();
+    const decoded = await ctx.decodeAudioData(arrayBuffer);
+    sampleRate = decoded.sampleRate;
+    const ch0 = decoded.numberOfChannels > 1
+      ? decoded.getChannelData(0).map((v, i) => (v + decoded.getChannelData(1)[i]) / 2)
+      : decoded.getChannelData(0);
+    originalSignal = new Float32Array(ch0);
+  } else {
+    if (!recordedSignal) throw new Error('No recording available.');
+    sampleRate = recordedSampleRate;
+    originalSignal = new Float32Array(recordedSignal);
   }
-  const decoded = await ctx.decodeAudioData(arrayBuffer);
-  sampleRate = decoded.sampleRate;
-  const ch0 = decoded.numberOfChannels > 1
-    ? decoded.getChannelData(0).map((v, i) => (v + decoded.getChannelData(1)[i]) / 2)
-    : decoded.getChannelData(0);
-  originalSignal = new Float32Array(ch0);
+
   if (originalSignal.length / sampleRate > 10) throw new Error('Audio longer than 10 seconds.');
   return originalSignal;
 }
@@ -253,14 +268,77 @@ function showError(msg) {
   document.getElementById('errorMsg').textContent = msg || '';
 }
 
+async function startRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  recorder = new MediaRecorder(stream);
+  let chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = async () => {
+    const blob = new Blob(chunks, { type: 'audio/webm' });
+    const buf = await blob.arrayBuffer();
+    const decoded = await ctx.decodeAudioData(buf);
+    recordedSampleRate = decoded.sampleRate;
+    const ch0 = decoded.numberOfChannels > 1
+      ? decoded.getChannelData(0).map((v, i) => (v + decoded.getChannelData(1)[i]) / 2)
+      : decoded.getChannelData(0);
+    recordedSignal = new Float32Array(ch0);
+    if (recordedSignal.length / recordedSampleRate > 10) {
+      recordedSignal = null;
+      showError('Recording longer than 10 seconds.');
+    } else {
+      showError('');
+    }
+    document.getElementById('recordStatus').textContent = 'Recorded';
+  };
+  recorder.start();
+  document.getElementById('recordStatus').textContent = 'Recording...';
+  isRecording = true;
+}
+
+function stopRecording() {
+  if (recorder && isRecording) {
+    recorder.stop();
+    recorder.stream.getTracks().forEach(t => t.stop());
+    isRecording = false;
+  }
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
   const radios = document.getElementsByName('audio_choice');
   const uploadDiv = document.getElementById('uploadDiv');
+  const recordDiv = document.getElementById('recordDiv');
   const fileIn = document.getElementById('audio_file');
+  const recordBtn = document.getElementById('recordBtn');
   radios.forEach(r => r.addEventListener('change', () => {
-    if (r.value === 'upload' && r.checked) { uploadDiv.style.display = 'block'; fileIn.required = true; }
-    else if (r.value === 'default' && r.checked) { uploadDiv.style.display = 'none'; fileIn.required = false; }
+    if (r.value === 'upload' && r.checked) {
+      uploadDiv.style.display = 'block';
+      recordDiv.style.display = 'none';
+      fileIn.required = true;
+    } else if (r.value === 'default' && r.checked) {
+      uploadDiv.style.display = 'none';
+      recordDiv.style.display = 'none';
+      fileIn.required = false;
+    } else if (r.value === 'record' && r.checked) {
+      uploadDiv.style.display = 'none';
+      recordDiv.style.display = 'block';
+      fileIn.required = false;
+    }
   }));
+  
+  recordBtn.addEventListener('click', async () => {
+    if (!isRecording) {
+      try {
+        await startRecording();
+        recordBtn.textContent = 'Stop';
+      } catch (err) {
+        showError(err.message);
+      }
+    } else {
+      stopRecording();
+      recordBtn.textContent = 'Record Again';
+    }
+  });
   const useStd = document.getElementById('use_standard_filter');
   useStd.addEventListener('change', () => {
     document.getElementById('standard_filter_div').style.display = useStd.checked ? 'block' : 'none';
