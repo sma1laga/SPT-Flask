@@ -16,15 +16,46 @@ function updateSliderValue(id) {
     plotDigital();     // replot modulation
   }
   
-  // helper to fetch JSON from Flask API
-  async function fetchJSON(url, params) {
-    const q = new URLSearchParams(params).toString();
-    const res = await fetch(url + '?' + q);
-    return await res.json();
+// simple time vector helper used for local computations
+function makeTime(tEnd = 1.0, fs = 1000) {
+  const N = Math.floor(fs * tEnd);
+  return Array.from({ length: N }, (_, i) => i / fs);
+}
+
+// client-side modulation implementation mirroring the former API
+function digitalModulate({ type, fc, br, dev }) {
+  const t = makeTime();
+  const bitPeriod = 1 / br;
+  const bits = t.map(v => (v % bitPeriod < bitPeriod / 2 ? 1 : 0));
+  let modulated;
+
+  if (type === 'ASK') {
+    modulated = t.map((v, i) => bits[i] * Math.cos(2 * Math.PI * fc * v));
+  } else if (type === 'PSK') {
+    modulated = t.map((v, i) =>
+      Math.cos(2 * Math.PI * fc * v + Math.PI * (1 - bits[i])));
+  } else if (type === 'FSK') {
+    const f0 = fc - dev;
+    const f1 = fc + dev;
+    modulated = t.map((v, i) =>
+      Math.cos(2 * Math.PI * (f0 + (f1 - f0) * bits[i]) * v));
+  } else {
+    throw new Error('Unknown modulation type');
   }
   
+  return { t, bits, modulated };
+}
+
+// very basic demodulation example – echoes the bits like the server did
+function digitalDemodulate({ br }) {
+  const t = makeTime();
+  const bitPeriod = 1 / br;
+  const bits = t.map(v => (v % bitPeriod < bitPeriod / 2 ? 1 : 0));
+  return { t, modulated: [...bits], demodulated: bits };
+}
+  
   // draw either modulation or demodulation
-  async function plotDigital(demod=false) {
+  function plotDigital(demod=false) {
     const type = demod
       ? document.getElementById('dig_demod').value
       : document.getElementById('dig_type').value;
@@ -35,12 +66,10 @@ function updateSliderValue(id) {
       br:  +document.getElementById('dig_br').value,
       dev: +document.getElementById('dig_dev').value
     };
-  
-    const url = demod
-      ? '/digital_modulation/api/digital_demodulate'
-      : '/digital_modulation/api/digital_modulate';
-  
-    const data = await fetchJSON(url, params);
+
+    const data = demod
+      ? digitalDemodulate(params)
+      : digitalModulate(params);
   
     if (!demod) {
       Plotly.newPlot('dig_plot', [
