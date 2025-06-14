@@ -412,10 +412,31 @@ function drawAll(){
   ctx.lineCap     = "round";
 
  
+  let changed = false;
 
 
   /* nodes */
   nodes.forEach(n=>{
+    let expr = null;
+    if (n.type === "TF" && n.params.num && n.params.den) {
+      expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
+    } else if (n.type === "Gain" && Number.isFinite(n.params.k)) {
+      expr = String(n.params.k);
+    } else if (n.type === "Derivative") {
+      expr = "s";
+    } else if (n.type === "Source" || n.type === "Input") {
+      if      (n.params.kind === "step")    expr = "\\frac{1}{s}";
+      else if (n.params.kind === "impulse") expr = "1";
+      else if (n.params.kind === "custom" &&
+               n.params.num && n.params.den)
+        expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
+      else expr = n.type === "Input" ? "X(s)" : "SRC";
+    }
+
+    if (expr) {
+      if (renderLatex(n, expr)) changed = true;
+    }
+
     const sel = n === selectedNode;
     ctx.fillStyle  = "#fff";
     ctx.strokeStyle = sel ? "#d9534f" : arrowCol;   // red when selected
@@ -423,34 +444,7 @@ function drawAll(){
     ctx.fillRect(n.x, n.y, n.w, n.h);
     ctx.strokeRect(n.x, n.y, n.w, n.h);
 
-    if (n.type === "TF" && n.params.num && n.params.den) {
-      renderLatex(n, `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`);
-    } else if (n.type === "Gain" && Number.isFinite(n.params.k)) {          
-      renderLatex(n, String(n.params.k));
-    } 
-    else if (n.type === "Derivative") {         
-          renderLatex(n, "s");
-    }
-    else if (n.type === "Source" || n.type === "Input") {
-        let expr;
-        if      (n.params.kind === "step")    expr = "\\frac{1}{s}";
-        else if (n.params.kind === "impulse") expr = "1";
-        else if (n.params.kind === "custom" &&
-                n.params.num && n.params.den)
-                expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
-        renderLatex(n, expr || (n.type === "Input" ? "X(s)" : "SRC"));
-        }
-    else if (n.type === "Input") {                   // NEW
-    let expr;
-    if      (n.params.kind === "step")    expr = "\\frac{1}{s}";
-    else if (n.params.kind === "impulse") expr = "1";
-    else if (n.params.kind === "custom" &&
-            n.params.num && n.params.den)
-            expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
-    renderLatex(n, expr || "X(s)");
-    }
-
-    else {
+    if (!expr) {
       ctx.fillStyle="#000";ctx.font="14px sans-serif";
       const tw=ctx.measureText(n.label).width;
       ctx.fillText(n.label,n.x+n.w/2-tw/2,n.y+n.h/2+5);
@@ -459,7 +453,9 @@ function drawAll(){
 
   });
 
-   edges.forEach(e => drawOrthEdge(ctx, e));
+  edges.forEach(e => drawOrthEdge(ctx, e));
+
+  if (changed) requestAnimationFrame(drawAll);
 }
 
 /* render LaTeX inside/above block (DOM overlay) –– centred ---------- */
@@ -469,18 +465,26 @@ function renderLatex(node, expr) {
     node.latexEl.className = "latexNode";
     node.latexEl.style.position = "absolute";
     node.latexEl.style.pointerEvents = "none";
-    node.latexEl.style.transform = "translate(-50%, -50%)"; // <<< NEW
+    node.latexEl.style.transform = "translate(-50%, -50%)";
     document.body.appendChild(node.latexEl);
   }
 
   katex.render(expr, node.latexEl, { throwOnError: false });
 
-  // place origin at the block centre, let CSS do the centring
+  const rect = node.latexEl.getBoundingClientRect();
+  const minW = 90, minH = 45;
+  const newW = Math.max(minW, rect.width + 20);
+  const newH = Math.max(minH, rect.height + 10);
+  const changed = newW !== node.w || newH !== node.h;
+  node.w = newW;
+  node.h = newH;
   node.latexEl.style.left =
     canvas.offsetLeft + node.x + node.w / 2 + "px";
   node.latexEl.style.top =
     canvas.offsetTop + node.y + node.h / 2 + "px";
   node.latexEl.style.display = "block";
+  
+  return changed;
 }
 
 function arrow(x0,y0,x1,y1){
