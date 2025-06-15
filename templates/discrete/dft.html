@@ -126,18 +126,28 @@ function updatePlots(){
     if(d.error){ console.error(d.error); return; }
 
     const lc = {margin:{t:30},showlegend:true};
+      const stem = (x,y,color)=>({
+      x:[].concat(...x.map(xi=>[xi,xi,xi])),
+      y:[].concat(...y.map(yi=>[0,yi,null])),
+      mode:"lines", line:{color,width:2}
+    });
+
     Plotly.newPlot("timePlot", [
-      {x:d.n, y:d.x_real, mode:"markers+lines", name:"Re", marker:{color:"#1f77b4"}},
-      {x:d.n, y:d.x_imag, mode:"markers+lines", name:"Im", marker:{symbol:"square",color:"#ff7f0e"}}
+      stem(d.n, d.x_real, "#1f77b4"),
+      {x:d.n, y:d.x_real, mode:"markers", name:"Re", marker:{color:"#1f77b4"}},
+      stem(d.n, d.x_imag, "#ff7f0e"),
+      {x:d.n, y:d.x_imag, mode:"markers", name:"Im", marker:{symbol:"square",color:"#ff7f0e"}}
     ], {...lc,title:"Time-Domain x[n]",xaxis:{title:"n"},yaxis:{title:"Amplitude"}});
 
     Plotly.newPlot("magPlot", [
-      {x:d.k, y:d.mag, mode:"markers+lines", name:"|X[k]|", marker:{color:"#1f77b4"}}
-    ], {...lc,title:"Magnitude Spectrum",xaxis:{title:"k"},yaxis:{title:"|X|"}});
+      stem(d.k, d.mag, "#1f77b4"),
+      {x:d.k, y:d.mag, mode:"markers", name:"|X[k]|", marker:{color:"#1f77b4"}}
+      ], {...lc,title:"Magnitude Spectrum",xaxis:{title:"k"},yaxis:{title:"|X|"}});
 
     Plotly.newPlot("phasePlot", [
-      {x:d.k, y:d.phase, mode:"markers+lines", name:"Phase", marker:{color:"#ff7f0e"}}
-    ], {...lc,title:"Phase Spectrum",xaxis:{title:"k"},yaxis:{title:"∠X  (rad)",range:[-Math.PI,Math.PI]}});
+      stem(d.k, d.phase, "#ff7f0e"),
+      {x:d.k, y:d.phase, mode:"markers", name:"Phase", marker:{color:"#ff7f0e"}}
+      ], {...lc,title:"Phase Spectrum",xaxis:{title:"k"},yaxis:{title:"∠X  (rad)",range:[-Math.PI,Math.PI]}});
     
     dftLabel.textContent = d.label;
   })

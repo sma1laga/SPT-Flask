@@ -36,6 +36,8 @@
 <script>
 let tData = [], y1Data = [], y2Data = [], yConvData = [];
 let topChart, bottomChart;
+function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
+
 
 function initCharts(){
   if(topChart) topChart.destroy();
@@ -44,23 +46,23 @@ function initCharts(){
   const bottomCtx = document.getElementById("bottomChart").getContext("2d");
 
   topChart = new Chart(topCtx, {
-    type: 'line',
-    data: { labels: tData,
+    type: 'scatter',
+    data: {
       datasets: [
-        { label: 'f₁[n]', data: y1Data, borderColor: 'blue', fill: false },
-        { label: 'f₂[τ−n]', data: [],     borderColor: 'orange', fill: false },
-        { label: 'f₁·f₂', data: [],     borderColor: 'red', fill: true, backgroundColor: 'rgba(255,0,0,0.2)', pointRadius: 0 }
+        { label: 'f₁[n]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
+        { label: 'f₂[τ−n]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
+        { label: 'f₁·f₂', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.2)', showLine: false, pointRadius: 4 }
       ]
     },
     options: { animation: false, scales: { x: { title: { display: true, text: 'n' } } } }
   });
 
   bottomChart = new Chart(bottomCtx, {
-    type: 'line',
-    data: { labels: tData,
+    type: 'scatter',
+    data: {
       datasets: [
-        { label: '(f₁*f₂)[τ]', data: yConvData, borderColor: 'darkblue', fill: false },
-        { label: 'Marker',       data: [], pointRadius: 5, showLine: false, borderColor: 'red' }
+        { label: '(f₁*f₂)[τ]', data: pairData(tData, yConvData), borderColor: 'darkblue', backgroundColor: 'darkblue', showLine: false },
+        { label: 'Marker', data: [], pointRadius: 5, showLine: false, borderColor: 'red', backgroundColor: 'red' }
       ]
     },
     options: { animation: false, scales: { x: { title: { display: true, text: 'τ' } } } }
@@ -97,11 +99,11 @@ function updatePlots(){
     const j = tData.indexOf(τ - v);
     return j >= 0 ? y2Data[j] : 0;
   });
-  topChart.data.datasets[1].data = y2shift;
+  topChart.data.datasets[1].data = pairData(tData, y2shift);
 
   // Pointwise product
   const yMul = y1Data.map((v,i) => v * y2shift[i]);
-  topChart.data.datasets[2].data = yMul;
+  topChart.data.datasets[2].data = pairData(tData, yMul);
   topChart.update();
 
   // Convolution marker
