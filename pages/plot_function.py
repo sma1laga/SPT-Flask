@@ -93,8 +93,10 @@ def plot_function_update():
         if y_arr is None:
             return None, 0
         
-        mag = np.abs(y_arr)
+        mag = np.abs(np.nan_to_num(y_arr, nan=0.0))
         total = np.sum(mag)
+        if np.isnan(total):
+            return None, 0
         if total == 0:
             return None, 0
 
@@ -161,11 +163,15 @@ def plot_function_update():
     else:
         x_min = float(t1.min())
         x_max = float(t1.max())
+    def to_json_list(arr):
+        lst = arr.tolist()
+        return [None if isinstance(v, float) and np.isnan(v) else v for v in lst]
 
     return jsonify({
-        "t1": t1.tolist(), "y1": y1.tolist(),
+        "t1": t1.tolist(),
+        "y1": to_json_list(y1),
         "t2": t2.tolist() if t2 is not None else None,
-        "y2": y2.tolist() if y2 is not None else None,
+        "y2": to_json_list(y2) if y2 is not None else None,
         "xrange": [x_min, x_max]
 
     })
