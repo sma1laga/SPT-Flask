@@ -17,3 +17,15 @@ def test_plot_function_update_basic(client):
     data = resp.get_json()
     assert 't1' in data and 'y1' in data
     assert len(data['t1']) == len(data['y1'])
+
+
+def test_plot_function_update_special(client):
+    payload = {'func1': 'tanh(t)'}
+    resp = client.post('/plot_function/update', data=json.dumps(payload), content_type='application/json')
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert 't1' in data and 'y1' in data
+
+    payload = {'func1': 'arcsin(0.5*t)'}
+    resp = client.post('/plot_function/update', data=json.dumps(payload), content_type='application/json')
+    assert resp.status_code == 200

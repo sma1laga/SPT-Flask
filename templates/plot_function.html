@@ -27,6 +27,20 @@
     <button type="button" onclick="insertOperand('/')">/</button>
   </div>
 
+    <!-- SPECIAL FUNCTIONS DROPDOWN -->
+  <div style="text-align:center;margin-bottom:24px;">
+    <select id="specialDropdown" style="padding:6px 10px;font-size:0.9em;">
+      <option value="">Special functions…</option>
+      <option value="arcsin(t)">arcsin(t)</option>
+      <option value="arccos(t)">arccos(t)</option>
+      <option value="arctan(t)">arctan(t)</option>
+      <option value="sinh(t)">sinh(t)</option>
+      <option value="cosh(t)">cosh(t)</option>
+      <option value="tanh(t)">tanh(t)</option>
+      <option value="gauss(t)">gauss(t)</option>
+    </select>
+  </div>
+
   <!-- TWO GROUPS OF SLIDERS -------------------------------------- -->
   <div class="transform-wrapper">
     <!-- f₁ controls -->
@@ -71,6 +85,17 @@
     activeField.value = v.slice(0,s)+op+v.slice(e);
     activeField.selectionStart = activeField.selectionEnd = s + op.length;
     activeField.focus();
+  }
+  // dropdown for special functions
+  const specialDropdown = document.getElementById("specialDropdown");
+  if(specialDropdown){
+    specialDropdown.addEventListener("change", ()=>{
+      const val = specialDropdown.value;
+      if(val){
+        insertOperand(val);
+        specialDropdown.selectedIndex = 0;
+      }
+    });
   }
 
   /* slider wiring ------------------------------------------------ */

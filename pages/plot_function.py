@@ -5,6 +5,29 @@ from utils.math_utils import (
     rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
 )
 
+# additional special functions kept local to this module
+def arcsin(t):
+    return np.arcsin(t)
+
+def arccos(t):
+    return np.arccos(t)
+
+def arctan(t):
+    return np.arctan(t)
+
+def sinh(t):
+    return np.sinh(t)
+
+def cosh(t):
+    return np.cosh(t)
+
+def tanh(t):
+    return np.tanh(t)
+
+def gauss(t):
+    """Standard normal PDF."""
+    return np.exp(-t**2 / 2) / np.sqrt(2 * np.pi)
+
 plot_function_bp = Blueprint("plot_function", __name__,
                              template_folder="templates")
 
@@ -33,8 +56,14 @@ def plot_function_update():
     # initial broad grid to estimate a suitable centre
     t_broad = np.linspace(-100, 100, 8000)
 
-    ns_broad = dict(t=t_broad, np=np, rect=rect, tri=tri, step=step, cos=cos, sin=sin,
-                    sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t, si=si, exp=np.exp)
+    ns_broad = dict(t=t_broad, np=np,
+                    rect=rect, tri=tri, step=step,
+                    cos=cos, sin=sin,
+                    sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
+                    si=si, exp=np.exp,
+                    arcsin=arcsin, arccos=arccos, arctan=arctan,
+                    sinh=sinh, cosh=cosh, tanh=tanh,
+                    gauss=gauss)
 
     # evaluate on broad grid
     try:
@@ -94,8 +123,14 @@ def plot_function_update():
     end = (center + 20 - s1) / w1
     t = np.linspace(start, end, 4000)
 
-    ns = dict(t=t, np=np, rect=rect, tri=tri, step=step, cos=cos, sin=sin,
-              sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t, si=si, exp=np.exp)
+    ns = dict(t=t, np=np,
+              rect=rect, tri=tri, step=step,
+              cos=cos, sin=sin,
+              sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
+              si=si, exp=np.exp,
+              arcsin=arcsin, arccos=arccos, arctan=arctan,
+              sinh=sinh, cosh=cosh, tanh=tanh,
+              gauss=gauss)
 
     # evaluate again on final grid
     try:
