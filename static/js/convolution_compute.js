@@ -50,20 +50,77 @@
     return out;
   }
 
+    function maxAbs(arr){
+    let m = 0;
+    for(let i=0;i<arr.length;i++){ const v = Math.abs(arr[i]); if(v>m) m = v; }
+    return m;
+  }
+
+  function activeLimits(arr, amp, axis){
+    if(amp<=0) return null;
+    const thr = 0.01*amp;
+    let i0=-1, i1=-1;
+    for(let i=0;i<arr.length;i++){ if(Math.abs(arr[i])>thr){ i0=i; break; } }
+    for(let i=arr.length-1;i>=0;i--){ if(Math.abs(arr[i])>thr){ i1=i; break; } }
+    if(i0>=0 && i1>=0) return [axis[i0], axis[i1]];
+    return null;
+  }
+
+  function interpUniform(x0, step, yArr, xq, out){
+    const n = yArr.length;
+    for(let i=0;i<xq.length;i++){
+      const idx = (xq[i]-x0)/step;
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      if(lo<0 || hi>=n){ out[i]=0; continue; }
+      const w = idx-lo;
+      out[i] = yArr[lo]*(1-w)+yArr[hi]*w;
+    }
+  }
+
   function compute_convolution(func1, func2){
-    const N = 1024;
-    const t = linspace(-10,10,N);
-    const dt = t[1]-t[0];
+    const N_SCAN = 8192;
+    const tScan = linspace(-100,100,N_SCAN);
+    const dtScan = tScan[1]-tScan[0];
     const f1 = makeEvaluator(func1||'0');
     const f2 = makeEvaluator(func2||'0');
     if(!f1 || !f2) return {error:'Error evaluating function'};
+    let y1Scan, y2Scan;
+    try { y1Scan = evaluateArray(f1, tScan); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
+    try { y2Scan = evaluateArray(f2, tScan); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
+
+    const amp1 = maxAbs(y1Scan);
+    const amp2 = maxAbs(y2Scan);
+    const r1 = activeLimits(y1Scan, amp1, tScan);
+    const r2 = activeLimits(y2Scan, amp2, tScan);
+
+    let tMin, tMax;
+    if(r1 || r2){
+      const t1Min = r1 ? r1[0] : 0;
+      const t1Max = r1 ? r1[1] : 0;
+      const t2Min = r2 ? r2[0] : 0;
+      const t2Max = r2 ? r2[1] : 0;
+      const convMin = t1Min + t2Min;
+      const convMax = t1Max + t2Max;
+      tMin = Math.min(t1Min, t2Min, convMin);
+      tMax = Math.max(t1Max, t2Max, convMax);
+    } else {
+      tMin = -10; tMax = 10;
+    }
+    const margin = 2;
+    tMin -= margin; tMax += margin;
+
+    const N = 4096;
+    const t = linspace(tMin, tMax, N);
+    const dt = t[1]-t[0];
     let y1, y2;
     try { y1 = evaluateArray(f1, t); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
     try { y2 = evaluateArray(f2, t); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
 
-    const y_conv_full = convolve(y1, y2, dt);
-    const start = (y_conv_full.length - N) >> 1;
-    const y_conv = y_conv_full.subarray(start, start + N);
+    const yConvFull = convolve(y1Scan, y2Scan, dtScan);
+    const convStart = 2*tScan[0];
+    const y_conv = new Float64Array(N);
+    interpUniform(convStart, dtScan, yConvFull, t, y_conv);
 
     return {
       t: Array.from(t),
