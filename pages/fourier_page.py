@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template
 import numpy as np
 from scipy.fftpack import fftfreq, fftshift
 from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
@@ -10,19 +10,10 @@ def fourier():
     # Rendert nur die Seite, Plots werden per AJAX/Plotly erzeugt
     return render_template("fourier.html")
 
-@fourier_bp.route("/update", methods=["POST"])
+@fourier_bp.route("/update", methods=["GET", "POST"])
 def update_fourier():
-    data = request.get_json(force=True)
-    func_str = data.get("func", "")
-    try:
-        phase_deg = float(data.get("phase", 0))
-    except:
-        phase_deg = 0.0
-
-    result = compute_fourier(func_str, np.deg2rad(phase_deg))
-    if "error" in result:
-        return jsonify({"error": result["error"]}), 400
-    return jsonify(result)
+    # Deprecated: computation now happens client-side
+    return render_template("fourier.html")
 
 def compute_fourier(func_str, phase_rad):
     """Compute Fourier transform with dynamic centering."""

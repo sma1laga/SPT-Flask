@@ -40,8 +40,11 @@ function FFT(size) {
   this._data = null;
   this._inv = 0;
 }
-module.exports = FFT;
-
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = FFT;
+} else {
+  window.FFT = FFT;
+}
 FFT.prototype.fromComplexArray = function fromComplexArray(complex, storage) {
   var res = storage || new Array(complex.length >>> 1);
   for (var i = 0; i < complex.length; i += 2)

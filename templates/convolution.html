@@ -61,6 +61,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/convolution_compute.js') }}"></script>
 <script>
   let activeField = null;
   function setActiveField(f) { activeField = f; }
@@ -83,14 +84,9 @@
   }
 
   function updatePlots() {
-    fetch("{{ url_for('convolution.convolution_update') }}", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(getValues())
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.error) return console.error(data.error);
+    const vals = getValues();
+    const data = compute_convolution(vals.func1, vals.func2);
+    if (data.error) return console.error(data.error);
       const lc = { margin: { t: 30 }, showlegend: true };
 
       Plotly.newPlot("plot1", [{
@@ -110,8 +106,7 @@
         type: "scatter", mode: "lines", name: "Convolution",
         line: { width: 3, color: "#2ca02c" }
       }], { ...lc, title: "f₁ * f₂ (Convolution)", xaxis: { title: "t" }, yaxis: { title: "(f₁*f₂)(t)" } });
-    })
-    .catch(console.error);
+
   }
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);

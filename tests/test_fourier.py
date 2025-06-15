@@ -1,10 +1,14 @@
-from pages.fourier_page import compute_fourier
+import pytest
+from main import create_app
 
+@pytest.fixture(scope='module')
+def client():
+    app = create_app()
+    app.config['TESTING'] = True
+    with app.test_client() as c:
+        yield c
 
-def test_compute_fourier_returns_expected_keys():
-    res = compute_fourier('sin(t)', 0.0)
-    keys = {'t', 'y_real', 'y_imag', 'f', 'magnitude', 'phase', 'transformation_label'}
-    assert keys.issubset(res.keys())
-    length = len(res['t'])
-    assert all(len(res[k]) == length for k in ['y_real', 'y_imag', 'f', 'magnitude', 'phase'])
-    assert max(res['magnitude']) == 1
+def test_fourier_page_contains_script(client):
+    resp = client.get('/fourier/')
+    assert resp.status_code == 200
+    assert b'fourier_compute.js' in resp.data

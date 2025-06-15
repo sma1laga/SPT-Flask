@@ -1,5 +1,5 @@
 # pages/convolution.py
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template
 import numpy as np
 from scipy.signal import convolve
 from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
@@ -11,15 +11,10 @@ def convolution():
     # Renders the convolution page; plots are generated client-side via AJAX + Plotly
     return render_template("convolution.html")
 
-@convolution_bp.route("/update", methods=["POST"])
+@convolution_bp.route("/update", methods=["GET", "POST"])
 def convolution_update():
-    data = request.get_json(force=True)
-    func1_str = data.get("func1", "")
-    func2_str = data.get("func2", "")
-    result = compute_convolution(func1_str, func2_str)
-    if "error" in result:
-        return jsonify({"error": result["error"]}), 400
-    return jsonify(result)
+    # Deprecated: computation now happens client-side
+    return render_template("convolution.html")
 
 def compute_convolution(func1_str, func2_str):
     # 1. Initial wide axis to locate non-zero regions of the input functions.
