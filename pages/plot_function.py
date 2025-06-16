@@ -100,10 +100,13 @@ def plot_function_update():
         if total == 0:
             return None, 0
 
-        # detect a leading region of (near) zeros followed by activity
+        # detect a leading region of (near) zeros followed by activity.
+        # require a reasonably long run of near-zero values to avoid
+        # mistaking oscillatory functions for one-sided signals.
         thresh = mag.max() * 1e-3
         nz = np.where(mag > thresh)[0]
-        if len(nz) > 0 and nz[0] > 0 and np.all(mag[:nz[0]] < thresh):
+        min_run = max(10, len(t_arr) // 100)
+        if len(nz) > 0 and nz[0] >= min_run and np.all(mag[:nz[0]] < thresh):
             return float(t_arr[nz[0]]), total
 
         return float(np.sum(t_arr * mag) / total), total
@@ -164,6 +167,11 @@ def plot_function_update():
         x_min = float(t1.min())
         x_max = float(t1.max())
     def to_json_list(arr):
+        if np.iscomplexobj(arr):
+            return {
+                "real": arr.real.tolist(),
+                "imag": arr.imag.tolist(),
+            }
         lst = arr.tolist()
         return [None if isinstance(v, float) and np.isnan(v) else v for v in lst]
 

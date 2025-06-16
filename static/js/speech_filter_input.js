@@ -6,6 +6,11 @@ let recorder = null;
 let recordedSignal = null;
 let recordedSampleRate = 44100;
 let isRecording = false;
+let timerInterval = null;
+let elapsed = 0;
+const MAX_RECORD_TIME = 10;
+let recordBtn;
+let recordTimer;
 
 const fft = (re, im) => {
   const n = re.length;
@@ -289,9 +294,21 @@ async function startRecording() {
       showError('');
     }
     document.getElementById('recordStatus').textContent = 'Recorded';
+    if (timerInterval) { clearInterval(timerInterval); }
+    if (recordTimer) recordTimer.textContent = '';
   };
   recorder.start();
   document.getElementById('recordStatus').textContent = 'Recording...';
+  elapsed = 0;
+  if (recordTimer) recordTimer.textContent = `0.0 / ${MAX_RECORD_TIME}s`;
+  timerInterval = setInterval(() => {
+    elapsed += 0.1;
+    if (recordTimer) recordTimer.textContent = `${elapsed.toFixed(1)} / ${MAX_RECORD_TIME}s`;
+    if (elapsed >= MAX_RECORD_TIME) {
+      stopRecording();
+      if (recordBtn) recordBtn.textContent = 'Record Again';
+    }
+  }, 100);
   isRecording = true;
 }
 
@@ -301,6 +318,12 @@ function stopRecording() {
     recorder.stream.getTracks().forEach(t => t.stop());
     isRecording = false;
   }
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  elapsed = 0;
+  if (recordTimer) recordTimer.textContent = '';
 }
 
 
@@ -309,7 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const uploadDiv = document.getElementById('uploadDiv');
   const recordDiv = document.getElementById('recordDiv');
   const fileIn = document.getElementById('audio_file');
-  const recordBtn = document.getElementById('recordBtn');
+  recordBtn = document.getElementById('recordBtn');
+  recordTimer = document.getElementById('recordTimer');
   radios.forEach(r => r.addEventListener('change', () => {
     if (r.value === 'upload' && r.checked) {
       uploadDiv.style.display = 'block';

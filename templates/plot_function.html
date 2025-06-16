@@ -134,17 +134,25 @@
     .then(data=>{
       if(data.error){ console.error(data.error); return; }
 
-      const traces = [{
-        x:data.t1, y:data.y1, name:"f₁(t)", mode:"lines",
-        line:{width:3,color:"#1f77b4"}
-      }];
+      const traces = [];
 
-      if(data.t2){
-        traces.push({
-          x:data.t2, y:data.y2, name:"f₂(t)", mode:"lines",
-          line:{width:3,color:"#ff7f0e"}
-        });
+      function addTraces(t, y, name, color){
+        if(!y) return;
+        if(Array.isArray(y)){
+          traces.push({x:t, y:y, name:name, mode:"lines",
+                       line:{width:3,color:color}});
+        } else if(y.real && y.imag){
+          traces.push({x:t, y:y.real, name:`Re{${name}}`, mode:"lines",
+                       line:{width:3,color:color}});
+          const hasImag = y.imag.some(v=>Math.abs(v)>1e-12);
+          if(hasImag){
+            traces.push({x:t, y:y.imag, name:`Im{${name}}`, mode:"lines",
+                         line:{width:3,color:color, dash:"dot"}});
+          }
+        }
       }
+      addTraces(data.t1, data.y1, "f₁(t)", "#1f77b4");
+      if(data.t2) addTraces(data.t2, data.y2, "f₂(t)", "#ff7f0e");
 
       const xrange = data.xrange || [-20, 20];
       Plotly.newPlot("plot", traces,

@@ -26,7 +26,8 @@ def dynamic_data():
     f2_str = data.get("func2", "")
 
     # time axis
-    t = np.linspace(-10, 10, 800)
+    # Use a compact range [-4, 4] so that charts appear larger on screen
+    t = np.linspace(-4, 4, 800)
     dt = t[1] - t[0]
 
     # safe eval context
