@@ -82,7 +82,10 @@
     } catch(e){
       return {error:'Error evaluating function: '+e.message};
     }
-
+    const hasExp = /exp_iwt\s*\(/.test(funcStr);
+    if(!hasExp){
+      yBroadIm.fill(0);
+    }
     let sumMag = 0, sumT = 0;
     for(let i=0;i<yBroadRe.length;i++){
       const mag = Math.hypot(yBroadRe[i], yBroadIm[i]);
@@ -101,6 +104,9 @@
       yIm = evaluateArray(fnIm, t);
     } catch(e){
       return {error:'Error evaluating function: '+e.message};
+    }
+    if(!hasExp){
+      yIm.fill(0);
     }
     const dt = t[1]-t[0];
 
