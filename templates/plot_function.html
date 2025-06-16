@@ -31,13 +31,19 @@
   <div style="text-align:center;margin-bottom:24px;">
     <select id="specialDropdown" style="padding:6px 10px;font-size:0.9em;">
       <option value="">Special functions…</option>
-      <option value="arcsin(t)">arcsin(t)</option>
-      <option value="arccos(t)">arccos(t)</option>
-      <option value="arctan(t)">arctan(t)</option>
-      <option value="sinh(t)">sinh(t)</option>
-      <option value="cosh(t)">cosh(t)</option>
-      <option value="tanh(t)">tanh(t)</option>
-      <option value="gauss(t)">gauss(t)</option>
+      <optgroup label="Trigonometric">
+        <option value="arcsin(t)">arcsin(t)</option>
+        <option value="arccos(t)">arccos(t)</option>
+        <option value="arctan(t)">arctan(t)</option>
+      </optgroup>
+      <optgroup label="Hyperbolic">
+        <option value="sinh(t)">sinh(t)</option>
+        <option value="cosh(t)">cosh(t)</option>
+        <option value="tanh(t)">tanh(t)</option>
+      </optgroup>
+      <optgroup label="Misc">
+        <option value="gauss(t)">gauss(t)</option>
+      </optgroup>
     </select>
   </div>
 

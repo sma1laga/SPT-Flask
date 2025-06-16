@@ -92,12 +92,13 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
     _arrow(ax, (X_L, Y_TOP - r_add), (X_L, Y_TOP - DY + r_add))
     _arrow(ax, (X_L, Y_TOP - DY - r_add), (X_L, Y_TOP - 2 * DY + r_add))
 
-    # ── gain blocks left (feedback –a₁, –a₂) ─────────────────────────────
+    # ── feedback gains (–a₁, –a₂) – draw only if they exist ─────────
     fb_boxes = [(X_GL, Y_TOP - DY), (X_GL, Y_TOP - 2 * DY)]
     for k, (x, y) in enumerate(fb_boxes, start=1):
-        _box(ax, (x, y), text=rf"${_neg_fmt(a[k])}$")
-        _arrow(ax, (X_INT, y), (x + 0.3, y))
-        _arrow(ax, (x - 0.3, y), (X_L + r_add, y))
+        if k < len(a):                                   # bounds check
+            _box(ax, (x, y), text=rf"${_neg_fmt(a[k])}$")
+            _arrow(ax, (X_INT, y), (x + 0.3, y))         # from state → gain
+            _arrow(ax, (x - 0.3, y), (X_L + r_add, y))   # from gain → adder
 
     # ── feed-forward gain b₀ ────────────────────────────────────────────
     _box(ax, (X_GL, Y_TOP), text=rf"${b[0]:g}$")
@@ -117,20 +118,17 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
         _arrow(ax, (X_INT, Y_TOP - i * DY), (X_INT, by + 0.18))
         _arrow(ax, (X_INT, by - 0.18), state_nodes[i])
 
-    # --- feedback gains -------------------------------------------------
-    for k, (x, y) in enumerate(fb_boxes, start=1):
-        if k < len(a):                 # only draw if a_k exists
-            _box(ax, (x, y), text=rf"${_neg_fmt(a[k])}$")
-            _arrow(ax, (X_INT, y), (x + 0.3, y))
-            _arrow(ax, (x - 0.3, y), (X_L + r_add, y))
+    # (second feedback-gain loop removed – handled above)
 
-    # --- feed-forward gains --------------------------------------------
+
+
+    # ── feed-forward gains b₁, b₂ (optional) ─────────
     ff_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2*DY)]
     for idx, y in ff_specs:
-        if idx < len(b):
+        if idx < len(b):                                 # bounds check
             _box(ax, (X_GR, y), text=rf"${b[idx]:g}$")
-            _arrow(ax, (X_INT, y), (X_GR - 0.3, y))
-            _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, Y_TOP))
+            _arrow(ax, (X_INT, y), (X_GR - 0.3, y))      # from state → gain
+            _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, Y_TOP))  # gain → adder
 
     # connection from node 0 straight to output adder
     _arrow(ax, (X_INT, Y_TOP), (X_Y - r_add, Y_TOP))
@@ -312,8 +310,9 @@ def direct_plot():
                 xi = int(round(float(x)))
                 return xi if np.isclose(x, xi) else float(x)
 
-            num_sym = sp.Poly([_as_int_or_float(c) for c in num], s).as_expr()
-            den_sym = sp.Poly([_as_int_or_float(c) for c in den], s).as_expr()
+            # SymPy expects highest-power first; our arrays are lowest-power first
+            num_sym = sp.Poly([_as_int_or_float(c) for c in num[::-1]], s).as_expr()
+            den_sym = sp.Poly([_as_int_or_float(c) for c in den[::-1]], s).as_expr()
 
             tf_ltx = r"\displaystyle H(s)=\frac{%s}{%s}" % (
                 sp.latex(num_sym),
