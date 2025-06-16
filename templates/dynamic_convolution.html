@@ -15,14 +15,18 @@
         <label for="func1" style="font-weight: bold;">f₁(t):</label><br>
         <select id="func1">
           <option value="">-- none --</option>
-          {% for f in functions %}<option>{{ f }}</option>{% endfor %}
+          {% for label, val in functions %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
         </select>
       </div>
       <div>
         <label for="func2" style="font-weight: bold;">f₂(t):</label><br>
         <select id="func2">
           <option value="">-- none --</option>
-          {% for f in functions %}<option>{{ f }}</option>{% endfor %}
+          {% for label, val in functions %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
         </select>
       </div>
       <div>

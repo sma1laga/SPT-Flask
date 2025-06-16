@@ -10,8 +10,17 @@ dynamic_convolution_bp = Blueprint("dynamic_convolution", __name__)
 @dynamic_convolution_bp.route("/", methods=["GET"])
 def dynamic_convolution():
     functions = [
-        "rect(t)", "tri(t)", "step(t)", "sin(t)", "cos(t)",
-        "sign(t)", "delta(t)", "exp_iwt(t)", "exp(t)", "inv_t(t)", "si(t)"
+        ("rect(t)", "rect(t)"),
+        ("tri(t)", "tri(t)"),
+        ("step(t)", "step(t)"),
+        ("sin(t)", "sin(t)"),
+        ("cos(t)", "cos(t)"),
+        ("sign(t)", "sign(t)"),
+        ("delta(t)", "delta(t)"),
+        ("e^(i\u03c9t)", "exp_iwt(t)"),
+        ("exp(t)", "exp(t)"),
+        ("inv_t(t)", "inv_t(t)"),
+        ("si(t)", "si(t)")
     ]
     return render_template("dynamic_convolution.html", functions=functions)
 
@@ -48,6 +57,9 @@ def dynamic_data():
         y2 = eval(f2_str, local) if f2_str else np.zeros_like(t)
     except Exception as e:
         return jsonify(error=f"Function 2 eval error: {e}"), 400
+    
+    y1 = np.real(y1)
+    y2 = np.real(y2)
 
     # full convolution
         # ——— Extended‐domain convolution to avoid edge truncation ———
@@ -64,10 +76,16 @@ def dynamic_data():
     except Exception as e:
         return jsonify(error=f"Extended‐domain eval error: {e}"), 400
 
+    y1_ext = np.real(y1_ext)
+    y2_ext = np.real(y2_ext)
+
     y_conv_ext = convolve(y1_ext, y2_ext, mode="same") * dt_ext
+    y_conv_ext = np.real(y_conv_ext)
 
     # sample back onto the original t grid
     y_conv = np.interp(t, t_ext, y_conv_ext)
+    y_conv = np.real(y_conv)
+
     # ——————————————————————————————————————————————————————
 
 
