@@ -36,6 +36,11 @@ def _normalise(num, den):
     den /= den[0]
     return num, den
 
+def _neg_fmt(coef: float) -> str:
+    """Format -coef without redundant minus signs."""
+    return f"{-coef:g}"
+
+
 
 # ─────────────────── diagram drawing ───────────────────────────────────────
 def _circle(ax, xy, r=0.17):
@@ -90,7 +95,7 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
     # ── gain blocks left (feedback –a₁, –a₂) ─────────────────────────────
     fb_boxes = [(X_GL, Y_TOP - DY), (X_GL, Y_TOP - 2 * DY)]
     for k, (x, y) in enumerate(fb_boxes, start=1):
-        _box(ax, (x, y), text=rf"$-{a[k]:g}$")
+        _box(ax, (x, y), text=rf"${_neg_fmt(a[k])}$")
         _arrow(ax, (X_INT, y), (x + 0.3, y))
         _arrow(ax, (x - 0.3, y), (X_L + r_add, y))
 
@@ -115,7 +120,7 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
     # --- feedback gains -------------------------------------------------
     for k, (x, y) in enumerate(fb_boxes, start=1):
         if k < len(a):                 # only draw if a_k exists
-            _box(ax, (x, y), text=rf"$-{a[k]:g}$")
+            _box(ax, (x, y), text=rf"${_neg_fmt(a[k])}$")
             _arrow(ax, (X_INT, y), (x + 0.3, y))
             _arrow(ax, (x - 0.3, y), (X_L + r_add, y))
 
@@ -189,7 +194,7 @@ def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
         _arrow(ax, (bx, by - 0.18), states_y[i])
         idx = i + 1
         if idx < len(a):
-            _box(ax, (X_ADD + 1.0, by), text=rf"$-{a[idx]:g}$")
+            _box(ax, (X_ADD + 1.0, by), text=rf"${_neg_fmt(a[idx])}$")
             _arrow(ax, states_y[i], (X_ADD + 1.0 - 0.3, by))
             _arrow(ax, (X_ADD + 1.0 + 0.3, by), (X_ADD - r_add, Y_TOP))
 
@@ -237,11 +242,11 @@ def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
     for idx, y in fb_specs:
         if idx < len(a):
             coef = a[-(idx+1)]
-            _box(ax, (X_GR, y), text=rf"$-{coef:g}$")
+            _box(ax, (X_GR, y), text=rf"${_neg_fmt(coef)}$")
             _arrow(ax, state_nodes[idx-1], (X_GR - 0.3, y))
             _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, Y_TOP))
 
-    _box(ax, (X_GR, Y_TOP), text=rf"$-{a[-1]:g}$")
+    _box(ax, (X_GR, Y_TOP), text=rf"${_neg_fmt(a[-1])}$")
     _arrow(ax, (X_INT, Y_TOP), (X_GR - 0.3, Y_TOP))
     _arrow(ax, (X_GR + 0.3, Y_TOP), (X_Y - r_add, Y_TOP))
 
