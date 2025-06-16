@@ -286,27 +286,33 @@ def direct_plot():
     diagram64 = table_txt = tf_ltx = error = None
     if request.method == "POST":
         try:
-            num = _str_to_coeffs(num_txt)
-            den = _str_to_coeffs(den_txt)
-            num, den = _normalise(num, den)
+            num_orig = _str_to_coeffs(num_txt)
+            den_orig = _str_to_coeffs(den_txt)
+            num, den = _normalise(num_orig, den_orig)
 
             # diagram or fallback
             diagram64 = _make_diagram(num, den, form_sel)
             if diagram64 is None:
                 table_txt = (
                     "Order > 2 – diagram omitted.<br>"
-                    f"<b>b:</b> {np.round(num,3)}<br>"
-                    f"<b>a:</b> {np.round(den,3)}"
+                    f"<b>b:</b> {np.round(num_orig,3)}<br>"
+                    f"<b>a:</b> {np.round(den_orig,3)}"
                 )
 
-            # LaTeX pretty-print
+            # LaTeX pretty-print.  If a coefficient is very close to an integer,
+            # display it as an integer to avoid "1.0" style output.
             s = sp.symbols("s")
-            tf_ltx = (
-                r"\displaystyle H(s)=\frac{%s}{%s}"
-                % (
-                    sp.latex(sp.Poly(num, s).as_expr()),
-                    sp.latex(sp.Poly(den, s).as_expr()),
-                )
+
+            def _as_int_or_float(x):
+                xi = int(round(float(x)))
+                return xi if np.isclose(x, xi) else float(x)
+
+            num_sym = sp.Poly([_as_int_or_float(c) for c in num], s).as_expr()
+            den_sym = sp.Poly([_as_int_or_float(c) for c in den], s).as_expr()
+
+            tf_ltx = r"\displaystyle H(s)=\frac{%s}{%s}" % (
+                sp.latex(num_sym),
+                sp.latex(den_sym),
             )
 
         except Exception as exc:
