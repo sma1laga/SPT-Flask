@@ -15,7 +15,16 @@
   const sin = Math.sin;
   const sign = Math.sign;
   function delta(t){ const eps=1e-3; return Math.exp(-t*t/eps)/Math.sqrt(Math.PI*eps); }
-  function exp_iwt(t, omega_0=1){ return Math.cos(omega_0*t); }
+  // Complex exponential helper. The computation pipeline expects
+  // separate real and imaginary parts, so we handle exp_iwt by
+  // evaluating the real part (cos) and imaginary part (sin)
+  // separately.  The actual combination happens in compute_fourier.
+  function exp_iwt(t, omega_0=1){
+    // Placeholder returning only the real part.  The evaluator will
+    // replace calls to exp_iwt with either cos() or sin() to obtain
+    // the respective real and imaginary components.
+    return Math.cos(omega_0*t);
+  }
   function inv_t(t){ return t!==0 ? 1/t : 0; }
   function si(t){ return t===0 ? 1 : Math.sin(Math.PI*t)/(Math.PI*t); }
 
@@ -38,6 +47,11 @@
     return out;
   }
 
+  function replaceExp(expr, funcName){
+    return expr.replace(/exp_iwt\s*\(([^)]*)\)/g, funcName + '($1)');
+  }
+
+
   function fftshift(re, im){
     const N = re.length;
     const half = N>>1;
@@ -58,31 +72,46 @@
     const N = 4096;
 
     const tBroad = linspace(-100,100,N_SCAN);
-    const fn = makeEvaluator(funcStr);
-    if(!fn) return {error:'Error evaluating function'};
-    let yBroad;
-    try { yBroad = evaluateArray(fn, tBroad); } catch(e){ return {error:'Error evaluating function: '+e.message}; }
+    const fnReBroad = makeEvaluator(replaceExp(funcStr,'Math.cos'));
+    const fnImBroad = makeEvaluator(replaceExp(funcStr,'Math.sin'));
+    if(!fnReBroad || !fnImBroad) return {error:'Error evaluating function'};
+    let yBroadRe, yBroadIm;
+    try {
+      yBroadRe = evaluateArray(fnReBroad, tBroad);
+      yBroadIm = evaluateArray(fnImBroad, tBroad);
+    } catch(e){
+      return {error:'Error evaluating function: '+e.message};
+    }
 
     let sumMag = 0, sumT = 0;
-    for(let i=0;i<yBroad.length;i++){
-      const mag = Math.abs(yBroad[i]);
+    for(let i=0;i<yBroadRe.length;i++){
+      const mag = Math.hypot(yBroadRe[i], yBroadIm[i]);
       sumMag += mag;
       sumT += tBroad[i]*mag;
     }
     const center = sumMag===0 ? 0 : sumT/sumMag;
 
     const t = linspace(center-20, center+20, N);
-    let y;
-    try { y = evaluateArray(fn, t); } catch(e){ return {error:'Error evaluating function: '+e.message}; }
+    const fnRe = makeEvaluator(replaceExp(funcStr,'Math.cos'));
+    const fnIm = makeEvaluator(replaceExp(funcStr,'Math.sin'));
+    if(!fnRe || !fnIm) return {error:'Error evaluating function'};
+    let yRe, yIm;
+    try {
+      yRe = evaluateArray(fnRe, t);
+      yIm = evaluateArray(fnIm, t);
+    } catch(e){
+      return {error:'Error evaluating function: '+e.message};
+    }
     const dt = t[1]-t[0];
 
     // Apply phase shift
     const y_re = new Float64Array(N);
     const y_im = new Float64Array(N);
     for(let i=0;i<N;i++){
-      const val = y[i];
-      y_re[i] = val*Math.cos(phaseRad);
-      y_im[i] = val*Math.sin(phaseRad);
+      const re = yRe[i];
+      const im = yIm[i];
+      y_re[i] = re*Math.cos(phaseRad) - im*Math.sin(phaseRad);
+      y_im[i] = re*Math.sin(phaseRad) + im*Math.cos(phaseRad);
     }
 
     const fft = new FFT(N);
