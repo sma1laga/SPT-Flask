@@ -68,7 +68,11 @@ function traces(d){
 
 function draw(){
   Plotly.newPlot('transformPlot', traces(current), {
-    scene:{ xaxis:{title:'Re(z)'}, yaxis:{title:'Im(z)'}, zaxis:{title:'|X|'} },
+    scene:{
+      xaxis:{ title:{ text:'Re{z}' } },
+      yaxis:{ title:{ text:'Im{z}' } },
+      zaxis:{ title:{ text:'|X(z)|' } }
+    },
     margin:{ t:40 }
   });
 }

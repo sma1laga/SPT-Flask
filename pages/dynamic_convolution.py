@@ -34,8 +34,9 @@ def dynamic_data():
     f2_str = data.get("func2", "")
 
     # time axis
-    # Use a compact range [-4, 4] so that charts appear larger on screen
-    t = np.linspace(-4, 4, 800)
+    # Wider range so theoretically infinite signals (step, sin, etc.) appear
+    # nearly constant across the visible window
+    t = np.linspace(-8, 8, 1600)
     dt = t[1] - t[0]
 
     # safe eval context
