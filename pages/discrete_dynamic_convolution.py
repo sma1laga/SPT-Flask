@@ -16,7 +16,7 @@ def index():
     # Provide available discrete functions
     functions = [
         "rect(n)", "tri(n)", "step(n)", "sin(n)",
-        "cos(n)", "sign(n)", "delta(n)", "exp_iwt(n)",
+        "cos(n)", "sign(n)", "delta(n)",
         "inv_t(n)", "si(n)"
     ]
     return render_template(

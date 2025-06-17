@@ -17,7 +17,6 @@ def dynamic_convolution():
         ("cos(t)", "cos(t)"),
         ("sign(t)", "sign(t)"),
         ("delta(t)", "delta(t)"),
-        ("e^(i\u03c9t)", "exp_iwt(t)"),
         ("exp(t)", "exp(t)"),
         ("inv_t(t)", "inv_t(t)"),
         ("si(\u03c0t)", "si(t)")
