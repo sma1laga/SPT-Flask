@@ -41,6 +41,28 @@ def _neg_fmt(coef: float) -> str:
     return f"{-coef:g}"
 
 
+def _as_int_or_float(x):
+    xi = int(round(float(x)))
+    return xi if np.isclose(x, xi) else float(x)
+
+
+def _coeffs_to_poly_expr(coeffs, s):
+    """
+    Baue eine SymPy-Polynomausdruck termweise,
+    so dass ganze Zahlen als sp.Integer und nicht-ganze
+    Zahlen als sp.Float erscheinen.
+    """
+    expr = 0
+    n = len(coeffs)
+    for k, c in enumerate(coeffs[::-1]):  # h\xf6chste Potenz zuerst
+        power = n - k - 1
+        if np.isclose(c, round(c)):
+            coeff_sym = sp.Integer(int(round(c)))
+        else:
+            coeff_sym = sp.Float(c)
+        expr += coeff_sym * s ** power
+    return expr
+
 
 # ─────────────────── diagram drawing ───────────────────────────────────────
 def _circle(ax, xy, r=0.17):
@@ -306,13 +328,9 @@ def direct_plot():
             # display it as an integer to avoid "1.0" style output.
             s = sp.symbols("s")
 
-            def _as_int_or_float(x):
-                xi = int(round(float(x)))
-                return xi if np.isclose(x, xi) else float(x)
-
             # SymPy expects highest-power first; our arrays are lowest-power first
-            num_sym = sp.Poly([_as_int_or_float(c) for c in num[::-1]], s).as_expr()
-            den_sym = sp.Poly([_as_int_or_float(c) for c in den[::-1]], s).as_expr()
+            num_sym = _coeffs_to_poly_expr(num, s)
+            den_sym = _coeffs_to_poly_expr(den, s)
 
             tf_ltx = r"\displaystyle H(s)=\frac{%s}{%s}" % (
                 sp.latex(num_sym),
