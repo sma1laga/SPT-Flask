@@ -33,8 +33,8 @@ def dynamic_data():
     f1_str = data.get("func1", "")
     f2_str = data.get("func2", "")
 
-    # display grid
-    t = np.linspace(-8, 8, 1600)
+    # display grid limited to [-4, 4]
+    t = np.linspace(-4, 4, 800)
     # use a wider calculation grid so theoretically infinite signals appear flat
     t_calc = np.linspace(-16, 16, 3200)
     dt_calc = t_calc[1] - t_calc[0]

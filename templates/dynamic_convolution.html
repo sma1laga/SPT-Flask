@@ -31,7 +31,7 @@
       </div>
       <div>
         <label for="tauSlider" style="font-weight: bold;">Shift τ:</label><br>
-        <input type="range" id="tauSlider" min="-8" max="8" step="0.1" value="0">
+        <input type="range" id="tauSlider" min="-4" max="4" step="0.1" value="0">
         <span id="tauValue" style="display: inline-block; width: 40px;">0.0</span>
       </div>
     </div>
@@ -86,7 +86,7 @@
             { label: "f₁·f₂", data: [], borderColor: 'red', fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
           ]
         },
-        options: { animation:false, scales:{ x:{ type:'linear', min:-8, max:8 } } }
+        options: { animation:false, scales:{ x:{ type:'linear', min:-4, max:4 } } }
       });
 
       bottomChart = new Chart(bottomCtx, {
@@ -98,7 +98,7 @@
             { label: "Marker", data: [], pointRadius:5, showLine:false, borderColor:'red' }
           ]
         },
-        options: { animation:false, scales:{ x:{ type:'linear', min:-8, max:8 } } }
+        options: { animation:false, scales:{ x:{ type:'linear', min:-4, max:4 } } }
       });
     }
 
