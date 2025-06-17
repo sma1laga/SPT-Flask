@@ -20,7 +20,7 @@ def dynamic_convolution():
         ("e^(i\u03c9t)", "exp_iwt(t)"),
         ("exp(t)", "exp(t)"),
         ("inv_t(t)", "inv_t(t)"),
-        ("si(t)", "si(t)")
+        ("si(\u03c0t)", "si(t)")
     ]
     return render_template("dynamic_convolution.html", functions=functions)
 
