@@ -33,15 +33,15 @@ def dynamic_data():
     f1_str = data.get("func1", "")
     f2_str = data.get("func2", "")
 
-    # time axis
-    # Wider range so theoretically infinite signals (step, sin, etc.) appear
-    # nearly constant across the visible window
+    # display grid
     t = np.linspace(-8, 8, 1600)
-    dt = t[1] - t[0]
-
-    # safe eval context
+    # use a wider calculation grid so theoretically infinite signals appear flat
+    t_calc = np.linspace(-16, 16, 3200)
+    dt_calc = t_calc[1] - t_calc[0]
+    
+    # safe eval context on the wider grid
     local = {
-        "t": t, "np": np,
+        "t": t_calc, "np": np,
         "rect": rect, "tri": tri, "step": step,
         "cos": cos, "sin": sin, "sign": sign,
         "delta": delta, "exp_iwt": exp_iwt,
@@ -50,11 +50,11 @@ def dynamic_data():
 
     # eval f1, f2
     try:
-        y1 = eval(f1_str, local) if f1_str else np.zeros_like(t)
+        y1 = eval(f1_str, local) if f1_str else np.zeros_like(t_calc)
     except Exception as e:
         return jsonify(error=f"Function 1 eval error: {e}"), 400
     try:
-        y2 = eval(f2_str, local) if f2_str else np.zeros_like(t)
+        y2 = eval(f2_str, local) if f2_str else np.zeros_like(t_calc)
     except Exception as e:
         return jsonify(error=f"Function 2 eval error: {e}"), 400
     
@@ -63,8 +63,8 @@ def dynamic_data():
 
     # full convolution
         # ——— Extended‐domain convolution to avoid edge truncation ———
-    N = len(t)
-    t_ext = np.linspace(2*t[0], 2*t[-1], 2*N - 1)
+    N = len(t_calc)
+    t_ext = np.linspace(2*t_calc[0], 2*t_calc[-1], 2*N - 1)
     dt_ext = t_ext[1] - t_ext[0]
 
     local_ext = local.copy()
@@ -82,8 +82,14 @@ def dynamic_data():
     y_conv_ext = convolve(y1_ext, y2_ext, mode="same") * dt_ext
     y_conv_ext = np.real(y_conv_ext)
 
-    # sample back onto the original t grid
-    y_conv = np.interp(t, t_ext, y_conv_ext)
+    # sample back onto the calculation grid then the display grid
+    y_conv_calc = np.interp(t_calc, t_ext, y_conv_ext)
+    y_conv_calc = np.real(y_conv_calc)
+
+    # resample original signals for display
+    y1_disp = np.interp(t, t_calc, y1)
+    y2_disp = np.interp(t, t_calc, y2)
+    y_conv = np.interp(t, t_calc, y_conv_calc)
     y_conv = np.real(y_conv)
 
     # ——————————————————————————————————————————————————————
@@ -91,7 +97,7 @@ def dynamic_data():
 
     return jsonify({
         "t":     t.tolist(),
-        "y1":    y1.tolist(),
-        "y2":    y2.tolist(),
+        "y1":    y1_disp.tolist(),
+        "y2":    y2_disp.tolist(),
         "y_conv": y_conv.tolist()
     })
