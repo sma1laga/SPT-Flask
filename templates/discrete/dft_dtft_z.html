@@ -15,12 +15,31 @@
     N-point DFT samples. Use the controls below to experiment.
   </p>
 </div>
-<form id="ctrl" class="checkbox-group">
-  <label><b>N:</b></label>
-  <input id="N" type="number" min="2" max="64" value="{{ N }}">
-  <label><input type="checkbox" id="surfToggle" checked> |X(z)| surface</label>
-  <label><input type="checkbox" id="dtftToggle" checked> DTFT line</label>
-  <label><input type="checkbox" id="dftToggle" checked> DFT samples</label>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<div style="max-width:760px;margin:0 auto 12px;font-size:0.9em;
+            padding:8px 12px;border-left:4px solid var(--primary-color,#007acc);">
+  <p style="margin:4px 0;">
+    We use the <em>rectangular sequence</em>
+    <span style="white-space:nowrap;">\(x[n]=\operatorname{rect}_N[n]=
+    \begin{cases}1,&0\le n\le N-1\\0,&\text{otherwise.}\end{cases}\)</span>
+  </p>
+  <p style="margin:4px 0;">
+    Its Z-transform is the finite geometric sum  
+    <span style="white-space:nowrap;">\(X(z)=\displaystyle\sum_{n=0}^{N-1}z^{-n}
+      =\frac{1-z^{-N}}{1-z^{-1}}.\)</span>
+  </p>
+  <p style="margin:4px 0;">
+    Setting \(z=e^{j\omega}\) gives the DTFT, and sampling that at
+    \(\omega=\tfrac{2\pi k}{N}\) (black dots) yields the DFT.
+  </p>
+</div>
+<form id="ctrl" class="checkbox-group" aria-label="Display options">
+  <label for="N"><b>N:</b></label>
+  <input id="N" type="number" min="2" max="256" value="{{ N }}">
+  <label for="surfToggle"><input type="checkbox" id="surfToggle" checked> |X(z)| surface</label>
+  <label for="dtftToggle"><input type="checkbox" id="dtftToggle" checked> DTFT line</label>
+  <label for="dftToggle"><input type="checkbox" id="dftToggle" checked> DFT samples</label>
 </form>
 <div id="transformPlot" class="plot-container"></div>
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
@@ -43,7 +62,7 @@ function traces(d){
   if(surfToggle.checked){
     arr.push({
       x:d.x_grid, y:d.y_grid, z:d.z_grid,
-      type:'surface', name:'|X(z)|', colorscale:'Viridis',
+      type:'surface', name:'|X(z)|', colorscale:'Cividis',
       showscale:false, opacity:0.8
     });
   }
@@ -69,8 +88,8 @@ function traces(d){
 function draw(){
   Plotly.newPlot('transformPlot', traces(current), {
     scene:{
-      xaxis:{ title:{ text:'Re{z}' } },
-      yaxis:{ title:{ text:'Im{z}' } },
+      xaxis:{ title:{ text:'ℜ{z}' } },
+      yaxis:{ title:{ text:'ℑ{z}' } },
       zaxis:{ title:{ text:'|X(z)|' } }
     },
     margin:{ t:40 },
