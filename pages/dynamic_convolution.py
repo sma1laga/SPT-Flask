@@ -33,10 +33,10 @@ def dynamic_data():
     f1_str = data.get("func1", "")
     f2_str = data.get("func2", "")
 
-    # display grid limited to [-4, 4]
-    t = np.linspace(-4, 4, 800)
+    # display grid limited to [-8, 8]
+    t = np.linspace(-8, 8, 1600)
     # use a wider calculation grid so theoretically infinite signals appear flat
-    t_calc = np.linspace(-16, 16, 3200)
+    t_calc = np.linspace(-32, 32, 6400)
     dt_calc = t_calc[1] - t_calc[0]
     
     # safe eval context on the wider grid
@@ -89,6 +89,17 @@ def dynamic_data():
     # resample original signals for display
     y1_disp = np.interp(t, t_calc, y1)
     y2_disp = np.interp(t, t_calc, y2)
+    
+    def _scale_delta(expr, arr):
+        """Normalize delta(t) for display while leaving calculations unchanged."""
+        if expr.strip() == "delta(t)":
+            max_val = float(np.max(np.abs(arr)))
+            if max_val != 0:
+                return arr / max_val
+        return arr
+
+    y1_disp = _scale_delta(f1_str, y1_disp)
+    y2_disp = _scale_delta(f2_str, y2_disp)
     y_conv = np.interp(t, t_calc, y_conv_calc)
     y_conv = np.real(y_conv)
 
