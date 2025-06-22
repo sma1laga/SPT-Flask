@@ -234,15 +234,15 @@ def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
     ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x(t)$", ha="left", fontsize=11)
     _arrow(ax, (X_L - 0.45, Y_TOP), (X_L - r_add, Y_TOP))
 
-    # feed-forward gains on left
-    _box(ax, (X_GL, Y_TOP), text=rf"${b[-1]:g}$")
+    # feed-forward gains on left  (b0 at the top)
+    _box(ax, (X_GL, Y_TOP), text=rf"${b[0]:g}$")
     _arrow(ax, (X_L + r_add, Y_TOP), (X_GL - 0.3, Y_TOP))
     _arrow(ax, (X_GL + 0.3, Y_TOP), (X_INT, Y_TOP))
 
     ff_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2*DY)]
     for idx, y in ff_specs:
         if idx < len(b):
-            coef = b[-(idx+1)]
+            coef = b[idx]
             _box(ax, (X_GL, y), text=rf"${coef:g}$")
             _arrow(ax, (X_L + r_add, y), (X_GL - 0.3, y))
             _arrow(ax, (X_GL + 0.3, y), (X_INT, y))
@@ -261,12 +261,12 @@ def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
     fb_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2*DY)]
     for idx, y in fb_specs:
         if idx < len(a):
-            coef = a[-(idx+1)]
+            coef = a[idx]
             _box(ax, (X_GR, y), text=rf"${_neg_fmt(coef)}$")
             _arrow(ax, state_nodes[idx-1], (X_GR - 0.3, y))
             _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, Y_TOP))
 
-    _box(ax, (X_GR, Y_TOP), text=rf"${_neg_fmt(a[-1])}$")
+    _box(ax, (X_GR, Y_TOP), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
     _arrow(ax, (X_INT, Y_TOP), (X_GR - 0.3, Y_TOP))
     _arrow(ax, (X_GR + 0.3, Y_TOP), (X_Y - r_add, Y_TOP))
 
