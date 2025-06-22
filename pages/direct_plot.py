@@ -13,18 +13,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
 import sympy as sp
+from sympy.parsing.sympy_parser import (
+    parse_expr, standard_transformations,
+    implicit_multiplication_application, convert_xor
+)
 
 direct_plot_bp = Blueprint("direct_plot", __name__, template_folder="../templates")
 
 
-# ─────────────────── helpers ────────────────────────────────────────────────
+# reusable parser setup
+_TRANSFORMS = standard_transformations + (
+    implicit_multiplication_application,   # lets "(s+3)(s+1)" work
+    convert_xor                            # lets "^" mean exponent
+)
+
 def _str_to_coeffs(txt: str):
     txt = txt.strip()
-    if txt.startswith("["):                            # Python list
+    if txt.startswith("["):                      # Python list, e.g. [1, 0.5, 0]
         return np.asarray(ast.literal_eval(txt), dtype=float)
-    # factorised polynomial, e.g. (s+3)(s+1)
-    s = sp.symbols("s")
-    coeffs = sp.Poly(sp.expand(txt), s).all_coeffs()
+
+    # factorised form, e.g. (s+3)(s+1)^2  or  0.5(s+2)
+    expr = parse_expr(
+        txt,
+        local_dict={"s": sp.symbols("s")},
+        transformations=_TRANSFORMS,
+        evaluate=False        # keep it symbolic until we expand below
+    )
+    coeffs = sp.Poly(sp.expand(expr), sp.symbols("s")).all_coeffs()
     return np.asarray(coeffs, dtype=float)
 
 

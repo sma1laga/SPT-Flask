@@ -38,7 +38,7 @@
 
 {% if tf_latex %}
   <h2>Your Transfer Function</h2>
-  <p style="font-size:1.2em;">$$ {{ tf_latex }} $$</p>
+  <p style="font-size:1.2em;">$$ {{ tf_latex|safe }} $$</p>
   <p>You chose <strong>Direct Form {{ selected_form }}</strong>.</p>
 {% endif %}
 
