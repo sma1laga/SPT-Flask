@@ -69,7 +69,7 @@ def _coeffs_to_poly_expr(coeffs, s):
     """
     expr = 0
     n = len(coeffs)
-    for k, c in enumerate(coeffs[::-1]):  # h\xf6chste Potenz zuerst
+    for k, c in enumerate(coeffs):
         power = n - k - 1
         if np.isclose(c, round(c)):
             coeff_sym = sp.Integer(int(round(c)))
@@ -326,17 +326,16 @@ def direct_plot():
     diagram64 = table_txt = tf_ltx = error = None
     if request.method == "POST":
         try:
-            num_orig = _str_to_coeffs(num_txt)
-            den_orig = _str_to_coeffs(den_txt)
-            num, den = _normalise(num_orig, den_orig)
+            num = _str_to_coeffs(num_txt)
+            den = _str_to_coeffs(den_txt)
 
             # diagram or fallback
             diagram64 = _make_diagram(num, den, form_sel)
             if diagram64 is None:
                 table_txt = (
                     "Order > 2 – diagram omitted.<br>"
-                    f"<b>b:</b> {np.round(num_orig,3)}<br>"
-                    f"<b>a:</b> {np.round(den_orig,3)}"
+                    f"<b>b:</b> {np.round(num,3)}<br>"
+                    f"<b>a:</b> {np.round(den,3)}"
                 )
 
             # LaTeX pretty-print.  If a coefficient is very close to an integer,
