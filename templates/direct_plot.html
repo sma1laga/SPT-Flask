@@ -3,20 +3,21 @@
 <h1>Direct-Form Visualiser</h1>
 
 <p>
-  Enter the continuous-time (s-domain) transfer function and pick which Direct
-  Form (I, II or III) you would like to examine after discretisation.
-  Coefficients can be supplied either as a Python list
-  (<code>[1, 0.5, 0]</code>) or in factorised form
-  (<code>(s+3)(s+1)</code>) exactly like on the Bode page.
+  Enter the continuous-time (s-domain) transfer function and pick which direct
+  form (I, II or III) you would like to examine after discretisation.
+  Coefficients can be supplied either as a Python list, e.g.,
+  <code>[1, 0.5, 0]</code>, or in factorised form, e.g.,
+  <code>(s+3)(s+1)</code>, exactly like on the Bode page.
 </p>
 
 <form method="POST">
-  <label for="numerator">Numerator&nbsp;(H<sub>N</sub>(s)):</label>
+  <br>
+  <label for="numerator">Numerator&nbsp;H<sub>N</sub>(s):</label>
   <input type="text" name="numerator" id="numerator"
          value="{{ default_num }}" required>
   <br><br>
 
-  <label for="denominator">Denominator&nbsp;(H<sub>D</sub>(s)):</label>
+  <label for="denominator">Denominator&nbsp;H<sub>D</sub>(s):</label>
   <input type="text" name="denominator" id="denominator"
          value="{{ default_den }}" required>
   <br><br>
@@ -37,9 +38,9 @@
 {% endif %}
 
 {% if tf_latex %}
-  <h2>Your Transfer Function</h2>
+  <h2>Transfer Function</h2>
   <p style="font-size:1.2em;">$$ {{ tf_latex|safe }} $$</p>
-  <p>You chose <strong>Direct Form {{ selected_form }}</strong>.</p>
+  <p><strong>Direct Form {{ selected_form }}</strong>:</p>
 {% endif %}
 
 {% if diagram_url %}
