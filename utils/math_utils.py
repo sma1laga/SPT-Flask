@@ -16,11 +16,11 @@ def step(t):
     """Heaviside step (1 for t ≥ 0)."""
     return np.heaviside(t, 1)
 
-def cos(t):
-    return np.cos(t)
+def cos(t, t_norm: float = 1.):
+    return np.cos(t_norm * t)
 
-def sin(t):
-    return np.sin(t)
+def sin(t, t_norm: float = 1.):
+    return np.sin(t_norm * t)
 
 def sign(t):
     return np.sign(t)

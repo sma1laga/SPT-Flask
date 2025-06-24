@@ -1,6 +1,7 @@
 # pages/dynamic_convolution.py
 
 from flask import Blueprint, render_template, request, jsonify
+from functools import partial
 import numpy as np
 from scipy.signal import convolve
 from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
@@ -13,8 +14,8 @@ def dynamic_convolution():
         ("rect(t)", "rect(t)"),
         ("tri(t)", "tri(t)"),
         ("step(t)", "step(t)"),
-        ("sin(t)", "sin(t)"),
-        ("cos(t)", "cos(t)"),
+        ("sin(\u03c0t)", "sin(t)"),
+        ("cos(\u03c0t)", "cos(t)"),
         ("sign(t)", "sign(t)"),
         ("delta(t)", "delta(t)"),
         ("exp(t)", "exp(t)"),
@@ -43,7 +44,7 @@ def dynamic_data():
     local = {
         "t": t_calc, "np": np,
         "rect": rect, "tri": tri, "step": step,
-        "cos": cos, "sin": sin, "sign": sign,
+        "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi), "sign": sign,
         "delta": delta, "exp_iwt": exp_iwt,
         "inv_t": inv_t, "si": si, "exp": np.exp
     }
