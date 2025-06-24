@@ -35,9 +35,9 @@ def dynamic_data():
     f2_str = data.get("func2", "")
 
     # display grid limited to [-8, 8]
-    t = np.linspace(-8, 8, 1600)
+    t = np.linspace(-8, 8, 3200)
     # use a wider calculation grid so theoretically infinite signals appear flat
-    t_calc = np.linspace(-32, 32, 6400)
+    t_calc = np.linspace(-16, 16, 6400)
     dt_calc = t_calc[1] - t_calc[0]
     
     # safe eval context on the wider grid
