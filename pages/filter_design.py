@@ -1,10 +1,13 @@
 # pages/filter_design.py
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, send_file, abort
 import numpy as np
 from scipy.signal import butter, filtfilt, freqz
 import matplotlib.pyplot as plt
 from io import BytesIO
+import io
 import base64
+from datetime import datetime
+from utils.exporters import matlab_script, python_script, arduino_ino
 
 filter_design_bp = Blueprint(
     "filter_design",
@@ -112,6 +115,60 @@ def filter_design():
             error = f"Error: {e}"
     
     return render_template("filter_design.html", plot_url=plot_url, error=error)
+
+@filter_design_bp.route("/export")
+def export():
+    fmt = request.args.get("fmt", "matlab")
+    name = request.args.get("name") or f"myFilter_{datetime.utcnow().strftime('%Y%m%d')}"
+    filter_type = request.args.get("filter_type", "lowpass")
+    order = int(request.args.get("order", 4))
+    cutoff_str = request.args.get("cutoff", "100")
+    sample_rate = float(request.args.get("sample_rate", 1000))
+
+    try:
+        cutoff_vals = [float(x.strip()) for x in cutoff_str.split(",")]
+        nyquist = sample_rate / 2
+        normalized_cutoffs = [f / nyquist for f in cutoff_vals]
+        if filter_type in ["bandpass", "bandstop"]:
+            if len(normalized_cutoffs) != 2:
+                raise ValueError("Need two cutoff frequencies for band filters")
+            normalized_cutoffs = sorted(normalized_cutoffs)
+        else:
+            if len(normalized_cutoffs) != 1:
+                raise ValueError("Single cutoff required for low/high pass")
+            normalized_cutoffs = normalized_cutoffs[0]
+
+        b, a = butter(order, normalized_cutoffs, btype=filter_type)
+    except Exception as e:
+        abort(400, str(e))
+
+    if fmt == "matlab":
+        payload = matlab_script(
+        name, b, a,
+        order=order,
+        filter_type=filter_type,
+        cutoff=cutoff_str,          # same string you got from the query
+        sample_rate=sample_rate
+    )
+        mimetype = "text/x-matlab"
+        ext = "m"
+    elif fmt == "python":
+        payload = python_script(name, b, a)
+        mimetype = "text/x-python"
+        ext = "py"
+    elif fmt == "arduino":
+        payload = arduino_ino(name, b, a)
+        mimetype = "text/plain"
+        ext = "ino"
+    else:
+        abort(400, "invalid format")
+
+    return send_file(
+        io.BytesIO(payload.encode()),
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=f"{name}.{ext}"
+    )
 
 @filter_design_bp.route("/live")
 def live_plot():
