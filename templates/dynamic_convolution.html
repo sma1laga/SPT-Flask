@@ -31,7 +31,7 @@
       </div>
       <div>
         <label for="tauSlider" style="font-weight: bold;">Shift t:</label><br>
-        <input type="range" id="tauSlider" min="-4" max="4" step="0.1" value="0">
+        <input type="range" id="tauSlider" min="-3.5" max="3.5" step="0.1" value="0">
         <span id="tauValue" style="display: inline-block; width: 40px;">0.0</span>
       </div>
     </div>
@@ -39,7 +39,7 @@
 
   <!-- Plots -->
   <div id="dynamic-plot-wrapper" style="max-width: 650px; margin: auto;">
-    <canvas id="topChart" height="200" style="width: 100%; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
+    <canvas id="topChart" height="150" style="width: 100%; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
     <canvas id="bottomChart" height="150" style="width: 100%; margin-top: 1em; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
   </div>
 
@@ -86,7 +86,10 @@
             { label: "x(τ)·h(t−τ)", data: [], borderColor: 'red', fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
           ]
         },
-        options: { animation:false, scales:{ x:{ type:'linear', min:-4, max:4, title:{ display:true, text:'τ' } } } }
+        options: { animation:false, scales:{
+          x:{ type:'linear', min:-3.5, max:3.5, title:{ display:true, text:'τ' } },
+          y:{ min:-2.1, max:2.1 }
+        } }
       });
 
       bottomChart = new Chart(bottomCtx, {
@@ -98,7 +101,7 @@
             { label: "Current Output", data: [], pointRadius:5, showLine:false, borderColor:'red' }
           ]
         },
-        options: { animation:false, scales:{ x:{ type:'linear', min:-4, max:4, title:{ display:true, text:'t' } } } }
+        options: { animation:false, scales:{ x:{ type:'linear', min:-3.5, max:3.5, title:{ display:true, text:'t' } } } }
       });
     }
 
