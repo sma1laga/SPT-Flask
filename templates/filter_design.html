@@ -138,7 +138,7 @@ function refreshLivePlot() {
 }
 
 let timerId = null;
-document.getElementById("toggleLiveButton").addEventListener("click", () => {
+document.getElementById("toggleLiveButton").addEventListener("click", function () {
   if (timerId) {
     clearInterval(timerId);
     timerId = null;
