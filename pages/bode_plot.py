@@ -103,6 +103,43 @@ def format_complex(val: complex) -> str:
     sign = "+" if val.imag >= 0 else "-"
     return f"{val.real:.3g}{sign}{abs(val.imag):.3g}j"
 
+def _make_freq_vector(num, den, override=None):
+    """Return frequency vector for Bode plot.
+
+    If ``override`` is a ``(w_min, w_max)`` tuple, it is used directly.
+    Otherwise, the range is chosen based on the magnitudes of the finite
+    poles and zeros of ``num/den``.  Dense clusters (<1.5 decades wide)
+    are padded symmetrically to cover at least two decades around the
+    median corner frequency.
+    """
+    if override is not None:
+        try:
+            w_min, w_max = float(override[0]), float(override[1])
+            if w_min > 0 and w_max > w_min:
+                return np.logspace(np.log10(w_min), np.log10(w_max), 500)
+        except Exception:
+            pass  # fall back to auto-scaling if invalid
+
+    sys = control.TransferFunction(num, den)
+    # use control library helpers to extract poles and zeros
+    poles = control.poles(sys)
+    zeros = control.zeros(sys)
+    w_list = np.abs(np.concatenate([poles, zeros]))
+    w_list = w_list[np.isfinite(w_list) & (w_list > 0)]
+
+    if w_list.size:
+        w_min = 0.1 * w_list.min()
+        w_max = 10 * w_list.max()
+    else:
+        w_min, w_max = 1e-2, 1e2
+
+    if np.log10(w_max) - np.log10(w_min) < 1.5:
+        center = np.median(w_list) if w_list.size else np.sqrt(w_min * w_max)
+        w_min = min(w_min, center / 10)
+        w_max = max(w_max, center * 10)
+
+    return np.logspace(np.log10(w_min), np.log10(w_max), 500)
+
 
 @bode_plot_bp.route('/bode_plot', methods=['GET', 'POST'])
 def bode_plot():
@@ -180,8 +217,19 @@ def bode_plot():
                 wp=None,
             )
     
-    # Generate frequency axis (0.1 to 100 rad/s) and compute H(s) with s = jω.
-    w = np.logspace(-1, 2, 500)
+    # Allow manual frequency range via optional form fields
+    rng = None
+    if request.method == 'POST':
+        w_min_str = request.form.get('w_min')
+        w_max_str = request.form.get('w_max')
+    else:
+        w_min_str = request.args.get('w_min')
+        w_max_str = request.args.get('w_max')
+    if w_min_str and w_max_str:
+        rng = (w_min_str, w_max_str)
+
+    # Frequency vector scaled to poles/zeros (or user override)
+    w = _make_freq_vector(num, den, rng)
     s = 1j * w
     H = np.polyval(num, s) / np.polyval(den, s)
     
@@ -264,9 +312,15 @@ def download_csv():
         den, _ = parse_poly_input(den_str)
     except Exception as e:
         return f"Error parsing inputs: {e}", 400
+    # Optional manual range
+    rng = None
+    w_min_str = request.args.get('w_min')
+    w_max_str = request.args.get('w_max')
+    if w_min_str and w_max_str:
+        rng = (w_min_str, w_max_str)
 
     # Compute frequency response
-    w = np.logspace(-1, 2, 500)
+    w = _make_freq_vector(num, den, rng)
     s = 1j * w
     H = np.polyval(num, s) / np.polyval(den, s)
     mag = 20 * np.log10(np.abs(H))
@@ -296,9 +350,15 @@ def download_png():
         den, _ = parse_poly_input(den_str)
     except Exception as e:
         return f"Error parsing inputs: {e}", 400
+    # Optional manual range
+    rng = None
+    w_min_str = request.args.get('w_min')
+    w_max_str = request.args.get('w_max')
+    if w_min_str and w_max_str:
+        rng = (w_min_str, w_max_str)
 
     # Compute response
-    w = np.logspace(-1, 2, 500)
+    w = _make_freq_vector(num, den, rng)
     s = 1j * w
     H = np.polyval(num, s) / np.polyval(den, s)
     mag = 20 * np.log10(np.abs(H))
