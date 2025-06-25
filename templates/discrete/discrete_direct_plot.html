@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Discrete Direct-Form Visualiser</h1>
+
+<p>
+  Enter the discrete-time (z-domain) transfer function and pick which direct
+  form (I, II or III) you would like to display. Coefficients can be supplied
+  as a Python list, e.g., <code>[1, 0.5, 0]</code>, or in factorised form,
+  <code>(z+3)(z+1)</code>.
+</p>
+
+<form method="POST">
+  <br>
+  <label for="numerator">Numerator&nbsp;H<sub>N</sub>(z):</label>
+  <input type="text" name="numerator" id="numerator"
+         value="{{ default_num }}" required>
+  <br><br>
+
+  <label for="denominator">Denominator&nbsp;H<sub>D</sub>(z):</label>
+  <input type="text" name="denominator" id="denominator"
+         value="{{ default_den }}" required>
+  <br><br>
+
+  <label for="direct_form">Direct Form:</label>
+  <select name="direct_form" id="direct_form">
+    <option value="1" {% if selected_form=='1' %}selected{% endif %}>I</option>
+    <option value="2" {% if selected_form=='2' %}selected{% endif %}>II</option>
+    <option value="3" {% if selected_form=='3' %}selected{% endif %}>III</option>
+  </select>
+  <br><br>
+
+  <button type="submit">Plot</button>
+</form>
+
+{% if error %}
+  <p style="color:red;">Error: {{ error }}</p>
+{% endif %}
+
+{% if tf_latex %}
+  <h2>Transfer Function</h2>
+  <p style="font-size:1.2em;">$$ {{ tf_latex|safe }} $$</p>
+  <p><strong>Direct Form {{ selected_form }}</strong>:</p>
+{% endif %}
+
+{% if diagram_url %}
+  <img src="data:image/png;base64,{{ diagram_url }}" alt="direct form diagram">
+{% elif table_fallback %}
+  <div style="margin-top:1rem;">{{ table_fallback|safe }}</div>
+{% endif %}
+{% endblock %}
