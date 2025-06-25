@@ -20,6 +20,7 @@ def check_route(client, url):
     '/fourier/',
     '/convolution/',
     '/block_diagram/',
+    '/discrete/direct_plot/',
     '/info/about'
 ])
 def test_basic_pages(client, url):
