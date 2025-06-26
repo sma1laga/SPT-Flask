@@ -51,7 +51,7 @@ function initCharts(){
       datasets: [
         { label: 'f₁[n]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
         { label: 'f₂[τ−n]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
-        { label: 'f₁·f₂', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.2)', showLine: false, pointRadius: 4 }
+        { label: 'f₁·f₂', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.5)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
       ]
     },
     options: { animation: false, scales: { x: { title: { display: true, text: 'n' } } } }
