@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, jsonify
 from functools import partial
 import numpy as np
 from scipy.signal import convolve
-from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+from utils.math_utils import rect, tri, step, cos, sin, delta, exp_iwt, inv_t, si
 
 dynamic_convolution_bp = Blueprint("dynamic_convolution", __name__)
 
@@ -16,7 +16,6 @@ def dynamic_convolution():
         ("step(t)", "step(t)"),
         ("sin(\u03c0t)", "sin(t)"),
         ("cos(\u03c0t)", "cos(t)"),
-        ("sign(t)", "sign(t)"),
         ("delta(t)", "delta(t)"),
         ("exp(t)", "exp(t)"),
         ("inv_t(t)", "inv_t(t)"),
@@ -44,7 +43,7 @@ def dynamic_data():
     local = {
         "t": t_calc, "np": np,
         "rect": rect, "tri": tri, "step": step,
-        "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi), "sign": sign,
+        "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi),
         "delta": delta, "exp_iwt": exp_iwt,
         "inv_t": inv_t, "si": si, "exp": np.exp
     }
