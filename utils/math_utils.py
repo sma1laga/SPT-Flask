@@ -42,3 +42,8 @@ def si(t):
 def dsi(t):
     """Un-normalized sinc: sin(t)/t, with si(0)=1."""
     return np.where(t == 0, 1.0, np.sin(t) / t)
+
+
+def delta_n(n):
+    """Kronecker delta: 1 when n==0 else 0."""
+    return np.where(np.isclose(n, 0.0), 1.0, 0.0)

@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, jsonify
 import numpy as np
 
 from utils.math_utils import (
-    rect, tri, step, delta, dsi       # discrete-time helpers you already have
+    rect, tri, step, delta_n, dsi       # discrete-time helpers you already have
 )
 
 discrete_plot_functions_bp = Blueprint(
@@ -47,7 +47,7 @@ def discrete_plot_functions_update():
     # evaluation namespace
     ctx_broad = dict(
         n=n_broad, k=k_broad, np=np,
-        rect=rect, tri=tri, step=step, delta=delta, sin=np.sin, cos=np.cos,
+        rect=rect, tri=tri, step=step, delta=delta_n, sin=np.sin, cos=np.cos,
         sign=np.sign, si=dsi
     )
 
@@ -93,7 +93,7 @@ def discrete_plot_functions_update():
 
     ctx = dict(
         n=n, k=k, np=np,
-        rect=rect, tri=tri, step=step, delta=delta, sin=np.sin, cos=np.cos,
+        rect=rect, tri=tri, step=step, delta=delta_n, sin=np.sin, cos=np.cos,
         sign=np.sign, si=dsi
     )
 

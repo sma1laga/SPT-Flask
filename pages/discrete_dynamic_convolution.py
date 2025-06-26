@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
-from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
-
+from utils.math_utils import (
+    rect, tri, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
+)
 # Blueprint for Discrete Dynamic Convolution
 # Implements extended-domain convolution to avoid edge truncation
 
@@ -33,11 +34,13 @@ def data():
     # Original discrete index
     n = np.arange(-10, 11)
     # Safe evaluation context
-    ctx = {"n": n, "np": np,
-           "rect": rect, "tri": tri, "step": step,
-           "cos": cos, "sin": sin, "sign": sign,
-           "delta": delta, "exp_iwt": exp_iwt,
-           "inv_t": inv_t, "si": si}
+    ctx = {
+        "n": n, "np": np,
+        "rect": rect, "tri": tri, "step": step,
+        "cos": cos, "sin": sin, "sign": sign,
+        "delta": delta_n, "exp_iwt": exp_iwt,
+        "inv_t": inv_t, "si": si,
+    }
 
     # Evaluate f1 & f2 on original domain
     try:

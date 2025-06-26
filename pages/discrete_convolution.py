@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
 from utils.math_utils import (
-    rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+    rect, tri, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
         "n": n_scan, "np": np,
         "rect": rect, "tri": tri, "step": step,
         "cos": cos,   "sin": sin, "sign": sign,
-        "delta": delta, "exp_iwt": exp_iwt,
+        "delta": delta_n, "exp_iwt": exp_iwt,
         "inv_t": inv_t, "si": si, "exp": np.exp
     }
 

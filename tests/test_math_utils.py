@@ -15,3 +15,9 @@ def test_delta_properties():
     d = m.delta(t)
     assert d[1] == pytest.approx(np.max(d))
     assert d[0] == pytest.approx(d[2])
+
+
+def test_delta_n():
+    n = np.array([-1, 0, 1])
+    d = m.delta_n(n)
+    assert np.array_equal(d, [0.0, 1.0, 0.0])
