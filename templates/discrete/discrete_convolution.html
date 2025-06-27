@@ -5,9 +5,13 @@
 <div class="page-header" style="margin-bottom:30px;text-align:center;">
   <h1 style="font-size:2.5em;">Discrete Convolution Calculator</h1>
   <p style="color:var(--subtext-color);max-width:640px;margin:0 auto;">
-    Enter two sequences <em>x[n]</em> and <em>h[n]</em> (as functions of <em>n</em>),
-    choose an optional sampling step&nbsp;Δn, then click <b>Compute</b> to display
+    Enter two sequences <em>x[k]</em> and <em>h[k]</em> (as functions of the index&nbsp;<em>k</em>),
+    choose an optional sampling step&nbsp;Δk, then click <b>Compute</b> to display
     both sequences and their discrete convolution.
+  </p>
+    <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:8px auto 0;">
+    The discrete convolution of <em>x[k]</em> with <em>h[k]</em> is defined as
+    $$ (x*h)[n]=\sum_{m=-\infty}^{\infty} x[m]\,h[n-m] $$
   </p>
 </div>
 
@@ -15,16 +19,16 @@
   <!-- input boxes ------------------------------------------------- -->
   <div class="function-group"
        style="display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:20px;">
-    <input id="func1" placeholder="x[n]" onfocus="setActiveField(this)"
+    <input id="func1" placeholder="x[k]" onfocus="setActiveField(this)"
            style="width:45%;padding:8px;border:1px solid #ccd0d5;border-radius:4px;font-size:1em;">
     <span style="font-size:1.5em;font-weight:bold;position:relative;top:-4px;">*</span>
-    <input id="func2" placeholder="h[n]" onfocus="setActiveField(this)"
+    <input id="func2" placeholder="h[k]" onfocus="setActiveField(this)"
            style="width:45%;padding:8px;border:1px solid #ccd0d5;border-radius:4px;font-size:1em;">
   </div>
 
   <!-- sampling interval ------------------------------------------ -->
   <div style="margin-bottom:16px;">
-    Δn:
+    Δk:
     <input id="ds" type="number" step="0.1" min="0.1" value="1.0"
            style="width:90px;padding:6px;border:1px solid #ccd0d5;border-radius:4px;">
   </div>
@@ -107,17 +111,17 @@ function updatePlots(){
     Plotly.newPlot("plot1", [
       stem(d.n, d.y1,"#1f77b4"),
       {x:d.n, y:d.y1, mode:"markers", marker:{color:"#1f77b4",size:6}}
-    ], {...lc, title:"Sequence 1  x[n]", xaxis:{title:"n"}, yaxis:{title:"x"}});
+    ], {...lc, title:"Sequence 1  x[k]", xaxis:{title:"k"}, yaxis:{title:"x"}});
 
     Plotly.newPlot("plot2", [
       stem(d.n, d.y2,"#ff7f0e"),
       {x:d.n, y:d.y2, mode:"markers", marker:{color:"#ff7f0e",symbol:"square",size:6}}
-    ], {...lc, title:"Sequence 2  h[n]", xaxis:{title:"n"}, yaxis:{title:"h"}});
+    ], {...lc, title:"Sequence 2  h[k]", xaxis:{title:"k"}, yaxis:{title:"h"}});
 
     Plotly.newPlot("plotConv", [
       stem(d.n_conv, d.y_conv,"#2ca02c"),
       {x:d.n_conv, y:d.y_conv, mode:"markers", marker:{color:"#2ca02c",size:6}}
-    ], {...lc, title:"Discrete Convolution  x * h", xaxis:{title:"n"}, yaxis:{title:"(x*h)[n]"}});
+    ], {...lc, title:"Discrete Convolution  x * h", xaxis:{title:"k"}, yaxis:{title:"(x*h)[k]"}});
 
   })
   .catch(console.error);
