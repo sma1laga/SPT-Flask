@@ -3,7 +3,7 @@
 <h2>Discrete Dynamic Convolution Explorer</h2>
 
 <div style="margin-bottom:1em;">
-  <label>f₁[n]:</label>
+  <label>x[k]:</label>
   <select id="func1">
     <option value="">-- none --</option>
     {% for f in functions %}
@@ -11,7 +11,7 @@
     {% endfor %}
   </select>
 
-  <label style="margin-left:2em;">f₂[n]:</label>
+  <label style="margin-left:2em;">h[k]:</label>
   <select id="func2">
     <option value="">-- none --</option>
     {% for f in functions %}
@@ -49,9 +49,9 @@ function initCharts(){
     type: 'scatter',
     data: {
       datasets: [
-        { label: 'f₁[n]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
-        { label: 'f₂[τ−n]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
-        { label: 'f₁·f₂', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.5)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
+        { label: 'x[k]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
+        { label: 'h[k−κ]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
+        { label: 'x·h', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.5)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
       ]
     },
     options: { animation: false, scales: { x: { title: { display: true, text: 'n' } } } }
@@ -61,7 +61,7 @@ function initCharts(){
     type: 'scatter',
     data: {
       datasets: [
-        { label: '(f₁*f₂)[τ]', data: pairData(tData, yConvData), borderColor: 'darkblue', backgroundColor: 'darkblue', showLine: false },
+        { label: '(x*h)[τ]', data: pairData(tData, yConvData), borderColor: 'darkblue', backgroundColor: 'darkblue', showLine: false },
         { label: 'Marker', data: [], pointRadius: 5, showLine: false, borderColor: 'red', backgroundColor: 'red' }
       ]
     },
