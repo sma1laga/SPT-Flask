@@ -14,10 +14,10 @@ def dynamic_convolution():
         ("rect(t)", "rect(t)"),
         ("tri(t)", "tri(t)"),
         ("step(t)", "step(t)"),
-        ("sin(\u03c0t)", "sin(t)"),
-        ("cos(\u03c0t)", "cos(t)"),
+        ("step(t)\u22c5sin(\u03c0t)", "step(t)*sin(t)"),
+        ("step(t)\u22c5cos(\u03c0t)", "step(t)*cos(t)"),
         ("delta(t)", "delta(t)"),
-        ("exp(t)", "exp(t)"),
+        ("step(t)\u22c5exp(t)", "step(t)*exp(t)"),
         ("inv_t(t)", "inv_t(t)"),
         ("si(\u03c0t)", "si(t)")
     ]
@@ -33,14 +33,7 @@ def dynamic_data():
     f1_str = data.get("func1", "")
     f2_str = data.get("func2", "")
 
-    # warn for undefined convolution between step(t) and a sinusoid
-    f1_clean = f1_str.strip()
-    f2_clean = f2_str.strip()
-    if (
-        (f1_clean == "step(t)" and f2_clean in {"sin(t)", "cos(t)"}) or
-        (f2_clean == "step(t)" and f1_clean in {"sin(t)", "cos(t)"})
-    ):
-        return jsonify(error="Convolution of step(t) with a sinusoid is undefined"), 400
+
 
     # display grid limited to [-8, 8]
     t = np.linspace(-8, 8, 3200)
