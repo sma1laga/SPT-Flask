@@ -33,6 +33,15 @@ def dynamic_data():
     f1_str = data.get("func1", "")
     f2_str = data.get("func2", "")
 
+    # warn for undefined convolution between step(t) and a sinusoid
+    f1_clean = f1_str.strip()
+    f2_clean = f2_str.strip()
+    if (
+        (f1_clean == "step(t)" and f2_clean in {"sin(t)", "cos(t)"}) or
+        (f2_clean == "step(t)" and f1_clean in {"sin(t)", "cos(t)"})
+    ):
+        return jsonify(error="Convolution of step(t) with a sinusoid is undefined"), 400
+
     # display grid limited to [-8, 8]
     t = np.linspace(-8, 8, 3200)
     # use a wider calculation grid so theoretically infinite signals appear flat
