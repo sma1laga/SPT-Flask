@@ -2,8 +2,9 @@
 {% block content %}
 <div class="page-header" style="margin-bottom:30px; text-align:center;">
   <h1 style="font-size:2.5em;">Convolution Calculator</h1>
-  <p style="color:var(--subtext-color); max-width:600px; margin:0 auto;">
-    Enter two time-domain functions and compute their discrete convolution interactively with Plotly.
+  <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
+    Enter <strong>x(t)</strong> and <strong>h(t)</strong> to compute their convolution
+    $$ y(t)=\int_{-\infty}^{\infty} x(\tau)\,h(t-\tau)\,d\tau $$
   </p>
 </div>
 
@@ -11,11 +12,11 @@
   <!-- Zwei Inputs nebeneinander mit leicht erhöhtem Sternchen -->
   <div class="function-group"
        style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:20px;">
-    <input type="text" id="func1" placeholder="f₁(t)"
+    <input type="text" id="func1" placeholder="x(t)"
            onfocus="setActiveField(this)"
            style="width:45%; padding:8px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
     <span style="font-size:1.5em; font-weight:bold; position:relative; top:-4px;">*</span>
-    <input type="text" id="func2" placeholder="f₂(t)"
+    <input type="text" id="func2" placeholder="h(t)"
            onfocus="setActiveField(this)"
            style="width:45%; padding:8px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
   </div>
@@ -91,21 +92,21 @@
 
       Plotly.newPlot("plot1", [{
         x: data.t, y: data.y1,
-        type: "scatter", mode: "lines", name: "f₁(t)",
+        type: "scatter", mode: "lines", name: "x(t)",
         line: { width: 3, color: "#1f77b4" }
-      }], { ...lc, title: "Function 1", xaxis: { title: "t" }, yaxis: { title: "f₁(t)" } });
+      }], { ...lc, title: "x(t)", xaxis: { title: "t" }, yaxis: { title: "x(t)" } });
 
       Plotly.newPlot("plot2", [{
         x: data.t, y: data.y2,
-        type: "scatter", mode: "lines", name: "f₂(t)",
+        type: "scatter", mode: "lines", name: "h(t)",
         line: { width: 3, color: "#ff7f0e" }
-      }], { ...lc, title: "Function 2", xaxis: { title: "t" }, yaxis: { title: "f₂(t)" } });
+      }], { ...lc, title: "h(t)", xaxis: { title: "t" }, yaxis: { title: "h(t)" } });
 
       Plotly.newPlot("plotConv", [{
         x: data.t, y: data.y_conv,
         type: "scatter", mode: "lines", name: "Convolution",
         line: { width: 3, color: "#2ca02c" }
-      }], { ...lc, title: "f₁ * f₂ (Convolution)", xaxis: { title: "t" }, yaxis: { title: "(f₁*f₂)(t)" } });
+      }], { ...lc, title: "x(t) * h(t)", xaxis: { title: "t" }, yaxis: { title: "(x*h)(t)" } });
 
   }
 
