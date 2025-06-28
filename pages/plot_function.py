@@ -70,13 +70,17 @@ def plot_function_update():
         y1_broad = eval(func1_str, ns_broad) if func1_str.strip() else np.zeros_like(t_broad)
     except Exception as e:
         return jsonify({"error": f"Error in f₁(t): {e}"}), 400
-
+    if np.any(np.isinf(y1_broad)):
+        return jsonify({"error": "f₁(t) produced non-finite values"}), 400
+    
     y2_broad = None
     if func2_str.strip():
         try:
             y2_broad = eval(func2_str, ns_broad)
         except Exception as e:
             return jsonify({"error": f"Error in f₂(t): {e}"}), 400
+        if np.any(np.isinf(y2_broad)):
+            return jsonify({"error": "f₂(t) produced non-finite values"}), 400
 
     # apply transforms on broad grid for centre calculation
     t1_broad = t_broad * w1 + s1
@@ -142,6 +146,8 @@ def plot_function_update():
         y1 = eval(func1_str, ns) if func1_str.strip() else np.zeros_like(t)
     except Exception as e:
         return jsonify({"error": f"Error in f₁(t): {e}"}), 400
+    if np.any(np.isinf(y1)):
+        return jsonify({"error": "f₁(t) produced non-finite values"}), 400
 
     y2 = None
     if func2_str.strip():
@@ -149,7 +155,9 @@ def plot_function_update():
             y2 = eval(func2_str, ns)
         except Exception as e:
             return jsonify({"error": f"Error in f₂(t): {e}"}), 400
-
+        if np.any(np.isinf(y2)):
+            return jsonify({"error": "f₂(t) produced non-finite values"}), 400
+        
     # apply separate transforms
     t1 = t * w1 + s1
     y1 = y1 * a1
@@ -173,8 +181,13 @@ def plot_function_update():
                 "imag": arr.imag.tolist(),
             }
         lst = arr.tolist()
-        return [None if isinstance(v, float) and np.isnan(v) else v for v in lst]
-
+        cleaned = []
+        for v in lst:
+            if isinstance(v, float) and (np.isnan(v) or np.isinf(v)):
+                cleaned.append(None)
+            else:
+                cleaned.append(v)
+        return cleaned
     return jsonify({
         "t1": t1.tolist(),
         "y1": to_json_list(y1),

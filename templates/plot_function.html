@@ -6,6 +6,8 @@
   <h1 style="font-size:2.5em;">Interactive Function Plotter</h1>
 </div>
 
+<p id="errorMsg" style="max-width:960px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
+
 <p style="max-width:960px;margin:0 auto 26px auto;text-align:center;">
   Enter Python expressions using <code>t</code> as the time variable. The
   <code>numpy</code> module is available via <code>np</code> so constants such as
@@ -106,6 +108,7 @@
   /* active-field logic */
   let activeField = document.getElementById("func1");
   function setActiveField(f){ activeField = f; }
+  const errorMsg = document.getElementById("errorMsg");
 
   function insertOperand(op){
     if(!activeField) return;
@@ -147,6 +150,7 @@
 
   /* fetch + draw ------------------------------------------------- */
   function updatePlots(){
+if(errorMsg) errorMsg.textContent = "";
     fetch("{{ url_for('plot_function.plot_function_update') }}",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -154,8 +158,11 @@
     })
     .then(r=>r.json())
     .then(data=>{
-      if(data.error){ console.error(data.error); return; }
-
+      if(data.error){
+        if(errorMsg) errorMsg.textContent = data.error;
+        console.error(data.error);
+        return;
+      }
       const traces = [];
 
       function addTraces(t, y, name, color){
@@ -192,6 +199,8 @@
       s.nextElementSibling.textContent=parseFloat(s.value).toFixed(1);
     });
     Plotly.purge("plot");
+if(errorMsg) errorMsg.textContent = "";
+
   });
 </script>
 

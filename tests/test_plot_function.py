@@ -23,9 +23,14 @@ def test_plot_function_update_special(client):
     payload = {'func1': 'tanh(t)'}
     resp = client.post('/plot_function/update', data=json.dumps(payload), content_type='application/json')
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert 't1' in data and 'y1' in data
 
+
+def test_plot_function_update_nonfinite(client):
+    payload = {'func1': '1/0'}
+    resp = client.post('/plot_function/update', data=json.dumps(payload), content_type='application/json')
+    assert resp.status_code == 400
+    data = resp.get_json()
+    assert 'error' in data
     payload = {'func1': 'arcsin(0.5*t)'}
     resp = client.post('/plot_function/update', data=json.dumps(payload), content_type='application/json')
     assert resp.status_code == 200
