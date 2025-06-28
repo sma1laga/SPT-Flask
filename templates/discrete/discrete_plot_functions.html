@@ -6,6 +6,15 @@
   <h1 style="font-size:2.4em;">Discrete-Time Function Plotter</h1>
 </div>
 
+<p style="max-width:960px;margin:0 auto 24px auto;text-align:center;">
+  The sliders modify each sequence as
+  <code>f(n) → A · f(w ⋅ n + s)</code>.
+  <strong>Shift</strong> offsets the sample index by <code>s</code>,
+  <strong>Amplitude</strong> scales values by <code>A</code>, and
+  <strong>Width</strong> multiplies the index by <code>w</code>,
+  stretching or compressing it along the n-axis.
+</p>
+
 <form id="plotForm" style="max-width:960px;margin:0 auto;text-align:center;">
   <!-- INPUTS ------------------------------------------------------ -->
   <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:20px;">
