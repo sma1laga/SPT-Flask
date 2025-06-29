@@ -52,8 +52,10 @@ def data():
     except Exception as e:
         return jsonify(error=f"Error evaluating Sequence 2: {e}"), 400
 
-    # Extended domain for convolution: double range
-    n_ext = np.arange(2 * n.min(), 2 * n.max() + 1)
+    # Extended domain for convolution: triple range so shifted samples never
+    # fall outside the lookup table used by the client. This keeps the
+    # visible axis fixed while sequences behave as if they were infinite.
+    n_ext = np.arange(3 * n.min(), 3 * n.max() + 1)
     ctx_ext = ctx.copy()
     ctx_ext["n"] = n_ext
 
@@ -73,8 +75,11 @@ def data():
     y_conv = y_conv_ext[idx_map]
 
     return jsonify({
-        "n":      n.tolist(),
-        "y1":     y1.tolist(),
-        "y2":     y2.tolist(),
-        "y_conv": y_conv.tolist()
+        "n":       n.tolist(),       # plotting grid
+        "n_ext":   n_ext.tolist(),   # lookup grid used client-side
+        "y1":      y1.tolist(),
+        "y2":      y2.tolist(),
+        "y1_ext":  y1_ext.tolist(),
+        "y2_ext":  y2_ext.tolist(),
+        "y_conv":  y_conv.tolist()
     })

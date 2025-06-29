@@ -35,6 +35,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let tData = [], y1Data = [], y2Data = [], yConvData = [];
+let nExt = [], y1DataExt = [], y2DataExt = [];
 let topChart, bottomChart;
 function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
 
@@ -79,14 +80,18 @@ function fetchData(){
     })
   })
   .then(r => r.json().then(d => r.ok ? d : Promise.reject(d.error)))
-  .then(d => {
-    tData     = d.n;
-    y1Data    = d.y1;
-    y2Data    = d.y2;
-    yConvData = d.y_conv;
-    initCharts();
-    updatePlots();
-  })
+    .then(d => {
+      tData       = d.n;
+      nExt        = d.n_ext;
+      y1Data      = d.y1;
+      y2Data      = d.y2;
+      y1DataExt   = d.y1_ext;
+      y2DataExt   = d.y2_ext;
+      window.y2Dict = Object.fromEntries(nExt.map((k,idx)=>[k, y2DataExt[idx]]));
+      yConvData   = d.y_conv;
+      initCharts();
+      updatePlots();
+    })
   .catch(e => alert('Error: ' + e));
 }
 
@@ -94,11 +99,11 @@ function updatePlots(){
   const τ = parseInt(document.getElementById('tauSlider').value);
   document.getElementById('tauValue').textContent = τ;
 
-  // Shifted f2[n]
-  const y2shift = tData.map((v,i) => {
-    const j = tData.indexOf(τ - v);
-    return j >= 0 ? y2Data[j] : 0;
-  });
+  // Shifted h[n] lookup using extended domain to avoid edge truncation
+  if(!window.y2Dict){
+    window.y2Dict = Object.fromEntries(nExt.map((k,idx)=>[k, y2DataExt[idx]]));
+  }
+  const y2shift = tData.map(v => window.y2Dict[τ - v] ?? 0);
   topChart.data.datasets[1].data = pairData(tData, y2shift);
 
   // Pointwise product
