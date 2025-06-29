@@ -468,4 +468,13 @@ body.dark-mode a {
 body.dark-mode .theory-section pre,
 body.dark-mode .theory-section .formula {
   color: #222;
+  }
+
+/* Custom font for navigation menus */
+.header .main-nav ul li a,
+.header .main-nav ul li button,
+.modern-sidebar h3,
+.modern-sidebar ul.sidebar-menu li a {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
 }
