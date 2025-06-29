@@ -229,7 +229,8 @@
     background-color: var(--card-background);
     box-shadow: var(--box-shadow);
     text-align: left;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+    font-family: 'Poppins', sans-serif;
   }
   .card h2 {
     color: var(--primary-color);
