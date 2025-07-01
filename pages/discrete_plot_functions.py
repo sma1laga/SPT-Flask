@@ -2,9 +2,8 @@
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
 
-from utils.math_utils import (
-    rect, tri, step, delta_n, dsi       # discrete-time helpers you already have
-)
+import utils.math_utils as m
+
 
 discrete_plot_functions_bp = Blueprint(
     "discrete_plot_functions", __name__, template_folder="templates/discrete"
@@ -32,24 +31,22 @@ def discrete_plot_functions_update():
     s1  = float(data.get("shift1", 0)); a1 = float(data.get("amp1",   1)); w1 = float(data.get("width1", 1))
     s2  = float(data.get("shift2", 0)); a2 = float(data.get("amp2",   1)); w2 = float(data.get("width2", 1))
 
-    # global sampling slider
-    try:
-        Δn = float(data.get("sampling", 1))
-        if Δn <= 0: raise ValueError
-    except ValueError:
-        return jsonify({"error": "Δn must be positive."}), 400
+    Δn = 1.0
+
 
     # broad grid for centre detection
     MAX_N = 20.0
-    k_broad = np.arange(-int(100 / Δn), int(100 / Δn) + 1)
-    n_broad = k_broad * Δn                # base grid
+    k_broad = np.arange(-100, 101)
+    n_broad = k_broad
 
-    # evaluation namespace
+    # evaluation namespace with discrete helpers
     ctx_broad = dict(
         n=n_broad, k=k_broad, np=np,
-        rect=rect, tri=tri, step=step, delta=delta_n, sin=np.sin, cos=np.cos,
-        sign=np.sign, si=dsi
+        tri=m.tri_seq, step=m.step, delta=m.delta_n,
+        sin=np.sin, cos=np.cos, sign=np.sign, si=m.dsi,
     )
+    for N in range(1, 33):
+        ctx_broad[f"rect_{N}"] = getattr(m, f"rect_{N}")
 
     # -------------- evaluate on broad grid -----------------------------------
     try:
@@ -88,14 +85,16 @@ def discrete_plot_functions_update():
     # final grid centred around detected centre
     n_start = center - MAX_N
     n_end = center + MAX_N
-    k = np.arange(np.round(n_start / Δn), np.round(n_end / Δn) + 1).astype(int)
-    n = k * Δn
+    k = np.arange(int(round(n_start)), int(round(n_end)) + 1)
+    n = k
 
     ctx = dict(
         n=n, k=k, np=np,
-        rect=rect, tri=tri, step=step, delta=delta_n, sin=np.sin, cos=np.cos,
-        sign=np.sign, si=dsi
+        tri=m.tri_seq, step=m.step, delta=m.delta_n,
+        sin=np.sin, cos=np.cos, sign=np.sign, si=m.dsi,
     )
+    for N in range(1, 33):
+        ctx[f"rect_{N}"] = getattr(m, f"rect_{N}")
 
     try:
         y1 = eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(n)
@@ -130,6 +129,5 @@ def discrete_plot_functions_update():
         "x1": x1.tolist(), "y1": y1.tolist(),
         "x2": x2.tolist() if x2 is not None else None,
         "y2": y2.tolist() if y2 is not None else None,
-        "Δn": Δn,
         "xrange": [x_min, x_max]
         })

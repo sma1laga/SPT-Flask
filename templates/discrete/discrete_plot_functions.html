@@ -27,7 +27,7 @@
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons"
        style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px;">
-    {% for lbl in ['rect(n)','tri(n)','step(n)','delta(n)','sin(n)',
+    {% for lbl in ['rect_4(n)','tri(n)','step(n)','delta(n)','sin(n)',
                    'cos(n)','sign(n)','si(n)'] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
         {{ lbl.split('(')[0]|capitalize }}
@@ -39,14 +39,6 @@
     <button type="button" onclick="insertOperand('/')">/</button>
   </div>
 
-  <!-- Δn SAMPLING SLIDER ----------------------------------------- -->
-  <fieldset class="sampling-box" style="margin-bottom:22px;">
-    <legend>Sampling step Δn</legend>
-    <div class="slider-row">
-      <input id="sampling" type="range" min="0.1" max="2" step="0.1" value="1">
-      <span id="samplingVal">1.0</span>
-    </div>
-  </fieldset>
 
   <!-- TWO SHIFTER GROUPS ----------------------------------------- -->
   <div class="transform-wrapper">
@@ -107,7 +99,7 @@
   }
 
   /* ----------------------------------------------------------------
-     slider wiring (Δn + 6 shifters)
+     slider wiring (6 shifters)
   ---------------------------------------------------------------- */
   const sliderIds = ["shift1","amp1","width1","shift2","amp2","width2"];
   sliderIds.forEach(id=>{
@@ -117,16 +109,13 @@
     s.addEventListener("input", ()=>{ span.textContent = parseFloat(s.value).toFixed(1); updatePlots(); });
   });
 
-  const samplingSlider = document.getElementById("sampling");
-  const samplingVal    = document.getElementById("samplingVal");
-  samplingVal.textContent = parseFloat(samplingSlider.value).toFixed(1);
-  samplingSlider.addEventListener("input", ()=>{ samplingVal.textContent = parseFloat(samplingSlider.value).toFixed(1); updatePlots(); });
+
 
   /* ----------------------------------------------------------------
      collect form -> json
   ---------------------------------------------------------------- */
   function collect(){
-    const d = { func1:func1.value, func2:func2.value, sampling:sampling.value };
+    const d = { func1:func1.value, func2:func2.value };
     sliderIds.forEach(id=> d[id]=document.getElementById(id).value );
     return d;
   }
@@ -156,7 +145,7 @@
       const xrange = data.xrange || [-20,20];
       Plotly.newPlot("plot", tr, {
         margin:{t:30}, showlegend:true,
-        xaxis:{title:"n (Δn = "+data.Δn+")", range:xrange},
+        xaxis:{title:"n", range:xrange},
         yaxis:{title:"Amplitude", zeroline:false}
       });
     }).catch(console.error);
@@ -166,10 +155,9 @@
   computeBtn.onclick = updatePlots;
   clearBtn.onclick = ()=> {
     func1.value = func2.value = "";
-    [...sliderIds,"sampling"].forEach(id=>{
-      const s=document.getElementById(id);
+    sliderIds.forEach(id=>{
+      const s = document.getElementById(id);
       s.value = id.includes("amp")||id.includes("width")?1:0;
-      if(id==="sampling") s.value=1;
       s.nextElementSibling && (s.nextElementSibling.textContent=parseFloat(s.value).toFixed(1));
     });
     Plotly.purge("plot");
