@@ -155,73 +155,73 @@ def function_definitions():
     discrete = [
         dict(
             name="Unit Step Sequence",
-            definition=r"u[n]=\begin{cases}1,&n\ge0\\0,&n<0\end{cases}",
+            definition=r"u[k]=\begin{cases}1,&k\ge0\\0,&k<0\end{cases}",
             python="lambda n: np.where(n>=0,1,0)",
             n=n, func=lambda n: np.where(n>=0,1,0), kind="stem"
         ),
         dict(
             name="Unit Impulse Sequence",
-            definition=r"\delta[n]=\begin{cases}1,&n=0\\0,&n\ne0\end{cases}",
+            definition=r"\delta[k]=\begin{cases}1,&k=0\\0,&k\ne0\end{cases}",
             python="lambda n: np.where(n==0,1,0)",
             n=n, func=lambda n: np.where(n==0,1,0), kind="stem"
         ),
         dict(
             name="Ramp Sequence",
-            definition=r"r[n]=n\,u[n]",
+            definition=r"r[k]=k\,u[k]",
             python="lambda n: n*(n>=0)",
             n=n, func=lambda n: n*(n>=0), kind="stem"
         ),
         dict(
             name="Exponential Sequence",
-            definition=r"x[n]=a^n\,u[n]",
+            definition=r"x[k]=a^k\,u[k]",
             python="lambda n, a=0.9: (a**n)*(n>=0)",
             n=n, func=lambda n: (0.9**n)*(n>=0), kind="stem"
         ),
         dict(
             name="Cosine Sequence",
-            definition=r"x[n]=\cos(\omega n)",
+            definition=r"x[k]=\cos(\omega k)",
             python="lambda n: np.cos(2*np.pi*n/10)",
             n=n, func=lambda n: np.cos(2*np.pi*n/10), kind="stem"
         ),
         dict(
             name="Rectangular Window",
-            definition=r"w[n]=\begin{cases}1,&0\le n<N\\0,&\text{else}\end{cases}",
+            definition=r"w[k]=\begin{cases}1,&0\le k<N\\0,&\text{else}\end{cases}",
             python="lambda n, N=8: np.where((n>=0)&(n<8),1,0)",
             n=n, func=lambda n: np.where((n>=0)&(n<8),1,0), kind="stem"
         ),
         dict(
             name="Triangular Window",
-            definition=r"w[n]=\max\bigl(1-\tfrac{|n|}{N},0\bigr)",
+            definition=r"w[k]=\max\bigl(1-\tfrac{|k|}{N},0\bigr)",
             python="lambda n, N=4: np.maximum(1-np.abs(n)/4,0)",
             n=n, func=lambda n: np.maximum(1-np.abs(n)/4,0), kind="stem"
         ),
         dict(
             name="Sinc Sequence",
-            definition=r"\mathrm{sinc}[n]=\frac{\sin(\pi n)}{\pi n}",
+            definition=r"\mathrm{sinc}[k]=\frac{\sin(\pi k)}{\pi k}",
             python="lambda n: np.sinc(n)",
             n=n, func=lambda n: np.sinc(n), kind="stem"
         ),
         dict(
             name="Gaussian Sequence",
-            definition=r"g[n]=e^{-n^2/(2\sigma^2)}",
+            definition=r"g[k]=e^{-k^2/(2\sigma^2)}",
             python="lambda n: np.exp(-n**2/2)",
             n=n, func=lambda n: np.exp(-n**2/2), kind="stem"
         ),
         dict(
             name="Comb Sequence",
-            definition=r"\mathrm{comb}_N[n]=\sum_k\delta[n-kN]",
+            definition=r"\mathrm{comb}_N[k]=\sum_k\delta[k-kN]",
             python="lambda n, N=4: np.where(n%4==0,1,0)",
             n=n, func=lambda n: np.where(n%4==0,1,0), kind="stem"
         ),
         dict(
             name="Signum Sequence",
-            definition=r"\mathrm{sgn}[n]=\begin{cases}-1,&n<0\\0,&n=0\\1,&n>0\end{cases}",
+            definition=r"\mathrm{sgn}[k]=\begin{cases}-1,&k<0\\0,&k=0\\1,&k>0\end{cases}",
             python="lambda n: np.sign(n)",
             n=n, func=lambda n: np.sign(n), kind="stem"
         ),
         dict(
             name="Sawtooth Sequence",
-            definition=r"\mathrm{saw}[n]=2\bigl(\tfrac{n}{N}-\lfloor\tfrac{n}{N}+1/2\rfloor\bigr)",
+            definition=r"\mathrm{saw}[k]=2\bigl(\tfrac{k}{N}-\lfloor\tfrac{k}{N}+1/2\rfloor\bigr)",
             python="lambda n, N=8: 2*(n/8-np.floor(n/8+0.5))",
             n=n, func=lambda n: 2*(n/8-np.floor(n/8+0.5)), kind="stem"
         ),

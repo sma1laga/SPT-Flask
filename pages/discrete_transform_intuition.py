@@ -13,7 +13,7 @@ def _generate_data(N=8, r_min=0.5, r_max=1.5, r_points=50, theta_points=160):
     Z = R * np.exp(1j * Theta)
     Xz = np.zeros_like(Z, dtype=complex)
     for n in range(N):
-        Xz += Z ** (-n)  # x[n] = 1
+        Xz += Z ** (-n)  # x[k] = 1
     mag = np.abs(Xz)
 
     x_grid = (R * np.cos(Theta)).tolist()

@@ -8,27 +8,27 @@
 
 <p style="max-width:960px;margin:0 auto 24px auto;text-align:center;">
   The sliders modify each sequence as
-  <code>f(n) → A · f(w ⋅ n + s)</code>.
+  <code>f(k) → A · f(w ⋅ n + s)</code>.
   <strong>Shift</strong> offsets the sample index by <code>s</code>,
   <strong>Amplitude</strong> scales values by <code>A</code>, and
   <strong>Width</strong> multiplies the index by <code>w</code>,
-  stretching or compressing it along the n-axis.
+  stretching or compressing it along the k-axis.
 </p>
 
 <form id="plotForm" style="max-width:960px;margin:0 auto;text-align:center;">
   <!-- INPUTS ------------------------------------------------------ -->
   <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:20px;">
-    <input id="func1" placeholder="f₁(n)"  onfocus="setActiveField(this)"
+    <input id="func1" placeholder="f₁(k)"  onfocus="setActiveField(this)"
            style="flex:1 1 300px;padding:8px;" />
-    <input id="func2" placeholder="f₂(n) (optional)" onfocus="setActiveField(this)"
+    <input id="func2" placeholder="f₂(k) (optional)" onfocus="setActiveField(this)"
            style="flex:1 1 300px;padding:8px;" />
   </div>
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons"
        style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px;">
-    {% for lbl in ['rect_4(n)','tri(n)','step(n)','delta(n)','sin(n)',
-                   'cos(n)','sign(n)','si(n)'] %}
+    {% for lbl in ['rect_4(k)','tri(k)','step(k)','delta(k)','sin(k)',
+                   'cos(k)','sign(k)','si(k)'] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
         {{ lbl.split('(')[0]|capitalize }}
       </button>
@@ -133,19 +133,19 @@
       if(data.error){ console.error(data.error); return; }
 
       const tr = [{
-        x:data.x1, y:data.y1, name:"f₁(n)", mode:"markers+lines",
+        x:data.x1, y:data.y1, name:"f₁(k)", mode:"markers+lines",
         line:{width:0}, marker:{size:6,color:"#1f77b4"}
       }];
       if(data.x2){
         tr.push({
-          x:data.x2, y:data.y2, name:"f₂(n)", mode:"markers+lines",
+          x:data.x2, y:data.y2, name:"f₂(k)", mode:"markers+lines",
           line:{width:0}, marker:{size:6,color:"#ff7f0e",symbol:"square"}
         });
       }
       const xrange = data.xrange || [-20,20];
       Plotly.newPlot("plot", tr, {
         margin:{t:30}, showlegend:true,
-        xaxis:{title:"n", range:xrange},
+        xaxis:{title:"k", range:xrange},
         yaxis:{title:"Amplitude", zeroline:false}
       });
     }).catch(console.error);

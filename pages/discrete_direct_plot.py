@@ -106,7 +106,8 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
     adders = [(X_L, Y_TOP - i * DY) for i in range(3)]
     for xy in adders:
         _circle(ax, xy, r_add)
-    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x[n]$", ha="left", fontsize=11)
+    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x[k]$", ha="left", fontsize=11)
+
     _arrow(ax, (X_L - 0.45, Y_TOP), (X_L - r_add, Y_TOP))
 
     _arrow(ax, (X_L, Y_TOP - r_add), (X_L, Y_TOP - DY + r_add))
@@ -144,7 +145,7 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
 
     _circle(ax, (X_Y, Y_TOP), r_add)
     _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.6, Y_TOP))
-    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y[n]$", ha="left", fontsize=11)
+    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y[k]$", ha="left", fontsize=11)
 
     ax.set_xlim(-0.8, X_Y + 1.3)
     ax.set_ylim(-0.4, Y_TOP + 0.6)
@@ -158,9 +159,9 @@ def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
 
     _circle(ax, (X_ADD, Y_TOP), r_add)
     _arrow(ax, (X_ADD + r_add, Y_TOP), (X_Y, Y_TOP))
-    ax.text(X_Y + 0.2, Y_TOP + 0.15, r"$y[n]$", ha="left", fontsize=11)
+    ax.text(X_Y + 0.2, Y_TOP + 0.15, r"$y[k]$", ha="left", fontsize=11)
 
-    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x[n]$", ha="left", fontsize=11)
+    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x[k]$", ha="left", fontsize=11)
     _arrow(ax, (X_L - 0.45, Y_TOP), (X_L + r_add, Y_TOP))
     _dot(ax, (X_L + r_add, Y_TOP))
 
@@ -208,7 +209,7 @@ def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
     r_add = 0.17
 
     _circle(ax, (X_L, Y_TOP), r_add)
-    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x[n]$", ha="left", fontsize=11)
+    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x[k]$", ha="left", fontsize=11)
     _arrow(ax, (X_L - 0.45, Y_TOP), (X_L - r_add, Y_TOP))
 
     _box(ax, (X_GL, Y_TOP), text=rf"${b[0]:g}$")
@@ -246,7 +247,7 @@ def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
 
     _circle(ax, (X_Y, Y_TOP), r_add)
     _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.6, Y_TOP))
-    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y[n]$", ha="left", fontsize=11)
+    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y[k]$", ha="left", fontsize=11)
 
     ax.set_xlim(-0.8, X_Y + 1.3)
     ax.set_ylim(-0.4, Y_TOP + 0.6)

@@ -55,7 +55,7 @@ function initCharts(){
         { label: 'x·h', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.5)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
       ]
     },
-    options: { animation: false, scales: { x: { title: { display: true, text: 'n' } } } }
+    options: { animation: false, scales: { x: { title: { display: true, text: 'k' } } } }
   });
 
   bottomChart = new Chart(bottomCtx, {
@@ -99,7 +99,7 @@ function updatePlots(){
   const τ = parseInt(document.getElementById('tauSlider').value);
   document.getElementById('tauValue').textContent = τ;
 
-  // Shifted h[n] lookup using extended domain to avoid edge truncation
+  // Shifted h[k] lookup using extended domain to avoid edge truncation
   if(!window.y2Dict){
     window.y2Dict = Object.fromEntries(nExt.map((k,idx)=>[k, y2DataExt[idx]]));
   }
