@@ -11,7 +11,7 @@
   </p>
     <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:8px auto 0;">
     The discrete convolution of <em>x[k]</em> with <em>h[k]</em> is defined as
-    $$ y[k] = x[k]*k[k] = \sum_{\kappa=-\infty}^{\infty} x[\kappa]h[k-\kappa] $$
+    $$ y[k] = x[k]*h[k] = \sum_{\kappa=-\infty}^{\infty} x[\kappa]h[k-\kappa] $$
   </p>
 </div>
 
@@ -36,9 +36,9 @@
   <!-- quick buttons ---------------------------------------------- -->
   <div class="quick-buttons"
        style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
-    {% for lbl in ['rect(n)','tri(n)','step(n)','delta(n)','sin(n)','cos(n)','sign(n)','exp(n)'] %}
+    {% for lbl in ['rect(k)','tri(k)','step(k)','delta(k)','sin(k)','cos(k)','sign(k)','exp(k)'] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
-        {{ lbl.split('(')[0]|capitalize }}
+        {{ lbl }}
       </button>
     {% endfor %}
   </div>
@@ -109,18 +109,18 @@ function updatePlots(){
     });
 
     Plotly.newPlot("plot1", [
-      stem(d.n, d.y1,"#1f77b4"),
-      {x:d.n, y:d.y1, mode:"markers", marker:{color:"#1f77b4",size:6}}
-    ], {...lc, title:"Sequence 1  x[k]", xaxis:{title:"k"}, yaxis:{title:"x"}});
+      stem(d.k, d.y1,"#1f77b4"),
+      {x:d.k, y:d.y1, mode:"markers", marker:{color:"#1f77b4",size:6}}
+    ], {...lc, title:"Sequence 1  x[k]", xaxis:{title:"k"}, yaxis:{title:"x[k]"}});
 
     Plotly.newPlot("plot2", [
-      stem(d.n, d.y2,"#ff7f0e"),
-      {x:d.n, y:d.y2, mode:"markers", marker:{color:"#ff7f0e",symbol:"square",size:6}}
-    ], {...lc, title:"Sequence 2  h[k]", xaxis:{title:"k"}, yaxis:{title:"h"}});
+      stem(d.k, d.y2,"#ff7f0e"),
+      {x:d.k, y:d.y2, mode:"markers", marker:{color:"#ff7f0e",symbol:"square",size:6}}
+    ], {...lc, title:"Sequence 2  h[k]", xaxis:{title:"k"}, yaxis:{title:"h[k]"}});
 
     Plotly.newPlot("plotConv", [
-      stem(d.n_conv, d.y_conv,"#2ca02c"),
-      {x:d.n_conv, y:d.y_conv, mode:"markers", marker:{color:"#2ca02c",size:6}}
+      stem(d.k_conv, d.y_conv,"#2ca02c"),
+      {x:d.k_conv, y:d.y_conv, mode:"markers", marker:{color:"#2ca02c",size:6}}
     ], {...lc, title:"Discrete Convolution  x * h", xaxis:{title:"k"}, yaxis:{title:"(x*h)[k]"}});
 
   })

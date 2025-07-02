@@ -14,13 +14,17 @@
   <strong>Width</strong> multiplies the index by <code>w</code>,
   stretching or compressing it along the k-axis.
 </p>
+<p style="max-width:960px;margin:-16px auto 24px auto;text-align:center;font-size:0.9em;color:#666;">
+  Hint: any valid expression using <code>k</code> works here &mdash; try something like
+  <code>(k/4)**2</code> to see its samples.
+</p>
 
 <form id="plotForm" style="max-width:960px;margin:0 auto;text-align:center;">
   <!-- INPUTS ------------------------------------------------------ -->
   <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:20px;">
-    <input id="func1" placeholder="f₁(k)"  onfocus="setActiveField(this)"
+    <input id="func1" placeholder="f₁[k]"  onfocus="setActiveField(this)"
            style="flex:1 1 300px;padding:8px;" />
-    <input id="func2" placeholder="f₂(k) (optional)" onfocus="setActiveField(this)"
+    <input id="func2" placeholder="f₂[k] (optional)" onfocus="setActiveField(this)"
            style="flex:1 1 300px;padding:8px;" />
   </div>
 
