@@ -1,8 +1,9 @@
 # pages/discrete_convolution.py
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
+import utils.math_utils as m
 from utils.math_utils import (
-    rect, tri, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
+    rect, tri, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si, tri_seq
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -27,12 +28,15 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
 
     ctx = {
         "k": k_scan, "n": k_scan, "np": np,
-        "rect": rect, "tri": tri, "step": step,
+        "tri": tri_seq, "step": step,
         "cos": cos,   "sin": sin, "sign": sign,
         "delta": delta_n, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si, "exp": np.exp
-    }
-
+        "inv_t": inv_t, "si": si, "exp": np.exp,
+        "rect": rect,
+        }
+    for N in range(1, 33):
+        ctx[f"rect_{N}"] = getattr(m, f"rect_{N}")
+        
     try:
         y1_scan = eval(func1_str, ctx) if func1_str else np.zeros_like(k_scan)
     except Exception as e:
