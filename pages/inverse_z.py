@@ -1,12 +1,27 @@
 from flask import Blueprint, render_template, request
 import numpy as np
 import sympy as sp
+from scipy.signal import lfilter
 from sympy.parsing.sympy_parser import (
     parse_expr, standard_transformations,
     implicit_multiplication_application, convert_xor
 )
 from scipy.signal import residuez, dlti, dimpulse
 import ast
+import re
+
+
+def _int_if_close(val, tol=1e-12):
+    """Return an int/SymPy Integer if ``val`` is within ``tol`` of an integer."""
+    if isinstance(val, complex):
+        if abs(val.imag) < tol:
+            val = val.real
+        else:
+            return val
+    if isinstance(val, (float, np.floating, sp.Float)):
+        if abs(val - round(val)) < tol:
+            return int(round(val))
+    return val
 
 inverse_z_bp = Blueprint('inverse_z', __name__)
 
@@ -35,36 +50,61 @@ def _parse_poly(txt: str) -> np.ndarray:
         transformations=_TRANSFORMS,
         evaluate=False
     )
-    coeffs = sp.Poly(sp.expand(expr), z).all_coeffs()  # descending z⁺ powers
-    coeffs = coeffs[::-1] 
+    coeffs = sp.Poly(sp.expand(expr), z).all_coeffs()  # descending z+ powers
+    coeffs = coeffs[::-1]
     return np.asarray([complex(c) for c in coeffs], dtype=complex)
+
+def _coeffs_to_poly(coeffs):
+    z = sp.symbols('z')
+    deg = len(coeffs) - 1
+    return sum(
+        sp.sympify(_int_if_close(coeffs[k])) * z**(deg - k)
+        for k in range(len(coeffs))
+    )
+
 
 
 def _inverse_z_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
-    """Return the symbolic inverse Z-transform of ``num/den``."""
-    r, p, kvals = residuez(num, den)
+    """
+    Symbolic inverse Z-transform of num/den.
+    Falls back to a FIR-only formula when residuez chokes (len(num) > len(den)).
+    """
+    try:
+        r, p, kvals = residuez(num, den)          # SciPy ≥1.10
+    except Exception:                              # improper or SciPy bug
+        k = sp.symbols('k')
+        expr = 0
+        for idx, c in enumerate(num):
+            if not np.isclose(c, 0):
+                expr += c * sp.DiracDelta(k - idx)
+        return expr                                # FIR done — no poles
+    # --- normal IIR path ---
     k = sp.symbols('k')
     expr = 0
     for i, ki in enumerate(kvals):
         if not np.isclose(ki, 0):
-            expr += ki * sp.DiracDelta(k - i)
+            expr += sp.sympify(_int_if_close(ki)) * sp.DiracDelta(k - i)
     for ri, pi in zip(r, p):
         if not np.isclose(ri, 0):
-            expr += ri * (pi**k) * sp.Heaviside(k)
+            expr += sp.sympify(_int_if_close(ri)) * (pi**k) * sp.Heaviside(k)
+
     return sp.simplify(expr)
 
 
-def _impulse_response(num: np.ndarray, den: np.ndarray, N: int = 10) -> list:
-    """Return the first ``N`` samples of the impulse response (may be complex)."""
-    sys = dlti(num, den, dt=1)
-    _, h = dimpulse(sys, n=N)
+
+def _impulse_response(num, den, N=10):
+    """Impulse via direct filtering – robust for pure delays & improper H(z)."""
+    x = np.zeros(N, dtype=complex)
+    x[0] = 1                          # δ[k]
+    y = lfilter(num, den, x)
     seq = []
-    for v in np.array(h).ravel():
-        c = complex(v)
+    for v in y:
+        c = complex(v)                # keep imaginary part if any
         if abs(c.imag) < 1e-12:
             c = float(c.real)
             if c.is_integer():
                 c = int(c)
+        c = _int_if_close(c)
         seq.append(c)
     return seq
 
@@ -82,12 +122,19 @@ def inverse_z():
             den = _parse_poly(den_txt)
 
             z = sp.symbols('z')
-            num_expr = sp.Poly(num, z).as_expr()
-            den_expr = sp.Poly(den, z).as_expr()
+            def _coeffs_to_poly(coeffs):
+                z = sp.symbols('z')
+                deg = len(coeffs) - 1
+                return sum(sp.sympify(coeffs[k]) * z**(deg - k) for k in range(len(coeffs)))
+
+            num_expr = _coeffs_to_poly(num)
+            den_expr = _coeffs_to_poly(den)
             tf_ltx = sp.latex(num_expr/den_expr)
 
             expr = _inverse_z_expr(num, den)
             hz_ltx = sp.latex(expr).replace('\\theta', '\\varepsilon')
+            tf_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', tf_ltx)
+            hz_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', hz_ltx)
             seq = _impulse_response(num, den, N=10)
         except Exception as exc:
             error = f'{type(exc).__name__}: {exc}'
