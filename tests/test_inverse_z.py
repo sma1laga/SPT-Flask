@@ -8,5 +8,5 @@ def test_simple_impulse_response():
     expr = _inverse_z_expr(num, den)
     # first coefficient should be 1
     seq = _impulse_response(num, den, N=3)
-    assert np.isclose(seq[0], 1.0)
+    assert seq[0] == 1
     assert len(seq) == 3

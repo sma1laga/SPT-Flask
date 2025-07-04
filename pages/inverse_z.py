@@ -30,23 +30,26 @@ def _parse_poly(txt: str):
 
 
 def _inverse_z_expr(num, den):
-    r, p, k = residuez(num, den)
-    n = sp.symbols('n')
+    r, p, kvals = residuez(num, den)
+    k = sp.symbols('k')
     expr = 0
-    for i, ki in enumerate(k):
+    for i, ki in enumerate(kvals):
         if not np.isclose(ki, 0):
-            expr += ki * sp.DiracDelta(n - i)
+            expr += ki * sp.DiracDelta(k - i)
     for ri, pi in zip(r, p):
         if not np.isclose(ri, 0):
-            expr += ri * (pi**n) * sp.Heaviside(n)
+            expr += ri * (pi**k) * sp.Heaviside(k)
     return sp.simplify(expr)
 
 
 def _impulse_response(num, den, N=10):
     sys = dlti(num, den, dt=1)
     _, h = dimpulse(sys, n=N)
-    return [float(v) for v in np.squeeze(h)]
-
+    res = []
+    for v in np.squeeze(h):
+        f = float(v)
+        res.append(int(f) if f.is_integer() else f)
+    return res
 
 @inverse_z_bp.route('/', methods=['GET', 'POST'])
 def inverse_z():
