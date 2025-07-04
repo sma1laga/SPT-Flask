@@ -15,21 +15,33 @@ _TRANSFORMS = standard_transformations + (
     convert_xor
 )
 
-def _parse_poly(txt: str):
+def _parse_poly(txt: str) -> np.ndarray:
+    """Parse ``txt`` into a coefficient vector for :func:`scipy.signal.residuez`."""
     txt = txt.strip()
     if txt.startswith('['):
-        return np.asarray(ast.literal_eval(txt), dtype=complex)
+        try:
+            return np.asarray(ast.literal_eval(txt), dtype=complex)
+        except Exception:
+            items = txt.strip('[]')
+            parts = [p.strip() for p in items.split(',') if p.strip()]
+            vals = [complex(parse_expr(p.replace('j', 'I'), transformations=_TRANSFORMS))
+                    for p in parts]
+            return np.asarray(vals, dtype=complex)
+
+    z = sp.symbols('z')
     expr = parse_expr(
         txt.replace('j', 'I'),
-        local_dict={'z': sp.symbols('z')},
+        local_dict={'z': z},
         transformations=_TRANSFORMS,
         evaluate=False
     )
-    coeffs = sp.Poly(sp.expand(expr), sp.symbols('z')).all_coeffs()
+    coeffs = sp.Poly(sp.expand(expr), z).all_coeffs()  # descending z⁺ powers
+    coeffs = coeffs[::-1] 
     return np.asarray([complex(c) for c in coeffs], dtype=complex)
 
 
-def _inverse_z_expr(num, den):
+def _inverse_z_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
+    """Return the symbolic inverse Z-transform of ``num/den``."""
     r, p, kvals = residuez(num, den)
     k = sp.symbols('k')
     expr = 0
@@ -42,14 +54,19 @@ def _inverse_z_expr(num, den):
     return sp.simplify(expr)
 
 
-def _impulse_response(num, den, N=10):
+def _impulse_response(num: np.ndarray, den: np.ndarray, N: int = 10) -> list:
+    """Return the first ``N`` samples of the impulse response (may be complex)."""
     sys = dlti(num, den, dt=1)
     _, h = dimpulse(sys, n=N)
-    res = []
-    for v in np.squeeze(h):
-        f = float(v)
-        res.append(int(f) if f.is_integer() else f)
-    return res
+    seq = []
+    for v in np.array(h).ravel():
+        c = complex(v)
+        if abs(c.imag) < 1e-12:
+            c = float(c.real)
+            if c.is_integer():
+                c = int(c)
+        seq.append(c)
+    return seq
 
 @inverse_z_bp.route('/', methods=['GET', 'POST'])
 def inverse_z():
