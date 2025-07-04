@@ -51,16 +51,23 @@ def _impulse_response(num, den, N=10):
 @inverse_z_bp.route('/', methods=['GET', 'POST'])
 def inverse_z():
     num_txt = request.form.get('numerator', '[1, 0]')
-    den_txt = request.form.get('denominator', '[1, 0]')
+    den_txt = request.form.get('denominator', '[2, 1]')
     hz_ltx = None
+    tf_ltx = None
     seq = None
     error = None
     if request.method == 'POST':
         try:
             num = _parse_poly(num_txt)
             den = _parse_poly(den_txt)
+
+            z = sp.symbols('z')
+            num_expr = sp.Poly(num, z).as_expr()
+            den_expr = sp.Poly(den, z).as_expr()
+            tf_ltx = sp.latex(num_expr/den_expr)
+
             expr = _inverse_z_expr(num, den)
-            hz_ltx = sp.latex(expr)
+            hz_ltx = sp.latex(expr).replace('\\theta', '\\varepsilon')
             seq = _impulse_response(num, den, N=10)
         except Exception as exc:
             error = f'{type(exc).__name__}: {exc}'
@@ -68,6 +75,7 @@ def inverse_z():
         'inverse_z.html',
         default_num=num_txt,
         default_den=den_txt,
+        tf_latex=tf_ltx,
         hz_latex=hz_ltx,
         seq=seq,
         error=error

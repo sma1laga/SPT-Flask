@@ -1,25 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Inverse Z-Transform</h1>
-<p>Enter a discrete-time transfer function H(z) to compute its impulse response.</p>
-<form method="POST">
+<div class="page-header" style="text-align:center;margin-bottom:20px;">
+  <h1 style="font-size:2.2em;">Inverse Z-Transform</h1>
+  <p style="color:var(--subtext-color);">Enter a discrete transfer function and view its time-domain sequence.</p>
+</div>
+
+<form method="POST" style="max-width:500px;margin:0 auto;">
   <label for="numerator">Numerator:</label>
   <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
-  <br><br>
-  <label for="denominator">Denominator:</label>
+  <label for="denominator" style="margin-top:10px;">Denominator:</label>
+
   <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
-  <br><br>
-  <button type="submit">Compute</button>
+  <button type="submit" style="margin-top:10px;">Compute</button>
+
 </form>
 {% if error %}
-  <p style="color:red;">Error: {{ error }}</p>
+  <p style="color:red; text-align:center;">Error: {{ error }}</p>
 {% endif %}
+
+{% if tf_latex %}
+  <div style="text-align:center;margin-top:25px;">
+    <h2>Your Transfer Function</h2>
+    <p>$$ H(z) = {{ tf_latex|safe }} $$</p>
+  </div>
+{% endif %}
+
 {% if hz_latex %}
-  <h2>h[n]</h2>
-  <p>$$ {{ hz_latex|safe }} $$</p>
+  <div style="text-align:center;margin-top:20px;">
+    <h2>h[n]</h2>
+    <p>$$ {{ hz_latex|safe }} $$</p>
+  </div>
 {% endif %}
 {% if seq %}
-  <h3>First {{ seq|length }} samples</h3>
-  <pre>{{ seq }}</pre>
+  <div style="text-align:center;margin-top:20px;">
+    <h3>First {{ seq|length }} samples</h3>
+    <pre>{{ seq }}</pre>
+  </div>
 {% endif %}
 {% endblock %}
