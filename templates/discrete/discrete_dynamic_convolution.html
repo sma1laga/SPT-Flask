@@ -35,7 +35,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let tData = [], y1Data = [], y2Data = [], yConvData = [];
-let nExt = [], y1DataExt = [], y2DataExt = [];
+let kExt = [], y1DataExt = [], y2DataExt = [];
 let topChart, bottomChart;
 function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
 
@@ -80,14 +80,14 @@ function fetchData(){
     })
   })
   .then(r => r.json().then(d => r.ok ? d : Promise.reject(d.error)))
-    .then(d => {
-      tData       = d.n;
-      nExt        = d.n_ext;
+      .then(d => {
+        tData       = d.k;
+        kExt        = d.k_ext;
       y1Data      = d.y1;
       y2Data      = d.y2;
       y1DataExt   = d.y1_ext;
       y2DataExt   = d.y2_ext;
-      window.y2Dict = Object.fromEntries(nExt.map((k,idx)=>[k, y2DataExt[idx]]));
+        window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
       yConvData   = d.y_conv;
       initCharts();
       updatePlots();
@@ -100,8 +100,8 @@ function updatePlots(){
   document.getElementById('tauValue').textContent = τ;
 
   // Shifted h[k] lookup using extended domain to avoid edge truncation
-  if(!window.y2Dict){
-    window.y2Dict = Object.fromEntries(nExt.map((k,idx)=>[k, y2DataExt[idx]]));
+    if(!window.y2Dict){
+      window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
   }
   const y2shift = tData.map(v => window.y2Dict[τ - v] ?? 0);
   topChart.data.datasets[1].data = pairData(tData, y2shift);

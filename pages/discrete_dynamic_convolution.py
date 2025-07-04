@@ -16,9 +16,9 @@ discrete_dynamic_convolution_bp = Blueprint(
 def index():
     # Provide available discrete functions
     functions = [
-        "rect(n)", "tri(n)", "step(n)", "sin(n)",
-        "cos(n)", "sign(n)", "delta(n)",
-        "inv_t(n)", "si(n)"
+        "rect(k)", "tri(k)", "step(k)", "sin(k)",
+        "cos(k)", "sign(k)", "delta(k)",
+        "inv_t(k)", "si(k)"
     ]
     return render_template(
         "discrete_dynamic_convolution.html",
@@ -32,10 +32,10 @@ def data():
     f2_str = payload.get("func2", "").strip()
 
     # Original discrete index
-    n = np.arange(-10, 11)
+    k = np.arange(-10, 11)
     # Safe evaluation context
     ctx = {
-        "n": n, "np": np,
+        "k": k, "n": k, "np": np,
         "rect": rect, "tri": tri, "step": step,
         "cos": cos, "sin": sin, "sign": sign,
         "delta": delta_n, "exp_iwt": exp_iwt,
@@ -44,25 +44,25 @@ def data():
 
     # Evaluate f1 & f2 on original domain
     try:
-        y1 = eval(f1_str, ctx) if f1_str else np.zeros_like(n, dtype=float)
+        y1 = eval(f1_str, ctx) if f1_str else np.zeros_like(k, dtype=float)
     except Exception as e:
         return jsonify(error=f"Error evaluating Sequence 1: {e}"), 400
     try:
-        y2 = eval(f2_str, ctx) if f2_str else np.zeros_like(n, dtype=float)
+        y2 = eval(f2_str, ctx) if f2_str else np.zeros_like(k, dtype=float)
     except Exception as e:
         return jsonify(error=f"Error evaluating Sequence 2: {e}"), 400
 
     # Extended domain for convolution: triple range so shifted samples never
     # fall outside the lookup table used by the client. This keeps the
     # visible axis fixed while sequences behave as if they were infinite.
-    n_ext = np.arange(3 * n.min(), 3 * n.max() + 1)
+    k_ext = np.arange(3 * k.min(), 3 * k.max() + 1)
     ctx_ext = ctx.copy()
-    ctx_ext["n"] = n_ext
+    ctx_ext["k"] = k_ext; ctx_ext["n"] = k_ext
 
     # Evaluate f1 & f2 on extended domain
     try:
-        y1_ext = eval(f1_str, ctx_ext) if f1_str else np.zeros_like(n_ext, dtype=float)
-        y2_ext = eval(f2_str, ctx_ext) if f2_str else np.zeros_like(n_ext, dtype=float)
+        y1_ext = eval(f1_str, ctx_ext) if f1_str else np.zeros_like(k_ext, dtype=float)
+        y2_ext = eval(f2_str, ctx_ext) if f2_str else np.zeros_like(k_ext, dtype=float)
     except Exception as e:
         return jsonify(error=f"Extended-domain eval error: {e}"), 400
 
@@ -71,12 +71,12 @@ def data():
 
     # Map back to original n for plotting
     # Find indices of original n within extended axis
-    idx_map = [int(np.where(n_ext == val)[0]) for val in n]
+    idx_map = [int(np.where(k_ext == val)[0]) for val in k]
     y_conv = y_conv_ext[idx_map]
 
     return jsonify({
-        "n":       n.tolist(),       # plotting grid
-        "n_ext":   n_ext.tolist(),   # lookup grid used client-side
+        "k":       k.tolist(),       # plotting grid
+        "k_ext":   k_ext.tolist(),   # lookup grid used client-side
         "y1":      y1.tolist(),
         "y2":      y2.tolist(),
         "y1_ext":  y1_ext.tolist(),
