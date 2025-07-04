@@ -21,6 +21,7 @@ def check_route(client, url):
     '/convolution/',
     '/block_diagram/',
     '/discrete/direct_plot/',
+    '/inverse_z/',
     '/info/about'
 ])
 def test_basic_pages(client, url):

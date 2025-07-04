@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Inverse Z-Transform</h1>
+<p>Enter a discrete-time transfer function H(z) to compute its impulse response.</p>
+<form method="POST">
+  <label for="numerator">Numerator:</label>
+  <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
+  <br><br>
+  <label for="denominator">Denominator:</label>
+  <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
+  <br><br>
+  <button type="submit">Compute</button>
+</form>
+{% if error %}
+  <p style="color:red;">Error: {{ error }}</p>
+{% endif %}
+{% if hz_latex %}
+  <h2>h[n]</h2>
+  <p>$$ {{ hz_latex|safe }} $$</p>
+{% endif %}
+{% if seq %}
+  <h3>First {{ seq|length }} samples</h3>
+  <pre>{{ seq }}</pre>
+{% endif %}
+{% endblock %}

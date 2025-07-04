@@ -23,6 +23,7 @@ from pages.theory import theory_bp
 from pages.info import info_bp
 from pages.bode_plot import bode_plot_bp
 from pages.dynamic_convolution import dynamic_convolution_bp
+from pages.inverse_z import inverse_z_bp
 
 
 # discrete
@@ -70,8 +71,10 @@ def create_app():
 
     
     app.register_blueprint(process_chain_bp, url_prefix="/process_chain")
-    app.register_blueprint(block_diagram_bp, url_prefix="/block_diagram")  
+    app.register_blueprint(block_diagram_bp, url_prefix="/block_diagram")
     app.register_blueprint(direct_plot_bp, url_prefix="/direct_plot")
+    app.register_blueprint(inverse_z_bp, url_prefix="/inverse_z")
+
     
     app.register_blueprint(filter_design_bp, url_prefix="/filter_design")
     app.register_blueprint(func_defs_bp,     url_prefix="/function_definitions")
