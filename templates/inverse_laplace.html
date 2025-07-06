@@ -4,75 +4,75 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/inverse_laplace.css') }}">
 {% endblock %}
 {% block content %}
-<div class="page-header text-center mb-5">
-  <h1 class="text-2xl font-semibold">Inverse Laplace Transform</h1>
-  <p class="text-gray-600">Enter a continuous transfer function and view its time-domain response.</p>
-</div>
+<div class="inverse-laplace-container">
+  <div class="page-header text-center mb-5">
+    <h1 class="text-2xl font-semibold">Inverse Laplace Transform</h1>
+    <p class="text-gray-600">Enter a continuous transfer function and view its time-domain response.</p>
+  </div>
 
-<div class="bg-blue-100 text-blue-800 text-sm p-2 rounded mb-4 text-center">
-  All transforms assume the signal is zero for <em>t</em> &lt; 0.
-</div>
+  <div class="bg-blue-100 text-blue-800 text-sm p-2 rounded mb-4 text-center">
+    All transforms assume the signal is zero for <em>t</em> &lt; 0.
+  </div>
 
-<form method="POST" class="max-w-md mx-auto space-y-4">
-  <fieldset class="p-4 border rounded">
-    <legend class="font-medium mb-2">Transfer Function H(s)</legend>
-    <label class="block text-sm" for="numerator">Numerator
-      <input class="mt-1 w-full border rounded p-1" type="text" id="numerator" name="numerator" value="{{ default_num }}" placeholder="[1]" title="Polynomial coefficients or expression in s" required>
-    </label>
-    {% if num_error %}
-      <p class="text-red-600 text-sm mt-1">{{ num_error }}</p>
+  <form method="POST">
+    <fieldset>
+      <legend class="font-medium mb-2">Transfer Function H(s)</legend>
+      <label for="numerator">Numerator
+        <input type="text" id="numerator" name="numerator" value="{{ default_num }}" placeholder="[1]" title="Polynomial coefficients or expression in s" required>
+      </label>
+      {% if num_error %}
+        <p class="text-red-600 text-sm mt-1">{{ num_error }}</p>
+      {% endif %}
+
+      <label for="denominator" style="margin-top:1rem;">Denominator
+        <input type="text" id="denominator" name="denominator" value="{{ default_den }}" placeholder="[1, 1]" title="Polynomial coefficients or expression in s" required>
+      </label>
+      {% if den_error %}
+        <p class="text-red-600 text-sm mt-1">{{ den_error }}</p>
+      {% endif %}
+
+      <div class="examples">
+        <button type="button" class="example-btn" data-expr="1/(s**2+3*s+2)">1/(s**2+3*s+2)</button>
+        <button type="button" class="example-btn" data-expr="(s+2)/(s**2+4)">(s+2)/(s**2+4)</button>
+        <button type="button" class="example-btn" data-expr="s/(s+1)">s/(s+1)</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="radio-group">
+      <legend class="font-medium mb-2">Output Type</legend>
+      <label><input type="radio" name="response_type" value="step" checked> Step</label>
+      <label><input type="radio" name="response_type" value="impulse"> Impulse</label>
+    </fieldset>
+
+    <button type="submit" class="compute-btn">Compute</button>
+    {% if error %}
+      <div class="text-red-600 mt-2">{{ error }}</div>
     {% endif %}
+  </form>
 
-    <label class="block text-sm mt-3" for="denominator">Denominator
-      <input class="mt-1 w-full border rounded p-1" type="text" id="denominator" name="denominator" value="{{ default_den }}" placeholder="[1, 1]" title="Polynomial coefficients or expression in s" required>
-    </label>
-    {% if den_error %}
-      <p class="text-red-600 text-sm mt-1">{{ den_error }}</p>
-    {% endif %}
-
-    <div class="flex flex-wrap gap-2 mt-3">
-      <button type="button" class="example-btn text-blue-700 underline text-sm" data-expr="1/(s**2+3*s+2)">1/(s**2+3*s+2)</button>
-      <button type="button" class="example-btn text-blue-700 underline text-sm" data-expr="(s+2)/(s**2+4)">(s+2)/(s**2+4)</button>
-      <button type="button" class="example-btn text-blue-700 underline text-sm" data-expr="s/(s+1)">s/(s+1)</button>
+  {% if tf_latex %}
+    <div style="text-align:center;margin-top:25px;">
+      <h2>Your Transfer Function</h2>
+      <p>$$ H(s) = {{ tf_latex|safe }} $$</p>
     </div>
-  </fieldset>
-
-  <fieldset class="p-4 border rounded">
-    <legend class="font-medium mb-2">Output Type</legend>
-    <label class="mr-4"><input type="radio" name="response_type" value="step" checked> Step</label>
-    <label><input type="radio" name="response_type" value="impulse"> Impulse</label>
-  </fieldset>
-
-  <button type="submit" class="mt-2 bg-blue-600 text-white py-1 px-4 rounded">Compute</button>
-  {% if error %}
-    <div class="text-red-600 mt-2">{{ error }}</div>
   {% endif %}
-</form>
 
-{% if tf_latex %}
-  <div style="text-align:center;margin-top:25px;">
-    <h2>Your Transfer Function</h2>
-    <p>$$ H(s) = {{ tf_latex|safe }} $$</p>
-  </div>
-{% endif %}
-
-{% if q_latex %}
-  <p class="text-sm text-gray-600 text-center mt-4">Improper transfer functions may produce δ(t) terms – see below.</p>
-  <details class="max-w-md mx-auto mt-2">
-    <summary class="cursor-pointer text-blue-600">Why do δ(t) and its derivatives appear?</summary>
-    <p class="mt-2">For improper transfer functions we perform long division:</p>
-    <p>$$H(s)= {{ q_latex|safe }} + {{ r_latex|safe }}$$</p>
-  </details>
-{% endif %}
-
-{% if latex_expr %}
-
-  <div class="result">
-    <h3>{{ title }}</h3>
-    <p>\[ {{ latex_expr|safe }} \]</p>
-    <img src="data:image/png;base64,{{ plot_url }}" alt="{{ title }} plot" class="plot">
-  </div>
-{% endif %}
+  {% if q_latex %}
+    <p class="text-sm text-gray-600 text-center mt-4">Improper transfer functions may produce δ(t) terms – see below.</p>
+    <details class="max-w-md mx-auto mt-2">
+      <summary class="cursor-pointer text-blue-600">Why do δ(t) and its derivatives appear?</summary>
+      <p class="mt-2">For improper transfer functions we perform long division:</p>
+      <p>$$H(s)= {{ q_latex|safe }} + {{ r_latex|safe }}$$</p>
+    </details>
+  {% endif %}
+  {% if latex_expr %}
+    <div class="result">
+      <h3>{{ title }}</h3>
+      <p>\[ {{ latex_expr|safe }} \]</p>
+      <img src="data:image/png;base64,{{ plot_url }}" alt="{{ title }} plot" class="plot">
+    </div>
+  {% endif %}
+</div>
 <script>
   document.querySelectorAll('.example-btn').forEach(btn => {
     btn.addEventListener('click', () => {

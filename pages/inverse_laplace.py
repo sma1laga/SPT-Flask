@@ -102,15 +102,15 @@ def inverse_laplace():
                 else:
                     tout, y = impulse(sys, T=t_vals)
                     title = "Impulse response h(t)"
-                plt.figure(figsize=(5, 3))
-                plt.plot(tout, y)
-                plt.xlabel("t")
-                plt.ylabel(title.split()[0])
-                plt.tight_layout()
+                fig, ax = plt.subplots(figsize=(5, 3))
+                ax.plot(tout, y)
+                ax.set_xlabel("t")
+                ax.set_ylabel(title.split()[0])
+                fig.tight_layout()
                 buf = io.BytesIO()
-                plt.savefig(buf, format="png")
+                fig.savefig(buf, format="png")
                 buf.seek(0)
-                plt.close()
+                plt.close(fig)
                 plot_url = base64.b64encode(buf.getvalue()).decode("utf8")
             except TimeoutError:
                 logger.exception("symbolic inverse laplace timeout")
