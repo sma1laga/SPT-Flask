@@ -75,10 +75,13 @@ def _inverse_laplace_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
     kvals_rev = kvals[::-1]
     for order, ki in enumerate(kvals_rev):
         if not np.isclose(ki, 0):
-            expr += sp.sympify(_int_if_close(ki)) * sp.DiracDelta(t).diff(order)
-    for ri, pi in zip(r, p):
-        if not np.isclose(ri, 0):
-            expr += sp.sympify(_int_if_close(ri)) * sp.exp(pi*t) * sp.Heaviside(t)
+            delta = sp.DiracDelta(t)
+            if order > 0:
+                delta = delta.diff(t, order)
+            expr += sp.sympify(_int_if_close(ki)) * delta
+            for ri, pi in zip(r, p):
+                if not np.isclose(ri, 0):
+                    expr += sp.sympify(_int_if_close(ri)) * sp.exp(pi*t) * sp.Heaviside(t)
 
     return sp.simplify(expr)
 
@@ -116,7 +119,7 @@ def inverse_laplace():
             tf_ltx = sp.latex(num_expr/den_expr)
 
             expr = _inverse_laplace_expr(num, den)
-            ht_ltx = sp.latex(expr)
+            ht_ltx = sp.latex(expr).replace('\\theta', '\\varepsilon')
             tf_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', tf_ltx)
             ht_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', ht_ltx)
             seq = _impulse_response(num, den, N=10)
