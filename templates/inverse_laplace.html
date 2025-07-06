@@ -10,17 +10,38 @@
   <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
   <label for="denominator" style="margin-top:10px;">Denominator:</label>
   <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
+    <div class="examples" style="margin-top:10px;">
+    <button type="button" class="example-btn" data-expr="1/(s**2+3*s+2)">1/(s**2+3*s+2)</button>
+    <button type="button" class="example-btn" data-expr="(s+2)/(s**2+4)">(s+2)/(s**2+4)</button>
+    <button type="button" class="example-btn" data-expr="s/(s+1)">s/(s+1)</button>
+  </div>
+  <div style="margin-top:10px;">
+    <label for="dt">Sampling period Δt (s):</label>
+    <input type="number" step="any" id="dt" name="dt" value="{{ default_dt }}">
+  </div>
+  <div style="margin-top:10px;">
+    <input type="checkbox" id="causal" name="causal" {% if default_causal %}checked{% endif %}>
+    <label for="causal">Assume causal (Heaviside u(t))</label>
+  </div>
   <button type="submit" style="margin-top:10px;">Compute</button>
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
 </form>
-{% if error %}
-  <p style="color:red; text-align:center;">Error: {{ error }}</p>
-{% endif %}
 
 {% if tf_latex %}
   <div style="text-align:center;margin-top:25px;">
     <h2>Your Transfer Function</h2>
     <p>$$ H(s) = {{ tf_latex|safe }} $$</p>
   </div>
+{% endif %}
+
+{% if q_latex %}
+  <details style="max-width:500px;margin:20px auto;">
+    <summary>Why do δ(t) and its derivatives appear?</summary>
+    <p>For improper transfer functions we perform long division:</p>
+    <p>$$H(s)= {{ q_latex|safe }} + {{ r_latex|safe }}$$</p>
+  </details>
 {% endif %}
 
 {% if ht_latex %}
@@ -34,4 +55,13 @@
     <pre>{{ seq }}</pre>
   </div>
 {% endif %}
+<script>
+  document.querySelectorAll('.example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [num, den] = btn.dataset.expr.split('/');
+      document.getElementById('numerator').value = num;
+      document.getElementById('denominator').value = den;
+    });
+  });
+</script>
 {% endblock %}
