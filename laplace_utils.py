@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import ast
 import logging
+import re
+
 from typing import Tuple
 
 import numpy as np
@@ -116,7 +118,7 @@ def poly_long_division(num: np.ndarray, den: np.ndarray) -> Tuple[np.ndarray, np
     return q_coeffs, r_coeffs
 
 
-def inverse_laplace_expr(num: np.ndarray, den: np.ndarray, causal: bool = True) -> sp.Expr:
+def inverse_laplace_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
     """Symbolic inverse Laplace transform of ``num/den``."""
     t = sp.symbols("t")
     try:
@@ -126,9 +128,9 @@ def inverse_laplace_expr(num: np.ndarray, den: np.ndarray, causal: bool = True) 
         expr = sp.inverse_laplace_transform(
             coeffs_to_poly(num) / coeffs_to_poly(den), sp.symbols("s"), t
         )
-        if causal:
-            expr *= sp.Heaviside(t)
-        return sp.simplify(expr)
+        expr *= sp.Heaviside(t)
+        expr = sp.simplify(expr)
+        return sp.nsimplify(expr, tolerance=1e-10, rational=True)
 
     expr = 0
     kvals_rev = kvals[::-1]
@@ -142,12 +144,36 @@ def inverse_laplace_expr(num: np.ndarray, den: np.ndarray, causal: bool = True) 
     for ri, pi in zip(r, p):
         if not np.isclose(ri, 0):
             term = sp.sympify(_int_if_close(ri)) * sp.exp(pi * t)
-            if causal:
-                term *= sp.Heaviside(t)
+            term *= sp.Heaviside(t)
+
             expr += term
 
-    return sp.simplify(expr)
+    expr = sp.simplify(expr)
+    return sp.nsimplify(expr, tolerance=1e-10, rational=True)
 
+
+def step_response_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
+    """Symbolic step response of ``num/den``."""
+    s = sp.Symbol("s")
+    t = sp.Symbol("t")
+    num_poly = sp.Poly(coeffs_to_poly(num), s)
+    den_poly = sp.Poly(coeffs_to_poly(den), s)
+    H = num_poly.as_expr() / den_poly.as_expr()
+    Y_s = H / s
+    expr = sp.inverse_laplace_transform(Y_s, s, t)
+    expr *= sp.Heaviside(t)
+    expr = sp.simplify(expr)
+    return sp.nsimplify(expr, tolerance=1e-10, rational=True)
+
+
+def _pretty_latex(expr: sp.Expr) -> str:
+    latex = sp.latex(expr)
+    latex = latex.replace(r"\operatorname{Heaviside}{\left(t \right)}", r"u(t)")
+    latex = latex.replace(r"\operatorname{Heaviside}\left(t\right)", r"u(t)")
+    if latex.strip().endswith(r"u(t)"):
+        latex = latex.replace(r"\cdot u(t)", r"u(t)")
+    latex = re.sub(r"(\d+\.\d{6})\d+", r"\1", latex)
+    return latex
 
 def impulse_response(num: np.ndarray, den: np.ndarray, N: int = 10, dt: float = 1.0) -> list:
     """Sampled impulse response using SciPy's ``impulse``."""

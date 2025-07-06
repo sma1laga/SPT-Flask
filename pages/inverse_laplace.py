@@ -9,9 +9,23 @@ from laplace_utils import (
     parse_poly,
     coeffs_to_poly,
     inverse_laplace_expr,
-    impulse_response,
+    step_response_expr,
+    _pretty_latex,
     poly_long_division,
 )
+from scipy.signal import lti, step as step_func, impulse
+import matplotlib.pyplot as plt
+import numpy as np
+import uuid
+import os
+
+
+def _parse_poly(txt: str) -> np.ndarray:
+    return parse_poly(txt)
+
+
+def _inverse_laplace_expr(num, den) -> sp.Expr:
+    return inverse_laplace_expr(num, den)
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +36,11 @@ inverse_laplace_bp = Blueprint("inverse_laplace", __name__)
 def inverse_laplace():
     num_txt = request.form.get("numerator", "[1]")
     den_txt = request.form.get("denominator", "[1, 1]")
-    dt_txt = request.form.get("dt", "1")
-    causal = request.form.get("causal", "on") == "on"
-    ht_ltx = None
+    response_type = request.form.get("response_type", "step")
+    latex_expr = None
+    plot_url = None
+    title = None
     tf_ltx = None
-    seq = None
     q_ltx = None
     r_ltx = None
     error = None
@@ -34,7 +48,6 @@ def inverse_laplace():
         try:
             num = parse_poly(num_txt)
             den = parse_poly(den_txt)
-            dt = float(dt_txt)
         except ValueError as exc:
             logger.exception("invalid input")
             abort(400, str(exc))
@@ -52,13 +65,39 @@ def inverse_laplace():
                     r_ltx = sp.latex(coeffs_to_poly(r_coeffs) / den_expr)
 
                 def worker() -> sp.Expr:
-                    return inverse_laplace_expr(num, den, causal=causal)
-
+                    if response_type == "step":
+                        return step_response_expr(num, den)
+                    return inverse_laplace_expr(num, den)
                 with ThreadPoolExecutor(max_workers=1) as ex:
                     fut = ex.submit(worker)
                     expr = fut.result(timeout=10)
-                ht_ltx = sp.latex(expr).replace("\\theta", "\\varepsilon")
-                seq = impulse_response(num, den, N=10, dt=dt)
+
+                latex_expr = _pretty_latex(expr)
+
+                sys = lti(num, den)
+                poles = sys.p
+                if len(poles) > 0:
+                    tau = max(1.0 / max(abs(p.real), 1e-3) for p in poles)
+                else:
+                    tau = 1.0
+                t_vals = np.linspace(0, 5 * tau, 1000)
+                if response_type == "step":
+                    tout, y = step_func(sys, T=t_vals)
+                    title = "Step response y(t)"
+                else:
+                    tout, y = impulse(sys, T=t_vals)
+                    title = "Impulse response h(t)"
+                plt.figure(figsize=(5, 3))
+                plt.plot(tout, y)
+                plt.xlabel("t")
+                plt.ylabel(title.split()[0])
+                plt.tight_layout()
+                fname = f"{uuid.uuid4().hex}.png"
+                plot_path = os.path.join("static", "plots", fname)
+                os.makedirs(os.path.dirname(plot_path), exist_ok=True)
+                plt.savefig(plot_path)
+                plt.close()
+                plot_url = f"/static/plots/{fname}"
             except TimeoutError:
                 logger.exception("symbolic inverse laplace timeout")
                 abort(408, "Expression too complex, try numeric impulse")
@@ -69,11 +108,10 @@ def inverse_laplace():
         "inverse_laplace.html",
         default_num=num_txt,
         default_den=den_txt,
-        default_dt=dt_txt,
-        default_causal=causal,
+        latex_expr=latex_expr,
+        plot_url=plot_url,
+        title=title,
         tf_latex=tf_ltx,
-        ht_latex=ht_ltx,
-        seq=seq,
         q_latex=q_ltx,
         r_latex=r_ltx,
         error=error,

@@ -16,12 +16,8 @@
     <button type="button" class="example-btn" data-expr="s/(s+1)">s/(s+1)</button>
   </div>
   <div style="margin-top:10px;">
-    <label for="dt">Sampling period Δt (s):</label>
-    <input type="number" step="any" id="dt" name="dt" value="{{ default_dt }}">
-  </div>
-  <div style="margin-top:10px;">
-    <input type="checkbox" id="causal" name="causal" {% if default_causal %}checked{% endif %}>
-    <label for="causal">Assume causal (Heaviside u(t))</label>
+    <label><input type="radio" name="response_type" value="step" checked> Step</label>
+    <label><input type="radio" name="response_type" value="impulse"> Impulse</label>
   </div>
   <button type="submit" style="margin-top:10px;">Compute</button>
   {% if error %}
@@ -44,15 +40,12 @@
   </details>
 {% endif %}
 
-{% if ht_latex %}
+{% if latex_expr %}
+
   <div style="text-align:center;margin-top:20px;">
-    <p>$$ h(t) = {{ ht_latex|safe }} $$</p>
-  </div>
-{% endif %}
-{% if seq %}
-  <div style="text-align:center;margin-top:20px;">
-    <h3>First {{ seq|length }} samples</h3>
-    <pre>{{ seq }}</pre>
+    <h3>{{ title }}</h3>
+    <p>\[ {{ latex_expr|safe }} \]</p>
+    <img src="{{ plot_url }}" alt="{{ title }} plot" class="plot">
   </div>
 {% endif %}
 <script>
