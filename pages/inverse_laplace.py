@@ -14,11 +14,10 @@ from laplace_utils import (
     poly_long_division,
 )
 from scipy.signal import lti, step as step_func, impulse
-from flask import current_app, url_for
 import matplotlib.pyplot as plt
 import numpy as np
-import uuid
-import os
+import io
+import base64
 
 
 def _parse_poly(txt: str) -> np.ndarray:
@@ -45,17 +44,23 @@ def inverse_laplace():
     q_ltx = None
     r_ltx = None
     error = None
+    num_error = None
+    den_error = None
+    
     if request.method == "POST":
         try:
             num = parse_poly(num_txt)
-            den = parse_poly(den_txt)
-        except ValueError as exc:
-            logger.exception("invalid input")
-            abort(400, str(exc))
         except Exception as exc:
-            logger.exception("parse error")
-            error = f"{type(exc).__name__}: {exc}"
-        else:
+            logger.exception("parse numerator error")
+            num_error = f"{type(exc).__name__}: {exc}"
+        try:
+            den = parse_poly(den_txt)
+
+        except Exception as exc:
+            logger.exception("parse denominator error")
+            den_error = f"{type(exc).__name__}: {exc}"
+
+        if not num_error and not den_error:
             try:
                 num_expr = coeffs_to_poly(num)
                 den_expr = coeffs_to_poly(den)
@@ -102,13 +107,11 @@ def inverse_laplace():
                 plt.xlabel("t")
                 plt.ylabel(title.split()[0])
                 plt.tight_layout()
-                fname = f"{uuid.uuid4().hex}.png"
-                plot_dir = os.path.join(current_app.static_folder, "plots")
-                os.makedirs(plot_dir, exist_ok=True)
-                plot_path = os.path.join(plot_dir, fname)
-                plt.savefig(plot_path)
+                buf = io.BytesIO()
+                plt.savefig(buf, format="png")
+                buf.seek(0)
                 plt.close()
-                plot_url = url_for("static", filename=f"plots/{fname}")
+                plot_url = base64.b64encode(buf.getvalue()).decode("utf8")
             except TimeoutError:
                 logger.exception("symbolic inverse laplace timeout")
                 abort(408, "Expression too complex, try numeric impulse")
@@ -126,4 +129,6 @@ def inverse_laplace():
         q_latex=q_ltx,
         r_latex=r_ltx,
         error=error,
+        num_error=num_error,
+        den_error=den_error,
     )

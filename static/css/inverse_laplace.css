@@ -1,0 +1,64 @@
+.inverse-laplace-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem 2rem;
+  background: var(--card-background, #fff);
+  border: 1px solid var(--border-color, #ccd0d5);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow, 0 2px 4px rgba(0,0,0,0.1));
+  text-align: center;
+}
+.inverse-laplace-container label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+.inverse-laplace-container input[type="text"] {
+  width: 100%;
+  padding: 6px 10px;
+  margin-top: 0.25rem;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+}
+.inverse-laplace-container .examples {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.inverse-laplace-container .example-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--primary-color, #007acc);
+  background: #fff;
+  color: var(--primary-color, #007acc);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.inverse-laplace-container .example-btn:hover {
+  background: var(--primary-color, #007acc);
+  color: #fff;
+}
+.inverse-laplace-container .radio-group {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.inverse-laplace-container .compute-btn {
+  margin-top: 1rem;
+  padding: 6px 16px;
+  background: var(--primary-color, #007acc);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.inverse-laplace-container .compute-btn:hover {
+  background: #005fa3;
+}
+.result {
+  text-align: center;
+  margin-top: 2rem;
+}
