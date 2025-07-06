@@ -14,6 +14,7 @@ from laplace_utils import (
     poly_long_division,
 )
 from scipy.signal import lti, step as step_func, impulse
+from flask import current_app, url_for
 import matplotlib.pyplot as plt
 import numpy as np
 import uuid
@@ -75,9 +76,18 @@ def inverse_laplace():
                 latex_expr = _pretty_latex(expr)
 
                 sys = lti(num, den)
-                poles = sys.p
+                poles = getattr(sys, "poles", [])
                 if len(poles) > 0:
-                    tau = max(1.0 / max(abs(p.real), 1e-3) for p in poles)
+                    # Use the slowest pole to choose a reasonable time span
+                    tau_candidates = []
+                    for pole in poles:
+                        try:
+                            pole_real = pole.real
+                        except AttributeError:
+                            pole_real = float(pole)
+                        denom = max(abs(pole_real), 1e-3)
+                        tau_candidates.append(1.0 / denom)
+                    tau = max(tau_candidates)
                 else:
                     tau = 1.0
                 t_vals = np.linspace(0, 5 * tau, 1000)
@@ -93,11 +103,12 @@ def inverse_laplace():
                 plt.ylabel(title.split()[0])
                 plt.tight_layout()
                 fname = f"{uuid.uuid4().hex}.png"
-                plot_path = os.path.join("static", "plots", fname)
-                os.makedirs(os.path.dirname(plot_path), exist_ok=True)
+                plot_dir = os.path.join(current_app.static_folder, "plots")
+                os.makedirs(plot_dir, exist_ok=True)
+                plot_path = os.path.join(plot_dir, fname)
                 plt.savefig(plot_path)
                 plt.close()
-                plot_url = f"/static/plots/{fname}"
+                plot_url = url_for("static", filename=f"plots/{fname}")
             except TimeoutError:
                 logger.exception("symbolic inverse laplace timeout")
                 abort(408, "Expression too complex, try numeric impulse")
