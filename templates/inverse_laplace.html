@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header" style="text-align:center;margin-bottom:20px;">
+  <h1 style="font-size:2.2em;">Inverse Laplace Transform</h1>
+  <p style="color:var(--subtext-color);">Enter a continuous transfer function and view its time-domain response.</p>
+</div>
+
+<form method="POST" style="max-width:500px;margin:0 auto;">
+  <label for="numerator">Numerator:</label>
+  <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
+  <label for="denominator" style="margin-top:10px;">Denominator:</label>
+  <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
+  <button type="submit" style="margin-top:10px;">Compute</button>
+</form>
+{% if error %}
+  <p style="color:red; text-align:center;">Error: {{ error }}</p>
+{% endif %}
+
+{% if tf_latex %}
+  <div style="text-align:center;margin-top:25px;">
+    <h2>Your Transfer Function</h2>
+    <p>$$ H(s) = {{ tf_latex|safe }} $$</p>
+  </div>
+{% endif %}
+
+{% if ht_latex %}
+  <div style="text-align:center;margin-top:20px;">
+    <p>$$ h(t) = {{ ht_latex|safe }} $$</p>
+  </div>
+{% endif %}
+{% if seq %}
+  <div style="text-align:center;margin-top:20px;">
+    <h3>First {{ seq|length }} samples</h3>
+    <pre>{{ seq }}</pre>
+  </div>
+{% endif %}
+{% endblock %}
