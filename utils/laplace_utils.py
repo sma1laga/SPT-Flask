@@ -129,7 +129,7 @@ def inverse_laplace_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
             coeffs_to_poly(num) / coeffs_to_poly(den), sp.symbols("s"), t
         )
         expr *= sp.Heaviside(t)
-        expr = sp.simplify(expr)
+        expr = sp.simplify(expr)        # ensure u(t)**n -> u(t)
         return sp.nsimplify(expr, tolerance=1e-10, rational=True)
 
     expr = 0
@@ -160,18 +160,27 @@ def step_response_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
     den_poly = sp.Poly(coeffs_to_poly(den), s)
     H = num_poly.as_expr() / den_poly.as_expr()
     Y_s = H / s
-    expr = sp.inverse_laplace_transform(Y_s, s, t)
-    expr *= sp.Heaviside(t)
-    expr = sp.simplify(expr)
+    expr = sp.inverse_laplace_transform(Y_s, s, t)  # already causal
+    expr = sp.simplify(expr)        # removes u(t)**n duplicates
     return sp.nsimplify(expr, tolerance=1e-10, rational=True)
 
 
 def _pretty_latex(expr: sp.Expr) -> str:
     latex = sp.latex(expr)
-    latex = latex.replace(r"\operatorname{Heaviside}{\left(t \right)}", r"u(t)")
-    latex = latex.replace(r"\operatorname{Heaviside}\left(t\right)", r"u(t)")
-    if latex.strip().endswith(r"u(t)"):
-        latex = latex.replace(r"\cdot u(t)", r"u(t)")
+
+    # --- Heaviside → u(t) ---
+    # Handles \theta(t)  OR  \operatorname{Heaviside}{\left(t \right)}
+    latex = re.sub(
+        r"(\\theta\\left\(t\\right)|"
+        r"(\\operatorname{Heaviside\\{\\left\\(t\\s*\\right)\\})",
+        "u(t)",
+        latex,
+    )
+
+    # Collapse powers like u(t)^2  or  (u(t))^{3}
+    latex = re.sub(r"u\(t\)(\^\{\d+\}|\^\d+)?", "u(t)", latex)
+    # Remove stray \cdot before u(t)
+    latex = latex.replace(r"\cdot u(t)", "u(t)")
     latex = re.sub(r"(\d+\.\d{6})\d+", r"\1", latex)
     return latex
 

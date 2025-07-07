@@ -5,7 +5,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from flask import Blueprint, render_template, request, abort
 import sympy as sp
-from laplace_utils import (
+from utils.laplace_utils import (
     parse_poly,
     coeffs_to_poly,
     inverse_laplace_expr,
