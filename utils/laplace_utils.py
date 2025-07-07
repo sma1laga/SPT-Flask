@@ -166,19 +166,20 @@ def step_response_expr(num: np.ndarray, den: np.ndarray) -> sp.Expr:
 
 
 def _pretty_latex(expr: sp.Expr) -> str:
+    expr = sp.simplify(expr)
     latex = sp.latex(expr)
 
-    # --- Heaviside → u(t) ---
-    # Handles \theta(t)  OR  \operatorname{Heaviside}{\left(t \right)}
-    latex = re.sub(
-        r"(\\theta\\left\(t\\right)|"
-        r"(\\operatorname{Heaviside\\{\\left\\(t\\s*\\right)\\})",
-        "u(t)",
-        latex,
-    )
+    # --- Heaviside → \varepsilon(t) ---
+    latex = latex.replace(r"\theta\left(t\right)", "u(t)")
+    latex = latex.replace(r"\operatorname{Heaviside}{\left(t \right)}", "u(t)")
 
-    # Collapse powers like u(t)^2  or  (u(t))^{3}
-    latex = re.sub(r"u\(t\)(\^\{\d+\}|\^\d+)?", "u(t)", latex)
+    # Normalize parentheses around u(t)
+    latex = latex.replace(r"\left(u(t)\right)", "u(t)")
+
+    # Collapse repeated factors and powers of u(t)
+    latex = re.sub(r"u\(t\)\^{\d+}", "u(t)", latex)
+    latex = re.sub(r"(u\(t\)\s*)+", "u(t)", latex)
+
     # Remove stray \cdot before u(t)
     latex = latex.replace(r"\cdot u(t)", "u(t)")
     latex = re.sub(r"(\d+\.\d{6})\d+", r"\1", latex)
