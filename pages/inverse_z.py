@@ -29,8 +29,46 @@ def _int_if_close(val, tol=1e-12):
 
 inverse_z_bp = Blueprint('inverse_z', __name__)
 
-_PAIR_TABLE = {}  # key: (tuple(num), tuple(den)), value: sympy Expr
-# TODO: populate externally
+_Wz = sp.symbols('z')
+_k = sp.symbols('k', integer=True)
+
+_a = sp.Wild('a', exclude=[_Wz])
+_w = sp.Wild('w', exclude=[_Wz])
+
+_PAIR_TABLE = [
+    # δ[k] ↔ 1
+    (1,
+     lambda _: sp.KroneckerDelta(_k)),
+
+    # ε[k] ↔ z/(z-1)
+    (_Wz/(_Wz-1),
+     lambda _: sp.Heaviside(_k)),
+
+    # aᵏ ε[k] ↔ z/(z-a)
+    (_Wz/(_Wz-_a),
+     lambda m: m[_a]**_k * sp.Heaviside(_k)),
+
+    # −aᵏ ε[−k−1] ↔ z/(z-a) for inside ROC
+    (_Wz/(_Wz-_a),
+     lambda m: -m[_a]**_k * sp.Heaviside(-_k-1),
+     'inside'),
+
+    # k ε[k] ↔ z/(z-1)²
+    (_Wz/(_Wz-1)**2,
+     lambda _: _k*sp.Heaviside(_k)),
+
+    # k aᵏ ε[k] ↔ a z/(z-a)²
+    (_a*_Wz/(_Wz-_a)**2,
+     lambda m: _k * m[_a]**_k * sp.Heaviside(_k)),
+
+    # sin(Ω₀k) ε[k]
+    (_Wz*sp.sin(_w)/(_Wz**2 - 2*_Wz*sp.cos(_w) + 1),
+     lambda m: sp.sin(m[_w]*_k) * sp.Heaviside(_k)),
+
+    # cos(Ω₀k) ε[k]
+    (_Wz*(_Wz-sp.cos(_w))/(_Wz**2 - 2*_Wz*sp.cos(_w) + 1),
+     lambda m: sp.cos(m[_w]*_k) * sp.Heaviside(_k)),
+]
 
 _TRANSFORMS = standard_transformations + (
     implicit_multiplication_application,
@@ -91,12 +129,16 @@ def _inverse_z_expr(
         right-sided sequence.    
     """
 
-    key = (tuple(num), tuple(den))
-    if key in _PAIR_TABLE:
-        return _PAIR_TABLE[key]
+    z, k = _Wz, _k
+    H = sp.simplify(_coeffs_to_poly(num) / _coeffs_to_poly(den))
 
-    z, k = sp.symbols('z k')
-    H = _coeffs_to_poly(num) / _coeffs_to_poly(den)
+    for entry in _PAIR_TABLE:
+        pattern, builder = entry[0], entry[1]
+        if len(entry) == 3 and entry[2] != roc_type:
+            continue
+        match = H.match(pattern)
+        if match is not None:
+            return sp.simplify(builder(match))
 
     if _sympy_inverse_z is not None:
         try:
@@ -108,19 +150,24 @@ def _inverse_z_expr(
             pass
 
     try:
-        r, p, kvals = residuez(num, den)          # SciPy ≥1.10
+        r, p, kvals = residuez(num[::-1], den[::-1])  # reverse → descending
+        kvals = kvals[::-1]                           # back to ascending z^m
     except Exception:                              # improper or SciPy bug
         k = sp.symbols('k')
         expr = 0
         for idx, c in enumerate(num):
             if not np.isclose(c, 0):
-                expr += c * sp.DiracDelta(k - idx)
+                expr += c * sp.DiracDelta(k + idx)
         return expr                                # FIR done — no poles
 
     expr = 0
-    for i, ki in enumerate(kvals):
-        if not np.isclose(ki, 0):
-            expr += sp.sympify(_int_if_close(ki)) * sp.DiracDelta(k - i)
+    # →  z^m  ↔  δ[k+m]   (highest power m = len(kvals)-1)
+    m_max = len(kvals) - 1
+    for idx, coeff in enumerate(kvals):
+        if not np.isclose(coeff, 0):
+            coeff_sym = sp.nsimplify(_int_if_close(coeff))
+            shift = m_max - idx              # m = m_max-idx
+            expr += coeff_sym * sp.DiracDelta(k + shift)
     for ri, pi in zip(r, p):
         if np.isclose(ri, 0):
             continue
@@ -134,11 +181,11 @@ def _inverse_z_expr(
         ri_sym = sp.nsimplify(_int_if_close(ri))
         pi_sym = sp.nsimplify(pi)
         if left_side:
-            base = pi_sym ** (k - 1)
+            base = pi_sym ** k
             term = -ri_sym * base * sp.Heaviside(-k - 1)
         else:
             base = pi_sym ** k
-            term = ri_sym * base * sp.Heaviside(k)
+            term = -ri_sym * base * sp.Heaviside(-k - 1)
         expr += term
 
     return expr
