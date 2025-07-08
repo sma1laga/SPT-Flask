@@ -11,6 +11,8 @@
   <label for="denominator" style="margin-top:10px;">Denominator:</label>
 
   <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
+  <label for="roc_radius" style="margin-top:10px;">ROC radius:</label>
+  <input type="text" id="roc_radius" name="roc_radius" value="{{ default_roc }}">
   <button type="submit" style="margin-top:10px;">Compute</button>
 
 </form>
@@ -18,12 +20,15 @@
   <p style="color:red; text-align:center;">Error: {{ error }}</p>
 {% endif %}
 
-{% if tf_latex %}
-  <div style="text-align:center;margin-top:25px;">
-    <h2>Your Transfer Function</h2>
-    <p>$$ H(z) = {{ tf_latex|safe }} $$</p>
-  </div>
-{% endif %}
+  {% if tf_latex %}
+    <div style="text-align:center;margin-top:25px;">
+      <h2>Your Transfer Function</h2>
+      <p>$$ H(z) = {{ tf_latex|safe }} $$</p>
+      {% if roc_used %}
+      <p style="color:var(--subtext-color);">ROC radius: {{ roc_used }}</p>
+      {% endif %}
+    </div>
+  {% endif %}
 
 {% if hz_latex %}
   <div style="text-align:center;margin-top:20px;">
