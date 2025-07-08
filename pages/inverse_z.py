@@ -71,7 +71,12 @@ def _coeffs_to_poly(coeffs):
 
 
 
-def _inverse_z_expr(num: np.ndarray, den: np.ndarray, roc: float | None = None) -> sp.Expr:
+def _inverse_z_expr(
+    num: np.ndarray,
+    den: np.ndarray,
+    roc: float | None = None,
+    roc_type: str = "inside",
+) -> sp.Expr:
     """Symbolic inverse Z-transform of ``num/den``.
 
     Parameters
@@ -80,6 +85,10 @@ def _inverse_z_expr(num: np.ndarray, den: np.ndarray, roc: float | None = None) 
         Coefficient arrays.
     roc : float or None, optional
         Region-of-convergence radius. ``None`` assumes causal sequence.
+    roc_type : {"inside", "outside"}
+        ``"inside"`` selects a left-sided sequence, treating poles on the
+        boundary as outside (``>=``). ``"outside"`` yields the usual causal
+        right-sided sequence.    
     """
 
     key = (tuple(num), tuple(den))
@@ -115,22 +124,35 @@ def _inverse_z_expr(num: np.ndarray, den: np.ndarray, roc: float | None = None) 
     for ri, pi in zip(r, p):
         if np.isclose(ri, 0):
             continue
-        term = sp.sympify(_int_if_close(ri)) * (pi**k)
-        if roc is None:
-            term *= sp.Heaviside(k)
-        else:
-            if abs(pi) > roc:
-                term *= sp.Heaviside(-k - 1)
+        if roc is not None:
+            if roc_type == "inside":
+                left_side = abs(pi) >= roc - 1e-12
             else:
-                term *= sp.Heaviside(k)
+                left_side = abs(pi) > roc
+        else:
+            left_side = False
+        ri_sym = sp.nsimplify(_int_if_close(ri))
+        pi_sym = sp.nsimplify(pi)
+        if left_side:
+            base = pi_sym ** (k - 1)
+            term = -ri_sym * base * sp.Heaviside(-k - 1)
+        else:
+            base = pi_sym ** k
+            term = ri_sym * base * sp.Heaviside(k)
         expr += term
 
-    return sp.simplify(expr)
+    return expr
 
 
 
-def _impulse_response(num, den, n_samples: int = 10):
-    """Impulse via direct filtering – robust for pure delays & improper ``H(z)``."""
+def _impulse_response(num, den, n_samples: int = 10, roc_type: str = "outside"):
+    """Impulse via direct filtering – robust for pure delays & improper ``H(z)``.
+
+    ``roc_type`` set to ``"inside"`` returns ``None`` as the standard impulse
+    sequence is undefined for left-sided systems.
+    """
+    if roc_type == "inside":
+        return None
     x = np.zeros(n_samples, dtype=complex)
     x[0] = 1                          # δ[k]
     y = lfilter(num, den, x)
@@ -150,6 +172,7 @@ def inverse_z():
     num_txt = request.form.get('numerator', '[1, 0]')
     den_txt = request.form.get('denominator', '[2, 1]')
     roc_txt = request.form.get('roc_radius', '')
+    roc_type = request.form.get('roc_type', 'inside')
     hz_ltx = None
     tf_ltx = None
     seq = None
@@ -164,20 +187,16 @@ def inverse_z():
                 roc_val = float(roc_txt)
                 roc_used = roc_val
             z = sp.symbols('z')
-            def _coeffs_to_poly(coeffs):
-                z = sp.symbols('z')
-                deg = len(coeffs) - 1
-                return sum(sp.sympify(coeffs[k]) * z**(deg - k) for k in range(len(coeffs)))
 
             num_expr = _coeffs_to_poly(num)
             den_expr = _coeffs_to_poly(den)
             tf_ltx = sp.latex(num_expr/den_expr)
 
-            expr = _inverse_z_expr(num, den, roc=roc_val)
+            expr = _inverse_z_expr(num, den, roc=roc_val, roc_type=roc_type)
             hz_ltx = sp.latex(expr).replace('\\theta', '\\varepsilon')
             tf_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', tf_ltx)
             hz_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', hz_ltx)
-            seq = _impulse_response(num, den, n_samples=10)
+            seq = _impulse_response(num, den, n_samples=10, roc_type=roc_type)
         except NotImplementedError as exc:
             error = f'SymPy not implemented: {exc}'
         except Exception as exc:
@@ -191,6 +210,7 @@ def inverse_z():
         hz_latex=hz_ltx,
         seq=seq,
         roc_used=roc_used,
+        roc_type=roc_type,
         error=error
     )
 
@@ -199,10 +219,10 @@ if __name__ == "__main__":
     # simple smoke tests
     n = _parse_poly('[1]')
     d = _parse_poly('[1, -0.5]')
-    expr_l = _inverse_z_expr(n, d, roc=0.1)
+    expr_l = _inverse_z_expr(n, d, roc=0.1, roc_type="inside")
     assert 'Heaviside(-k - 1)' in str(expr_l)
-    expr_r = _inverse_z_expr(n, d, roc=2)
+    expr_r = _inverse_z_expr(n, d, roc=2, roc_type="outside")
     assert 'Heaviside(k)' in str(expr_r)
-    seq = _impulse_response(n, d, n_samples=3)
+    seq = _impulse_response(n, d, n_samples=3, roc_type="outside")
     assert seq[0] == 1
     print('smoke tests passed')

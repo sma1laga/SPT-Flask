@@ -13,6 +13,15 @@
   <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
   <label for="roc_radius" style="margin-top:10px;">ROC radius:</label>
   <input type="text" id="roc_radius" name="roc_radius" value="{{ default_roc }}">
+  <label>ROC type:</label>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="radio" name="roc_type" id="roc_lt" value="inside" checked>
+    <label class="form-check-label" for="roc_lt">|z| &lt; R</label>
+  </div>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="radio" name="roc_type" id="roc_gt" value="outside">
+    <label class="form-check-label" for="roc_gt">|z| &gt; R</label>
+  </div>
   <button type="submit" style="margin-top:10px;">Compute</button>
 
 </form>
@@ -24,9 +33,15 @@
     <div style="text-align:center;margin-top:25px;">
       <h2>Your Transfer Function</h2>
       <p>$$ H(z) = {{ tf_latex|safe }} $$</p>
-      {% if roc_used %}
-      <p style="color:var(--subtext-color);">ROC radius: {{ roc_used }}</p>
-      {% endif %}
+        {% if roc_used %}
+        <p style="color:var(--subtext-color);">
+          {% if roc_type == 'inside' %}
+          ROC: |z| &lt; {{ roc_used }}
+          {% else %}
+          ROC: |z| &gt; {{ roc_used }}
+          {% endif %}
+        </p>
+        {% endif %}
     </div>
   {% endif %}
 
