@@ -42,11 +42,11 @@ _PAIR_TABLE = [
 
     # ε[k] ↔ z/(z-1)
     (_Wz/(_Wz-1),
-     lambda _: sp.Heaviside(_k)),
+     lambda _: sp.Heaviside(_k), "outside"),
 
-    # aᵏ ε[k] ↔ z/(z-a)
+    # aᵏ ε[k] ↔ z/(z-a),  |z|> |a|
     (_Wz/(_Wz-_a),
-     lambda m: m[_a]**_k * sp.Heaviside(_k)),
+     lambda m: m[_a]**_k*sp.Heaviside(_k), "outside"),
 
     # −aᵏ ε[−k−1] ↔ z/(z-a) for inside ROC
     (_Wz/(_Wz-_a),
@@ -54,12 +54,12 @@ _PAIR_TABLE = [
      'inside'),
 
     # k ε[k] ↔ z/(z-1)²
-    (_Wz/(_Wz-1)**2,
-     lambda _: _k*sp.Heaviside(_k)),
+    (_Wz/(_Wz-1)**2, 
+     lambda _: _k*sp.Heaviside(_k), "outside"),
 
     # k aᵏ ε[k] ↔ a z/(z-a)²
     (_a*_Wz/(_Wz-_a)**2,
-     lambda m: _k * m[_a]**_k * sp.Heaviside(_k)),
+     lambda m: _k*m[_a]**_k*sp.Heaviside(_k),"outside"),
 
     # sin(Ω₀k) ε[k]
     (_Wz*sp.sin(_w)/(_Wz**2 - 2*_Wz*sp.cos(_w) + 1),
@@ -180,12 +180,11 @@ def _inverse_z_expr(
             left_side = False
         ri_sym = sp.nsimplify(_int_if_close(ri))
         pi_sym = sp.nsimplify(pi)
-        if left_side:
-            base = pi_sym ** k
-            term = -ri_sym * base * sp.Heaviside(-k - 1)
-        else:
-            base = pi_sym ** k
-            term = -ri_sym * base * sp.Heaviside(-k - 1)
+        base = pi_sym ** k
+        if left_side:                           # |z| < R  → left-sided
+            term = -ri_sym / pi_sym * base * sp.Heaviside(-k - 1)
+        else:                                   # |z| > R  → causal
+            term =  ri_sym / pi_sym * base * sp.Heaviside(k)
         expr += term
 
     return expr
