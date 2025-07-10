@@ -34,7 +34,7 @@
     {% for lbl in ['rect_4(k)','tri(k)','step(k)','delta(k)','sin(k)',
                    'cos(k)','sign(k)','si(k)'] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
-        {{ lbl.split('(')[0]|capitalize }}
+        {{ lbl.split('(')[0] }}
       </button>
     {% endfor %}
     <button type="button" onclick="insertOperand('+')">+</button>

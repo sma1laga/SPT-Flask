@@ -43,7 +43,7 @@
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
     {% for lbl in ['rect(t)','tri(t)','sin(t)','cos(t)','step(t)','delta(t)','sign(t)',
                    'exp_iwt(t)','exp(t)','inv_t(t)','si(t)'] %}
-      <button type="button" onclick="insertOperand('{{ lbl }}')">{{ lbl.split('(')[0]|capitalize }}</button>
+      <button type="button" onclick="insertOperand('{{ lbl }}')">{{ lbl.split('(')[0] }}</button>
     {% endfor %}
     <button type="button" onclick="insertOperand('+')">+</button>
     <button type="button" onclick="insertOperand('-')">−</button>

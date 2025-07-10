@@ -42,7 +42,7 @@
     {% for lbl in ['rect(n,N)','tri(n,N)','step(n,N)','delta(n,N)',
                    'sign(n,N)','sin(2*pi*n/N)','cos(2*pi*n/N)'] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
-        {{ lbl.split('(')[0]|capitalize }}
+        {{ lbl.split('(')[0] }}
       </button>
     {% endfor %}
     <button type="button" onclick="insertOperand('+')">+</button>
