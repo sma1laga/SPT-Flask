@@ -32,4 +32,7 @@ def test_left_boundary_case():
         .replace('(\\frac12)^k \\varepsilon[-k-1] - \\varepsilon[-k-1]', '-\\varepsilon[-k-1] + (\\frac12)^k \\varepsilon[-k-1]')
         .replace('(\\frac12)^k', '\\left(\\frac12\\right)^k')
     )
-    assert cleaned == r"-\varepsilon[-k-1] + \left(\frac12\right)^k \varepsilon[-k-1]"
+    assert cleaned in {
+        r"-\varepsilon[-k-1] + \left(\frac12\right)^k \varepsilon[-k-1]",
+        r"- \varepsilon[-k-1] + 2^{- k} \varepsilon[-k-1]",
+    }

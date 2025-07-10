@@ -150,8 +150,7 @@ def _inverse_z_expr(
             pass
 
     try:
-        r, p, kvals = residuez(num[::-1], den[::-1])  # reverse → descending
-        kvals = kvals[::-1]                           # back to ascending z^m
+        r, p, kvals = residuez(num, den)
     except Exception:                              # improper or SciPy bug
         k = sp.symbols('k')
         expr = 0
