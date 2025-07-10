@@ -31,7 +31,7 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
         "tri": tri_seq, "step": step,
         "cos": cos,   "sin": sin, "sign": sign,
         "delta": delta_n, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si, "exp": np.exp,
+        "inv_t": inv_t, "si": si, "exp": np.exp, "sqrt": np.sqrt,
         "rect": rect,
         }
     for N in range(1, 33):

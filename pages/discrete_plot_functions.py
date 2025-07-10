@@ -44,6 +44,8 @@ def discrete_plot_functions_update():
         n=n_broad, k=k_broad, np=np,
         tri=m.tri_seq, step=m.step, delta=m.delta_n,
         sin=np.sin, cos=np.cos, sign=np.sign, si=m.dsi,
+                sqrt=np.sqrt,
+
     )
     for N in range(1, 33):
         ctx_broad[f"rect_{N}"] = getattr(m, f"rect_{N}")
@@ -92,6 +94,8 @@ def discrete_plot_functions_update():
         n=n, k=k, np=np,
         tri=m.tri_seq, step=m.step, delta=m.delta_n,
         sin=np.sin, cos=np.cos, sign=np.sign, si=m.dsi,
+                sqrt=np.sqrt,
+
     )
     for N in range(1, 33):
         ctx[f"rect_{N}"] = getattr(m, f"rect_{N}")

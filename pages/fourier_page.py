@@ -23,7 +23,7 @@ def compute_fourier(func_str, phase_rad):
     sandbox = {
         "np": np, "rect": rect, "tri": tri, "step": step,
         "cos": cos, "sin": sin, "sign": sign, "delta": delta,
-        "exp_iwt": exp_iwt, "inv_t": inv_t, "si": si, "exp": np.exp
+        "exp_iwt": exp_iwt, "inv_t": inv_t, "si": si, "exp": np.exp, "sqrt": np.sqrt
     }
     sandbox["t"] = t_broad
 
