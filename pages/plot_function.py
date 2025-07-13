@@ -136,7 +136,7 @@ def plot_function_update():
               rect=rect, tri=tri, step=step,
               cos=cos, sin=sin,
               sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
-              si=si, exp=np.exp,
+              si=si, exp=np.exp, sqrt=np.sqrt,
               arcsin=arcsin, arccos=arccos, arctan=arctan,
               sinh=sinh, cosh=cosh, tanh=tanh,
               gauss=gauss)
