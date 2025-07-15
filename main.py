@@ -37,6 +37,8 @@ from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
 from pages.fft import fft_bp
 from pages.discrete_transform_intuition import transform_intuition_bp
 from pages.discrete_direct_plot import discrete_direct_plot_bp
+from pages.discrete_autocorrelation import discrete_autocorrelation_bp
+
 
 
 
@@ -98,6 +100,7 @@ def create_app():
     app.register_blueprint(discrete_fourier_bp, url_prefix="/discrete/dft")        
     app.register_blueprint(discrete_convolution_bp, url_prefix="/discrete/convolution")
     app.register_blueprint(discrete_dynamic_convolution_bp, url_prefix='/discrete/dynamic')
+    app.register_blueprint(discrete_autocorrelation_bp, url_prefix='/discrete/autocorrelation')
     app.register_blueprint(fft_bp, url_prefix='/discrete/fft')
     app.register_blueprint(transform_intuition_bp, url_prefix='/discrete/transform_intuition')
     app.register_blueprint(discrete_direct_plot_bp, url_prefix='/discrete/direct_plot')
