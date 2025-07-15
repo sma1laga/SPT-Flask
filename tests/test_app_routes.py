@@ -20,6 +20,7 @@ def check_route(client, url):
     '/fourier/',
     '/convolution/',
     '/autocorrelation/',
+    '/discrete/autocorrelation/',
     '/block_diagram/',
     '/discrete/direct_plot/',
     '/inverse_z/',
