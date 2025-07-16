@@ -18,7 +18,7 @@ def fft():
         # Time axis
         t = np.linspace(0, T, N, endpoint=False)
         # Evaluate signal safely
-        x = eval(expr, {'np': np, 't': t})
+        x = eval(expr, {'np': np, 't': t, 'sqrt': np.sqrt})
 
         # Compute FFT
         X = np.fft.fft(x)

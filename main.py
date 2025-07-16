@@ -3,6 +3,7 @@ from flask import Flask, render_template
 from pages.plot_function import plot_function_bp
 from pages.fourier_page import fourier_bp
 from pages.convolution import convolution_bp
+from pages.autocorrelation import autocorrelation_bp
 
 from pages.process_chain import process_chain_bp
 from pages.block_diagram import block_diagram_bp
@@ -36,6 +37,8 @@ from pages.discrete_dynamic_convolution import discrete_dynamic_convolution_bp
 from pages.fft import fft_bp
 from pages.discrete_transform_intuition import transform_intuition_bp
 from pages.discrete_direct_plot import discrete_direct_plot_bp
+from pages.discrete_autocorrelation import discrete_autocorrelation_bp
+
 
 
 
@@ -68,6 +71,7 @@ def create_app():
     app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
     app.register_blueprint(convolution_bp,   url_prefix="/convolution")
     app.register_blueprint(dynamic_convolution_bp, url_prefix="/convolution/dynamic")
+    app.register_blueprint(autocorrelation_bp, url_prefix="/autocorrelation")
     app.register_blueprint(mod_bp, url_prefix='/modulation')
     app.register_blueprint(dig_bp, url_prefix='/digital_modulation')
 
@@ -96,6 +100,7 @@ def create_app():
     app.register_blueprint(discrete_fourier_bp, url_prefix="/discrete/dft")        
     app.register_blueprint(discrete_convolution_bp, url_prefix="/discrete/convolution")
     app.register_blueprint(discrete_dynamic_convolution_bp, url_prefix='/discrete/dynamic')
+    app.register_blueprint(discrete_autocorrelation_bp, url_prefix='/discrete/autocorrelation')
     app.register_blueprint(fft_bp, url_prefix='/discrete/fft')
     app.register_blueprint(transform_intuition_bp, url_prefix='/discrete/transform_intuition')
     app.register_blueprint(discrete_direct_plot_bp, url_prefix='/discrete/direct_plot')

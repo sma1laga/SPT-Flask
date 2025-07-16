@@ -160,23 +160,31 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
 
 
     # ── feed-forward gains b₁, b₂ (optional) ─────────
-    ff_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2*DY)]
+    ff_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2 * DY)]
     for idx, y in ff_specs:
-        if idx < len(b):                                 # bounds check
+        if idx < len(b):
             _box(ax, (X_GR, y), text=rf"${b[idx]:g}$")
-            _arrow(ax, (X_INT, y), (X_GR - 0.3, y))      # from state → gain
-            _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, Y_TOP))  # gain → adder
+            _arrow(ax, (X_INT, y), (X_GR - 0.3, y))
+            _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, y))
 
-    # connection from node 0 straight to output adder
+    # connection from node 0 straight to first output adder
     _arrow(ax, (X_INT, Y_TOP), (X_Y - r_add, Y_TOP))
 
-    # ── output adder and label ──────────────────────────────────────────
-    _circle(ax, (X_Y, Y_TOP), r_add)
-    _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.6, Y_TOP))
-    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y(t)$", ha="left", fontsize=11)
+    # ── output adder chain and 1/a₀ gain ────────────────────────────────
+    out_adders = [(X_Y, Y_TOP - i * DY) for i in range(3)]
+    for xy in out_adders:
+        _circle(ax, xy, r_add)
+    _arrow(ax, (X_Y, Y_TOP - r_add), (X_Y, Y_TOP - DY + r_add))
+    _arrow(ax, (X_Y, Y_TOP - DY - r_add), (X_Y, Y_TOP - 2 * DY + r_add))
+
+    _box(ax, (X_Y + 0.9, Y_TOP), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
+    _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.9 - 0.3, Y_TOP))
+    _arrow(ax, (X_Y + 0.9 + 0.3, Y_TOP), (X_Y + 1.7, Y_TOP))
+    ax.text(X_Y + 1.8, Y_TOP + 0.15, r"$y(t)$", ha="left", fontsize=11)
+
 
     # ── cosmetics ───────────────────────────────────────────────────────
-    ax.set_xlim(-0.8, X_Y + 1.3)
+    ax.set_xlim(-0.8, X_Y + 2.0)
     ax.set_ylim(-0.4, Y_TOP + 0.6)
     ax.axis("off")
 
@@ -187,10 +195,14 @@ def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
     Y_TOP, DY = 2.0, 1.2
     r_add = 0.17
 
-    # output adder
+    # output adder and 1/a₀ gain
     _circle(ax, (X_ADD, Y_TOP), r_add)
-    _arrow(ax, (X_ADD + r_add, Y_TOP), (X_Y, Y_TOP))
-    ax.text(X_Y + 0.2, Y_TOP + 0.15, r"$y(t)$", ha="left", fontsize=11)
+    _box(ax, (X_ADD + 1.0, Y_TOP), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
+    _arrow(ax, (X_ADD + r_add, Y_TOP), (X_ADD + 1.0 - 0.3, Y_TOP))
+    _circle(ax, (X_Y, Y_TOP), r_add)
+    _arrow(ax, (X_ADD + 1.0 + 0.3, Y_TOP), (X_Y - r_add, Y_TOP))
+    _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.6, Y_TOP))
+    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y(t)$", ha="left", fontsize=11)
 
     # input and branching
     ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x(t)$", ha="left", fontsize=11)

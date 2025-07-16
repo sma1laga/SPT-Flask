@@ -29,7 +29,7 @@ def compute_convolution(func1_str, func2_str):
         "rect": rect, "tri": tri, "step": step,
         "cos": cos, "sin": sin, "sign": sign,
         "delta": delta, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si, "exp": np.exp
+        "inv_t": inv_t, "si": si, "exp": np.exp, "sqrt": np.sqrt
     }
 
     # 3. Auswertung der beiden Funktionen
