@@ -3,8 +3,8 @@
 <div class="page-header" style="margin-bottom:30px; text-align:center;">
   <h1 style="font-size:2.5em;">Convolution Calculator</h1>
   <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
-    Enter <strong>x(t)</strong> and <strong>h(t)</strong> to compute their convolution
-    $$ y(t)=\int_{-\infty}^{\infty} x(\tau)\,h(t-\tau)\,d\tau $$
+    Enter \(x(t)\) and \(h(t)\) to compute their convolution
+    $$ y(t)=\int_{-\infty}^{\infty} x(\tau)h(t-\tau)\mathrm d\tau $$
   </p>
 </div>
 
@@ -24,27 +24,27 @@
   <!-- Funktions-Buttons in einer Zeile -->
   <div class="quick-buttons functions"
        style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">
-    <button type="button" onclick="insertOperand('rect(t)')">rect</button>
-    <button type="button" onclick="insertOperand('tri(t)')">tri</button>
-    <button type="button" onclick="insertOperand('sin(t)')">sin</button>
-    <button type="button" onclick="insertOperand('cos(t)')">cos</button>
-    <button type="button" onclick="insertOperand('step(t)')">step</button>
-    <button type="button" onclick="insertOperand('delta(t)')">dirac</button>
-    <button type="button" onclick="insertOperand('sign(t)')">sign</button>
-    <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
-    <button type="button" onclick="insertOperand('exp(t)')">exp</button>
-    <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
-    <button type="button" onclick="insertOperand('si(t)')">si</button>
-    <button type="button" onclick="insertOperand('si(t)**2')">si²</button>
+    <button type="button" onclick="insertOperand('rect(t)')">\(\mathrm{rect}\)</button>
+    <button type="button" onclick="insertOperand('tri(t)')">\(\mathrm{tri}\)</button>
+    <button type="button" onclick="insertOperand('sin(t)')">\(\sin\)</button>
+    <button type="button" onclick="insertOperand('cos(t)')">\(\cos\)</button>
+    <button type="button" onclick="insertOperand('step(t)')">\(\mathrm{step}\)</button>
+    <button type="button" onclick="insertOperand('delta(t)')">\(\delta\)</button>
+    <button type="button" onclick="insertOperand('sign(t)')">\(\mathrm{sign}\)</button>
+    <button type="button" onclick="insertOperand('exp_iwt(t)')">\(\mathrm{e}^{i\omega t}\)</button>
+    <button type="button" onclick="insertOperand('exp(t)')">\(\mathrm{e}^t\)</button>
+    <button type="button" onclick="insertOperand('inv_t(t)')">\(\frac{1}{t}\)</button>
+    <button type="button" onclick="insertOperand('si(t)')">\(\mathrm{si}\)</button>
+    <button type="button" onclick="insertOperand('si(t)**2')">\(\mathrm{si}^2\)</button>
   </div>
 
   <!-- Operator-Buttons in der nächsten Zeile -->
   <div class="quick-buttons operators"
        style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:20px;">
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">-</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
+    <button type="button" onclick="insertOperand('+')">\(+\)</button>
+    <button type="button" onclick="insertOperand('-')">\(-\)</button>
+    <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
+    <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
   <!-- Compute / Clear -->

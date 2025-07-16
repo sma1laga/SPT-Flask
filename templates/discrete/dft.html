@@ -39,16 +39,23 @@
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
-    {% for lbl in ['rect(n,N)','tri(n,N)','step(n,N)','delta(n,N)',
-                   'sign(n,N)','sin(2*pi*n/N)','cos(2*pi*n/N)'] %}
+    {% for lbl, ltx in [
+      ('rect(n,N)', '\mathrm{rect}'),
+      ('tri(n,N)', '\mathrm{tri}'),
+      ('step(n,N)', '\mathrm{step}'),
+      ('delta(n,N)', '\mathrm{delta}'),
+      ('sign(n,N)', '\mathrm{sign}'),
+      ('sin(2*pi*n/N)', '\sin'),
+      ('cos(2*pi*n/N)', '\cos'),
+      ] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
-        {{ lbl.split('(')[0] }}
+        \( {{ ltx }} \)
       </button>
     {% endfor %}
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">−</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
+    <button type="button" onclick="insertOperand('+')">\(+\)</button>
+    <button type="button" onclick="insertOperand('-')">\(-\)</button>
+    <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
+    <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
   <!-- 3 SHIFTERS -------------------------------------------------- -->

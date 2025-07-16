@@ -1,27 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Discrete Dynamic Convolution Explorer</h2>
+<!-- Page Header -->
+<div class="page-header" style="margin-bottom: 30px; text-align: center;">
+  <h1 style="font-size: 2.5em; margin-bottom: 10px;">Dynamic Convolution Explorer</h1>
+  <p style="font-size: 1.1em; color: var(--subtext-color); max-width: 600px; margin: 0 auto;">
+    Slide \(k\) to see how the overlap between \(x[\kappa]\) and \(h[k - \kappa]\) produces the convolved output
+    $$ y[k]=\sum_{\kappa=-\infty}^{\infty} x[\kappa] h[k - \kappa] $$    </p>
+</div>
 
 <div style="margin-bottom:1em;">
-  <label>x[k]:</label>
+  <label>\(x[k]\):</label>
   <select id="func1">
     <option value="">-- none --</option>
-    {% for f in functions %}
-      <option value="{{ f }}">{{ f }}</option>
+    {% for label, val in functions %}
+      <option value="{{ val }}">{{ label }}</option>
     {% endfor %}
   </select>
 
-  <label style="margin-left:2em;">h[k]:</label>
+  <label>\(h[k]\):</label>
   <select id="func2">
     <option value="">-- none --</option>
-    {% for f in functions %}
-      <option value="{{ f }}">{{ f }}</option>
+    {% for label, val in functions %}
+      <option value="{{ val }}">{{ label }}</option>
     {% endfor %}
   </select>
 </div>
 
 <div style="margin-bottom:1em;">
-  <label>Shift τ:</label>
+  <label>Shift \(k\):</label>
   <input type="range" id="tauSlider" min="-10" max="10" step="1" value="0">
   <span id="tauValue">0</span>
 </div>

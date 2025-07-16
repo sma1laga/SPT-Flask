@@ -7,15 +7,24 @@
 </div>
 
 <p style="max-width:960px;margin:0 auto 24px auto;text-align:center;">
-  The sliders modify each sequence as
-  <code>f(k) → A · f(w ⋅ n + s)</code>.
-  <strong>Shift</strong> offsets the sample index by <code>s</code>,
-  <strong>Amplitude</strong> scales values by <code>A</code>, and
-  <strong>Width</strong> multiplies the index by <code>w</code>,
-  stretching or compressing it along the k-axis.
+  The sliders modify each sequence as \(a \cdot f[\frac 1 w \cdot k - s]\) based on the discrete time index \(k\in\mathbb{Z}\).
+  The <strong>shift</strong> \(s\) adds an offset to the time index,
+  the <strong>amplitude</strong> \(a\) scales the values, and
+  the <strong>width</strong> \(w\) streches or compresses the signal along time.
+</p>
+<p style="max-width:960px;margin:0 auto 24px auto;text-align:center;">
+  The rectangle and triangle functions are defined as:
+  $$\mathrm{rect}_N[k] = \begin{cases}
+    1,& 0 \leq k \leq N-1 \\
+    0,& \text{else}
+  \end{cases}$$
+  $$\mathrm{tri}_N[k] = \begin{cases}
+    N - |k|,& |k| \leq N \\
+    0,&\text{else}
+  \end{cases}$$
 </p>
 <p style="max-width:960px;margin:-16px auto 24px auto;text-align:center;font-size:0.9em;color:#666;">
-  Hint: any valid expression using <code>k</code> works here &mdash; try something like
+  Hint: any valid expression using \(k\) works here &mdash; try something like
   <code>(k/4)**2</code> to see its samples.
 </p>
 
@@ -31,16 +40,24 @@
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons"
        style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px;">
-    {% for lbl in ['rect_4(k)','tri(k)','step(k)','delta(k)','sin(k)',
-                   'cos(k)','sign(k)','si(k)'] %}
+    {% for lbl, ltx in [
+      ('rect_4[k]', '\mathrm{rect}_4'),
+      ('tri_3[k]', '\mathrm{tri}_3'),
+      ('step[k]', '\mathrm{step}'),
+      ('delta[k]', '\delta'),
+      ('sin[pi/4*k]', '\sin'),
+      ('cos[pi/4*k]', '\cos'),
+      ('sign[k]', '\mathrm{sign}'),
+      ('si[k/2]', '\mathrm{si}'),
+    ] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
-        {{ lbl.split('(')[0] }}
+        \({{ ltx }}\)
       </button>
     {% endfor %}
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">−</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
+    <button type="button" onclick="insertOperand('+')">\(+\)</button>
+    <button type="button" onclick="insertOperand('-')">\(-\)</button>
+    <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
+    <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
 

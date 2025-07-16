@@ -10,24 +10,32 @@
 
 <p style="max-width:960px;margin:0 auto 26px auto;text-align:center;">
   Enter Python expressions using <code>t</code> as the time variable. The
-  <code>numpy</code> module is available via <code>np</code> so constants such as
-  <code>np.pi</code> and functions like <code>np.exp</code> can be used. Built-in
-  helpers include <code>rect</code>, <code>tri</code>, <code>step</code>,
-  <code>delta</code>, <code>sign</code>, <code>sin</code>, <code>cos</code>,
+  <code>numpy</code> module is available via <code>np</code> so expressions like <code>np.abs</code> can be used. Built-in
+  helpers include the constants <code>pi</code> and <code>e</code>, as well as the signals <code>rect</code>, <code>tri</code>, <code>step</code>,
+  <code>delta</code>, <code>sign</code>, <code>sin</code>, <code>cos</code>, <code>exp</code>,
   <code>exp_iwt</code>, <code>inv_t</code>, <code>si</code> and additional
   functions (<code>arcsin</code>, <code>arccos</code>, <code>arctan</code>,
   <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>gauss</code>). Two
-  expressions can be plotted simultaneously and adjusted with the shift,
-  amplitude and width sliders.
+  expressions can be plotted simultaneously and separately adjusted with the sliders.
 </p>
 
 <p style="max-width:960px;margin:0 auto 24px auto;text-align:center;">
   The sliders apply the transformation
-  <code>f(t) → A · f(w ⋅ t + s)</code>.
-  <strong>Shift</strong> adds <code>s</code> to the time variable, moving the
-  graph horizontally. <strong>Amplitude</strong> multiplies the output by
-  <code>A</code>, while <strong>Width</strong> scales the time axis by
-  <code>w</code> to stretch or compress the function.
+  \(a \cdot f(\frac 1 w \cdot t - s)\).
+  The <strong>shift</strong> \(s\) moves the signal horizontally.
+  The <strong>amplitude</strong> \(a\) scales the output signal, while
+  the <strong>width</strong> \(w\) scales the time axis to stretch or compress the function.
+</p>
+<p style="max-width:960px;margin:0 auto 24px auto;text-align:center;">
+  The rectangle and triangle functions are defined as:
+  $$\mathrm{rect}(t) = \begin{cases}
+    1,& |t| < \frac 1 2 \\
+    0,& \text{else}
+  \end{cases}$$
+  $$\mathrm{tri}(t) = \begin{cases}
+    1 - |t|,& |t| < 1 \\
+    0,& \text{else}
+  \end{cases}$$
 </p>
 
 <form id="plotForm" style="max-width:960px;margin:0 auto;text-align:center;">
@@ -41,14 +49,25 @@
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
-    {% for lbl in ['rect(t)','tri(t)','sin(t)','cos(t)','step(t)','delta(t)','sign(t)',
-                   'exp_iwt(t)','exp(t)','inv_t(t)','si(t)'] %}
-      <button type="button" onclick="insertOperand('{{ lbl }}')">{{ lbl.split('(')[0] }}</button>
+    {% for lbl, ltx in [
+      ('rect(t)', '\mathrm{rect}'),
+      ('tri(t)', '\mathrm{tri}'),
+      ('sin(t)', '\sin'),
+      ('cos(t)', '\cos'),
+      ('step(t)', '\mathrm{step}'),
+      ('delta(t)', '\delta'),
+      ('sign(t)', '\mathrm{sign}'),
+      ('exp_iwt(t)', '\mathrm e^{i\omega t}'),
+      ('exp(t)', '\mathrm e^t'),
+      ('inv_t(t)', '1/t'),
+      ('si(t)', '\mathrm{si}'),
+      ] %}
+      <button type="button" onclick="insertOperand('{{ lbl }}')">\({{ ltx }}\)</button>
     {% endfor %}
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">−</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
+    <button type="button" onclick="insertOperand('+')">\(+\)</button>
+    <button type="button" onclick="insertOperand('-')">\(-\)</button>
+    <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
+    <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
     <!-- SPECIAL FUNCTIONS DROPDOWN -->
@@ -56,17 +75,17 @@
     <select id="specialDropdown" style="padding:6px 10px;font-size:0.9em;">
       <option value="">Special functions…</option>
       <optgroup label="Trigonometric">
-        <option value="arcsin(t)">arcsin(t)</option>
-        <option value="arccos(t)">arccos(t)</option>
-        <option value="arctan(t)">arctan(t)</option>
+        <option value="arcsin(t)">arcsin</option>
+        <option value="arccos(t)">arccos</option>
+        <option value="arctan(t)">arctan</option>
       </optgroup>
       <optgroup label="Hyperbolic">
-        <option value="sinh(t)">sinh(t)</option>
-        <option value="cosh(t)">cosh(t)</option>
-        <option value="tanh(t)">tanh(t)</option>
+        <option value="sinh(t)">sinh</option>
+        <option value="cosh(t)">cosh</option>
+        <option value="tanh(t)">tanh</option>
       </optgroup>
       <optgroup label="Misc">
-        <option value="gauss(t)">gauss(t)</option>
+        <option value="gauss(t)">gauss</option>
       </optgroup>
     </select>
   </div>
