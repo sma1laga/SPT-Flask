@@ -1,9 +1,9 @@
 # pages/discrete_convolution.py
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
-import utils.math_utils as m
+import re
 from utils.math_utils import (
-    rect, tri, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si, tri_seq
+    rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -20,22 +20,40 @@ discrete_convolution_bp = Blueprint(
 def discrete_convolution():
     return render_template("discrete_convolution.html")
 
+def _rewrite_expr(expr: str) -> str:
+    """Rewrite expression to match the discrete symbols/functions.
+
+    Converts:
+    - 'rect_4[...]' -> 'rect(..., 4)'
+    - 'tri_3[...]' -> 'tri(..., 3)'
+    """
+    # e.g., replace "rect_5(anystr)" → "rect(anystr, 5)"
+    # FIXME: fails for nested brackets, e.g., "rect_5[sin[k]])"
+    pattern = r'rect_(\d+)\[([^]]+)\]'
+    repl = r'rect(\g<2>, \g<1>)'
+    expr_new = re.sub(pattern, repl, expr)
+    # e.g., replace "tri_5(anystr)" → "tri(anystr, 5)"
+    pattern = r'tri_(\d+)\[([^]]+)\]'
+    repl = r'tri(\g<2>, \g<1>)'
+    expr_new = re.sub(pattern, repl, expr_new)
+    expr_new = expr_new.replace('[', '(').replace(']', ')')
+    return expr_new
 
 def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
     """Evaluate two sequences and their discrete convolution on an adaptive axis."""
+    func1_str = _rewrite_expr(func1_str)
+    func2_str = _rewrite_expr(func2_str)
 
     k_scan = np.arange(-100, 100 + ds, ds)
 
-    ctx = {
-        "k": k_scan, "n": k_scan, "np": np,
-        "tri": tri_seq, "step": step,
-        "cos": cos,   "sin": sin, "sign": sign,
-        "delta": delta_n, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si, "exp": np.exp,
-        "rect": rect,
-        }
-    for N in range(1, 33):
-        ctx[f"rect_{N}"] = getattr(m, f"rect_{N}")
+    ctx = dict(
+        n=k_scan, k=k_scan, np=np,
+        pi=np.pi, e=np.e,
+        rect=rect_N, tri=tri_N, step=step,
+        cos=cos, sin=sin, sign=sign,
+        delta=delta_n, exp=np.exp, exp_iwt=exp_iwt,
+        si=si, inv_k=inv_t,
+    )
         
     try:
         y1_scan = eval(func1_str, ctx) if func1_str else np.zeros_like(k_scan)
@@ -77,7 +95,9 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
     k_max += margin
 
     k = np.arange(k_min, k_max + ds, ds)
-    ctx_final = ctx.copy(); ctx_final["k"] = k; ctx_final["n"] = k
+    ctx_final = ctx.copy()
+    ctx_final["k"] = k
+    ctx_final["n"] = k
 
     y1 = eval(func1_str, ctx_final) if func1_str else np.zeros_like(k)
     y2 = eval(func2_str, ctx_final) if func2_str else np.zeros_like(k)
@@ -101,16 +121,8 @@ def discrete_convolution_update():
     func1_str  = data.get("func1", "").strip()
     func2_str  = data.get("func2", "").strip()
 
-    # optional sampling step  Δk
     try:
-        ds = float(data.get("ds", 1.0))
-        if ds <= 0:
-            raise ValueError("Δk must be > 0")
-    except Exception as e:
-        return jsonify(error=f"Invalid Δk: {e}"), 400
-
-    try:
-        result = compute_discrete_convolution(func1_str, func2_str, ds)
+        result = compute_discrete_convolution(func1_str, func2_str)
     except Exception as e:
         return jsonify(error=str(e)), 400
 

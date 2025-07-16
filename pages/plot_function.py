@@ -1,6 +1,7 @@
 # pages/plot_function.py
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
+from functools import partial
 from utils.math_utils import (
     rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
 )
@@ -28,6 +29,10 @@ def gauss(t):
     """Standard normal PDF."""
     return np.exp(-t**2 / 2) / np.sqrt(2 * np.pi)
 
+def _adjust_k(k: np.ndarray, shift: float, width: float) -> np.ndarray:
+    """Adjust k values based on shift and width (1/width * k - shift)."""
+    return k / width - shift
+
 plot_function_bp = Blueprint("plot_function", __name__,
                              template_folder="templates")
 
@@ -53,10 +58,14 @@ def plot_function_update():
     a2  = float(data.get("amp2",   1))
     w2  = float(data.get("width2", 1))
 
+    _adjust_k1 = partial(_adjust_k, shift=s1, width=w1)
+    _adjust_k2 = partial(_adjust_k, shift=s2, width=w2)
+
+    MAX_T = 20.  # plot xlim will be [(center - MAX_T), (center + MAX_T)]
     # initial broad grid to estimate a suitable centre
     t_broad = np.linspace(-100, 100, 8000)
 
-    ns_broad = dict(t=t_broad, np=np,
+    ns_broad = dict(t=_adjust_k1(t_broad), np=np, pi=np.pi, e=np.e,
                     rect=rect, tri=tri, step=step,
                     cos=cos, sin=sin,
                     sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
@@ -67,7 +76,7 @@ def plot_function_update():
 
     # evaluate on broad grid
     try:
-        y1_broad = eval(func1_str, ns_broad) if func1_str.strip() else np.zeros_like(t_broad)
+        y1_broad = a1 * eval(func1_str, ns_broad) if func1_str.strip() else np.zeros_like(t_broad)
     except Exception as e:
         return jsonify({"error": f"Error in f₁(t): {e}"}), 400
     if np.any(np.isinf(y1_broad)):
@@ -76,15 +85,12 @@ def plot_function_update():
     y2_broad = None
     if func2_str.strip():
         try:
-            y2_broad = eval(func2_str, ns_broad)
+            ns_broad["t"] = _adjust_k2(t_broad)
+            y2_broad = a2 * eval(func2_str, ns_broad)
         except Exception as e:
             return jsonify({"error": f"Error in f₂(t): {e}"}), 400
         if np.any(np.isinf(y2_broad)):
             return jsonify({"error": "f₂(t) produced non-finite values"}), 400
-
-    # apply transforms on broad grid for centre calculation
-    t1_broad = t_broad * w1 + s1
-    t2_broad = t_broad * w2 + s2 if y2_broad is not None else None
 
     def center_point(t_arr, y_arr):
         """Heuristic centre for plotting.
@@ -115,8 +121,8 @@ def plot_function_update():
 
         return float(np.sum(t_arr * mag) / total), total
 
-    c1, m1 = center_point(t1_broad, y1_broad)
-    c2, m2 = center_point(t2_broad, y2_broad)
+    c1, m1 = center_point(t_broad, y1_broad)
+    c2, m2 = center_point(t_broad, y2_broad)
 
     if c1 is None and c2 is None:
         center = 0.0
@@ -128,11 +134,11 @@ def plot_function_update():
         center = (c1 * m1 + c2 * m2) / (m1 + m2)
 
     # final grid centred around detected centre
-    start = (center - 20 - s1) / w1
-    end = (center + 20 - s1) / w1
+    start = center - MAX_T
+    end = center + MAX_T
     t = np.linspace(start, end, 4000)
 
-    ns = dict(t=t, np=np,
+    ns = dict(t=_adjust_k1(t), np=np, pi=np.pi, e=np.e,
               rect=rect, tri=tri, step=step,
               cos=cos, sin=sin,
               sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
@@ -143,7 +149,7 @@ def plot_function_update():
 
     # evaluate again on final grid
     try:
-        y1 = eval(func1_str, ns) if func1_str.strip() else np.zeros_like(t)
+        y1 = a1 * eval(func1_str, ns) if func1_str.strip() else np.zeros_like(t)
     except Exception as e:
         return jsonify({"error": f"Error in f₁(t): {e}"}), 400
     if np.any(np.isinf(y1)):
@@ -152,28 +158,13 @@ def plot_function_update():
     y2 = None
     if func2_str.strip():
         try:
-            y2 = eval(func2_str, ns)
+            ns["t"] = _adjust_k2(t)
+            y2 = a2 * eval(func2_str, ns)
         except Exception as e:
             return jsonify({"error": f"Error in f₂(t): {e}"}), 400
         if np.any(np.isinf(y2)):
             return jsonify({"error": "f₂(t) produced non-finite values"}), 400
-        
-    # apply separate transforms
-    t1 = t * w1 + s1
-    y1 = y1 * a1
 
-    if y2 is not None:
-        t2 = t * w2 + s2
-        y2 = y2 * a2
-    else:
-        t2 = None
-        
-    if t2 is not None:
-        x_min = float(min(t1.min(), t2.min()))
-        x_max = float(max(t1.max(), t2.max()))
-    else:
-        x_min = float(t1.min())
-        x_max = float(t1.max())
     def to_json_list(arr):
         if np.iscomplexobj(arr):
             return {
@@ -188,11 +179,11 @@ def plot_function_update():
             else:
                 cleaned.append(v)
         return cleaned
+    
     return jsonify({
-        "t1": t1.tolist(),
+        "t1": t.tolist(),
         "y1": to_json_list(y1),
-        "t2": t2.tolist() if t2 is not None else None,
+        "t2": t.tolist() if y2 is not None else None,
         "y2": to_json_list(y2) if y2 is not None else None,
-        "xrange": [x_min, x_max]
-
+        "xrange": [start, end]
     })

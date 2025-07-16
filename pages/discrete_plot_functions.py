@@ -1,13 +1,39 @@
 # pages/discrete_plot_functions.py
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
-
-import utils.math_utils as m
+import re
+from functools import partial
+from utils.math_utils import (
+    rect_N, tri_N, step, cos, sin, sign, delta_n, si
+)
 
 
 discrete_plot_functions_bp = Blueprint(
     "discrete_plot_functions", __name__, template_folder="templates/discrete"
 )
+
+def _rewrite_expr(expr: str) -> str:
+    """Rewrite expression to match the discrete symbols/functions.
+
+    Converts:
+    - 'rect_4[...]' -> 'rect(..., 4)'
+    - 'tri_3[...]' -> 'tri(..., 3)'
+    """
+    # e.g., replace "rect_5(anystr)" → "rect(anystr, 5)"
+    # FIXME: fails for nested brackets, e.g., "rect_5[sin[k]])"
+    pattern = r'rect_(\d+)\[([^]]+)\]'
+    repl = r'rect(\g<2>, \g<1>)'
+    expr_new = re.sub(pattern, repl, expr)
+    # e.g., replace "tri_5(anystr)" → "tri(anystr, 5)"
+    pattern = r'tri_(\d+)\[([^]]+)\]'
+    repl = r'tri(\g<2>, \g<1>)'
+    expr_new = re.sub(pattern, repl, expr_new)
+    expr_new = expr_new.replace('[', '(').replace(']', ')')
+    return expr_new
+
+def _adjust_k(k: np.ndarray, shift: float, width: float) -> np.ndarray:
+    """Adjust k values based on shift and width (1/width * k - shift)."""
+    return k / width - shift
 
 # -------------------------------------------------------------------- #
 # page
@@ -25,39 +51,42 @@ def discrete_plot_functions():
 def discrete_plot_functions_update():
     data = request.get_json(force=True) or {}
 
-    func1_str, func2_str = data.get("func1", ""), data.get("func2", "")
+    func1_str = _rewrite_expr(data.get("func1", ""))
+    func2_str = _rewrite_expr(data.get("func2", ""))
 
     # sliders (per-function)
     s1  = float(data.get("shift1", 0)); a1 = float(data.get("amp1",   1)); w1 = float(data.get("width1", 1))
     s2  = float(data.get("shift2", 0)); a2 = float(data.get("amp2",   1)); w2 = float(data.get("width2", 1))
 
-    Δn = 1.0
+    _adjust_k1 = partial(_adjust_k, shift=s1, width=w1)
+    _adjust_k2 = partial(_adjust_k, shift=s2, width=w2)
 
-
+    MAX_N = 20. # plot xlim will be [(center - MAX_N), (center + MAX_N)]
     # broad grid for centre detection
-    MAX_N = 20.0
-    k_broad = np.arange(-100, 101)
-    n_broad = k_broad
+    k_broad = np.linspace(-100, 101)
 
     # evaluation namespace with discrete helpers
     ctx_broad = dict(
-        n=n_broad, k=k_broad, np=np,
-        tri=m.tri_seq, step=m.step, delta=m.delta_n,
-        sin=np.sin, cos=np.cos, sign=np.sign, si=m.dsi,
+        n=_adjust_k1(k_broad), k=_adjust_k1(k_broad), np=np,
+        pi=np.pi, e=np.e,
+        rect=rect_N, tri=tri_N,
+        step=step, delta=delta_n,
+        sin=sin, cos=cos,
+        sign=sign, si=si,
+        exp=np.exp,
     )
-    for N in range(1, 33):
-        ctx_broad[f"rect_{N}"] = getattr(m, f"rect_{N}")
 
     # -------------- evaluate on broad grid -----------------------------------
     try:
-        y1_broad = eval(func1_str, ctx_broad) if func1_str.strip() else np.zeros_like(n_broad)
+        y1_broad = a1 * eval(func1_str, ctx_broad) if func1_str.strip() else np.zeros_like(k_broad)
     except Exception as e:
         return jsonify({"error": f"f₁ error: {e}"}), 400
-
     y2_broad = None
     if func2_str.strip():
         try:
-            y2_broad = eval(func2_str, ctx_broad)
+            ctx_broad["n"] = _adjust_k2(k_broad)
+            ctx_broad["k"] = _adjust_k2(k_broad)
+            y2_broad = a2 * eval(func2_str, ctx_broad)
         except Exception as e:
             return jsonify({"error": f"f₂ error: {e}"}), 400
 
@@ -70,8 +99,8 @@ def discrete_plot_functions_update():
             return None, 0
         return float(np.sum(x * mag) / tot), tot
 
-    c1, m1 = center_of_mass(n_broad, y1_broad)
-    c2, m2 = center_of_mass(n_broad, y2_broad)
+    c1, m1 = center_of_mass(k_broad, y1_broad)
+    c2, m2 = center_of_mass(k_broad, y2_broad)
 
     if c1 is None and c2 is None:
         center = 0.0
@@ -83,51 +112,34 @@ def discrete_plot_functions_update():
         center = (c1 * m1 + c2 * m2) / (m1 + m2)
 
     # final grid centred around detected centre
-    n_start = center - MAX_N
-    n_end = center + MAX_N
-    k = np.arange(int(round(n_start)), int(round(n_end)) + 1)
-    n = k
+    k_start = center - MAX_N
+    k_end = center + MAX_N
+    k = np.arange(int(round(k_start)), int(round(k_end)) + 1)
 
     ctx = dict(
-        n=n, k=k, np=np,
-        tri=m.tri_seq, step=m.step, delta=m.delta_n,
-        sin=np.sin, cos=np.cos, sign=np.sign, si=m.dsi,
+        n=_adjust_k1(k), k=_adjust_k1(k), np=np,
+        pi=np.pi, e=np.e,
+        rect=rect_N, tri=tri_N, step=step, delta=delta_n,
+        sin=sin, cos=cos, sign=sign, si=si,
     )
-    for N in range(1, 33):
-        ctx[f"rect_{N}"] = getattr(m, f"rect_{N}")
 
     try:
-        y1 = eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(n)
+        y1 = a1 * eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(k)
     except Exception as e:
         return jsonify({"error": f"f₁ error: {e}"}), 400
 
     y2 = None
     if func2_str.strip():
         try:
-            y2 = eval(func2_str, ctx)
+            ctx["n"] = _adjust_k2(k)
+            ctx["k"] = _adjust_k2(k)
+            y2 = a2 * eval(func2_str, ctx)
         except Exception as e:
             return jsonify({"error": f"f₂ error: {e}"}), 400
 
-    # -------------- transform -------------------------------------------------
-    x1 = n * w1 + s1
-    y1 = y1 * a1
-
-    if y2 is not None:
-        x2 = n * w2 + s2
-        y2 = y2 * a2
-    else:
-        x2 = None
-        
-    if x2 is not None:
-        x_min = float(min(x1.min(), x2.min()))
-        x_max = float(max(x1.max(), x2.max()))
-    else:
-        x_min = float(x1.min())
-        x_max = float(x1.max())
-
     return jsonify({
-        "x1": x1.tolist(), "y1": y1.tolist(),
-        "x2": x2.tolist() if x2 is not None else None,
+        "x1": k.tolist(), "y1": y1.tolist(),
+        "x2": k.tolist() if y2 is not None else None,
         "y2": y2.tolist() if y2 is not None else None,
-        "xrange": [x_min, x_max]
+        "xrange": [k_start, k_end]
         })

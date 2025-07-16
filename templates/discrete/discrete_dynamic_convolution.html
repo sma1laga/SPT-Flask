@@ -56,23 +56,23 @@ function initCharts(){
     type: 'scatter',
     data: {
       datasets: [
-        { label: 'x[k]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
+        { label: 'x[κ]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
         { label: 'h[k−κ]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
         { label: 'x·h', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.5)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
       ]
     },
-    options: { animation: false, scales: { x: { title: { display: true, text: 'k' } } } }
+    options: { animation: false, scales: { x: { title: { display: true, text: 'κ' } } } }
   });
 
   bottomChart = new Chart(bottomCtx, {
     type: 'scatter',
     data: {
       datasets: [
-        { label: '(x*h)[τ]', data: pairData(tData, yConvData), borderColor: 'darkblue', backgroundColor: 'darkblue', showLine: false },
+        { label: '(x*h)[k]', data: pairData(tData, yConvData), borderColor: 'darkblue', backgroundColor: 'darkblue', showLine: false },
         { label: 'Marker', data: [], pointRadius: 5, showLine: false, borderColor: 'red', backgroundColor: 'red' }
       ]
     },
-    options: { animation: false, scales: { x: { title: { display: true, text: 'τ' } } } }
+    options: { animation: false, scales: { x: { title: { display: true, text: 'k' } } } }
   });
 }
 

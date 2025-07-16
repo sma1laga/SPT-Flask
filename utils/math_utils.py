@@ -1,7 +1,7 @@
 import numpy as np
 
 # ------------------------------------------------------------------
-# Continuous‑time helpers (unchanged)
+# Continuous‑time helpers
 # ------------------------------------------------------------------
 
 def rect(t):
@@ -43,29 +43,31 @@ def dsi(t):
     """Un-normalized sinc: sin(t)/t, with si(0)=1."""
     return np.where(t == 0, 1.0, np.sin(t) / t)
 
-
 def delta_n(n):
     """Kronecker delta: 1 when n==0 else 0."""
-    return np.where(np.isclose(n, 0.0), 1.0, 0.0)
+    return np.where(np.isclose(n.round(8), 0.0), 1.0, 0.0)
 
 # ------------------------------------------------------------------
-# Discrete-time helpers (new)
+# Discrete-time helpers
 # ------------------------------------------------------------------
 
-def rect_d(k, N):
-    """Length-N discrete rectangle: 1 for 0≤k≤N-1, else 0."""
+def rect_N(k:np.ndarray, N:int) -> np.ndarray:
+    """Length N discrete rectangle: 1 for 0≤k≤N-1, else 0.
+    
+    Arguments:
+        k (np.ndarray): Time array (only integer timesteps will be nonzero).
+        N (int): Length of the rectangle.
+    Returns:
+        np.ndarray: Rectangular sequence."""
     return np.where((k >= 0) & (k <= N - 1), 1.0, 0.0)
 
-# auto-generated convenience wrappers  rect_1 .. rect_32
-for _N in range(1, 33):
-    globals()[f"rect_{_N}"] = (lambda N=_N: (lambda k: rect_d(k, N)))()
-
-
-def tri_seq(k):
-    """Fixed triangular sequence 3-2-1 around k=0."""
-    abs_k = np.abs(k)
-    return np.select(
-        [abs_k == 0, abs_k == 1, abs_k == 2],
-        [3.0, 2.0, 1.0],
-        default=0.0,
-    )
+def tri_N(k:np.ndarray, N:int) -> np.ndarray:
+    """Length 2N-1 triangular sequence: 0,1,...,N-1, N, N-1,...,1,0 around k=0.
+    Arguments:
+        k (np.ndarray): Time array (only integer timesteps will be nonzero).
+        N (int): length of the positive triangle part.
+    Returns:
+        np.ndarray: Triangular sequence.
+    """
+    abs_k = np.abs(k).round(8)
+    return np.where(abs_k <= N, N - abs_k, 0.)

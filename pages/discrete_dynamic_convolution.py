@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, jsonify
+from functools import partial
 import numpy as np
 from utils.math_utils import (
-    rect_4, tri_seq, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
+    rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
 )
 # Blueprint for Discrete Dynamic Convolution
 # Implements extended-domain convolution to avoid edge truncation
@@ -16,9 +17,17 @@ discrete_dynamic_convolution_bp = Blueprint(
 def index():
     # Provide available discrete functions
     functions = [
-        "rect_4(k)", "tri(k)", "step(k)", "sin(k)",
-        "cos(k)", "sign(k)", "delta(k)",
-        "inv_t(k)", "si(k)"
+        ("rect_4[k]", "rect_4(k)"),
+        ("tri_3[k]", "tri_3(k)"),
+        ("step[k]", "step(k)"),
+        ("step[k]\u22c5sin[\u03c0/4\u22c5k]", "step(k)*sin(np.pi/4*k)"),
+        ("step[k]\u22c5cos[\u03c0/4\u22c5k]", "step(k)*cos(np.pi/4*k)"),
+        ("sign[k]", "sign(k)"),
+        ("delta[k]", "delta(k)"),
+        ("inv_k[k]", "inv_k(k)"),
+        ("si[\u03c0/2\u22c5k]", "si(k/2)"),
+        ("step[k]\u22c50.5^k", "step(k)*0.5**k"),
+        ("step[k]\u22c5(-0.5)^k", "step(k)*(-0.5)**k")
     ]
     return render_template(
         "discrete_dynamic_convolution.html",
@@ -36,10 +45,10 @@ def data():
     # Safe evaluation context
     ctx = {
         "k": k, "n": k, "np": np,
-        "rect_4": rect_4, "tri": tri_seq, "step": step,
-        "cos": cos, "sin": sin, "sign": sign,
-        "delta": delta_n, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si,
+        "rect_4": partial(rect_N, N=4), "tri_3": partial(tri_N, N=3), "step": step,
+        "cos": cos, "sin": sin,
+        "sign": sign, "delta": delta_n, "exp": np.exp,
+        "inv_k": inv_t, "si": si,
     }
 
     # Evaluate f1 & f2 on original domain

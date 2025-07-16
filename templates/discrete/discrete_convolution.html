@@ -34,10 +34,11 @@
       ('tri_3[k]', '\mathrm{tri}_3'),
       ('step[k]', '\mathrm{step}'),
       ('delta[k]', '\delta'),
-      ('sin[k]', '\sin'),
-      ('cos[k]', '\cos'),
+      ('sin[pi/4*k]', '\sin'),
+      ('cos[pi/4*k]', '\cos'),
+      ('si[k/2]', '\mathrm {si}'),
       ('sign[k]', '\mathrm{sign}'),
-      ('exp[k]', '\mathrm {exp}')
+      ('exp[k]', '\mathrm {exp}'),
       ] %}
       <button type="button" onclick="insertOperand('{{ val }}')">
         \({{ ltx }}\)
@@ -88,7 +89,6 @@ function values(){
   return {
     func1: func1.value,
     func2: func2.value,
-    ds:    ds.value
   };
 }
 
@@ -133,7 +133,6 @@ function updatePlots(){
 computeBtn.onclick = updatePlots;
 clearBtn.onclick = ()=>{
   func1.value=func2.value="";
-  ds.value=1.0;
   ["plot1","plot2","plotConv"].forEach(id=>Plotly.purge(id));
 };
 </script>
