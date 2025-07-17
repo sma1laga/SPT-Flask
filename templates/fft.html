@@ -132,7 +132,7 @@
 
   <!-- Quick-buttons JS & CSS -->
   <script>
-    let activeField = null;
+    let activeField = document.getElementById("expression");
     function setActiveField(field) { activeField = field; }
     function insertOperand(operand) {
       if (!activeField) return;

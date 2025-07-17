@@ -50,7 +50,7 @@
 
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
-let activeField = null;
+let activeField = document.getElementById('func');
 function setActiveField(f){ activeField = f; }
 document.getElementById('func').addEventListener('focus',e=>activeField=e.target);
 function insertOperand(op){
