@@ -30,15 +30,10 @@ def compute_discrete_autocorrelation(func_str: str, ds: float = 1.0):
 def discrete_autocorrelation_update():
     data = request.get_json(force=True) or {}
     func_str = data.get("func", "").strip()
-    try:
-        ds = float(data.get("ds", 1.0))
-        if ds <= 0:
-            raise ValueError("Δk must be > 0")
-    except Exception as e:
-        return jsonify(error=f"Invalid Δk: {e}"), 400
+
 
     try:
-        result = compute_discrete_autocorrelation(func_str, ds)
+        result = compute_discrete_autocorrelation(func_str, 1.0)
     except Exception as e:
         return jsonify(error=str(e)), 400
 

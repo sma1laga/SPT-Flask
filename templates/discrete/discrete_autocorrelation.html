@@ -16,21 +16,26 @@
     <input id="func" placeholder="x[k]" onfocus="setActiveField(this)"
            style="width:90%;padding:8px;border:1px solid #ccd0d5;border-radius:4px;font-size:1em;">
   </div>
-  <div style="margin-bottom:16px;">
-    Δk:
-    <input id="ds" type="number" step="0.1" min="0.1" value="1.0"
-           style="width:90px;padding:6px;border:1px solid #ccd0d5;border-radius:4px;">
-  </div>
+
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
-    {% for lbl in ['rect_4(k)','tri(k)','step(k)','delta(k)','sin(k)','cos(k)','sign(k)','exp(k)'] %}
-      <button type="button" onclick="insertOperand('{{ lbl }}')">{{ lbl }}</button>
+    {% for val, ltx in [
+      ('rect_4[k]', '\\mathrm{rect}_4'),
+      ('tri_3[k]',  '\\mathrm{tri}_3'),
+      ('step[k]',   '\\mathrm{step}'),
+      ('delta[k]',  '\\delta'),
+      ('sin[pi/4*k]',  '\\sin'),
+      ('cos[pi/4*k]',  '\\cos'),
+      ('sign[k]',   '\\mathrm{sign}'),
+      ('exp[k]',    '\\exp')
+    ] %}
+      <button type="button" onclick="insertOperand('{{ val }}')">\({{ ltx }}\)</button>
     {% endfor %}
   </div>
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px;">
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">−</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
+    <button type="button" onclick="insertOperand('+')">\(+\)</button>
+    <button type="button" onclick="insertOperand('-')">\(-\)</button>
+    <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
+    <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
   <div style="margin-bottom:30px;">
     <button id="computeBtn" type="button" class="action-btn green">Compute</button>
@@ -56,7 +61,7 @@ function insertOperand(op){
   activeField.focus();
 }
 function values(){
-  return { func: func.value, ds: ds.value };
+  return { func: func.value };
 }
 function updatePlots(){
   fetch("{{ url_for('discrete_autocorrelation.discrete_autocorrelation_update') }}",{
@@ -76,17 +81,17 @@ function updatePlots(){
     Plotly.newPlot('plot1', [
       stem(d.k, d.y1,'#1f77b4'),
       {x:d.k, y:d.y1, mode:'markers', marker:{color:'#1f77b4',size:6}}
-    ], {...lc, title:'Sequence x[k]', xaxis:{title:'k'}, yaxis:{title:'x[k]'}});
+    ], {...lc, title:'Input Sequence  x[k]', xaxis:{title:'k'}, yaxis:{title:'x[k]'}});
     Plotly.newPlot('plotAuto', [
       stem(d.k_conv, d.y_conv,'#2ca02c'),
       {x:d.k_conv, y:d.y_conv, mode:'markers', marker:{color:'#2ca02c',size:6}}
-    ], {...lc, title:'Autocorrelation', xaxis:{title:'k'}, yaxis:{title:'φ_xx[k]'}});
+    ], {...lc, title:'Autocorrelation  φ_xx[k]', xaxis:{title:'k'}, yaxis:{title:'φ_xx[k]'}});
   })
   .catch(console.error);
 }
 computeBtn.onclick = updatePlots;
 clearBtn.onclick = ()=>{
-  func.value=''; ds.value=1.0;
+  func.value='';
   ['plot1','plotAuto'].forEach(id=>Plotly.purge(id));
 };
 </script>
