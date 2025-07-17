@@ -1,6 +1,148 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Theory</h2>
-<p>TODO: Provide theoretical background for your signal processing concepts.</p>
-<p><a href="/">Back to Main Menu</a></p>
+<div class="container my-4">
+  <h1>Continuous- and Discrete-Time Signals and Systems</h1>
+  <h2>Table of Contents</h2>
+  <h3 class="mt-4">Part 1: Continuous Signals and Systems</h3>
+  <ul>
+    <li>
+      <strong>Signals</strong>
+      <ul>
+        <li>Standard Signals</li>
+        <li>Operations</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Characterization of Systems in the Time Domain</strong>
+      <ul>
+        <li>Impulse Response</li>
+        <li>Convolution</li>
+        <li>Step Response</li>
+        <li>Eigenfunctions and the Transfer Function</li>
+        <li>Example: Analysis of a Passive Electrical Network</li>
+        <li>Example: Analysis of a Damped Spring Pendulum</li>
+      </ul>
+    </li>
+    <li>
+      <strong>The Laplace-Transform</strong>
+      <ul>
+        <li>Definition</li>
+        <li>Properties</li>
+        <li>Theorems</li>
+        <li>Summary of Properties, Theorems and Transforms</li>
+        <li>Inverse Transform</li>
+        <li>Analysis of Passive Electrical Networks</li>
+      </ul>
+    </li>
+    <li>
+      <strong>The Fourier-Transform</strong>
+      <ul>
+        <li>Definition</li>
+        <li>Properties</li>
+        <li>Theorems</li>
+        <li>Summary of Properties, Theorems and Transforms</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Characterization of Systems in the Spectral Domain</strong>
+      <ul>
+        <li>The Transfer Function</li>
+        <li>The Bode Plot</li>
+        <li>Phase and Group Delay</li>
+        <li>Combination of Systems</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Properties of LTI-Systems</strong>
+      <ul>
+        <li>Causality and Stability</li>
+        <li>Classes of Systems</li>
+        <li>Idealized Systems</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Periodic Signals</strong>
+      <ul>
+        <li>Spectrum</li>
+        <li>Relation between Spectrum and Fourier Series</li>
+        <li>Convolution of a Periodic with an Aperiodic Signal</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Sampling of Signals</strong>
+      <ul>
+        <li>Ideal Sampling and Reconstruction</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3 class="mt-4">Part 2: Time-Discrete Signals and Systems</h3>
+  <ul>
+    <li>
+      <strong>Discrete Signals</strong>
+      <ul>
+        <li>Standard Signals</li>
+        <li>Operations</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Characterization of Discrete Systems in the Time Domain</strong>
+      <ul>
+        <li>Difference Equation</li>
+        <li>Impulse Response</li>
+        <li>Linear Convolution</li>
+        <li>Example: Convolution of an Audio Signal with a Room Impulse Response</li>
+        <li>Eigenfunctions and the Transfer Function</li>
+      </ul>
+    </li>
+    <li>
+      <strong>The z-Transform</strong>
+      <ul>
+        <li>Definition</li>
+        <li>Properties</li>
+        <li>Theorems</li>
+        <li>Summary of Properties, Theorems and Transforms</li>
+      </ul>
+    </li>
+    <li>
+      <strong>The Discrete-Time Fourier Transform</strong>
+      <ul>
+        <li>Definition</li>
+        <li>Properties</li>
+        <li>Theorems</li>
+        <li>Summary of Properties, Theorems and Transforms</li>
+      </ul>
+    </li>
+    <li>
+      <strong>The Discrete Fourier Transform</strong>
+      <ul>
+        <li>Definition</li>
+        <li>Properties</li>
+        <li>Theorems</li>
+        <li>Summary of Properties, Theorems and Transforms</li>
+        <li>The Fast Fourier Transform</li>
+        <li>Fast Convolution</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Characterization of Discrete Systems in the Spectral Domain</strong>
+      <ul>
+        <li>The Transfer Function</li>
+        <li>Example: Measurement of an Electroacoustic Transfer Function</li>
+        <li>Magnitude and Phase</li>
+        <li>Phase and Group Delay</li>
+        <li>Combination of Systems</li>
+      </ul>
+    </li>
+    <li><strong>Properties of Discrete LTI-Systems</strong></li>
+  </ul>
+
+  <h3 class="mt-4">References</h3>
+  <p>See the original lecture for a detailed list of references.</p>
+
+
+  <p class="mt-5">
+    <a href="{{ url_for('theory.theory') }}">Back to Theory Overview</a>
+  </p>
+</div>
 {% endblock %}
