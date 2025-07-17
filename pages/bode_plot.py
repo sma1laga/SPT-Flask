@@ -346,8 +346,8 @@ def download_png():
     num_str = request.args.get('numerator', '')
     den_str = request.args.get('denominator', '')
     try:
-        num, _ = parse_poly_input(num_str)
-        den, _ = parse_poly_input(den_str)
+        num, num_raw = parse_poly_input(num_str)
+        den, den_raw = parse_poly_input(den_str)
     except Exception as e:
         return f"Error parsing inputs: {e}", 400
     # Optional manual range
@@ -364,11 +364,29 @@ def download_png():
     mag = 20 * np.log10(np.abs(H))
     ph  = np.angle(H, deg=True)
 
+    # Build LaTeX string for the transfer function to display on the plot
+    if num_raw is None:
+        num_disp = format_polynomial(num)
+    else:
+        num_disp = num_raw
+    if den_raw is None:
+        den_disp = format_polynomial(den)
+    else:
+        den_disp = den_raw
+    function_str = rf"$H(s) = \frac{{{num_disp}}}{{{den_disp}}}$"
+
+
     # Re‑generate Bode plot at high DPI
-    fig, (ax1, ax2) = plt.subplots(2,1,figsize=(8,6),sharex=True)
-    ax1.semilogx(w, mag); ax1.set_ylabel("Magnitude (dB)"); ax1.grid(True, which='both', linestyle='--')
-    ax2.semilogx(w, ph);  ax2.set_ylabel("Phase (°)"); ax2.set_xlabel("Frequency (rad/s)"); ax2.grid(True, which='both', linestyle='--')
-    plt.tight_layout()
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    ax1.semilogx(w, mag)
+    ax1.set_ylabel("Magnitude (dB)")
+    ax1.grid(True, which='both', linestyle='--')
+    ax2.semilogx(w, ph)
+    ax2.set_ylabel("Phase (°)")
+    ax2.set_xlabel("Frequency (rad/s)")
+    ax2.grid(True, which='both', linestyle='--')
+    fig.suptitle(function_str, y=0.98)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     buf = BytesIO()
     # Save at 300 DPI for high‑resolution
