@@ -81,12 +81,12 @@ function updatePlots(){
     Plotly.newPlot('plot1', [
       stem(d.k, d.y1,'#1f77b4'),
       {x:d.k, y:d.y1, mode:'markers', marker:{color:'#1f77b4',size:6}}
-    ], {...lc, title:'Input Sequence  x[k]', xaxis:{title:'k'}, yaxis:{title:'x[k]'}});
-    Plotly.newPlot('plotAuto', [
+    ], {...lc, title:{text:'Input Sequence  x[k]'},
+        xaxis:{title:{text:'k'}}, yaxis:{title:{text:'x[k]'}}});    Plotly.newPlot('plotAuto', [
       stem(d.k_conv, d.y_conv,'#2ca02c'),
       {x:d.k_conv, y:d.y_conv, mode:'markers', marker:{color:'#2ca02c',size:6}}
-    ], {...lc, title:'Autocorrelation  φ_xx[k]', xaxis:{title:'k'}, yaxis:{title:'φ_xx[k]'}});
-  })
+    ], {...lc, title:{text:'Autocorrelation  φ_xx[k]'},
+        xaxis:{title:{text:'k'}}, yaxis:{title:{text:'φ_xx[k]'}}});  })
   .catch(console.error);
 }
 computeBtn.onclick = updatePlots;
