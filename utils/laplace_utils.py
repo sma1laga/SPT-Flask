@@ -170,18 +170,18 @@ def _pretty_latex(expr: sp.Expr) -> str:
     latex = sp.latex(expr)
 
     # --- Heaviside → \varepsilon(t) ---
-    latex = latex.replace(r"\theta\left(t\right)", "u(t)")
-    latex = latex.replace(r"\operatorname{Heaviside}{\left(t \right)}", "u(t)")
+    latex = latex.replace(r"\theta\left(t\right)", r"\varepsilon(t)")
+    latex = latex.replace(r"\operatorname{Heaviside}{\left(t \right)}", r"\varepsilon(t)")
 
-    # Normalize parentheses around u(t)
-    latex = latex.replace(r"\left(u(t)\right)", "u(t)")
+    # Normalize parentheses around \varepsilon(t)
+    latex = latex.replace(r"\left(\varepsilon(t)\right)", r"\varepsilon(t)")
 
-    # Collapse repeated factors and powers of u(t)
-    latex = re.sub(r"u\(t\)\^{\d+}", "u(t)", latex)
-    latex = re.sub(r"(u\(t\)\s*)+", "u(t)", latex)
+    # Collapse repeated factors and powers of \varepsilon(t)
+    latex = re.sub(r"\varepsilon\(t\)\^{\d+}", r"\varepsilon(t)", latex)
+    latex = re.sub(r"(\varepsilon\(t\)\s*)+", r"\varepsilon(t)", latex)
 
-    # Remove stray \cdot before u(t)
-    latex = latex.replace(r"\cdot u(t)", "u(t)")
+    # Remove stray \cdot before \varepsilon(t)
+    latex = latex.replace(r"\cdot \varepsilon(t)", r"\varepsilon(t)")
     latex = re.sub(r"(\d+\.\d{6})\d+", r"\1", latex)
     return latex
 
