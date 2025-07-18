@@ -1,7 +1,7 @@
 # pages/info.py
 from flask import Blueprint, render_template, request
 import json
-import time
+from datetime import timezone, datetime
 
 CONTACT_LOG_FILE = 'contact.log'
 info_bp = Blueprint('info', __name__)
@@ -41,7 +41,7 @@ def contact():
             return render_template('contact.html', error=error, name=name,
                                    email=email, message=message)
         data = {
-            'timestamp': time.time(),
+            'timestamp': datetime.now(timezone.utc).isoformat(timespec='seconds'),
             'name': name,
             'email': email,
             'message': message,
