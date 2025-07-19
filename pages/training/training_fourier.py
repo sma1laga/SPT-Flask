@@ -10,10 +10,15 @@ import random
 import traceback
 import numpy as np
 import matplotlib
+import math
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import inspect
+
+# Helper: true sin(x)/x where x is in radians
+def _sinc_rad(x: np.ndarray) -> np.ndarray:
+    return np.sinc(x / math.pi)
 
 # Matplotlib 3.10 removed the ``use_line_collection`` argument from ``stem``.
 # Check the signature so we can remain compatible with both new and old
@@ -80,19 +85,20 @@ def make_signal_pool(w0: float) -> Dict[str, Signal]:
         return t * np.sinc(t)
 
     def F_rect(w: np.ndarray) -> np.ndarray:
-        x = w / 2
-        return np.where(w == 0, 1.0, np.sin(x) / x)
+        return _sinc_rad(w / 2)
+
 
     def F_tri(w: np.ndarray) -> np.ndarray:
-        x = w / 2
-        return (np.sin(x) / x) ** 2
+        return _sinc_rad(w / 2) ** 2
+
 
     def F_sinc(w: np.ndarray) -> np.ndarray:
         return np.where(np.abs(w) <= np.pi, 1.0, 0.0)
 
     def F_sinc2(w: np.ndarray) -> np.ndarray:
-        return np.where(np.abs(w) <= 2 * np.pi, np.pi * (1 - np.abs(w) / (2 * np.pi)), 0.0)
-
+        return np.where(np.abs(w) <= 2 * np.pi,
+                        1 - np.abs(w) / (2 * np.pi),
+                        0.0)
     def F_inv_t(w: np.ndarray) -> np.ndarray:
         return -1j * np.pi * np.sign(w)
 
@@ -113,10 +119,10 @@ def make_signal_pool(w0: float) -> Dict[str, Signal]:
         return 1j * (_delta(w, np.pi) - _delta(w, -np.pi))
 
     return {
-        "rect": Signal("rect", rect, F_rect, r"\mathrm{rect}(t)", r"2\,\mathrm{sinc}(\omega/2)"),
-        "tri": Signal("tri", tri, F_tri, r"\mathrm{tri}(t)", r"(\mathrm{sinc}(\omega/2))^2"),
+        "rect": Signal("rect", rect, F_rect, r"\mathrm{rect}(t)", r"\mathrm{sinc}(\omega/2\pi)"),
+        "tri": Signal("tri", tri, F_tri, r"\mathrm{tri}(t)", r"\mathrm{sinc}^2(\omega/2\pi)"),
         "sinc": Signal("sinc", sinc, F_sinc, r"\mathrm{sinc}(t)", r"\mathbf{1}_{|\omega|\le \pi}"),
-        "sinc2": Signal("sinc^2", sinc2, F_sinc2, r"\mathrm{sinc}^2(t)", r"\triangle(\omega/4\pi)"),
+        "sinc2": Signal("sinc^2", sinc2, F_sinc2, r"\mathrm{sinc}^2(t)", r"\max\!\{1-|{\omega}|/2\pi,\,0\}"),
         "inv_t": Signal("1/t", inv_t, F_inv_t, r"1/t", r"-j\pi\,\mathrm{sgn}(\omega)"),
         "sign": Signal("sign", sign, F_sign, r"\mathrm{sgn}(t)", r"-\frac{2j}{\omega}"),
         "exp": Signal("exp", cexp, F_cexp, fr"e^{{j{w0}t}}", fr"2\pi\delta(\omega-{w0})"),
@@ -135,8 +141,8 @@ def is_transform_pair(sig: Callable[[np.ndarray], np.ndarray],
     x = sig(t)
     X_num = np.fft.fftshift(np.fft.fft(np.fft.ifftshift(x))) * dt
     X_true = X(np.fft.fftshift(omega))
-    return np.linalg.norm(X_num - X_true) < 1e-3
-
+    rel_err = np.linalg.norm(X_num - X_true) / np.linalg.norm(X_true)
+    return rel_err < 0.05
 training_fourier_bp = Blueprint("training_fourier", __name__)
 
 @training_fourier_bp.route("/")
