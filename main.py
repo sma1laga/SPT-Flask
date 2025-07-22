@@ -1,5 +1,7 @@
 # main.py
 from flask import Flask, render_template
+from werkzeug.exceptions import HTTPException
+import crash_logging
 from pages.plot_function import plot_function_bp
 from pages.fourier_page import fourier_bp
 from pages.convolution import convolution_bp
@@ -63,6 +65,13 @@ from pages.exam_fourier import exam_fourier_bp
 def create_app():
     app = Flask(__name__)
     app.register_blueprint(analytics_bp)
+
+    @app.errorhandler(Exception)
+    def _handle_exception(e):
+        if isinstance(e, HTTPException):
+            return e
+        crash_logging.log_exception(e)
+        return ("Internal Server Error", 500)
 
     # Register regular pages
     app.register_blueprint(plot_function_bp, url_prefix="/plot_function")
