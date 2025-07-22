@@ -420,6 +420,8 @@ function drawAll(){
     let expr = null;
     if (n.type === "TF" && n.params.num && n.params.den) {
       expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
+    } else if (n.type === "TF") {
+      expr = "H(s)";
     } else if (n.type === "Gain" && Number.isFinite(n.params.k)) {
       expr = String(n.params.k);
     } else if (n.type === "Derivative") {
