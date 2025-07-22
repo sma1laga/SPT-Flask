@@ -1,45 +1,85 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container" style="padding: 20px;">
-  <h1>About Signal Processing Toolkit</h1>
-  
-  <p>
-    The Signal Processing Toolkit is an innovative, interactive platform designed to make learning and experimenting with signal processing concepts accessible and engaging. Hosted by the Lehrstuhl für Multimediale Signalverarbeitung (LMS) at FAU, the toolkit is provided as a licence-free educational service.
-  </p>
-  
-  <h2>Key Features</h2>
-  <ul>
-        <li><strong>Interactive Modules:</strong> Explore convolution, Fourier analysis, filter design, Bode plots, modulation techniques and advanced noise reduction.</li>
-    <li><strong>Real-Time Visualization:</strong> Adjust parameters and immediately see results in time and frequency domains.</li>
-    <li><strong>Process Chain & Block Diagram Tools:</strong> Build complex signal-processing chains, edit block diagrams and visualise direct‑form structures.</li>
-    <li><strong>Continuous and Discrete Modes:</strong> Switch between continuous‑time and discrete‑time tools such as dynamic convolution and the DFT.</li>
-    <li><strong>Audio and Speech Processing:</strong> Upload audio files, design speech filters and analyse spectrograms.</li>
-    <li><strong>Training and Exam Modules:</strong> Practise with guided exercises and timed assessments with detailed feedback.</li>
-  </ul>
+<!-- ===== Hero Section ===== -->
+<section class="py-5 bg-light border-bottom">
+  <div class="container text-center">
+    <h1 class="display-5 fw-bold mb-3">About <span class="text-primary">Signal&nbsp;Processing&nbsp;Toolkit</span></h1>
+    <p class="lead text-muted mx-auto" style="max-width: 55rem;">
+      The Signal&nbsp;Processing&nbsp;Toolkit (SPT) is an innovative, interactive platform that makes learning and experimenting with signal‑processing concepts both accessible and fun. Hosted by the <em>Lehrstuhl für Multimediale Signalverarbeitung (LMS)</em> at&nbsp;FAU, the toolkit is offered as a licence‑free educational service.
+    </p>
+  </div>
+</section>
 
-  <h2>Our Vision</h2>
-  <p>
-    Our mission is to empower learners, educators, and professionals by demystifying complex signal processing topics. We aim to foster a deeper understanding through interactive visualization, experimentation, and real-time analysis—making advanced concepts not only more approachable but also inspiring innovation.
-  </p>
+<!-- ===== Key Features ===== -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="h3 fw-semibold mb-4 text-center">Key&nbsp;Features</h2>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <ul class="list-unstyled lh-lg">
+          <li><strong>Interactive Modules:</strong> Explore convolution, Fourier analysis, filter design, Bode plots, modulation techniques, and advanced noise‑reduction.</li>
+          <li><strong>Real‑Time Visualisation:</strong> Adjust parameters and immediately see results in time‑ and frequency‑domains.</li>
+          <li><strong>Process‑Chain & Block‑Diagram Tools:</strong> Build complex signal‑processing chains, edit block diagrams, and visualise direct‑form structures.</li>
+        </ul>
+      </div>
+      <div class="col-md-6">
+        <ul class="list-unstyled lh-lg">
+          <li><strong>Continuous & Discrete Modes:</strong> Switch between continuous‑time and discrete‑time tools such as dynamic convolution and the DFT.</li>
+          <li><strong>Audio & Speech Processing:</strong> Upload audio files, design speech filters, and analyse spectrograms.</li>
+          <li><strong>Training & Exam Modules:</strong> Practise with guided exercises and timed assessments with detailed feedback.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <h2>Team & Acknowledgements</h2>
-  <ul>
-      <li><strong>Tarik&nbsp;Smailagic</strong> — initiated the project, engineered the backend, and built the core DSP engine.</li>
-      <li><strong>Paul&nbsp;Wawerek-López</strong> and <strong>Simon&nbsp;Deniffel</strong> (LMS) — provided UX feedback, tutorial materials, and module reviews.</li>
-      <li><strong>Bernd&nbsp;Westrich</strong> — provisioned the infrastructure, configured the staging server, and keeps the production host running smoothly.</li>
-  </ul>
+<!-- ===== Vision ===== -->
+<section class="py-5 bg-light">
+  <div class="container">
+    <h2 class="h3 fw-semibold mb-3 text-center">Our&nbsp;Vision</h2>
+    <p class="text-muted mx-auto" style="max-width: 55rem;">
+      Our mission is to empower learners, educators, and professionals by demystifying complex signal‑processing topics. Through interactive visualisation, experimentation, and real‑time analysis, we aim to make advanced concepts approachable—and spark innovation along the way.
+    </p>
+  </div>
+</section>
 
-  <h2>Contact Us</h2>
-  <p>
-    For more information, collaboration ideas, or support, please contact us at
-    <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a>.
-  </p>
-  <p>
-    You can contribute via our <a href="https://github.com/sma1laga/SPT-Flask">GitHub</a> repository.
-  </p>
-  
-  <p>
-    Thank you for choosing the Signal Processing Toolkit. We look forward to growing this project with your support and collaboration!
-  </p>
-</div>
+<!-- ===== Team nad Acknowledgements ===== -->
+<section class="py-5">
+  <div class="container">
+    <h2 class="h3 fw-semibold mb-4 text-center">Team&nbsp;&amp;&nbsp;Acknowledgements</h2>
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <ul class="list-unstyled lh-lg mb-4">
+          <li><strong>Tarik&nbsp;Smailagic</strong> — initiated the project, engineered the backend, and built the core DSP engine.</li>
+          <li><strong>Paul&nbsp;Wawerek‑López</strong> &amp; <strong>Simon&nbsp;Deniffel</strong> (LMS) — provided UX feedback, tutorial materials, and module reviews.</li>
+          <li><strong>Bernd&nbsp;Westrich</strong> — provisioned the infrastructure, configured the staging server, and keeps the production host running smoothly.</li>
+        </ul>
+        <!-- Contribute CTA -->
+        <aside class="alert alert-primary shadow-sm rounded-4 p-4">
+          <h3 class="h5 fw-bold mb-2">Contribute&nbsp;&amp;&nbsp;Get&nbsp;Recognised</h3>
+          <p class="mb-0">
+            We&nbsp;welcome your contributions! Anyone who significantly improves this project—whether by fixing bugs, polishing the UI, or introducing valuable new features—will be immortalised here in our <strong>Hall&nbsp;of&nbsp;Fame</strong>.
+          </p>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Contact ===== -->
+<section class="py-5 bg-light border-top">
+  <div class="container text-center">
+    <h2 class="h3 fw-semibold mb-3">Contact&nbsp;Us</h2>
+    <p class="mb-2">For more information, collaboration ideas, or support, drop us a line at<br>
+      <a href="mailto:tarik.smailagic@fau.de" class="fw-semibold text-decoration-none">tarik.smailagic@fau.de</a>
+    </p>
+    <p class="mb-0">Contribute via our <a href="https://github.com/sma1laga/SPT-Flask" target="_blank" class="fw-semibold text-decoration-none">GitHub&nbsp;repository</a>.</p>
+  </div>
+</section>
+
+<section class="py-4">
+  <div class="container text-center text-muted small">
+    <p class="mb-0">Thank you for choosing the Signal&nbsp;Processing&nbsp;Toolkit. We look forward to growing this project with your support and collaboration!</p>
+  </div>
+</section>
 {% endblock %}
