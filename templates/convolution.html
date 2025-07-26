@@ -91,19 +91,19 @@
       const lc = { margin: { t: 30 }, showlegend: true };
 
       Plotly.newPlot("plot1", [{
-        x: data.t, y: data.y1,
+        x: data.t1, y: data.y1,
         type: "scatter", mode: "lines", name: "x(t)",
         line: { width: 3, color: "#1f77b4" }
       }], { ...lc, title: "x(t)", xaxis: { title: "t" }, yaxis: { title: "x(t)" } });
 
       Plotly.newPlot("plot2", [{
-        x: data.t, y: data.y2,
+        x: data.t2, y: data.y2,
         type: "scatter", mode: "lines", name: "h(t)",
         line: { width: 3, color: "#ff7f0e" }
       }], { ...lc, title: "h(t)", xaxis: { title: "t" }, yaxis: { title: "h(t)" } });
 
       Plotly.newPlot("plotConv", [{
-        x: data.t, y: data.y_conv,
+        x: data.t_conv, y: data.y_conv,
         type: "scatter", mode: "lines", name: "Convolution",
         line: { width: 3, color: "#2ca02c" }
       }], { ...lc, title: "x(t) * h(t)", xaxis: { title: "t" }, yaxis: { title: "(x*h)(t)" } });

@@ -105,6 +105,8 @@ Pull requests are welcome! If you want to propose a feature or fix a bug:
 4. Push to the branch (`git push origin feature/yourFeature`)
 5. Open a Pull Request
 
+Everyone who contributes to this repository will be mentioned in the Hall of Fame on our website.
+
 ## 👤 License
 Distributed under the Apache 2.0 License. See `LICENSE` for more information.
 

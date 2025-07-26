@@ -94,36 +94,50 @@
     const r1 = activeLimits(y1Scan, amp1, tScan);
     const r2 = activeLimits(y2Scan, amp2, tScan);
 
-    let tMin, tMax;
-    if(r1 || r2){
-      const t1Min = r1 ? r1[0] : 0;
-      const t1Max = r1 ? r1[1] : 0;
-      const t2Min = r2 ? r2[0] : 0;
-      const t2Max = r2 ? r2[1] : 0;
-      const convMin = t1Min + t2Min;
-      const convMax = t1Max + t2Max;
-      tMin = Math.min(t1Min, t2Min, convMin);
-      tMax = Math.max(t1Max, t2Max, convMax);
-    } else {
-      tMin = -10; tMax = 10;
-    }
     const margin = 2;
-    tMin -= margin; tMax += margin;
+
+    // Axis for x(t)
+    let t1Min = r1 ? r1[0] : -10;
+    let t1Max = r1 ? r1[1] : 10;
+    t1Min -= margin; t1Max += margin;
+
+    // Axis for h(t)
+    let t2Min = r2 ? r2[0] : -10;
+    let t2Max = r2 ? r2[1] : 10;
+    t2Min -= margin; t2Max += margin;
+
+    // Axis for convolution result
+    let convMin, convMax;
+    if(r1 && r2){
+      convMin = r1[0] + r2[0];
+      convMax = r1[1] + r2[1];
+    } else {
+      convMin = -10;
+      convMax = 10;
+        }
+    convMin -= margin; convMax += margin;
+
 
     const N = 4096;
-    const t = linspace(tMin, tMax, N);
-    const dt = t[1]-t[0];
+    const t1 = linspace(t1Min, t1Max, N);
+    const t2 = linspace(t2Min, t2Max, N);
+    const tConv = linspace(convMin, convMax, N);
+    const dt1 = t1[1]-t1[0];
+    const dt2 = t2[1]-t2[0];
+
     let y1, y2;
-    try { y1 = evaluateArray(f1, t); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
-    try { y2 = evaluateArray(f2, t); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
+    try { y1 = evaluateArray(f1, t1); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
+    try { y2 = evaluateArray(f2, t2); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
 
     const yConvFull = convolve(y1Scan, y2Scan, dtScan);
     const convStart = 2*tScan[0];
-    const y_conv = new Float64Array(N);
-    interpUniform(convStart, dtScan, yConvFull, t, y_conv);
+    const y_conv = new Float64Array(tConv.length);
+    interpUniform(convStart, dtScan, yConvFull, tConv, y_conv);
 
     return {
-      t: Array.from(t),
+      t1: Array.from(t1),
+      t2: Array.from(t2),
+      t_conv: Array.from(tConv),
       y1: Array.from(y1),
       y2: Array.from(y2),
       y_conv: Array.from(y_conv)

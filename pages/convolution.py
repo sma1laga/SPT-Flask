@@ -59,38 +59,44 @@ def compute_convolution(func1_str, func2_str):
     r1 = active_limits(y1_scan, amp1)
     r2 = active_limits(y2_scan, amp2)
 
-    if r1 or r2:
-        t1_min, t1_max = r1 if r1 else (0.0, 0.0)
-        t2_min, t2_max = r2 if r2 else (0.0, 0.0)
-        conv_min = t1_min + t2_min
-        conv_max = t1_max + t2_max
-        t_min = min(t1_min, t2_min, conv_min)
-        t_max = max(t1_max, t2_max, conv_max)
-    else:
-        t_min, t_max = -10.0, 10.0
-
     margin = 2.0
-    t_min -= margin
-    t_max += margin
 
-    # Final axis after trimming
-    t = np.linspace(t_min, t_max, 4000)
-    dt = t[1] - t[0]
 
-    ctx_final = ctx.copy(); ctx_final["t"] = t
-    y1 = eval(func1_str, ctx_final) if func1_str.strip() else np.zeros_like(t)
-    y2 = eval(func2_str, ctx_final) if func2_str.strip() else np.zeros_like(t)
+    # Axes for each signal individually
+    t1_min, t1_max = r1 if r1 else (-10.0, 10.0)
+    t2_min, t2_max = r2 if r2 else (-10.0, 10.0)
+    t1_min -= margin; t1_max += margin
+    t2_min -= margin; t2_max += margin
+
+    if r1 and r2:
+        conv_min = r1[0] + r2[0]
+        conv_max = r1[1] + r2[1]
+    else:
+        conv_min, conv_max = -10.0, 10.0
+    conv_min -= margin; conv_max += margin
+
+    # Final axes after trimming
+    t1 = np.linspace(t1_min, t1_max, 4000)
+    t2 = np.linspace(t2_min, t2_max, 4000)
+    t_conv = np.linspace(conv_min, conv_max, 4000)
+
+    ctx1 = ctx.copy(); ctx1["t"] = t1
+    ctx2 = ctx.copy(); ctx2["t"] = t2
+    y1 = eval(func1_str, ctx1) if func1_str.strip() else np.zeros_like(t1)
+    y2 = eval(func2_str, ctx2) if func2_str.strip() else np.zeros_like(t2)
 
     # 4b. Convolution on a wide axis to avoid boundary effects
-    t_conv = np.linspace(2*t_scan[0], 2*t_scan[-1], 2*len(t_scan) - 1)
+    t_full = np.linspace(2*t_scan[0], 2*t_scan[-1], 2*len(t_scan) - 1)
     y_conv_full = convolve(y1_scan, y2_scan, mode="full") * dt_scan
 
     # 5. Interpolate the full convolution back to the trimmed axis
-    y_conv = np.interp(t, t_conv, y_conv_full)
+    y_conv = np.interp(t_conv, t_full, y_conv_full)
 
     # 6. JSON-Ausgabe für Plotly
     return {
-        "t":       t.tolist(),
+        "t1":      t1.tolist(),
+        "t2":      t2.tolist(),
+        "t_conv":  t_conv.tolist(),
         "y1":      y1.tolist(),
         "y2":      y2.tolist(),
         "y_conv":  y_conv.tolist()
