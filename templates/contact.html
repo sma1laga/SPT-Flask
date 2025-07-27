@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container" style="padding: 20px;">
-  <h1>Contact Us</h1>
+  <h1>Report a Bug or Give Feedback</h1>
   <p>
-    Have any questions or feedback? Drop us an email:
-    <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a>
+    Found an issue or have suggestions? Let us know via email at
+    <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a> or use the form below.
   </p>
-  
-  <h2>Send a Message</h2>
+
+  <h2>Submit Report</h2>
     {% if error %}
   <p style="color:red">{{ error }}</p>
   {% endif %}
@@ -27,7 +27,7 @@
       <label for="message">Message:</label>
       <textarea name="message" id="message" rows="4" style="width: 100%; padding: 8px;" required>{{ message|default('') }}</textarea>
     </div>
-    <button type="submit" style="padding: 10px 20px;">Send Message</button>
+    <button type="submit" style="padding: 10px 20px;">Submit</button>
   </form>
 </div>
 {% endblock %}

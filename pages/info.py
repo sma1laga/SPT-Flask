@@ -51,6 +51,6 @@ def contact():
                 f.write(json.dumps(data) + '\n')
         except Exception:
             pass
-        success = 'Thank you for your message!'
+        success = 'Thank you for your report!'
         return render_template('contact.html', success=success)
     return render_template('contact.html')
