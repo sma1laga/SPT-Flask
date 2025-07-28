@@ -1,4 +1,4 @@
-# Signal Processing Toolkit (SPT-Flask)
+# Signal Processing Toolkit
 
 **Signal Processing Toolkit (SPT-Flask)** is an interactive, browser-based environment for exploring classic and modern DSP concepts.  The project grew from a simple plotting tool into a full learning platform with simulation and training modules.
 
@@ -8,12 +8,15 @@
 
 ## 📚 About the Project
 
-The application exposes a collection of blueprints that cover a broad range of signal processing topics.  Students and hobbyists can:
+The application is organised as a set of small Flask blueprints, each covering a
+particular DSP topic. Students and hobbyists can:
 
-- Plot fundamental signals and observe the results in real time
-- Perform convolutions and Fourier analysis—both continuous and discrete
-- Model systems using process chains or editable block diagrams
-- Design filters and experiment with various modulation schemes
+- Plot and analyse continuous or discrete signals in real time
+- Perform convolution, autocorrelation and Fourier analysis
+- Visualise Bode plots, inverse transforms and kernel animations
+- Model systems with process chains or editable block diagrams
+- Design filters with speech and image demos and experiment with modulation
+- Practise using the built-in training pages and exam modules
 
 The goal is a **practical, hands-on toolkit** that supports university courses and self-study alike.
 
@@ -35,23 +38,27 @@ The goal is a **practical, hands-on toolkit** that supports university courses a
 ### Plotting & Analysis
 - Time‑domain function plotter with interactive controls
 - Fourier Transform calculators (including FFT and DFT viewers)
+- Autocorrelation visualiser and kernel animator
 - Bode‑plot generator for control system analysis
+- Inverse Laplace and Z‑transform calculators
+- Image filter preview and transform table reference
 
 ### Convolution & Filtering
-- Convolution calculator and dynamic convolution demo
-- Custom filter designer and speech filter input
+- Convolution calculator with dynamic and discrete variants
+- Custom filter designer with speech and image examples
 - Advanced noise reduction module using wavelet processing
 
 ### System Modeling
 - Process‑chain simulator for chaining basic DSP blocks
-- Block‑diagram editor with direct‑form visualiser
+- Block‑diagram editor and direct‑form visualiser
 
 ### Modulation
 - Analog and digital modulation examples
 
 ### Discrete Tools
-- Discrete‑time plotting and convolution utilities
-- FFT and discrete convolution demonstrations
+- Discrete‑time plotting, convolution and autocorrelation utilities
+- FFT, DFT and discrete dynamic convolution demos
+- Z‑transform viewer and transform intuition page
 
 ### Learning Aids
 - Training modules for convolution, Fourier transforms and processing chains
