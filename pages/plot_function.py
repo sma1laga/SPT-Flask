@@ -5,6 +5,8 @@ from functools import partial
 from utils.math_utils import (
     rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
 )
+from utils.eval_helpers import error_data
+
 
 # additional special functions kept local to this module
 def arcsin(t):
@@ -78,7 +80,7 @@ def plot_function_update():
     try:
         y1_broad = a1 * eval(func1_str, ns_broad) if func1_str.strip() else np.zeros_like(t_broad)
     except Exception as e:
-        return jsonify({"error": f"Error in f₁(t): {e}"}), 400
+        return jsonify(error_data("Error in f₁(t): ", e)), 400
     if np.any(np.isinf(y1_broad)):
         return jsonify({"error": "f₁(t) produced non-finite values"}), 400
     
@@ -88,7 +90,7 @@ def plot_function_update():
             ns_broad["t"] = _adjust_k2(t_broad)
             y2_broad = a2 * eval(func2_str, ns_broad)
         except Exception as e:
-            return jsonify({"error": f"Error in f₂(t): {e}"}), 400
+            return jsonify(error_data("Error in f₂(t): ", e)), 400
         if np.any(np.isinf(y2_broad)):
             return jsonify({"error": "f₂(t) produced non-finite values"}), 400
 
@@ -151,7 +153,7 @@ def plot_function_update():
     try:
         y1 = a1 * eval(func1_str, ns) if func1_str.strip() else np.zeros_like(t)
     except Exception as e:
-        return jsonify({"error": f"Error in f₁(t): {e}"}), 400
+        return jsonify(error_data("Error in f₁(t): ", e)), 400
     if np.any(np.isinf(y1)):
         return jsonify({"error": "f₁(t) produced non-finite values"}), 400
 
@@ -161,7 +163,7 @@ def plot_function_update():
             ns["t"] = _adjust_k2(t)
             y2 = a2 * eval(func2_str, ns)
         except Exception as e:
-            return jsonify({"error": f"Error in f₂(t): {e}"}), 400
+            return jsonify(error_data("Error in f₂(t): ", e)), 400
         if np.any(np.isinf(y2)):
             return jsonify({"error": "f₂(t) produced non-finite values"}), 400
 

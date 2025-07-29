@@ -46,6 +46,7 @@
     <input id="func2" type="text" placeholder="f₂(t) (optional)"
            onfocus="setActiveField(this)" style="flex:1 1 300px;padding:8px;"/>
   </div>
+  <p id="inlineError" style="color:#d00;text-align:center;font-weight:bold;margin-top:-12px;margin-bottom:12px;"></p>
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
@@ -128,6 +129,24 @@
   let activeField = document.getElementById("func1");
   function setActiveField(f){ activeField = f; }
   const errorMsg = document.getElementById("errorMsg");
+  const inlineError = document.getElementById("inlineError");
+  const inputs = [document.getElementById("func1"), document.getElementById("func2")];
+
+  function clearErrors(){
+    inputs.forEach(inp=>inp.classList.remove('input-error'));
+    if(errorMsg) errorMsg.textContent = "";
+    if(inlineError) inlineError.textContent = "";
+  }
+
+  function markError(pos){
+    const field = activeField;
+    if(!field) return;
+    field.classList.add('input-error');
+    if(pos !== null && pos !== undefined){
+      field.focus();
+      field.setSelectionRange(pos,pos);
+    }
+  }
 
   function insertOperand(op){
     if(!activeField) return;
@@ -169,7 +188,7 @@
 
   /* fetch + draw ------------------------------------------------- */
   function updatePlots(){
-if(errorMsg) errorMsg.textContent = "";
+  clearErrors();
     fetch("{{ url_for('plot_function.plot_function_update') }}",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -179,6 +198,8 @@ if(errorMsg) errorMsg.textContent = "";
     .then(data=>{
       if(data.error){
         if(errorMsg) errorMsg.textContent = data.error;
+        if(inlineError) inlineError.textContent = data.error;
+        markError(data.pos);
         console.error(data.error);
         return;
       }
@@ -218,8 +239,8 @@ if(errorMsg) errorMsg.textContent = "";
       s.nextElementSibling.textContent=parseFloat(s.value).toFixed(1);
     });
     Plotly.purge("plot");
-if(errorMsg) errorMsg.textContent = "";
-
+    clearErrors();
+    if(inlineError) inlineError.textContent="";
   });
 </script>
 
@@ -270,5 +291,6 @@ if(errorMsg) errorMsg.textContent = "";
     border-color:#555;
     color:#f5f5f5;
   }
+  input.input-error{border-color:#d00;}
 </style>
 {% endblock %}
