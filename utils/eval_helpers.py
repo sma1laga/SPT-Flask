@@ -10,4 +10,5 @@ def error_data(prefix: str, exc: Exception) -> dict:
         except Exception:
             pos = None
     msg = f"{prefix}{exc}" if prefix else str(exc)
+    msg += " Make sure to use * when multiplying!"
     return {"error": msg, "pos": pos}
