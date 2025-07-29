@@ -54,3 +54,18 @@ def contact():
         success = 'Thank you for your report!'
         return render_template('contact.html', success=success)
     return render_template('contact.html')
+
+
+@info_bp.route('/impressum')
+def impressum():
+    return render_template('impressum.html')
+
+
+@info_bp.route('/privacy')
+def privacy():
+    return render_template('privacy_policy.html')
+
+
+@info_bp.route('/terms')
+def terms():
+    return render_template('terms_of_service.html')

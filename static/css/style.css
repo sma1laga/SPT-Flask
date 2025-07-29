@@ -92,6 +92,13 @@
     color: var(--primary-gradient-end);
     text-decoration: underline;
   }
+  .footer .legal-links {
+    margin-top: 5px;
+    font-size: 0.85em;
+  }
+  .footer .legal-links a {
+    margin: 0 6px;
+  }
   .sidebar .section-title {
     margin-top: 20px;
     margin-bottom: 10px;

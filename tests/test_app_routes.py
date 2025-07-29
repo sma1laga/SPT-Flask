@@ -24,7 +24,10 @@ def check_route(client, url):
     '/block_diagram/',
     '/discrete/direct_plot/',
     '/inverse_z/',
-    '/info/about'
-])
+    '/info/about',
+    '/info/impressum',
+    '/info/privacy',
+    '/info/terms'
+    ])
 def test_basic_pages(client, url):
     check_route(client, url)
