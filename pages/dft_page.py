@@ -1,7 +1,10 @@
 # pages/dft_page.py
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
-import math
+import re
+from utils.math_utils import (
+    rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
+)
 
 discrete_fourier_bp = Blueprint("discrete_fourier", __name__,
                                 template_folder="templates")
@@ -10,62 +13,74 @@ dft_bp = discrete_fourier_bp
 # ---------------------------------------------------------------------------
 # helpers -------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-def make_sequence(func_str: str, N: int, shift: float,
+def _rewrite_expr(expr: str) -> str:
+    """Rewrite expression to match the discrete symbols/functions.
+
+    Converts:
+    - 'rect_4[...]' -> 'rect(..., 4)'
+    - 'tri_3[...]' -> 'tri(..., 3)'
+    """
+    # e.g., replace "rect_5(anystr)" → "rect(anystr, 5)"
+    # FIXME: fails for nested brackets, e.g., "rect_5[sin[k]])"
+    pattern = r'rect_(.+)\[([^]]+)\]'
+    repl = r'rect(\g<2>, \g<1>)'
+    expr_new = re.sub(pattern, repl, expr)
+    # e.g., replace "tri_5(anystr)" → "tri(anystr, 5)"
+    pattern = r'tri_(.+)\[([^]]+)\]'
+    repl = r'tri(\g<2>, \g<1>)'
+    expr_new = re.sub(pattern, repl, expr_new)
+    expr_new = expr_new.replace('[', '(').replace(']', ')')
+    expr_new = expr_new.replace('^', '**')  # replace ^ with Python's **
+    return expr_new
+
+def make_sequence(func_str: str, L: int, M: int, shift: float,
                   amp: float, width: float) -> np.ndarray:
     """
-    Build x[n] for n = 0 … N-1 with three transforms:
-        n' = n * width + shift
-        x'[n] = amp · f(n')
+    Build x[k] for k = 0 … L-1 with three transforms:
+        k' = (k-shift) % L * 1/width
+        x'[k] = amp · f[k']
+    and pad to length M if necessary.
     """
-    n = np.arange(N, dtype=float)
-    n_prime = n * width + shift
+    func_str = _rewrite_expr(func_str)
+
+    k = np.arange(L, dtype=float)
+    k_prime = ((k-shift) % L) * 1/width
 
     # safe evaluation sandbox
-    safe = {
-        "pi": math.pi, "e": math.e,
-        "sin": math.sin, "cos": math.cos, "tan": math.tan,
-        "exp": math.exp, "log": math.log, "sqrt": math.sqrt,
-        "abs": abs, "complex": complex,
-        # simple window helpers
-        "rect": lambda n,N: 1.0,
-        "tri":  lambda n,N: (1.0 - abs((2*n)/(N-1) - 1)) if N > 1 else 1.0,
-        "step": lambda n,N: 1.0 if n >= 0 else 0.0,
-        "delta":lambda n,N: 1.0 if n == 0 else 0.0,
-        "sign": lambda n,N: 0.0 if n == 0 else (1.0 if n > 0 else -1.0)
+    ctx = {
+        "k": k_prime, "n": k_prime, "L": L, "M": M,
+        "np": np, "pi": np.pi, "e": np.e, "i": 1j, "j": 1j,
+        "rect": rect_N, "tri": tri_N, "step": step,
+        "sin": sin, "cos": cos, "tan": np.tan,
+        "exp": np.exp, "exp_iwt": exp_iwt, "log": np.log, "sqrt": np.sqrt,
+        "abs": abs, "sign": sign, "delta": delta_n,
+        "si": si, "inv_k": inv_t,
     }
 
-    seq = []
-    for k, n_val in enumerate(n_prime):
-        local = {"n": n_val, "N": N} | safe
-        try:
-            y = eval(func_str, {"__builtins__": None}, local)
-        except Exception as e:
-            raise ValueError(f"Error at n={k}: {e}")
-        seq.append(amp * complex(y))
-    return np.asarray(seq, dtype=complex)
+    try:
+        x = eval(func_str, ctx) if func_str else np.zeros_like(k, dtype=float)
+        if not isinstance(x, np.ndarray):
+            x = np.ones(L, dtype=float) * x  # convert scalar to array
+    except Exception as e:
+        raise ValueError(f"Error: {e}")
+    if len(x) < M:
+        x = np.pad(x, (0, M - len(x)))
+    return amp * x.astype(complex)
 
-def compute_dft(x: np.ndarray, pad_factor: int):
-    N = x.size
-    M = max(1, pad_factor) * N
-    X = np.fft.fft(x, n=M)
-
-    k = np.arange(M)
-    mag = np.abs(X)
-    phase = np.angle(X)
-
-    # normalise & clean tiny bins
-    if mag.max() > 0:
-        mag /= mag.max()
-    phase[mag < 1e-6] = 0.0
+def compute_dft(x: np.ndarray, dft_len: int):
+    L = x.size
+    X = np.fft.fft(x, n=dft_len)
+    X = np.where(np.isclose(np.abs(X), 0), 0, X)  # clip small magnitudes to zero
+    X.imag = np.where(np.isclose(X.imag, 0), 0, X.imag)  # avoid noisy phase
 
     return {
-        "n": np.arange(N).tolist(),
+        "k": np.arange(L).tolist(),
         "x_real": x.real.tolist(),
         "x_imag": x.imag.tolist(),
-        "k": k.tolist(),
-        "mag": mag.tolist(),
-        "phase": phase.tolist(),
-        "label": f"N = {N},  M = {M}"
+        "mu": np.arange(dft_len).tolist(),
+        "mag": np.abs(X).tolist(),
+        "phase": np.angle(X).tolist(),
+        "label": f"L = {L},  M = {dft_len}"
     }
 
 # ---------------------------------------------------------------------------
@@ -79,15 +94,15 @@ def dft():
 def update_dft():
     data = request.get_json(force=True) or {}
     try:
-        N          = max(1, int(data.get("N",          8)))
-        func_str   = data.get("func", "sin(2*pi*n/N)").strip() or "0"
-        padFactor  = max(1, int(data.get("padFactor", 10)))
+        L          = min(256, max(1, int(data.get("L", 8))))
+        M          = min(256, max(1, int(data.get("M", 8))))
+        func_str   = data.get("func", "sin[2*pi*k/L]").strip() or "0"
         shift      = float(data.get("shift", 0))
         amp        = float(data.get("amp",   1))
         width      = float(data.get("width", 1))
 
-        x = make_sequence(func_str, N, shift, amp, width)
-        res = compute_dft(x, padFactor)
+        x = make_sequence(func_str, L, M, shift, amp, width)
+        x_dft = compute_dft(x, M)
     except Exception as e:
         return jsonify(error=str(e)), 400
-    return jsonify(res)
+    return jsonify(x_dft)

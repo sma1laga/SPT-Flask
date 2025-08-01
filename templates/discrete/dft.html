@@ -3,50 +3,53 @@
 
 {% block content %}
 <div class="page-header" style="text-align:center;margin-bottom:28px;">
-  <h1 style="font-size:2.4em;">Discrete-Time DFT Visualizer</h1>
-<p style="max-width:720px;margin:8px auto 0;color:var(--subtext-color);font-size:0.95em;">
-  <strong>1 — Size:</strong> pick a sequence length <strong>N</strong> and, if you want a smoother
-  spectrum, a zero-pad factor.<br>
-  <strong>2 — Formula:</strong> type any Python-style expression that uses <em>n</em> (and <em>N</em>)
-  to define <em>x[n]</em>&nbsp;— e.g.&nbsp;<code>sin(2*pi*n/N)</code>, <code>rect(n,N)</code>, or
-  <code>0.8**n * step(n,N)</code>.<br>
-  <strong>3 — Sliders:</strong> drag Shift, Amplitude, or Width to translate, rescale, or
-  stretch the sequence live.<br>
-  <strong>4 — Compute:</strong> click <b>Compute</b> (or just keep typing) and the page
-  instantly replots the time-domain samples together with their magnitude and
-  phase spectra.
+  <h1 style="font-size:2.4em;">Discrete Fourier Transform</h1>
+<p style="max-width:720px;margin:8px auto 0;text-align: left;color:var(--subtext-color);font-size:1em;">
+  <strong>1 — Size:</strong> Pick a sequence length \(L\) and DFT length \(M\).<br>
+  <strong>2 — Input:</strong> Type any Python-style expression to define \(x[k]\), e.g., <code>sin[2*pi*k/L]</code> or <code>0.8**k * step[k]</code>.<br>
+  <strong>3 — Sliders:</strong> Shift circularly (\(s\)), rescale (\(a\)), or stretch (\(w\)) the input signal, resulting in $$a\cdot x[\frac 1 w ((k-s)\mod L)].$$<br>
+  <strong>4 — Compute:</strong> On clicking <b>Compute</b>, the page plots \(x[k]\) as well as the DFT magnitude \(|X[\mu]|\) and phase \(\varphi (X[\mu])\).
+</p>
+<p style="max-width:720px;margin:8px auto 0;color:var(--subtext-color);font-size:1em;">
+  The DFT of length \(M\) is defined as
+  $$ \mathrm{DFT}_M\{x[k]\} = X[\mu] = \sum_{k=0}^{M-1} x[k] \omega_M^{\mu k},\quad \omega_M=\mathrm e^{-\mathrm j\frac{2\pi}{M}},\quad \mu=0,\dots,M-1,$$
+  with twiddle factor \(\omega_M\) and discrete frequency \(\mu\).
+  <!-- The DFT can be computed efficiently using the
+  <a href="{{ url_for('fft.fft') }}">Fast Fourier Transform (FFT)</a>. -->
 </p>
 </div>
-
+<!-- TODO under revision
 <div style="text-align:center;margin-bottom:20px;">
   <a href="{{ url_for('fft.fft') }}" class="action-btn green">Fast Fourier Transform Demo</a>
-</div>
+</div> -->
 
 
 <form id="dftForm" style="max-width:960px;margin:0 auto;text-align:center;">
   <!-- BASIC INPUTS ------------------------------------------------ -->
   <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:18px;">
-    <label><b>Length&nbsp;N:</b></label>
-    <input id="N" type="number" min="1" value="8" style="width:80px;">
-    <label><b>Zero-pad&nbsp;×:</b></label>
-    <input id="padFactor" type="number" min="1" value="10" style="width:80px;">
+    <label><b>Signal length L:</b></label>
+    <input id="L" type="number" min="1" max="256" value="8" style="width:80px;">
+    <label><b>DFT length M:</b></label>
+    <input id="M" type="number" min="1" max="256" value="8" style="width:80px;">
   </div>
 
   <div style="margin-bottom:16px;">
-    <input id="func" type="text" placeholder="f[k]  e.g.  sin[2*pi*k/N]"
+    <input id="func" type="text" placeholder="x[k]  e.g.  sin[2*pi*k/L]"
            onfocus="activeField=this" style="width:90%;padding:8px;">
   </div>
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
     {% for lbl, ltx in [
-      ('rect(n,N)', '\mathrm{rect}'),
-      ('tri(n,N)', '\mathrm{tri}'),
-      ('step(n,N)', '\mathrm{step}'),
-      ('delta(n,N)', '\mathrm{delta}'),
-      ('sign(n,N)', '\mathrm{sign}'),
-      ('sin(2*pi*n/N)', '\sin'),
-      ('cos(2*pi*n/N)', '\cos'),
+      ('rect_L/2[k]', '\mathrm{rect}_{L/2}'),
+      ('tri_L/2[k-L/2]', '\mathrm{tri}_{L/2}'),
+      ('delta[k]', '\mathrm{delta}'),
+      ('sign[k-L/2]', '\mathrm{sign}'),
+      ('sin[2*pi*k/L]', '\sin'),
+      ('cos[2*pi*k/L]', '\cos'),
+      ('si[(k-L/2)/2]', '\mathrm{si}'),
+      ('exp[j*2*pi/L*k]*step[k]', '\mathrm{exp}'),
+      ('0.5**k * step[k]', '0.5^k'),
       ] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">
         \( {{ ltx }} \)
@@ -63,15 +66,15 @@
     <legend style="font-weight:600;">Transform Controls</legend>
     <div class="slider-row">
       <label>Shift (←/→)</label>
-      <input id="shift" type="range" min="-20" max="20" step="1" value="0"><span></span>
+      <input id="shift" type="range" min="-32" max="32" step="1" value="0"><span></span>
     </div>
     <div class="slider-row">
-      <label>Amplitude ×</label>
+      <label>Amplitude ↕</label>
       <input id="amp" type="range" min="0.1" max="5" step="0.1" value="1"><span></span>
     </div>
     <div class="slider-row">
       <label>Width ↔</label>
-      <input id="width" type="range" min="0.2" max="5" step="0.1" value="1"><span></span>
+      <input id="width" type="range" min="0.1" max="10" step="0.1" value="1"><span></span>
     </div>
   </fieldset>
 
@@ -83,13 +86,11 @@
 </form>
 
 <!-- PLOTLY PANELS ------------------------------------------------ -->
-<div id="plots" style="max-width:1200px;margin:0 auto;">
-  <div id="timePlot"  style="height:380px;"></div>
-  <div id="magPlot"   style="height:380px;margin-top:22px;"></div>
-  <div id="phasePlot" style="height:380px;margin-top:22px;"></div>
+<div id="plots" style="max-width:100%;margin:0 auto;">
+  <div id="timePlot"  style="height:220px;"></div>
+  <div id="magPlot"   style="height:220px;"></div>
+  <div id="phasePlot" style="height:220px;margin-top: -20px;"></div>
 </div>
-
-<p id="dftLabel" style="text-align:center;margin-top:20px;font-weight:bold;"></p>
 
 <!-- SCRIPTS ------------------------------------------------------ -->
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
@@ -116,7 +117,7 @@ function insertOperand(op){
 /* helpers ------------------------------------------------------- */
 function params(){
   return {
-    N: N.value, padFactor: padFactor.value, func: func.value,
+    L: L.value, M: M.value, func: func.value,
     shift: shift.value, amp: amp.value, width: width.value
   };
 }
@@ -132,30 +133,37 @@ function updatePlots(){
   .then(d=>{
     if(d.error){ console.error(d.error); return; }
 
-    const lc = {margin:{t:30},showlegend:true};
-      const stem = (x,y,color)=>({
+    const lc = {margin:{t:30}};
+    const stem = (x,y,color)=>({
       x:[].concat(...x.map(xi=>[xi,xi,xi])),
       y:[].concat(...y.map(yi=>[0,yi,null])),
-      mode:"lines", line:{color,width:2}
+      mode:"lines", line:{color,width:2}, showlegend:false,
     });
 
     Plotly.newPlot("timePlot", [
-      stem(d.n, d.x_real, "#1f77b4"),
-      {x:d.n, y:d.x_real, mode:"markers", name:"Re", marker:{color:"#1f77b4"}},
-      stem(d.n, d.x_imag, "#ff7f0e"),
-      {x:d.n, y:d.x_imag, mode:"markers", name:"Im", marker:{symbol:"square",color:"#ff7f0e"}}
-    ], {...lc,title:"Time-Domain x[n]",xaxis:{title:"n"},yaxis:{title:"Amplitude"}});
+      stem(d.k, d.x_real, "#1f77b4"),
+      {x:d.k, y:d.x_real, mode:"markers", name:"Re{x[k]}", marker:{color:"#1f77b4"}},
+      stem(d.k, d.x_imag, "#ff7f0e"),
+      {x:d.k, y:d.x_imag, mode:"markers", name:"Im{x[k]}", marker:{symbol:"square",color:"#ff7f0e"}}
+    ], {...lc,title:{text:"Time-Domain"},xaxis:{title:{text:"k"}},yaxis:{title:{text:"x[k]"}}});
 
     Plotly.newPlot("magPlot", [
-      stem(d.k, d.mag, "#1f77b4"),
-      {x:d.k, y:d.mag, mode:"markers", name:"|X[k]|", marker:{color:"#1f77b4"}}
-      ], {...lc,title:"Magnitude Spectrum",xaxis:{title:"k"},yaxis:{title:"|X|"}});
+      stem(d.mu, d.mag, "#1f77b4"),
+      {x:d.mu, y:d.mag, mode:"markers", name:"|X[\u03bc]|", marker:{color:"#1f77b4"}}
+    ], {...lc,showlegend:false,title:{text:"DFT-Domain"},xaxis:{title:{text:"\u03bc"}},yaxis:{title:{text:"|X[\u03bc]|"}}});
 
     Plotly.newPlot("phasePlot", [
-      stem(d.k, d.phase, "#ff7f0e"),
-      {x:d.k, y:d.phase, mode:"markers", name:"Phase", marker:{color:"#ff7f0e"}}
-      ], {...lc,title:"Phase Spectrum",xaxis:{title:"k"},yaxis:{title:"∠X  (rad)",range:[-Math.PI,Math.PI]}});
-    
+      stem(d.mu, d.phase, "#ff7f0e"),
+      {x:d.mu, y:d.phase, mode:"markers", name:"\u03c6(X[\u03bc])", marker:{color:"#ff7f0e"}}
+    ], {...lc,showlegend:false,xaxis:{title:{text:"\u03bc"}},
+      yaxis:{
+        title:{text:"\u03c6(X[\u03bc])"},
+        range:[-Math.PI-.1,Math.PI+.1],
+        tickvals:[-Math.PI,-Math.PI/2,0,Math.PI/2,Math.PI],
+        ticktext:["-π","-π/2","0","π/2","π"]
+      },
+    });
+
     dftLabel.textContent = d.label;
   })
   .catch(console.error);
@@ -164,7 +172,7 @@ function updatePlots(){
 /* buttons ------------------------------------------------------- */
 computeBtn.onclick = updatePlots;
 clearBtn.onclick = ()=>{
-  func.value=""; N.value=8; padFactor.value=10;
+  func.value=""; L.value=8; M.value=8;
   ["shift","amp","width"].forEach(id=>{
     const s=document.getElementById(id);
     s.value=(id==="amp"||id==="width")?1:0;
@@ -175,7 +183,7 @@ clearBtn.onclick = ()=>{
 };
 
 /* live-update on typing ----------------------------------------- */
-["N","padFactor","func"].forEach(id=>{
+["L","M","func"].forEach(id=>{
   document.getElementById(id).addEventListener("input", ()=>{ clearTimeout(window._tu); window._tu=setTimeout(updatePlots,300); });
 });
 
