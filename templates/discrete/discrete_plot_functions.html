@@ -153,21 +153,31 @@
     .then(r=>r.json()).then(data=>{
       if(data.error){ console.error(data.error); return; }
 
-      const tr = [{
-        x:data.x1, y:data.y1, name:"f₁(k)", mode:"markers+lines",
+      const stem = (x,y,color)=>({
+        x:[].concat(...x.map(xi=>[xi,xi,xi])),
+        y:[].concat(...y.map(yi=>[0,yi,null])),
+        mode:"lines", line:{color,width:1}, showlegend:false,
+      });
+      const tr = [
+        stem(data.x1, data.y1, "#1f77b4"),
+        {
+        x:data.x1, y:data.y1, name:"f₁[k]", mode:"markers",
         line:{width:0}, marker:{size:6,color:"#1f77b4"}
       }];
       if(data.x2){
-        tr.push({
-          x:data.x2, y:data.y2, name:"f₂(k)", mode:"markers+lines",
+        tr.push(
+          stem(data.x2, data.y2, "#ff7f0e"),
+          {
+          x:data.x2, y:data.y2, name:"f₂[k]", mode:"markers",
           line:{width:0}, marker:{size:6,color:"#ff7f0e",symbol:"square"}
         });
       }
       const xrange = data.xrange || [-20,20];
+
       Plotly.newPlot("plot", tr, {
         margin:{t:30}, showlegend:true,
-        xaxis:{title:"k", range:xrange},
-        yaxis:{title:"Amplitude", zeroline:false}
+        xaxis:{title:{text:"k"}, range:xrange},
+        yaxis:{title:{text:"Amplitude"}},
       });
     }).catch(console.error);
   }

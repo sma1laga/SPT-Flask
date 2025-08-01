@@ -56,9 +56,9 @@
 
 <!-- Plotly-Container -->
 <div id="plotly-container" style="max-width:1200px; margin:0 auto;">
-  <div id="plot1"      style="height:350px;"></div>
-  <div id="plot2"      style="height:350px; margin-top:20px;"></div>
-  <div id="plotConv"   style="height:350px; margin-top:20px;"></div>
+  <div id="plot1"      style="height:250px;"></div>
+  <div id="plot2"      style="height:250px; margin-top:-20px;"></div>
+  <div id="plotConv"   style="height:250px; margin-top:-20px;"></div>
 </div>
 
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
@@ -88,25 +88,25 @@
     const vals = getValues();
     const data = compute_convolution(vals.func1, vals.func2);
     if (data.error) return console.error(data.error);
-      const lc = { margin: { t: 30 }, showlegend: true };
+      const lc = { margin: { t: 30 } };
 
       Plotly.newPlot("plot1", [{
         x: data.t1, y: data.y1,
         type: "scatter", mode: "lines", name: "x(t)",
         line: { width: 3, color: "#1f77b4" }
-      }], { ...lc, title: "x(t)", xaxis: { title: "t" }, yaxis: { title: "x(t)" } });
+      }], { ...lc, xaxis: { title: {text:"t"} }, yaxis: { title: {text:"x(t)"}} });
 
       Plotly.newPlot("plot2", [{
         x: data.t2, y: data.y2,
         type: "scatter", mode: "lines", name: "h(t)",
         line: { width: 3, color: "#ff7f0e" }
-      }], { ...lc, title: "h(t)", xaxis: { title: "t" }, yaxis: { title: "h(t)" } });
+      }], { ...lc, xaxis: { title: {text:"t"} }, yaxis: { title: {text:"h(t)"} } });
 
       Plotly.newPlot("plotConv", [{
         x: data.t_conv, y: data.y_conv,
         type: "scatter", mode: "lines", name: "Convolution",
         line: { width: 3, color: "#2ca02c" }
-      }], { ...lc, title: "x(t) * h(t)", xaxis: { title: "t" }, yaxis: { title: "(x*h)(t)" } });
+      }], { ...lc, xaxis: { title: {text:"t"} }, yaxis: { title: {text:"y(t)"} } });
 
   }
 

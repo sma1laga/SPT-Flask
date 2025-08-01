@@ -48,9 +48,9 @@
 </form>
 
 <div id="plotly-container" style="max-width:1200px; margin:0 auto;">
-  <div id="timePlot" style="height:400px;"></div>
-  <div id="magPlot" style="height:400px; margin-top:20px;"></div>
-  <div id="phasePlot" style="height:400px; margin-top:20px;"></div>
+  <div id="timePlot" style="height:220px;"></div>
+  <div id="magPlot" style="height:250px;"></div>
+  <div id="phasePlot" style="height:250px; margin-top:-20px;"></div>
 </div>
 
 <p id="fourier_transformation_label" style="text-align:center; margin-top:20px; font-weight:bold;"></p>
@@ -95,17 +95,23 @@ function updatePlots(){
   const vals = getValues();
   const data = compute_fourier(vals.func, parseFloat(vals.phase));
   if(data.error) return console.error(data.error);
-  const lc={margin:{t:30},showlegend:true};
+  const lc={margin:{t:30}};
   Plotly.newPlot("timePlot", [
     {x:data.t, y:data.y_real, type:"scatter", mode:"lines", name:"Re", line: { color: "navy" }},
     {x:data.t, y:data.y_imag, type:"scatter", mode:"lines", name:"Im", line:{dash:"dot"}}
-  ], {...lc, title:"Time-Domain", xaxis:{title:"t"}, yaxis:{title:"y(t)"}});
+  ], {...lc, title:{text:"Time-Domain"}, xaxis:{title:{text:"t"}}, yaxis:{title:{text:"y(t)"}}});
   Plotly.newPlot("magPlot", [
     {x:data.f, y:data.magnitude, type:"scatter", mode:"lines", name:"|Y|", line: { color: "navy" }}
-  ], {...lc, title:"Magnitude Spectrum", xaxis:{title:"f"}, yaxis:{title:"|Y(f)|"}});
+  ], {...lc, showlegend:false, title:{text:"Frequency-Domain"}, xaxis:{title:{text:"jω"}}, yaxis:{title:{text:"|Y(jω)|"}}});
   Plotly.newPlot("phasePlot", [
     {x:data.f, y:data.phase, type:"scatter", mode:"lines", name:"Phase", line: { color: "blue"}}
-  ], {...lc, title:"Phase Spectrum", xaxis:{title:"f"}, yaxis:{title:"∠Y(f)/π",range:[-1,1]}});
+  ], {...lc, showlegend:false, xaxis:{title:{text:"jω"}},
+    yaxis:{
+      title:{text:"φ{Y(jω)}"},
+      range:[-1.05,1.05],
+      tickvals:[-1,-0.5,0,0.5,1],
+      ticktext:["-π","-π/2","0","π/2","π"],
+    }});
   document.getElementById("fourier_transformation_label").innerText = data.transformation_label;
 }
 

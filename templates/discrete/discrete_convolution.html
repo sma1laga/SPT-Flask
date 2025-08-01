@@ -62,9 +62,9 @@
 
 <!-- plotly panels ------------------------------------------------ -->
 <div id="plotly-container" style="max-width:1200px;margin:0 auto;">
-  <div id="plot1"    style="height:320px;"></div>
-  <div id="plot2"    style="height:320px;margin-top:22px;"></div>
-  <div id="plotConv" style="height:350px;margin-top:22px;"></div>
+  <div id="plot1"    style="height:220px;"></div>
+  <div id="plot2"    style="height:220px;margin-top: -20px;"></div>
+  <div id="plotConv" style="height:220px;margin-top: -20px;"></div>
 </div>
 
 <!-- scripts ------------------------------------------------------ -->
@@ -107,23 +107,23 @@ function updatePlots(){
     const stem = (x,y,color)=> ({
         x:[].concat(...x.map((xi,i)=>[xi,xi,xi])),          // xi, xi
         y:[].concat(...y.map((yi,i)=>[0,yi,null])),         // 0 → yi (stem) → gap
-        mode:"lines", line:{color,width:2}
+        mode:"lines", line:{color,width:1}
     });
 
     Plotly.newPlot("plot1", [
       stem(d.k, d.y1,"#1f77b4"),
-      {x:d.k, y:d.y1, mode:"markers", marker:{color:"#1f77b4",size:6}}
-    ], {...lc, title:"Sequence 1  x[k]", xaxis:{title:"k"}, yaxis:{title:"x[k]"}});
+      {x:d.k, y:d.y1, mode:"markers", name:"x[k]", marker:{color:"#1f77b4",size:6}}
+    ], {...lc, xaxis:{title:{text:"k"}}, yaxis:{title:{text:"x[k]"}}});
 
     Plotly.newPlot("plot2", [
       stem(d.k, d.y2,"#ff7f0e"),
-      {x:d.k, y:d.y2, mode:"markers", marker:{color:"#ff7f0e",symbol:"square",size:6}}
-    ], {...lc, title:"Sequence 2  h[k]", xaxis:{title:"k"}, yaxis:{title:"h[k]"}});
+      {x:d.k, y:d.y2, mode:"markers", name:"h[k]", marker:{color:"#ff7f0e",symbol:"square",size:6}}
+    ], {...lc, xaxis:{title:{text:"k"}}, yaxis:{title:{text:"h[k]"}}});
 
     Plotly.newPlot("plotConv", [
       stem(d.k_conv, d.y_conv,"#2ca02c"),
-      {x:d.k_conv, y:d.y_conv, mode:"markers", marker:{color:"#2ca02c",size:6}}
-    ], {...lc, title:"Discrete Convolution  x * h", xaxis:{title:"k"}, yaxis:{title:"(x*h)[k]"}});
+      {x:d.k_conv, y:d.y_conv, mode:"markers", name:"y[k]", marker:{color:"#2ca02c",size:6}}
+    ], {...lc, xaxis:{title:{text:"k"}}, yaxis:{title:{text:"y[k]"}}});
 
   })
   .catch(console.error);

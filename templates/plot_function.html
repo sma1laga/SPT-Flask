@@ -226,7 +226,8 @@
       const xrange = data.xrange || [-20, 20];
       Plotly.newPlot("plot", traces,
         {margin:{t:30}, showlegend:true,
-         xaxis:{title:"t", range:xrange}, yaxis:{title:"f(t)"}} );    })
+         xaxis:{title:{text:"t"}, range:xrange}, yaxis:{title:{text:"Amplitude"}}});
+    })
     .catch(console.error);
   }
 

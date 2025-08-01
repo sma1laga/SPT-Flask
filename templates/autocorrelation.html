@@ -76,13 +76,13 @@
       x: data.t, y: data.y1,
       type: "scatter", mode: "lines", name: "x(t)",
       line: { width:3, color: "#1f77b4" }
-    }], { ...lc, title:"x(t)", xaxis:{ title:"t" }, yaxis:{ title:"x(t)" } });
+    }], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
 
     Plotly.newPlot("plotAuto", [{
       x: data.t, y: data.y_conv,
       type: "scatter", mode: "lines", name: "Autocorrelation",
       line: { width:3, color: "#2ca02c" }
-    }], { ...lc, title:"φ_xx(τ)", xaxis:{ title:"τ" }, yaxis:{ title:"φ_xx(τ)" } });
+    }], { ...lc, title:{text:"φ_xx(τ)"}, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φ_xx(τ)"} } });
   }
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);

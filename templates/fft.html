@@ -118,12 +118,12 @@
         const mags = {{ result.magnitudes | tojson }};
         const phases = {{ result.phases | tojson }};
         Plotly.newPlot('mag-plot', [{ x: freqs, y: mags, type: 'bar' }], {
-          title: `Magnitude |FFT| of {{ result.expr }}`,
-          xaxis: { title: 'Frequency (Hz)' }, yaxis: { title: 'Magnitude' }
+          title: {text: `Magnitude |FFT| of {{ result.expr }}`},
+          xaxis: {title: {text: 'Frequency [Hz]'}}, yaxis: {title: {text: 'Magnitude'}}
         });
         Plotly.newPlot('phase-plot', [{ x: freqs, y: phases, type: 'bar' }], {
-          title: `Phase ∠FFT of {{ result.expr }}`,
-          xaxis: { title: 'Frequency (Hz)' }, yaxis: { title: 'Phase (radians)' }
+          title: {text:`Phase ∠FFT of {{ result.expr }}`},
+          xaxis: {title: {text: 'Frequency [Hz]'}}, yaxis: {title: {text: 'Phase (radians)'}}
         });
       </script>
       <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
