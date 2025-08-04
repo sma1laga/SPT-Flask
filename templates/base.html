@@ -142,16 +142,35 @@
     .modern-sidebar ul.sidebar-menu li a:hover {
       background-color: #f0f8ff;
     }
+    /* Mobile sidebar toggle button */
+    .sidebar-toggle {
+      display: none;
+      background: #007acc;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      margin: 10px;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
 
     @media (max-width: 768px) {
-      .modern-sidebar {
+      .sidebar {
+        display: none;
+      }
+      .sidebar.active {
+        display: block;
         width: 100%;
         margin: 0 0 1em 0;
       }
       .content-wrapper {
         flex-direction: column;
       }
-        .header .header-container {
+      .sidebar-toggle {
+        display: block;
+      }
+      .header .header-container {
         flex-direction: column;
       }
       .header .main-nav ul {
@@ -188,6 +207,7 @@
 
     <!-- SIDEBAR + CONTENT -->
     <div class="content-wrapper" style="display:flex;">
+      <button id="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i> Menu</button>
       <aside class="sidebar modern-sidebar">
         <h3>Navigation</h3>
         <div class="toggle-tabs">
@@ -280,7 +300,7 @@
         © 2025 Signal Processing Toolkit. All rights reserved.<br>
         For inquiries, please email:
         <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a><br>
-        Version 1.1.2v7 (26.07.2025)
+        Version 1.1.3v7 (04.08.2025)
       </p>
       <div class="legal-links">
         <a href="{{ url_for('info.impressum') }}">Impressum</a> |
