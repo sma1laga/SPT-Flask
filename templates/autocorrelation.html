@@ -4,7 +4,7 @@
   <h1 style="font-size:2.5em;">Autocorrelation Calculator</h1>
   <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
     Enter <strong>x(t)</strong> to compute its autocorrelation
-    $$ \phi_{xx}(\tau)=\int_{-\infty}^{\infty} x(t)\,x^*(\tau-t)\,dt $$
+    $$ \varphi_{xx}(\tau)=\int_{-\infty}^{\infty} x(t+\tau)x^\ast(t)\mathrm dt $$
   </p>
 </div>
 
@@ -14,25 +14,27 @@
   </div>
 
   <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">
-    <button type="button" onclick="insertOperand('rect(t)')">Rect</button>
-    <button type="button" onclick="insertOperand('tri(t)')">Tri</button>
-    <button type="button" onclick="insertOperand('sin(t)')">Sin</button>
-    <button type="button" onclick="insertOperand('cos(t)')">Cos</button>
-    <button type="button" onclick="insertOperand('step(t)')">Step</button>
-    <button type="button" onclick="insertOperand('delta(t)')">Delta</button>
-    <button type="button" onclick="insertOperand('sign(t)')">Sign</button>
-    <button type="button" onclick="insertOperand('exp_iwt(t)')">e^(iωt)</button>
-    <button type="button" onclick="insertOperand('exp(t)')">Exp</button>
-    <button type="button" onclick="insertOperand('inv_t(t)')">1/t</button>
-    <button type="button" onclick="insertOperand('si(t)')">Si</button>
-    <button type="button" onclick="insertOperand('si(t)**2')">Si²</button>
+    {% for lbl, ltx in [
+      ('rect(t)', '\mathrm{rect}'),
+      ('tri(t)', '\mathrm{tri}'),
+      ('sin(t)', '\sin'),
+      ('cos(t)', '\cos'),
+      ('step(t)', '\mathrm{step}'),
+      ('delta(t)', '\delta'),
+      ('exp_iwt(t)', '\mathrm e^{i\omega t}'),
+      ('inv_t(t)', '1/t'),
+      ('si(t)', '\mathrm{si}'),
+      ('si(t)**2', '\mathrm{si}^2'),
+      ] %}
+      <button type="button" onclick="insertOperand('{{ lbl }}')">\({{ ltx }}\)</button>
+    {% endfor %}
   </div>
 
   <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:20px;">
-    <button type="button" onclick="insertOperand('+')">+</button>
-    <button type="button" onclick="insertOperand('-')">-</button>
-    <button type="button" onclick="insertOperand('*')">*</button>
-    <button type="button" onclick="insertOperand('/')">/</button>
+    <button type="button" onclick="insertOperand('+')">\(+\)</button>
+    <button type="button" onclick="insertOperand('-')">\(-\)</button>
+    <button type="button" onclick="insertOperand('*')">\(*\)</button>
+    <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
   <div style="margin-bottom:30px;">
@@ -42,8 +44,8 @@
 </form>
 
 <div id="plotly-container" style="max-width:1200px; margin:0 auto;">
-  <div id="plotSignal" style="height:350px;"></div>
-  <div id="plotAuto"   style="height:350px; margin-top:20px;"></div>
+  <div id="plotSignal" style="height:220px;"></div>
+  <div id="plotAuto"   style="height:220px; margin-top:-20px;"></div>
 </div>
 
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
@@ -70,19 +72,19 @@
     const vals = getValues();
     const data = compute_autocorrelation(vals.func);
     if(data.error) return console.error(data.error);
-    const lc = { margin:{ t:30 }, showlegend:true };
+    const lc = { margin:{ t:30 } };
 
     Plotly.newPlot("plotSignal", [{
       x: data.t, y: data.y1,
-      type: "scatter", mode: "lines", name: "x(t)",
-      line: { width:3, color: "#1f77b4" }
+      mode: "lines", name: "x(t)",
+      line: { width:2, color: "#1f77b4" }
     }], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
 
     Plotly.newPlot("plotAuto", [{
       x: data.t, y: data.y_conv,
-      type: "scatter", mode: "lines", name: "Autocorrelation",
-      line: { width:3, color: "#2ca02c" }
-    }], { ...lc, title:{text:"φ_xx(τ)"}, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φ_xx(τ)"} } });
+      mode: "lines", name: "φ_xx(τ)",
+      line: { width:2, color: "#2ca02c" }
+    }], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φ_xx(τ)"} } });
   }
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);
