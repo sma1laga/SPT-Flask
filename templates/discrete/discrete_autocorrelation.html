@@ -5,9 +5,9 @@
 <div class="page-header" style="margin-bottom:30px;text-align:center;">
   <h1 style="font-size:2.5em;">Discrete Autocorrelation Calculator</h1>
   <p style="font-size:1.1em;color:var(--subtext-color);max-width:640px;margin:0 auto;">
-    Enter a sequence <em>x[k]</em> and click <b>Compute</b> to display the sequence
-    and its discrete autocorrelation.
-    $$ \phi_{xx}^E[\kappa]=\sum_{k=-\infty}^{\infty} x[k+\kappa]\,x^*[k] $$
+    Enter an energy signal \(x[k]\) and click <b>Compute</b> to display the sequence
+    and its discrete autocorrelation, calculated as
+    $$ \varphi_{xx}^\mathrm{E}[\kappa]=\sum_{k=-\infty}^{\infty} x[k+\kappa]x^\ast[k]. $$
   </p>
 </div>
 
@@ -19,14 +19,15 @@
 
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
     {% for val, ltx in [
-      ('rect_4[k]', '\\mathrm{rect}_4'),
-      ('tri_3[k]',  '\\mathrm{tri}_3'),
-      ('step[k]',   '\\mathrm{step}'),
-      ('delta[k]',  '\\delta'),
-      ('sin[pi/4*k]',  '\\sin'),
-      ('cos[pi/4*k]',  '\\cos'),
-      ('sign[k]',   '\\mathrm{sign}'),
-      ('exp[k]',    '\\exp')
+      ('rect_4[k]', '\mathrm{rect}_4'),
+      ('tri_3[k]',  '\mathrm{tri}_3'),
+      ('delta[k]',  '\delta'),
+      ('sin[pi/4*k]*rect_33[k+16]',  '\sin'),
+      ('cos[pi/4*k]*rect_33[k+16]',  '\cos'),
+      ('sign[k]*rect_11[k+5]',   '\mathrm{sign}'),
+      ('exp[-k]*step[k]',    '\exp'),
+      ('0.5**k*step[k]',    '0.5^{k}'),
+      ('(-0.5)**k*step[k]',    '(-0.5)^{k}'),
     ] %}
       <button type="button" onclick="insertOperand('{{ val }}')">\({{ ltx }}\)</button>
     {% endfor %}
@@ -85,8 +86,8 @@ function updatePlots(){
         xaxis:{title:{text:'k'}}, yaxis:{title:{text:'x[k]'}}});    Plotly.newPlot('plotAuto', [
       stem(d.k_conv, d.y_conv,'#2ca02c'),
       {x:d.k_conv, y:d.y_conv, mode:'markers', marker:{color:'#2ca02c',size:6}}
-    ], {...lc, title:{text:'Autocorrelation  φ_xx[k]'},
-        xaxis:{title:{text:'k'}}, yaxis:{title:{text:'φ_xx[k]'}}});  })
+    ], {...lc, title:{text:'Autocorrelation  φ_xx[κ]'},
+        xaxis:{title:{text:'κ'}}, yaxis:{title:{text:'φ_xx[κ]'}}});  })
   .catch(console.error);
 }
 computeBtn.onclick = updatePlots;
