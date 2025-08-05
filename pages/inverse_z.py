@@ -6,7 +6,8 @@ from sympy.parsing.sympy_parser import (
     parse_expr, standard_transformations,
     implicit_multiplication_application, convert_xor
 )
-import ast, re
+from sympy.printing.latex import LatexPrinter, accepted_latex_functions
+import ast
 
 inverse_z_bp = Blueprint('inverse_z', __name__)
 
@@ -48,22 +49,22 @@ def _parse_poly(txt: str) -> np.ndarray:
                       local_dict={'z':z},
                       transformations=_TRANSFORMS,
                       evaluate=False)
-    coeffs = sp.Poly(sp.expand(expr), z).all_coeffs()   # descending powers
-    coeffs = coeffs[::-1]                                # reverse to ascending
+    coeffs = sp.Poly(sp.expand(expr), z).all_coeffs()
     return np.asarray([complex(c) for c in coeffs], dtype=complex)
 
 def _coeffs_to_poly(coeffs):
-    """Asc → poly:  [c0,c1,…]  →  c0 + c1 z + …"""
+    """Asc → poly:  [cn-1,cn-2,...,c1,c0]  →  cn-1 z^(n-1) + cn-2 z^(n-2) + ... + c1 z + c0"""
     z = sp.symbols('z')
+    n = len(coeffs)
     return sum(
-        sp.sympify(_int_if_close(c))*z**i
+        sp.sympify(_int_if_close(c))*z**(n-1-i)
         for i, c in enumerate(coeffs)
     )
 
 # ──────────────────────────────────────────────────────────────────────────────
 # direct‐filter impulse response (for display of first N samples)
-def _impulse_response(num, den, n_samples=10, roc_type="outside"):
-    if roc_type == "inside":
+def _impulse_response(num, den, n_samples=10, roc_type="causal"):
+    if roc_type == "anticausal":
         return None
     x = np.zeros(n_samples, dtype=complex)
     x[0] = 1
@@ -75,34 +76,39 @@ def _impulse_response(num, den, n_samples=10, roc_type="outside"):
             c = float(c.real)
             if c.is_integer():
                 c = int(c)
+        if not isinstance(c, int): # round to 3 decimal places
+            c = round(c, 3)
         seq.append(_int_if_close(c))
     return seq
 
-# ──────────────────────────────────────────────────────────────────────────────
-# the core: symbolic inverse Z-transform via partial‐fractions + table lookup
-_Wz, _k = sp.symbols('z k', integer=True)
-
-# ──────────────────────────────────────────────────────────────────────────────
-# symbolic inverse Z-transform: partial-fractions → table lookup
-_Wz, _k = sp.symbols('z k', integer=True)
-
-def _inverse_z_expr(num, den, roc=None, roc_type="inside"):
-    z, k = _Wz, _k
+def _inverse_z_expr(num, den, roc_type="causal"):
+    "symbolic inverse z-transform: partial-fractions → table lookup"
+    z = sp.symbols('z', complex=True)
 
     # helper:  coeff list (asc)  →  polynomial in z
     def _poly(vals):
-        return sum(sp.sympify(_int_if_close(c))*z**i for i,c in enumerate(vals))
-
-    H = sp.simplify(_poly(num) / _poly(den))
-    parts = sp.Add.make_args(sp.apart(H, z))       # simple pieces only
+        n = len(vals)
+        return sum(sp.sympify(_int_if_close(c))*z**(n-1-i) for i,c in enumerate(vals))
+    
+    H_by_z = sp.simplify(_poly(num) / (z * _poly(den)))
+    parts = sp.Add.make_args(sp.apart(H_by_z, z))       # simple pieces only
+    parts = [p * z for p in parts] # redo div by z
 
     expr = sp.Integer(0)
-
+    k = sp.symbols('k', integer=True)
+    # ROC radius
+    R = -1 if roc_type == "causal" else np.inf
+    origin_flag = False # true if origin is a pole and ROC is anticausal
     for term in parts:
         # ----- δ[k+m] ---------------------------------------------------------
-        if term.is_Pow and term.base == z:
-            m = int(term.exp)
-            C = sp.nsimplify(_int_if_close(term.as_coeff_mul(z)[0]))
+        if term.is_Pow and term.base == z or term.is_number:
+            m = 0 if term.is_number else int(term.exp)
+            if m < 0:
+                if roc_type == "causal":
+                    R = max(R, 0)
+                else:
+                    origin_flag = True
+            C = sp.nsimplify(term.as_coeff_mul(z)[0])
             expr += C * sp.DiracDelta(k + m)
             continue
 
@@ -118,37 +124,82 @@ def _inverse_z_expr(num, den, roc=None, roc_type="inside"):
             continue
 
         # ----- first-order rational piece ------------------------------------
-        num_t, den_t = term.as_numer_denom()
         p_den = sp.Poly(den_t, z)
         if p_den.degree() != 1:
-            raise ValueError(f"Only simple poles are supported: {term}")
+            raise ValueError(f"Only single poles are supported: {term}")
 
         a1, a0 = p_den.all_coeffs()      # a1 z + a0
-        a  = sp.nsimplify(-a0/a1)        # pole
+        a = sp.nsimplify(-a0/a1)        # pole
+        if roc_type == "causal": # update ROC radius
+            R = max(R, sp.Abs(a))
+        else:
+            R = min(R, sp.Abs(a))
         num_t = sp.nsimplify(num_t/a1)   #   …and scale so denom becomes z-a
 
         p_num = sp.Poly(num_t, z)
 
         if p_num.degree() == 0:          # ----  A / (z-a)
             A = p_num.all_coeffs()[0]
-            if roc_type == "outside":    # causal
+            if roc_type == "causal":    # causal
                 expr += A * a**(k-1) * sp.Heaviside(k-1)
             else:                        # left-sided
-                expr += -A * a**(k-1) * sp.Heaviside(-k-1)
-                expr += -A/a * sp.DiracDelta(k)      # ●●● add this line
+                expr += -A * a**(k-1) * sp.Heaviside(-k)
             continue
 
         if p_num.degree() == 1 and p_num.all_coeffs()[-1] == 0:
             B = p_num.all_coeffs()[0]    # ----  B z / (z-a)
-            if roc_type == "outside":
+            if roc_type == "causal":
                 expr += B * a**k * sp.Heaviside(k)
             else:
                 expr += -B * a**k * sp.Heaviside(-k-1)
             continue
 
         raise ValueError(f"Cannot invert term {term!r}")
+    parts_sum = sum([sp.nsimplify(p) for p in parts])
+    return expr, parts_sum, R, origin_flag
 
-    return sp.simplify(expr)
+def _roc_latex(roc_type:str, roc_radius, exclude_origin:bool) -> str:
+    """Generate LaTeX string for the ROC description."""
+    if roc_type == "causal":
+        if roc_radius >= 0:
+            return rf"\left|z\right| > {roc_radius}"
+        else:
+            return r"z\in \mathbb{C}"
+    else:
+        if roc_radius == np.inf:
+            if exclude_origin:
+                return r"z\in \mathbb{C} \setminus \{0\}"
+            else:
+                return r"z\in \mathbb{C}"
+        elif exclude_origin:
+            return r"z\in\{z|\left|z\right| < %s\} \setminus \{0\}" % roc_radius
+        else:
+            return rf"\left|z\right| < {roc_radius}"
+
+class CustomLatexPrinter(LatexPrinter):
+    def _print_Function(self, expr):
+        name = expr.func.__name__
+        pargs = ', '.join(self._print(arg) for arg in expr.args)
+        if name in accepted_latex_functions:
+            return rf"\{name}\left({pargs}\right)"
+        return rf"{name}\left[{pargs}\right]"
+
+    def _print_Heaviside(self, expr, exp=None):
+        pargs = ', '.join(self._print(arg) for arg in expr.pargs)
+        tex = r"\varepsilon\left[%s\right]" % pargs
+        if exp:
+            tex = r"\left(%s\right)^{%s}" % (tex, exp)
+        return tex
+    
+    def _print_DiracDelta(self, expr, exp=None):
+        if len(expr.args) == 1 or expr.args[1] == 0:
+            tex = r"\delta\left[%s\right]" % self._print(expr.args[0])
+        else:
+            tex = r"\delta^{\left( %s \right)}\left[ %s \right]" % (
+                self._print(expr.args[1]), self._print(expr.args[0]))
+        if exp:
+            tex = r"\left(%s\right)^{%s}" % (tex, exp)
+        return tex
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -156,36 +207,29 @@ def _inverse_z_expr(num, den, roc=None, roc_type="inside"):
 def inverse_z():
     num_txt = request.form.get('numerator','[1,0]')
     den_txt = request.form.get('denominator','[1]')
-    roc_txt = request.form.get('roc_radius','')
-    roc_type = request.form.get('roc_type','inside')
-    tf_ltx = hz_ltx = seq = error = None
-    roc_used = 'auto'
+    roc_type = request.form.get('roc_type','causal')
+    sf_ltx = sf_parts_ltx = hk_ltx = roc_ltx = seq = error = None
 
     if request.method == 'POST':
         try:
             num = _parse_poly(num_txt)
             den = _parse_poly(den_txt)
-            roc_val = None
-            if roc_txt.strip():
-                roc_val = float(roc_txt)
-                roc_used = roc_val
 
             # LaTeX for H(z)
             num_expr = _coeffs_to_poly(num)
             den_expr = _coeffs_to_poly(den)
-            tf_ltx = sp.latex(num_expr/den_expr)
+            sf_ltx = sp.latex(num_expr/den_expr)
 
-            # our new inverse‐Z implementation
-            expr = _inverse_z_expr(num, den,
-                                   roc=roc_val,
-                                   roc_type=roc_type)
-            hz_ltx = sp.latex(expr).replace('\\theta','\\varepsilon')
+            expr, parts, roc_radius, exclude_origin = _inverse_z_expr(num, den, roc_type)
 
-            # clean up trailing “.0”
-            tf_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', tf_ltx)
-            hz_ltx = re.sub(r'(\d)\.0(?!\d)', r'\1', hz_ltx)
+            roc_ltx = _roc_latex(roc_type, roc_radius, exclude_origin)
+            
+            sf_parts_ltx = CustomLatexPrinter().doprint(parts)
+            if sf_ltx == sf_parts_ltx:
+                sf_parts_ltx = None
+            hk_ltx = CustomLatexPrinter().doprint(expr)
 
-            # first‐10 samples
+            # first 10 samples
             seq = _impulse_response(num, den,
                                     n_samples=10,
                                     roc_type=roc_type)
@@ -197,18 +241,11 @@ def inverse_z():
         'inverse_z.html',
         default_num=num_txt,
         default_den=den_txt,
-        default_roc=roc_txt,
-        tf_latex=tf_ltx,
-        hz_latex=hz_ltx,
+        sf_latex=sf_ltx,
+        sf_parts_latex=sf_parts_ltx,
+        hk_latex=hk_ltx,
         seq=seq,
-        roc_used=roc_used,
         roc_type=roc_type,
+        roc_latex=roc_ltx,
         error=error
     )
-
-if __name__ == "__main__":
-    # quick smoke‐test
-    n = _parse_poly('[3]')
-    d = _parse_poly('[ -2, 1 ]')   # 3/(z-2)
-    print("X5:", _inverse_z_expr(n,d, roc=2, roc_type="outside"))
-    # expect: 3*2^(k-1)*Heaviside(k-1)
