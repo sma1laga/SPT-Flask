@@ -1,7 +1,7 @@
 // Wait for the page to load
 document.addEventListener("DOMContentLoaded", function() {
-    const darkModeToggle = document.getElementById("dark-mode-toggle");
-    
+  const darkModeToggle = document.getElementById("dark-mode-toggle");
+  if (darkModeToggle) {  
     darkModeToggle.addEventListener("click", function() {
       document.body.classList.toggle("dark-mode");
       // Save the preference in local storage
@@ -19,5 +19,14 @@ document.addEventListener("DOMContentLoaded", function() {
       document.body.classList.add("dark-mode");
       darkModeToggle.textContent = "Light Mode";
     }
-  });
-  
+  }
+
+  // Sidebar toggle for mobile
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.querySelector(".sidebar");
+  if (sidebarToggle && sidebar) {
+    sidebarToggle.addEventListener("click", function() {
+      sidebar.classList.toggle("active");
+    });
+  }
+});
