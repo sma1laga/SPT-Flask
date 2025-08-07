@@ -59,20 +59,38 @@ def compute_convolution(func1_str, func2_str):
     r1 = active_limits(y1_scan, amp1)
     r2 = active_limits(y2_scan, amp2)
 
+    # When a signal touches the scan boundaries it is effectively unbounded.
+    # Restrict the display window so edge artefacts remain hidden.
+    disp_width = 20.0
+    edge_margin = 0.05 * (t_scan[-1] - t_scan[0])
+
+    def adjust_region(r):
+        if r is None:
+            return (-10.0, 10.0)
+        left_touch = r[0] <= t_scan[0] + edge_margin
+        right_touch = r[1] >= t_scan[-1] - edge_margin
+        if left_touch and right_touch:
+            return (-disp_width/2, disp_width/2)
+        if left_touch:
+            return (r[1] - disp_width, r[1])
+        if right_touch:
+            return (r[0], r[0] + disp_width)
+        return r
+
+    r1 = adjust_region(r1)
+    r2 = adjust_region(r2)
+
     margin = 2.0
 
 
     # Axes for each signal individually
-    t1_min, t1_max = r1 if r1 else (-10.0, 10.0)
-    t2_min, t2_max = r2 if r2 else (-10.0, 10.0)
+    t1_min, t1_max = r1
+    t2_min, t2_max = r2
     t1_min -= margin; t1_max += margin
     t2_min -= margin; t2_max += margin
 
-    if r1 and r2:
-        conv_min = r1[0] + r2[0]
-        conv_max = r1[1] + r2[1]
-    else:
-        conv_min, conv_max = -10.0, 10.0
+    conv_min = r1[0] + r2[0]
+    conv_max = r1[1] + r2[1]
     conv_min -= margin; conv_max += margin
 
     # Final axes after trimming

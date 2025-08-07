@@ -71,7 +71,8 @@
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
 /* active field + operand insert --------------------------------- */
-let activeField = null;
+let activeField = document.getElementById("func1");
+
 function setActiveField(f){ activeField = f; }
 ["func1","func2"].forEach(id=>{
   document.getElementById(id).addEventListener("focus",e=>activeField=e.target);

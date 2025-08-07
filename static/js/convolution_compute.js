@@ -91,30 +91,40 @@
 
     const amp1 = maxAbs(y1Scan);
     const amp2 = maxAbs(y2Scan);
-    const r1 = activeLimits(y1Scan, amp1, tScan);
-    const r2 = activeLimits(y2Scan, amp2, tScan);
+    let r1 = activeLimits(y1Scan, amp1, tScan);
+    let r2 = activeLimits(y2Scan, amp2, tScan);
+
+    const DISP_WIDTH = 20;
+    const edgeMargin = 0.05*(tScan[tScan.length-1]-tScan[0]);
+
+    function adjustRegion(r){
+      if(!r) return [-10,10];
+      const leftTouch = r[0] <= tScan[0] + edgeMargin;
+      const rightTouch = r[1] >= tScan[tScan.length-1] - edgeMargin;
+      if(leftTouch && rightTouch) return [-DISP_WIDTH/2, DISP_WIDTH/2];
+      if(leftTouch) return [r[1]-DISP_WIDTH, r[1]];
+      if(rightTouch) return [r[0], r[0]+DISP_WIDTH];
+      return r;
+    }
+
+    r1 = adjustRegion(r1);
+    r2 = adjustRegion(r2);
 
     const margin = 2;
 
     // Axis for x(t)
-    let t1Min = r1 ? r1[0] : -10;
-    let t1Max = r1 ? r1[1] : 10;
+    let t1Min = r1[0];
+    let t1Max = r1[1];
     t1Min -= margin; t1Max += margin;
 
     // Axis for h(t)
-    let t2Min = r2 ? r2[0] : -10;
-    let t2Max = r2 ? r2[1] : 10;
+    let t2Min = r2[0];
+    let t2Max = r2[1];
     t2Min -= margin; t2Max += margin;
 
     // Axis for convolution result
-    let convMin, convMax;
-    if(r1 && r2){
-      convMin = r1[0] + r2[0];
-      convMax = r1[1] + r2[1];
-    } else {
-      convMin = -10;
-      convMax = 10;
-        }
+    let convMin = r1[0] + r2[0];
+    let convMax = r1[1] + r2[1];
     convMin -= margin; convMax += margin;
 
 
