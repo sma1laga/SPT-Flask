@@ -79,20 +79,40 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
 
     r1 = active_limits(y1_scan, amp1)
     r2 = active_limits(y2_scan, amp2)
+    # When a sequence touches the scan boundaries it behaves as if it were
+    # unbounded. Restrict the display window so edge artefacts remain hidden,
+    # mimicking the behaviour used in the continuous-time convolution.
+    disp_width = 20.0
+    edge_margin = 0.05 * (k_scan[-1] - k_scan[0])
 
-    if r1 or r2:
-        k1_min, k1_max = r1 if r1 else (0.0, 0.0)
-        k2_min, k2_max = r2 if r2 else (0.0, 0.0)
-        conv_min = k1_min + k2_min
-        conv_max = k1_max + k2_max
-        k_min = min(k1_min, k2_min, conv_min)
-        k_max = max(k1_max, k2_max, conv_max)
-    else:
-        k_min, k_max = -10.0, 10.0
+    def adjust_region(r):
+        if r is None:
+            return (-10.0, 10.0)
+        left_touch = r[0] <= k_scan[0] + edge_margin
+        right_touch = r[1] >= k_scan[-1] - edge_margin
+        if left_touch and right_touch:
+            return (-disp_width/2, disp_width/2)
+        if left_touch:
+            return (r[1] - disp_width, r[1])
+        if right_touch:
+            return (r[0], r[0] + disp_width)
+        return r
+
+    r1 = adjust_region(r1)
+    r2 = adjust_region(r2)
+
+    k1_min, k1_max = r1
+    k2_min, k2_max = r2
+    conv_min = k1_min + k2_min
+    conv_max = k1_max + k2_max
+    k_min = min(k1_min, k2_min, conv_min)
+    k_max = max(k1_max, k2_max, conv_max)
 
     margin = 2.0
     k_min -= margin
     k_max += margin
+    conv_min -= margin
+    conv_max += margin
 
     k = np.arange(k_min, k_max + ds, ds)
     ctx_final = ctx.copy()
@@ -102,8 +122,15 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
     y1 = eval(func1_str, ctx_final) if func1_str else np.zeros_like(k)
     y2 = eval(func2_str, ctx_final) if func2_str else np.zeros_like(k)
 
-    y_conv = np.convolve(y1, y2, mode="full")
-    k_conv = np.arange(len(y_conv)) * ds + (k[0] + k[0])
+    # Convolve on the wide scanning axis to avoid artificial truncation for
+    # unbounded sequences (e.g., step[k]).  The full result is then sampled back
+    # onto the trimmed display axis, mimicking the behaviour used in the
+    # continuous-time convolution implementation.
+    y_conv_full = np.convolve(y1_scan, y2_scan, mode="full")
+    k_conv_full = np.arange(len(y_conv_full)) * ds + (k_scan[0] + k_scan[0])
+
+    k_conv = np.arange(conv_min, conv_max + ds, ds)
+    y_conv = np.interp(k_conv, k_conv_full, y_conv_full)
 
     return {
         "k": k.tolist(),
