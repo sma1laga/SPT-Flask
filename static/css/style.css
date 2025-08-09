@@ -10,6 +10,20 @@
     --border-color: #ccd0d5;
     --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
+
+/* Colorblind Mode Variables */
+body.colorblind-mode {
+    --primary-color: #0072B2;           /* Blue */
+    --primary-gradient-start: #0072B2;
+    --primary-gradient-end: #E69F00;    /* Orange */
+    --text-color: #000;
+    --subtext-color: #333;
+    --border-color: #666;
+}
+
+body.colorblind-mode a {
+    text-decoration: underline;
+}
   
   /* Global Reset & Base Styling */
   * {

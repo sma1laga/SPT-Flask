@@ -31,7 +31,7 @@ The goal is a **practical, hands-on toolkit** that supports university courses a
 - [Matplotlib](https://matplotlib.org/)
 - [PyWavelets](https://pywavelets.readthedocs.io/)
 - [control](https://python-control.readthedocs.io/) (for Bode plots)
-- [Bootstrap](https://getbootstrap.com/) – responsive UI with optional dark mode
+- [Bootstrap](https://getbootstrap.com/) – responsive UI with optional dark and colorblind modes
 
 ## ✨ Features
 
@@ -64,7 +64,7 @@ The goal is a **practical, hands-on toolkit** that supports university courses a
 - Training modules for convolution, Fourier transforms and processing chains
 - Small exam modules for practice sessions
 
-All pages include downloadable plots/data, and the interface offers an optional dark mode.
+All pages include downloadable plots/data, and the interface offers optional dark and colorblind modes.
 
 
 ## 🔄 Installation

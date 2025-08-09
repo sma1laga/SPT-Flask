@@ -1,7 +1,8 @@
 // Wait for the page to load
 document.addEventListener("DOMContentLoaded", function() {
   const darkModeToggle = document.getElementById("dark-mode-toggle");
-  if (darkModeToggle) {  
+  const colorblindToggle = document.getElementById("colorblind-mode-toggle");
+  if (darkModeToggle) {
     darkModeToggle.addEventListener("click", function() {
       document.body.classList.toggle("dark-mode");
       // Save the preference in local storage
@@ -18,6 +19,24 @@ document.addEventListener("DOMContentLoaded", function() {
     if (localStorage.getItem("darkMode") === "true") {
       document.body.classList.add("dark-mode");
       darkModeToggle.textContent = "Light Mode";
+    }
+  }
+
+  if (colorblindToggle) {
+    colorblindToggle.addEventListener("click", function() {
+      document.body.classList.toggle("colorblind-mode");
+      if (document.body.classList.contains("colorblind-mode")) {
+        localStorage.setItem("colorblindMode", "true");
+        colorblindToggle.textContent = "Standard Colors";
+      } else {
+        localStorage.setItem("colorblindMode", "false");
+        colorblindToggle.textContent = "Colorblind Mode";
+      }
+    });
+
+    if (localStorage.getItem("colorblindMode") === "true") {
+      document.body.classList.add("colorblind-mode");
+      colorblindToggle.textContent = "Standard Colors";
     }
   }
 
