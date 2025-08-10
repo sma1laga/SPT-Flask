@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kapitel 2 – Echo (Faltung)</h1>
+<p>Eingangssignal x[k], Echo-Impulsantwort h[k] mit Dämpfung A und Verzögerung τ, Ausgang y[k] = x*h.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  input[type=range]{width:280px}
+  img{max-width:100%}
+</style>
+
+<div class="row">
+  <div class="card">
+    <label>Eingangssignal x[k]</label>
+    <select id="x_type">
+      {% for o in audio_options %}
+        <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
+      {% endfor %}
+    </select>
+
+    <label>Verzögerung τ (s): <span id="delay_val">{{defaults.delay}}</span></label>
+    <input id="delay" type="range" min="0.05" max="1.0" step="0.01" value="{{defaults.delay}}">
+
+    <label>Dämpfung A: <span id="att_val">{{defaults.attenuation}}</span></label>
+    <input id="attenuation" type="range" min="0.0" max="0.95" step="0.01" value="{{defaults.attenuation}}">
+
+    <button id="run" style="margin-top:12px">Neu berechnen</button>
+  </div>
+
+  <div class="card"><img id="plot" alt="plot"></div>
+
+  <div class="card">
+    <div><strong>Eingang x[k]</strong></div>
+    <audio id="x_audio" controls></audio>
+    <div style="height:8px"></div>
+    <div><strong>Ausgang y[k]</strong></div>
+    <audio id="y_audio" controls></audio>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function syncLabels(){
+    $("delay_val").textContent = $("delay").value;
+    $("att_val").textContent = $("attenuation").value;
+  }
+  async function recompute(){
+    syncLabels();
+    const body = {
+      x_type: $("x_type").value,
+      delay: parseFloat($("delay").value),
+      attenuation: parseFloat($("attenuation").value),
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){ alert("Error: " + await resp.text()); return; }
+    const data = await resp.json();
+    $("plot").src = data.image;
+    $("x_audio").src = data.x_audio;
+    $("y_audio").src = data.y_audio;
+  }
+
+  ["x_type","delay","attenuation"].forEach(id => $(id).addEventListener("input", () => recompute()));
+  $("run").addEventListener("click", () => recompute());
+  // initial render
+  recompute();
+</script>
+{% endblock %}

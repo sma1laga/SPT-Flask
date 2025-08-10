@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kapitel 6 – Zeilen-/Spaltenweise Filterung (2-Tap)</h1>
+<p>Bild x[m,n], Filter h[k] = a·δ[k] + b·δ[k−1] mit a = 1−max(0,b). Wähle Bild, Filterrichtung und b.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  input[type=range]{width:280px}
+  img{max-width:100%}
+  .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
+</style>
+
+<div class="row">
+  <div class="card">
+    <label>Bild</label>
+    <select id="x_type">
+      {% for o in image_options %}
+        <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
+      {% endfor %}
+    </select>
+
+    <label style="margin-top:8px;">Filterung</label>
+    <div class="radio-group">
+      <label><input type="radio" name="filtering" value="Zeilenweise" {% if defaults.filtering=='Zeilenweise' %}checked{% endif %}> Zeilenweise</label>
+      <label><input type="radio" name="filtering" value="Spaltenweise" {% if defaults.filtering=='Spaltenweise' %}checked{% endif %}> Spaltenweise</label>
+    </div>
+
+    <label style="margin-top:8px;">\(b\): <span id="b_val">{{defaults.peak2}}</span></label>
+    <input id="peak2" type="range" min="-1" max="0.5" step="0.02" value="{{defaults.peak2}}">
+
+    <button id="run" style="margin-top:12px">Neu berechnen</button>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="plot">
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function currentFiltering(){
+    const r = document.querySelector('input[name="filtering"]:checked');
+    return r ? r.value : "Zeilenweise";
+  }
+  function syncLabels(){
+    $("b_val").textContent = $("peak2").value;
+  }
+
+  async function recompute(){
+    syncLabels();
+    const body = {
+      x_type: $("x_type").value,
+      filtering: currentFiltering(),
+      peak2: parseFloat($("peak2").value)
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){
+      alert("Error: " + await resp.text());
+      return;
+    }
+    const data = await resp.json();
+    $("plot").src = data.image;
+  }
+
+  // live updates
+  $("x_type").addEventListener("change", () => recompute());
+  document.querySelectorAll('input[name="filtering"]').forEach(r =>
+    r.addEventListener("change", () => recompute())
+  );
+  $("peak2").addEventListener("input", () => recompute());
+  $("run").addEventListener("click", () => recompute());
+
+  // initial render
+  recompute();
+</script>
+{% endblock %}

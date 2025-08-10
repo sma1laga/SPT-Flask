@@ -60,6 +60,17 @@ from pages.exam_convolution import exam_convolution_bp
 from pages.exam_fourier import exam_fourier_bp
 
 
+from pages.demos.menu import demos_menu_bp
+from pages.demos.kapitel2 import demos_kapitel2_bp
+from pages.demos.kapitel4 import demos_kapitel4_bp
+from pages.demos.kapitel6 import demos_kapitel6_bp
+from pages.demos.kapitel8_2 import demos_kapitel8_2_bp
+from pages.demos.kapitel8_audio import demos_kapitel8_audio_bp
+from pages.demos.kapitel11 import demos_kapitel11_bp
+
+
+
+
 
 
 def create_app():
@@ -129,6 +140,16 @@ def create_app():
     app.register_blueprint(exam_fourier_bp, url_prefix='/exam/fourier')
 
     
+    # Demos section
+    app.register_blueprint(demos_menu_bp,     url_prefix="/demos")
+    app.register_blueprint(demos_kapitel2_bp, url_prefix="/demos/kapitel2")
+    app.register_blueprint(demos_kapitel4_bp, url_prefix="/demos/kapitel4")
+    app.register_blueprint(demos_kapitel6_bp, url_prefix="/demos/kapitel6")
+    app.register_blueprint(demos_kapitel8_2_bp, url_prefix="/demos/kapitel8_2")
+    app.register_blueprint(demos_kapitel8_audio_bp, url_prefix="/demos/kapitel8_audio")
+    app.register_blueprint(demos_kapitel11_bp, url_prefix="/demos/kapitel11")
+
+
 
 
     @app.route("/")

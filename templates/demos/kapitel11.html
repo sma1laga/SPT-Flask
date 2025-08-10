@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kapitel 11 – Signalanalyse (Zeit / DFT / AKF / LDS)</h1>
+<p>Wähle ein Eingangssignal und die Darstellung. LDS wird aus der Autokorrelation berechnet.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  img{max-width:100%}
+  select, .radio-group{width:100%}
+  .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
+</style>
+
+<div class="row">
+  <div class="card" style="min-width:280px">
+    <label>Eingangssignal x[k]</label>
+    <select id="x_type">
+      {% for s in sig_options %}
+        <option value="{{s}}" {% if s == defaults.x_type %}selected{% endif %}>{{s}}</option>
+      {% endfor %}
+    </select>
+
+    <label style="margin-top:12px;">Darstellung</label>
+    <div class="radio-group">
+      {% for title, key in plot_options %}
+        <label><input type="radio" name="plt" value="{{key}}" {% if key == defaults.plt %}checked{% endif %}> {{title}}</label>
+      {% endfor %}
+    </div>
+
+    <button id="run" style="margin-top:12px">Neu berechnen</button>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="plot">
+  </div>
+
+  <div class="card">
+    <div><strong>Eingang x[k]</strong></div>
+    <audio id="x_audio" controls></audio>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function currentPlot(){
+    const r = document.querySelector('input[name="plt"]:checked');
+    return r ? r.value : "{{defaults.plt}}";
+  }
+
+  async function recompute(){
+    const body = { x_type: $("x_type").value, plt: currentPlot() };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){ alert("Error: " + await resp.text()); return; }
+    const data = await resp.json();
+    $("plot").src = data.image;
+    $("x_audio").src = data.x_audio;
+  }
+
+  $("x_type").addEventListener("change", () => recompute());
+  document.querySelectorAll('input[name="plt"]').forEach(r => r.addEventListener("change", () => recompute()));
+  $("run").addEventListener("click", () => recompute());
+  recompute();
+</script>
+{% endblock %}

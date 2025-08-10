@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kapitel 4 – DFT (Fenster & Betragsspektrum)</h1>
+<p>Wähle ein Eingangssignal, verschiebe die Fensterposition und wähle die Länge M für die DFT des Ausschnitts.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  input[type=range]{width:280px}
+  img{max-width:100%}
+  .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
+</style>
+
+<div class="row">
+  <div class="card">
+    <label>Eingangssignal x[k]</label>
+    <select id="x_type">
+      {% for o in audio_options %}
+        <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
+      {% endfor %}
+    </select>
+
+    <label>Fenster-Position (0…1): <span id="pos_val">{{defaults.pos}}</span></label>
+    <input id="pos" type="range" min="0" max="1" step="0.01" value="{{defaults.pos}}">
+
+    <label style="margin-top:12px;">Länge M der DFT:</label>
+    <div id="len_dft_group" class="radio-group">
+      {% set M_options = [4096, 8192, 16384] %}
+      {% for M in M_options %}
+        <label>
+          <input type="radio" name="len_dft" value="{{M}}" {% if M == defaults.len_dft %}checked{% endif %}>
+          {{M}}
+        </label>
+      {% endfor %}
+    </div>
+
+    <button id="run" style="margin-top:12px">Neu berechnen</button>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="plot">
+  </div>
+
+  <div class="card">
+    <div><strong>Eingang x[k]</strong></div>
+    <audio id="x_audio" controls></audio>
+    <div style="height:8px"></div>
+    <div><strong>Ausschnitt x_M[k]</strong></div>
+    <audio id="xM_audio" controls></audio>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function syncLabels(){
+    $("pos_val").textContent = $("pos").value;
+  }
+
+  function currentM(){
+    const r = document.querySelector('input[name="len_dft"]:checked');
+    return r ? parseInt(r.value) : {{ defaults.len_dft|int }};
+  }
+
+  async function recompute(){
+    syncLabels();
+    const body = {
+      x_type: $("x_type").value,
+      pos: parseFloat($("pos").value),
+      len_dft: currentM()
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){
+      alert("Error: " + await resp.text());
+      return;
+    }
+    const data = await resp.json();
+    $("plot").src = data.image;
+    $("x_audio").src = data.x_audio;
+    $("xM_audio").src = data.xM_audio;
+  }
+
+  ["x_type","pos"].forEach(id => $(id).addEventListener("input", () => recompute()));
+  document.querySelectorAll('input[name="len_dft"]').forEach(r =>
+    r.addEventListener("change", () => recompute())
+  );
+  $("run").addEventListener("click", () => recompute());
+
+  recompute();
+</script>
+{% endblock %}

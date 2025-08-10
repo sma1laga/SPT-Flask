@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Kapitel 8.2 – Bandpass (Bild)</h1>
+<p>Bandpass im Ortsbereich (spaltenweise). Wähle Zentrum Ω₀/π, Breite Ω<sub>g</sub>/π und Länge M<sub>L</sub>.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  input[type=range]{width:280px}
+  img{max-width:100%}
+  .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
+</style>
+
+<div class="row">
+  <div class="card">
+    <label>Mitte Ω₀/π: <span id="o0_val">{{defaults.Omega0_over_pi}}</span></label>
+    <input id="o0" type="range" min="0.00" max="1.00" step="0.01" value="{{defaults.Omega0_over_pi}}">
+
+    <label>Breite Ω<sub>g</sub>/π: <span id="og_val">{{defaults.Omega_g_over_pi}}</span></label>
+    <input id="og" type="range" min="0.01" max="0.15" step="0.01" value="{{defaults.Omega_g_over_pi}}">
+
+    <label style="margin-top:12px;">Länge M<sub>L</sub></label>
+    <div class="radio-group">
+      {% for M in [16,32,64,128] %}
+        <label><input type="radio" name="M_L" value="{{M}}" {% if M == defaults.M_L %}checked{% endif %}> {{M}}</label>
+      {% endfor %}
+    </div>
+
+    <label style="margin-top:8px;">
+      <input id="use_hann" type="checkbox" {% if defaults.use_hann %}checked{% endif %}>
+      Hann-Fenster
+    </label>
+
+    <button id="run" style="margin-top:12px">Neu berechnen</button>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="plot">
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function currentML(){
+    const r = document.querySelector('input[name="M_L"]:checked');
+    return r ? parseInt(r.value) : {{ defaults.M_L|int }};
+  }
+  function syncLabels(){
+    $("o0_val").textContent = $("o0").value;
+    $("og_val").textContent = $("og").value;
+  }
+  async function recompute(){
+    syncLabels();
+    const body = {
+      Omega0_over_pi: parseFloat($("o0").value),
+      Omega_g_over_pi: parseFloat($("og").value),
+      M_L: currentML(),
+      use_hann: document.getElementById("use_hann").checked
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    if(!resp.ok){ alert("Error: " + await resp.text()); return; }
+    const data = await resp.json();
+    $("plot").src = data.image;
+  }
+  document.querySelectorAll('input[name="M_L"]').forEach(r => r.addEventListener("change", recompute));
+  ["o0","og","use_hann"].forEach(id => $(id).addEventListener("input", recompute));
+  $("run").addEventListener("click", recompute);
+  recompute();
+</script>
+{% endblock %}
