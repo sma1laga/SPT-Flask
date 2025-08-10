@@ -190,120 +190,147 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
 
 
 def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
-    """Draw Direct-Form I with two integrator chains (order ≤2)."""
+    """Direct‑Form I (order ≤2) with a stacked adder chain so arrows never pile up."""
     X_L, X_XINT, X_ADD, X_YINT, X_Y = 0.0, 1.8, 3.8, 5.6, 7.0
-    Y_TOP, DY = 2.0, 1.2
-    r_add = 0.17
+    Y0, DY = 2.0, 1.2
+    r = 0.17
 
-    # output adder and 1/a₀ gain
-    _circle(ax, (X_ADD, Y_TOP), r_add)
-    _box(ax, (X_ADD + 1.0, Y_TOP), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
-    _arrow(ax, (X_ADD + r_add, Y_TOP), (X_ADD + 1.0 - 0.3, Y_TOP))
-    _circle(ax, (X_Y, Y_TOP), r_add)
-    _arrow(ax, (X_ADD + 1.0 + 0.3, Y_TOP), (X_Y - r_add, Y_TOP))
-    _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.6, Y_TOP))
-    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y(t)$", ha="left", fontsize=11)
+    # labels
+    ax.text(X_L - 0.6, Y0 + 0.15, r"$x(t)$", ha="left", fontsize=11)
+    ax.text(X_Y + 0.7, Y0 + 0.15, r"$y(t)$", ha="left", fontsize=11)
 
-    # input and branching
-    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x(t)$", ha="left", fontsize=11)
-    _arrow(ax, (X_L - 0.45, Y_TOP), (X_L + r_add, Y_TOP))
-    _dot(ax, (X_L + r_add, Y_TOP))
+    # input
+    _arrow(ax, (X_L - 0.45, Y0), (X_L + r, Y0))
+    _dot(ax, (X_L + r, Y0))
 
-    # b0 gain directly to adder
-    _box(ax, (X_ADD - 1.0, Y_TOP), text=rf"${b[0]:g}$")
-    _arrow(ax, (X_L + r_add, Y_TOP), (X_ADD - 1.0 - 0.3, Y_TOP))
-    _arrow(ax, (X_ADD - 1.0 + 0.3, Y_TOP), (X_ADD - r_add, Y_TOP))
+    # ── stacked adders: top Σ0, mid Σ1, bottom Σ2 ───────────────────────
+    sigmas = [(X_ADD, Y0 - i*DY) for i in range(3)]
+    for xy in sigmas:
+        _circle(ax, xy, r)
 
-    # --- X integrator chain and b1,b2 gains ---
-    int_x = [(X_XINT, Y_TOP - 0.5*DY), (X_XINT, Y_TOP - 1.5*DY)]
-    states_x = [(X_XINT, Y_TOP - DY), (X_XINT, Y_TOP - 2*DY)]
-    _arrow(ax, (X_L + r_add, Y_TOP), (X_XINT, Y_TOP))
+    # chain Σ2 → Σ1 → Σ0 (vertical arrows)
+    _arrow(ax, (X_ADD, Y0 - 2*DY + r), (X_ADD, Y0 - DY - r))
+    _arrow(ax, (X_ADD, Y0 - DY + r),  (X_ADD, Y0 - r))
+
+    # 1/a0 gain → output adder → y(t)
+    _box(ax, (X_ADD + 1.0, Y0), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
+    _arrow(ax, (X_ADD + r, Y0),        (X_ADD + 1.0 - 0.3, Y0))
+    _circle(ax, (X_Y, Y0), r)
+    _arrow(ax, (X_ADD + 1.0 + 0.3, Y0), (X_Y - r, Y0))
+    _arrow(ax, (X_Y + r, Y0),          (X_Y + 0.6, Y0))
+
+    # ── feed‑forward path x → integrators → b1/b2 into Σ1/Σ2 ───────────
+    _arrow(ax, (X_L + r, Y0), (X_XINT, Y0))  # drop to x‑chain
+    int_x = [(X_XINT, Y0 - 0.5*DY), (X_XINT, Y0 - 1.5*DY)]
+    nodes_x = [(X_XINT, Y0 - DY),   (X_XINT, Y0 - 2*DY)]
+
     for i, (bx, by) in enumerate(int_x):
         _box(ax, (bx, by), text=r"$\int$")
-        _dot(ax, states_x[i])
-        _arrow(ax, (bx, Y_TOP - i*DY), (bx, by + 0.18))
-        _arrow(ax, (bx, by - 0.18), states_x[i])
-        idx = i + 1
-        if idx < len(b):
-            _box(ax, (X_ADD - 1.0, by), text=rf"${b[idx]:g}$")
-            _arrow(ax, states_x[i], (X_ADD - 1.0 - 0.3, by))
-            _arrow(ax, (X_ADD - 1.0 + 0.3, by), (X_ADD - r_add, Y_TOP))
+        _dot(ax, nodes_x[i])
+        _arrow(ax, (bx, Y0 - i*DY), (bx, by + 0.18))
+        _arrow(ax, (bx, by - 0.18), nodes_x[i])
 
-    # --- Y integrator chain and feedback gains ---
-    _arrow(ax, (X_ADD + r_add, Y_TOP), (X_YINT, Y_TOP))
-    _dot(ax, (X_YINT, Y_TOP))
-    int_y = [(X_YINT, Y_TOP - 0.5*DY), (X_YINT, Y_TOP - 1.5*DY)]
-    states_y = [(X_YINT, Y_TOP - DY), (X_YINT, Y_TOP - 2*DY)]
+    # b0 straight into Σ0 (top)
+    _box(ax, (X_ADD - 1.0, Y0), text=rf"${b[0]:g}$")
+    _arrow(ax, (X_L + r, Y0),           (X_ADD - 1.0 - 0.3, Y0))
+    _arrow(ax, (X_ADD - 1.0 + 0.3, Y0), (X_ADD - r, Y0))
+
+    # b1 → Σ1 (middle), b2 → Σ2 (bottom) — each to its own adder level
+    for idx in (1, 2):
+        if idx < len(b):
+            y_tar = Y0 - idx*DY
+            _box(ax, (X_ADD - 1.0, y_tar), text=rf"${b[idx]:g}$")
+            _arrow(ax, nodes_x[idx-1], (X_ADD - 1.0 - 0.3, y_tar))
+            _arrow(ax, (X_ADD - 1.0 + 0.3, y_tar), (X_ADD - r, y_tar))
+
+    # ── feedback path Σ0 → integrators → −a1/−a2 back to Σ1/Σ2 ─────────
+    _arrow(ax, (X_ADD + r, Y0), (X_YINT, Y0))
+    _dot(ax, (X_YINT, Y0))
+
+    int_y = [(X_YINT, Y0 - 0.5*DY), (X_YINT, Y0 - 1.5*DY)]
+    nodes_y = [(X_YINT, Y0 - DY),   (X_YINT, Y0 - 2*DY)]
+
     for i, (bx, by) in enumerate(int_y):
         _box(ax, (bx, by), text=r"$\int$")
-        _dot(ax, states_y[i])
-        _arrow(ax, (bx, Y_TOP - i*DY), (bx, by + 0.18))
-        _arrow(ax, (bx, by - 0.18), states_y[i])
-        idx = i + 1
-        if idx < len(a):
-            _box(ax, (X_ADD + 1.0, by), text=rf"${_neg_fmt(a[idx])}$")
-            _arrow(ax, states_y[i], (X_ADD + 1.0 - 0.3, by))
-            _arrow(ax, (X_ADD + 1.0 + 0.3, by), (X_ADD - r_add, Y_TOP))
+        _dot(ax, nodes_y[i])
+        _arrow(ax, (bx, Y0 - i*DY), (bx, by + 0.18))
+        _arrow(ax, (bx, by - 0.18), nodes_y[i])
 
-    ax.set_xlim(-0.8, X_Y + 1.0)
-    ax.set_ylim(-0.6, Y_TOP + 0.6)
+    for idx in (1, 2):
+        if idx < len(a):
+            y_tar = Y0 - idx*DY
+            _box(ax, (X_ADD + 1.0, y_tar), text=rf"${_neg_fmt(a[idx])}$")
+            _arrow(ax, nodes_y[idx-1], (X_ADD + 1.0 - 0.3, y_tar))
+            _arrow(ax, (X_ADD + 1.0 + 0.3, y_tar), (X_ADD - r, y_tar))
+
+    # framing
+    ax.set_xlim(-0.8, X_Y + 1.2)
+    ax.set_ylim(-0.6, Y0 + 0.6)
     ax.axis("off")
+
+
 
 
 def _draw_df3(ax, b: np.ndarray, a: np.ndarray):
-    """Approximate transposed Direct-Form II."""
+    """Transposed DF‑II (order ≤2) with fully connected left spine."""
     X_L, X_GL, X_INT, X_GR, X_Y = 0.0, 1.3, 2.6, 4.5, 6.0
-    Y_TOP, DY = 2.0, 1.0
-    r_add = 0.17
+    Y0, DY = 2.0, 1.0
+    r = 0.17
 
-    # input adder
-    _circle(ax, (X_L, Y_TOP), r_add)
-    ax.text(X_L - 0.6, Y_TOP + 0.15, r"$x(t)$", ha="left", fontsize=11)
-    _arrow(ax, (X_L - 0.45, Y_TOP), (X_L - r_add, Y_TOP))
+    # input adder and label
+    _circle(ax, (X_L, Y0), r)
+    ax.text(X_L - 0.6, Y0 + 0.15, r"$x(t)$", ha="left", fontsize=11)
+    _arrow(ax, (X_L - 0.45, Y0), (X_L - r, Y0))
 
-    # feed-forward gains on left  (b0 at the top)
-    _box(ax, (X_GL, Y_TOP), text=rf"${b[0]:g}$")
-    _arrow(ax, (X_L + r_add, Y_TOP), (X_GL - 0.3, Y_TOP))
-    _arrow(ax, (X_GL + 0.3, Y_TOP), (X_INT, Y_TOP))
+    # left vertical spine with junctions (so lower taps are visibly connected)
+    spine_x = X_L + r
+    ax.plot([spine_x, spine_x], [Y0, Y0 - 2*DY], lw=1.2, color="k", zorder=1)
+    for y in (Y0, Y0 - DY, Y0 - 2*DY):
+        _dot(ax, (spine_x, y))
 
-    ff_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2*DY)]
-    for idx, y in ff_specs:
+    # feed‑forward: b0, b1, b2
+    _box(ax, (X_GL, Y0), text=rf"${b[0]:g}$")
+    _arrow(ax, (spine_x, Y0), (X_GL - 0.3, Y0))
+    _arrow(ax, (X_GL + 0.3, Y0), (X_INT, Y0))
+
+    for idx, y in ((1, Y0 - DY), (2, Y0 - 2*DY)):
         if idx < len(b):
-            coef = b[idx]
-            _box(ax, (X_GL, y), text=rf"${coef:g}$")
-            _arrow(ax, (X_L + r_add, y), (X_GL - 0.3, y))
+            _box(ax, (X_GL, y), text=rf"${b[idx]:g}$")
+            _arrow(ax, (spine_x, y), (X_GL - 0.3, y))
             _arrow(ax, (X_GL + 0.3, y), (X_INT, y))
 
-    # integrator chain
-    int_boxes = [(X_INT, Y_TOP - 0.5*DY), (X_INT, Y_TOP - 1.5*DY)]
-    state_nodes = [(X_INT, Y_TOP - DY), (X_INT, Y_TOP - 2*DY)]
-    _dot(ax, (X_INT, Y_TOP))
-    for i, (bx, by) in enumerate(int_boxes):
+    # integrator chain and state nodes
+    ints = [(X_INT, Y0 - 0.5*DY), (X_INT, Y0 - 1.5*DY)]
+    states = [(X_INT, Y0 - DY),    (X_INT, Y0 - 2*DY)]
+    _dot(ax, (X_INT, Y0))
+    for i, (bx, by) in enumerate(ints):
         _box(ax, (bx, by), text=r"$\int$")
-        _dot(ax, state_nodes[i])
-        _arrow(ax, (X_INT, Y_TOP - i*DY), (X_INT, by + 0.18))
-        _arrow(ax, (X_INT, by - 0.18), state_nodes[i])
+        _dot(ax, states[i])
+        _arrow(ax, (X_INT, Y0 - i*DY), (X_INT, by + 0.18))
+        _arrow(ax, (X_INT, by - 0.18), states[i])
 
-    # feedback gains to output
-    fb_specs = [(1, Y_TOP - DY), (2, Y_TOP - 2*DY)]
-    for idx, y in fb_specs:
+    # feedback gains to single output adder (route neatly to its rim)
+    for idx, y in ((1, Y0 - DY), (2, Y0 - 2*DY)):
         if idx < len(a):
-            coef = a[idx]
-            _box(ax, (X_GR, y), text=rf"${_neg_fmt(coef)}$")
-            _arrow(ax, state_nodes[idx-1], (X_GR - 0.3, y))
-            _arrow(ax, (X_GR + 0.3, y), (X_Y - r_add, Y_TOP))
+            _box(ax, (X_GR, y), text=rf"${_neg_fmt(a[idx])}$")
+            _arrow(ax, states[idx-1], (X_GR - 0.3, y))
+            _arrow(ax, (X_GR + 0.3, y), (X_Y - r, Y0))
 
-    _box(ax, (X_GR, Y_TOP), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
-    _arrow(ax, (X_INT, Y_TOP), (X_GR - 0.3, Y_TOP))
-    _arrow(ax, (X_GR + 0.3, Y_TOP), (X_Y - r_add, Y_TOP))
+    # 1/a0 path into output adder
+    _box(ax, (X_GR, Y0), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
+    _arrow(ax, (X_INT, Y0), (X_GR - 0.3, Y0))
+    _arrow(ax, (X_GR + 0.3, Y0), (X_Y - r, Y0))
 
-    _circle(ax, (X_Y, Y_TOP), r_add)
-    _arrow(ax, (X_Y + r_add, Y_TOP), (X_Y + 0.6, Y_TOP))
-    ax.text(X_Y + 0.7, Y_TOP + 0.15, r"$y(t)$", ha="left", fontsize=11)
+    # output adder and y(t)
+    _circle(ax, (X_Y, Y0), r)
+    _arrow(ax, (X_Y + r, Y0), (X_Y + 0.6, Y0))
+    ax.text(X_Y + 0.7, Y0 + 0.15, r"$y(t)$", ha="left", fontsize=11)
 
     ax.set_xlim(-0.8, X_Y + 1.3)
-    ax.set_ylim(-0.4, Y_TOP + 0.6)
+    ax.set_ylim(-0.4, Y0 + 0.6)
     ax.axis("off")
+
+
 
 
 def _make_diagram(num, den, form: str):
