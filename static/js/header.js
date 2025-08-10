@@ -23,20 +23,14 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   if (colorblindToggle) {
-    colorblindToggle.addEventListener("click", function() {
-      document.body.classList.toggle("colorblind-mode");
-      if (document.body.classList.contains("colorblind-mode")) {
-        localStorage.setItem("colorblindMode", "true");
-        colorblindToggle.textContent = "Standard Colors";
-      } else {
-        localStorage.setItem("colorblindMode", "false");
-        colorblindToggle.textContent = "Colorblind Mode";
-      }
+    colorblindToggle.addEventListener("change", function() {
+      document.body.classList.toggle("colorblind-mode", colorblindToggle.checked);
+      localStorage.setItem("colorblindMode", colorblindToggle.checked ? "true" : "false");
     });
 
     if (localStorage.getItem("colorblindMode") === "true") {
       document.body.classList.add("colorblind-mode");
-      colorblindToggle.textContent = "Standard Colors";
+      colorblindToggle.checked = true;
     }
   }
 

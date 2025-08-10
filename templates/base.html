@@ -200,7 +200,13 @@
             <li><a href="{{ url_for('info.about') }}">About</a></li>
             <li><a href="{{ url_for('info.contact') }}">Report</a></li>
             <li><button id="dark-mode-toggle">Dark Mode</button></li>
-            <li><button id="colorblind-mode-toggle">Colorblind Mode</button></li>
+            <li class="toggle-container">
+              <span class="toggle-label">Colorblind</span>
+              <label class="switch">
+                <input type="checkbox" id="colorblind-mode-toggle">
+                <span class="slider round"></span>
+              </label>
+            </li>
           </ul>
         </nav>
       </div>
@@ -300,7 +306,7 @@
         © 2025 Signal Processing Toolkit. All rights reserved.<br>
         For inquiries, please email:
         <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a><br>
-        Version 1.1.3v7 (08.08.2025)
+        Version 1.1.3v7 (10.08.2025)
       </p>
       <div class="legal-links">
         <a href="{{ url_for('info.impressum') }}">Impressum</a> |
