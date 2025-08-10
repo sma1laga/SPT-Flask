@@ -4,7 +4,7 @@
   <h1 style="font-size:2.5em;">Autocorrelation Calculator</h1>
   <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
     Enter <strong>x(t)</strong> to compute its autocorrelation
-    $$ \varphi_{xx}(\tau)=\int_{-\infty}^{\infty} x(t+\tau)x^\ast(t)\mathrm dt $$
+    $$ \varphi_{xx}^E(\tau)=x(\tau)*x^*(-\tau)=\int_{-\infty}^{\infty} x(t)x^*(t-\tau)\, dt $$
   </p>
 </div>
 
@@ -74,17 +74,31 @@
     if(data.error) return console.error(data.error);
     const lc = { margin:{ t:30 } };
 
-    Plotly.newPlot("plotSignal", [{
-      x: data.t, y: data.y1,
-      mode: "lines", name: "x(t)",
-      line: { width:2, color: "#1f77b4" }
-    }], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
+    Plotly.newPlot("plotSignal", [
+      {
+        x: data.t, y: data.y_re,
+        mode: "lines", name: "Re{x(t)}",
+        line: { width:2, color: "#1f77b4" }
+      },
+      {
+        x: data.t, y: data.y_im,
+        mode: "lines", name: "Im{x(t)}",
+        line: { width:2, color: "#d62728", dash: "dot" }
+      }
+    ], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
 
-    Plotly.newPlot("plotAuto", [{
-      x: data.t, y: data.y_conv,
-      mode: "lines", name: "φ_xx(τ)",
-      line: { width:2, color: "#2ca02c" }
-    }], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φ_xx(τ)"} } });
+    Plotly.newPlot("plotAuto", [
+      {
+        x: data.tau, y: data.r_re,
+        mode: "lines", name: "Re{φ_xx(τ)}",
+        line: { width:2, color: "#2ca02c" }
+      },
+      {
+        x: data.tau, y: data.r_im,
+        mode: "lines", name: "Im{φ_xx(τ)}",
+        line: { width:2, color: "#ff7f0e", dash: "dot" }
+      }
+    ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φ_xx(τ)"} } });
   }
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);
