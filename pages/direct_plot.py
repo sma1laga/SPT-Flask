@@ -55,6 +55,17 @@ def _neg_fmt(coef: float) -> str:
     """Format -coef without redundant minus signs."""
     return f"{-coef:g}"
 
+def _fmt_inv(a0: float) -> str:
+    """Return latex  for 1/a0 with clean signs."""
+    if np.isclose(a0, 1.0):   return "1"
+    if np.isclose(a0, -1.0):  return "-1"
+    val = abs(float(a0))
+    # integers get an integer denominator, others use g-format
+    if np.isclose(val, round(val)):
+        d = int(round(val))
+        return rf"-\frac{{1}}{{{d}}}" if a0 < 0 else rf"\frac{{1}}{{{d}}}"
+    return rf"-\frac{{1}}{{{val:g}}}" if a0 < 0 else rf"\frac{{1}}{{{val:g}}}"
+
 
 def _as_int_or_float(x):
     xi = int(round(float(x)))
@@ -190,10 +201,13 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
 
 
 def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
-    """Direct‑Form I (order ≤2) with a stacked adder chain so arrows never pile up."""
-    X_L, X_XINT, X_ADD, X_YINT, X_Y = 0.0, 1.8, 3.8, 5.6, 7.0
+    """Direct‑Form I (order ≤2), zero‑tap skipping, no overlaps, clean 1/a0."""
+    X_L, X_X, X_S, X_A, X_ONE, X_Y = 0.0, 1.8, 3.4, 4.9, 6.1, 7.4
     Y0, DY = 2.0, 1.2
     r = 0.17
+
+    def _nz(x):  # non‑zero?
+        return not np.isclose(x, 0.0)
 
     # labels
     ax.text(X_L - 0.6, Y0 + 0.15, r"$x(t)$", ha="left", fontsize=11)
@@ -203,70 +217,74 @@ def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
     _arrow(ax, (X_L - 0.45, Y0), (X_L + r, Y0))
     _dot(ax, (X_L + r, Y0))
 
-    # ── stacked adders: top Σ0, mid Σ1, bottom Σ2 ───────────────────────
-    sigmas = [(X_ADD, Y0 - i*DY) for i in range(3)]
-    for xy in sigmas:
+    # ── three stacked adders: Σ0 (top, main), Σ1 (mid), Σ2 (bottom)
+    sig = [(X_S, Y0 - i*DY) for i in range(3)]
+    for xy in sig:
         _circle(ax, xy, r)
+    # chain Σ2→Σ1→Σ0 vertically
+    _arrow(ax, (X_S, Y0 - 2*DY + r), (X_S, Y0 - DY - r))
+    _arrow(ax, (X_S, Y0 - DY + r),  (X_S, Y0 - r))
 
-    # chain Σ2 → Σ1 → Σ0 (vertical arrows)
-    _arrow(ax, (X_ADD, Y0 - 2*DY + r), (X_ADD, Y0 - DY - r))
-    _arrow(ax, (X_ADD, Y0 - DY + r),  (X_ADD, Y0 - r))
+    # ── 1/a0 block to the RIGHT of Σ0 (so feedback lines never cross it)
+    _box(ax, (X_ONE, Y0), text=f"${_fmt_inv(a[0])}$")
+    _arrow(ax, (X_S + r, Y0), (X_ONE - 0.3, Y0))
 
-    # 1/a0 gain → output adder → y(t)
-    _box(ax, (X_ADD + 1.0, Y0), text=f"$\\frac{{1}}{{{a[0]:g}}}$")
-    _arrow(ax, (X_ADD + r, Y0),        (X_ADD + 1.0 - 0.3, Y0))
+    # output adder and y(t)
     _circle(ax, (X_Y, Y0), r)
-    _arrow(ax, (X_ADD + 1.0 + 0.3, Y0), (X_Y - r, Y0))
-    _arrow(ax, (X_Y + r, Y0),          (X_Y + 0.6, Y0))
+    _arrow(ax, (X_ONE + 0.3, Y0), (X_Y - r, Y0))
+    _arrow(ax, (X_Y + r, Y0), (X_Y + 0.6, Y0))
 
-    # ── feed‑forward path x → integrators → b1/b2 into Σ1/Σ2 ───────────
-    _arrow(ax, (X_L + r, Y0), (X_XINT, Y0))  # drop to x‑chain
-    int_x = [(X_XINT, Y0 - 0.5*DY), (X_XINT, Y0 - 1.5*DY)]
-    nodes_x = [(X_XINT, Y0 - DY),   (X_XINT, Y0 - 2*DY)]
+    # ── FEED‑FORWARD (x‑chain): b0→Σ0, b1→Σ1, b2→Σ2
+    # b0
+    if _nz(b[0]):
+        _box(ax, (X_S - 1.0, Y0), text=rf"${b[0]:g}$")
+        _arrow(ax, (X_L + r, Y0), (X_S - 1.0 - 0.3, Y0))
+        _arrow(ax, (X_S - 1.0 + 0.3, Y0), (X_S - r, Y0))
+    else:
+        # still route input to the x‑chain even if b0=0
+        _arrow(ax, (X_L + r, Y0), (X_X, Y0))
 
-    for i, (bx, by) in enumerate(int_x):
+    # x‑integrators (produce states for b1,b2)
+    _arrow(ax, (X_L + r, Y0), (X_X, Y0))
+    x_int = [(X_X, Y0 - 0.5*DY), (X_X, Y0 - 1.5*DY)]
+    x_state = [(X_X, Y0 - DY), (X_X, Y0 - 2*DY)]
+    for i, (bx, by) in enumerate(x_int):
         _box(ax, (bx, by), text=r"$\int$")
-        _dot(ax, nodes_x[i])
+        _dot(ax, x_state[i])
         _arrow(ax, (bx, Y0 - i*DY), (bx, by + 0.18))
-        _arrow(ax, (bx, by - 0.18), nodes_x[i])
+        _arrow(ax, (bx, by - 0.18), x_state[i])
 
-    # b0 straight into Σ0 (top)
-    _box(ax, (X_ADD - 1.0, Y0), text=rf"${b[0]:g}$")
-    _arrow(ax, (X_L + r, Y0),           (X_ADD - 1.0 - 0.3, Y0))
-    _arrow(ax, (X_ADD - 1.0 + 0.3, Y0), (X_ADD - r, Y0))
-
-    # b1 → Σ1 (middle), b2 → Σ2 (bottom) — each to its own adder level
+    # b1 → Σ1, b2 → Σ2
     for idx in (1, 2):
-        if idx < len(b):
-            y_tar = Y0 - idx*DY
-            _box(ax, (X_ADD - 1.0, y_tar), text=rf"${b[idx]:g}$")
-            _arrow(ax, nodes_x[idx-1], (X_ADD - 1.0 - 0.3, y_tar))
-            _arrow(ax, (X_ADD - 1.0 + 0.3, y_tar), (X_ADD - r, y_tar))
+        if idx < len(b) and _nz(b[idx]):
+            y_t = Y0 - idx*DY
+            _box(ax, (X_S - 1.0, y_t), text=rf"${b[idx]:g}$")
+            _arrow(ax, x_state[idx-1], (X_S - 1.0 - 0.3, y_t))
+            _arrow(ax, (X_S - 1.0 + 0.3, y_t), (X_S - r, y_t))
 
-    # ── feedback path Σ0 → integrators → −a1/−a2 back to Σ1/Σ2 ─────────
-    _arrow(ax, (X_ADD + r, Y0), (X_YINT, Y0))
-    _dot(ax, (X_YINT, Y0))
-
-    int_y = [(X_YINT, Y0 - 0.5*DY), (X_YINT, Y0 - 1.5*DY)]
-    nodes_y = [(X_YINT, Y0 - DY),   (X_YINT, Y0 - 2*DY)]
-
-    for i, (bx, by) in enumerate(int_y):
+    # ── FEEDBACK (y‑chain): −a1→Σ1, −a2→Σ2 (never into Σ0)
+    _arrow(ax, (X_S + r, Y0), (X_A, Y0))  # tap Σ0 into y‑chain
+    _dot(ax, (X_A, Y0))
+    y_int = [(X_A, Y0 - 0.5*DY), (X_A, Y0 - 1.5*DY)]
+    y_state = [(X_A, Y0 - DY), (X_A, Y0 - 2*DY)]
+    for i, (bx, by) in enumerate(y_int):
         _box(ax, (bx, by), text=r"$\int$")
-        _dot(ax, nodes_y[i])
+        _dot(ax, y_state[i])
         _arrow(ax, (bx, Y0 - i*DY), (bx, by + 0.18))
-        _arrow(ax, (bx, by - 0.18), nodes_y[i])
+        _arrow(ax, (bx, by - 0.18), y_state[i])
 
     for idx in (1, 2):
-        if idx < len(a):
-            y_tar = Y0 - idx*DY
-            _box(ax, (X_ADD + 1.0, y_tar), text=rf"${_neg_fmt(a[idx])}$")
-            _arrow(ax, nodes_y[idx-1], (X_ADD + 1.0 - 0.3, y_tar))
-            _arrow(ax, (X_ADD + 1.0 + 0.3, y_tar), (X_ADD - r, y_tar))
+        if idx < len(a) and _nz(a[idx]):
+            y_t = Y0 - idx*DY
+            _box(ax, (X_ONE - 0.8, y_t), text=rf"${_neg_fmt(a[idx])}$")
+            _arrow(ax, y_state[idx-1], (X_ONE - 0.8 - 0.3, y_t))  # state → gain
+            _arrow(ax, (X_ONE - 0.8 + 0.3, y_t), (X_S - r, y_t))  # gain → Σ(level)
 
-    # framing
+    # canvas
     ax.set_xlim(-0.8, X_Y + 1.2)
     ax.set_ylim(-0.6, Y0 + 0.6)
     ax.axis("off")
+
 
 
 
