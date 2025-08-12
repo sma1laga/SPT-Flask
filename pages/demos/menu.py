@@ -44,5 +44,17 @@ def index():
             "desc": "Interaktiv: Sprache/Rauschen/etc. anzeigen als Zeitverlauf, DFT, AKF oder LDS.",
             "endpoint": "demos_kapitel11.page",
         },
+        {
+        "slug": "dtft_dft",
+        "title": "DTFT & DFT – Schwingung & Ausschnitt",
+        "desc": "Vergleich: DTFT‑Impulse und DFT einer Länge‑M‑Ausschnitts des Cosinus.",
+        "endpoint": "dtft_dft.page",
+        },
+        {
+        "slug": "dtft_impulses",
+        "title": "DTFT – Analytischer Cosinus (Impulse)",
+        "desc": "Zweifenster-Demo: Zeitsignal und Impuls-Spektrum bei ±ω₀ (ω₀/π ∈ [0,1]).",
+        "endpoint": "dtft_impulses.page",
+        },
     ]
     return render_template("demos/menu.html", demos=demos)

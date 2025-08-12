@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>DTFT und DFT von Schwingungen</h1>
+
+<form action="javascript:void(0)" style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:1rem;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <label for="freq">Frequenz (0…π)</label>
+    <input type="range" id="freq" min="{{ ui.min_freq }}" max="{{ ui.max_freq }}"
+           step="{{ ui.step }}" value="{{ ui.value }}"
+           oninput="readout.textContent=Number(this.value).toFixed(3); scheduleRedraw();" style="width:360px;">
+    <span id="readout">{{ '%.3f'|format(ui.value) }}</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px;">
+    <label for="mSel">M</label>
+    <input id="mSel" list="mOptions" type="number" value="{{ ui.m }}" min="2" step="2"
+           oninput="scheduleRedraw();" style="width:110px;">
+    <datalist id="mOptions">
+      {% for opt in ui.m_options %}
+        <option value="{{ opt }}"></option>
+      {% endfor %}
+    </datalist>
+  </div>
+
+  <button type="button" onclick="redrawNow()" class="btn">Neu zeichnen</button>
+</form>
+
+<div>
+  <img id="plotImg" src="{{ ui.img_url }}" alt="DTFT/DFT Demo" style="display:block;max-width:100%;height:auto;">
+</div>
+
+<script>
+  const imgEl = document.getElementById('plotImg');
+  const freqEl = document.getElementById('freq');
+  const mEl    = document.getElementById('mSel');
+  const readout= document.getElementById('readout');
+
+  let pending=null, raf=null;
+  function scheduleRedraw(){
+    if(pending) clearTimeout(pending);
+    pending = setTimeout(()=> {
+      if(raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(redrawNow);
+      pending=null;
+    }, 80);
+  }
+
+  function clamp(v, lo, hi){ v = Number(v); if(isNaN(v)) v=0; return Math.max(lo, Math.min(hi, v)); }
+
+  function redrawNow(){
+    const f = clamp(freqEl.value, {{ ui.min_freq }}, {{ ui.max_freq }});
+    const m = Math.max(2, parseInt(mEl.value||"16", 10));
+    const url = new URL("{{ url_for('dtft_dft.image') }}", window.location.origin);
+    url.searchParams.set("freq", f.toString());
+    url.searchParams.set("m", m.toString());
+    url.searchParams.set("_", Date.now().toString()); // cache-bust while scrubbing
+    imgEl.src = url.toString();
+  }
+</script>
+{% endblock %}

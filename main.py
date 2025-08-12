@@ -68,6 +68,10 @@ from pages.demos.kapitel8_2 import demos_kapitel8_2_bp
 from pages.demos.kapitel8_audio import demos_kapitel8_audio_bp
 from pages.demos.kapitel11 import demos_kapitel11_bp
 
+from pages.demos.dtft_impulses import dtft_impulses_bp
+from pages.demos.dtft_dft import dtft_dft_bp
+
+
 
 
 
@@ -148,6 +152,9 @@ def create_app():
     app.register_blueprint(demos_kapitel8_2_bp, url_prefix="/demos/kapitel8_2")
     app.register_blueprint(demos_kapitel8_audio_bp, url_prefix="/demos/kapitel8_audio")
     app.register_blueprint(demos_kapitel11_bp, url_prefix="/demos/kapitel11")
+
+    app.register_blueprint(dtft_impulses_bp, url_prefix="/demos/dtft_impulses")
+    app.register_blueprint(dtft_dft_bp, url_prefix="/demos/dtft_dft")
 
 
 

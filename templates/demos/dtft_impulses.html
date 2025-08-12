@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>DTFT – Analytischer Cosinus (Impulse)</h1>
+
+<form class="controls" action="javascript:void(0)" style="margin-bottom:1rem;">
+  {% if ui.use_slider %}
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <label for="freq"><span>\( {{ ui.desc|safe }} \)</span></label>
+      <input
+        type="range"
+        id="freq" name="freq"
+        min="{{ ui.min_freq }}" max="{{ ui.max_freq }}"
+        step="{{ ui.step }}" value="{{ ui.value }}"
+        oninput="updateReadout(this.value); scheduleRedraw(parseFloat(this.value));"
+        style="width:360px"
+      />
+      <span id="freqVal">{{ "%.3f"|format(ui.value) }}</span>
+      <button type="button" onclick="redrawNow(parseFloat(freqEl.value))">Neu zeichnen</button>
+    </div>
+  {% else %}
+    <div style="display:flex;align-items:center;gap:12px;">
+      <label for="freq"><span>\( {{ ui.desc|safe }} \)</span></label>
+      <input type="number" id="freq" name="freq"
+             min="{{ ui.min_freq }}" max="{{ ui.max_freq }}"
+             step="{{ ui.step }}" value="{{ ui.value }}" />
+      <button type="button" onclick="redrawNow(parseFloat(freqEl.value))">Neu zeichnen</button>
+    </div>
+  {% endif %}
+</form>
+
+<div style="border:1px solid #ccc;border-radius:8px;padding:8px;">
+  <img id="plotImg" alt="DTFT-Demo (Zeitsignal und Impuls-Spektrum)"
+       src="{{ ui.img_url }}"
+       style="width:100%;height:auto;display:block;" />
+</div>
+
+<script>
+  const freqEl = document.getElementById('freq');
+  const imgEl  = document.getElementById('plotImg');
+  const readout = document.getElementById('freqVal');
+
+  function updateReadout(v){ readout.textContent = Number(v).toFixed(3); }
+
+  let pending = null, rafId = null;
+  function scheduleRedraw(value) {
+    if (pending !== null) clearTimeout(pending);
+    pending = setTimeout(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => redrawNow(value));
+      pending = null;
+    }, 80); 
+  }
+
+  function redrawNow(value) {
+    const clamped = Math.max({{ ui.min_freq }}, Math.min({{ ui.max_freq }}, value || 0));
+    const url = new URL("{{ url_for('dtft_impulses.image') }}", window.location.origin);
+    url.searchParams.set("freq", clamped.toString());
+    url.searchParams.set("_", Date.now().toString());
+    imgEl.src = url.toString();
+  }
+
+  if (freqEl && freqEl.type === "number") {
+    freqEl.addEventListener('change', () => redrawNow(parseFloat(freqEl.value)));
+  }
+</script>
+{% endblock %}
