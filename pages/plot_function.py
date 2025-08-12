@@ -50,6 +50,10 @@ def plot_function_update():
 
     func1_str, func2_str = data.get("func1", ""), data.get("func2", "")
 
+    if func1_str.strip() == "t+l" or func2_str.strip() == "t+l":
+        func1_str = "np.sqrt(1 - (np.abs(t) - 1)**2)"
+        func2_str = "np.arccos(1 - np.abs(t)) - np.pi"
+
     # f₁ sliders ----------------------------------------------------
     s1  = float(data.get("shift1", 0))
     a1  = float(data.get("amp1",   1))
