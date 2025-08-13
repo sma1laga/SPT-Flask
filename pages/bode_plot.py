@@ -39,7 +39,7 @@ def parse_poly_input(expr_str):
         expr_fixed = re.sub(r'\)\s*\(', ')*(', expr_str)
         # Replace "j" with sympy's "I"
         expr_fixed = expr_fixed.replace("j", "I")
-        s = sp.symbols('s')
+        s = sp.symbols('s', complex=True)
         try:
             expr_sympy = sp.sympify(expr_fixed, locals={'s': s})
         except Exception as e:

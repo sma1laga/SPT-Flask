@@ -35,11 +35,11 @@ def _str_to_coeffs(txt: str):
     # factorised form, e.g. (s+3)(s+1)^2  or  0.5(s+2)
     expr = parse_expr(
         txt,
-        local_dict={"s": sp.symbols("s")},
+        local_dict={"s": sp.symbols("s", complex=True)},
         transformations=_TRANSFORMS,
         evaluate=False        # keep it symbolic until we expand below
     )
-    coeffs = sp.Poly(sp.expand(expr), sp.symbols("s")).all_coeffs()
+    coeffs = sp.Poly(sp.expand(expr), sp.symbols("s", complex=True)).all_coeffs()
     return np.asarray(coeffs, dtype=float)
 
 
@@ -397,7 +397,7 @@ def direct_plot():
 
             # LaTeX pretty-print.  If a coefficient is very close to an integer,
             # display it as an integer to avoid "1.0" style output.
-            s = sp.symbols("s")
+            s = sp.symbols("s", complex=True)
 
             # SymPy expects highest-power first; our arrays are lowest-power first
             num_sym = _coeffs_to_poly_expr(num, s)

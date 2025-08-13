@@ -3,11 +3,7 @@ from flask import Blueprint, render_template, request, jsonify, current_app
 import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")  
-from matplotlib import rcParams
-rcParams["text.usetex"] = False      
-rcParams["text.parse_math"] = False       
-rcParams["mathtext.fontset"] = "dejavusans"  
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from skimage.io import imread
 from scipy.signal import convolve2d

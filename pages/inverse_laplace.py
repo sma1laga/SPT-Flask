@@ -10,22 +10,26 @@ from utils.laplace_utils import (
     coeffs_to_poly,
     inverse_laplace_expr,
     step_response_expr,
-    _pretty_latex,
-    poly_long_division,
+    pretty_latex,
+    factor_rational,
+    eval_expression,
 )
-from scipy.signal import lti, step as step_func, impulse
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
+rcParams["text.usetex"] = True # TeX-like font
 import numpy as np
 import io
 import base64
 
 
 def _parse_poly(txt: str) -> np.ndarray:
+    """Helper function used for testing."""
     return parse_poly(txt)
 
 
 def _inverse_laplace_expr(num, den) -> sp.Expr:
-    return inverse_laplace_expr(num, den)
+    """Helper function used for testing."""
+    return inverse_laplace_expr(num, den)[0]
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +41,11 @@ def inverse_laplace():
     num_txt = request.form.get("numerator", "[1]")
     den_txt = request.form.get("denominator", "[1, 1]")
     response_type = request.form.get("response_type", "step")
-    latex_expr = None
+    time_signal_ltx = None
     plot_url = None
     title = None
-    tf_ltx = None
+    sf_ltx = None
+    pfd_ltx = None
     q_ltx = None
     r_ltx = None
     error = None
@@ -64,24 +69,26 @@ def inverse_laplace():
             try:
                 num_expr = coeffs_to_poly(num)
                 den_expr = coeffs_to_poly(den)
-                tf_ltx = sp.latex(num_expr / den_expr)
-                if len(num) - 1 >= len(den) - 1:
-                    q_coeffs, r_coeffs = poly_long_division(num, den)
-                    q_ltx = sp.latex(coeffs_to_poly(q_coeffs))
-                    r_ltx = sp.latex(coeffs_to_poly(r_coeffs) / den_expr)
+                sf_ltx = pretty_latex(num_expr/ den_expr, simplify_expr=False)
+                sf_fac_ltx = pretty_latex(factor_rational(num_expr, den_expr), simplify_expr=False)
 
-                def worker() -> sp.Expr:
+                def worker() -> tuple[sp.Expr, sp.Expr]:
                     if response_type == "step":
                         return step_response_expr(num, den)
                     return inverse_laplace_expr(num, den)
                 with ThreadPoolExecutor(max_workers=1) as ex:
                     fut = ex.submit(worker)
-                    expr = fut.result(timeout=10)
+                    expr_t, expr_pfd = fut.result(timeout=5)
 
-                latex_expr = _pretty_latex(expr)
+                time_signal_ltx = pretty_latex(expr_t, simplify_expr=False)
+                pfd_ltx = pretty_latex(expr_pfd, simplify_expr=False) if expr_pfd else None
+                if sf_ltx == pfd_ltx:
+                    pfd_ltx = None
+                if sf_ltx != sf_fac_ltx:
+                    sf_ltx = rf"{sf_ltx} = {sf_fac_ltx}"
 
-                sys = lti(num, den)
-                poles = getattr(sys, "poles", [])
+                # determine plotting range based on poles
+                poles = np.unique(np.roots(den))
                 if len(poles) > 0:
                     # Use the slowest pole to choose a reasonable time span
                     tau_candidates = []
@@ -90,22 +97,36 @@ def inverse_laplace():
                             pole_real = pole.real
                         except AttributeError:
                             pole_real = float(pole)
+                        if np.isclose(pole_real, 0, atol=1e-4): # choose by length of period
+                            pole_real = pole.imag / (2*np.pi)
+                        if np.isclose(pole_real, 0, atol=1e-4):
+                            continue
                         denom = max(abs(pole_real), 1e-3)
-                        tau_candidates.append(1.0 / denom)
-                    tau = max(tau_candidates)
+                        tau_candidates.append(1. / denom)
+                    tau = max(tau_candidates) # max tau of all non-zero poles
                 else:
                     tau = 1.0
                 t_vals = np.linspace(0, 5 * tau, 1000)
+
+                t = sp.symbols("t", real=True)
+                y = eval_expression(expr_t, t_vals, t)
                 if response_type == "step":
-                    tout, y = step_func(sys, T=t_vals)
-                    title = "Step response y(t)"
+                    title = r"Step Response"
+                    time_signal_ltx  = r"s(t)=" + time_signal_ltx
                 else:
-                    tout, y = impulse(sys, T=t_vals)
-                    title = "Impulse response h(t)"
+                    title = r"Impulse Response"
+                    time_signal_ltx = r"h(t)=" + time_signal_ltx
+                
+                t_signal_name_ltx = time_signal_ltx.split("=")[0]
                 fig, ax = plt.subplots(figsize=(5, 3))
-                ax.plot(tout, y)
-                ax.set_xlabel("t")
-                ax.set_ylabel(title.split()[0])
+                ax.axhline(0, color='k', linewidth=0.9)
+                ax.plot(t_vals, y.real, label=rf"$\mathrm{{Re}}\{{{t_signal_name_ltx}\}}$")
+                ax.plot(t_vals, y.imag, label=rf"$\mathrm{{Im}}\{{{t_signal_name_ltx}\}}$", linestyle="--")
+                ax.set_xlim(t_vals[0], t_vals[-1])
+                ax.set_xlabel("$t$")
+                ax.set_ylabel("$"+t_signal_name_ltx+"$")
+                ax.grid()
+                ax.legend()
                 fig.tight_layout()
                 buf = io.BytesIO()
                 fig.savefig(buf, format="png")
@@ -122,10 +143,11 @@ def inverse_laplace():
         "inverse_laplace.html",
         default_num=num_txt,
         default_den=den_txt,
-        latex_expr=latex_expr,
+        time_signal_latex=time_signal_ltx,
         plot_url=plot_url,
         title=title,
-        tf_latex=tf_ltx,
+        sf_latex=sf_ltx,
+        pfd_latex=pfd_ltx,
         q_latex=q_ltx,
         r_latex=r_ltx,
         error=error,

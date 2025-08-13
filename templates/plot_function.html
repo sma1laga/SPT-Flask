@@ -60,11 +60,11 @@
       ('sign(t)', '\mathrm{sign}'),
       ('exp_iwt(t)', '\mathrm e^{i\omega t}'),
       ('exp(t)', '\mathrm e^t'),
-      ('inv_t(t)', '1/t'),
       ('si(t)', '\mathrm{si}'),
       ] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">\({{ ltx }}\)</button>
     {% endfor %}
+    <button type="button" onclick="insertOperand('inv_t(t)')">\(\frac 1 t\)</button> <!-- \frac not rendering in loop -->
     <button type="button" onclick="insertOperand('+')">\(+\)</button>
     <button type="button" onclick="insertOperand('-')">\(-\)</button>
     <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>

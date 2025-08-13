@@ -1,5 +1,5 @@
 .inverse-laplace-container {
-  max-width: 600px;
+  max-width: 1200px;
   margin: 2rem auto;
   padding: 1.5rem 2rem;
   background: var(--card-background, #fff);
@@ -34,7 +34,6 @@
   color: var(--primary-color, #007acc);
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
 }
 .inverse-laplace-container .example-btn:hover {
   background: var(--primary-color, #007acc);

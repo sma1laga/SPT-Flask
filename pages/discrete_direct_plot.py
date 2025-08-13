@@ -34,11 +34,11 @@ def _str_to_coeffs(txt: str):
         return np.asarray(ast.literal_eval(txt), dtype=float)
     expr = parse_expr(
         txt,
-        local_dict={"z": sp.symbols("z")},
+        local_dict={"z": sp.symbols("z", complex=True)},
         transformations=_TRANSFORMS,
         evaluate=False
     )
-    coeffs = sp.Poly(sp.expand(expr), sp.symbols("z")).all_coeffs()
+    coeffs = sp.Poly(sp.expand(expr), sp.symbols("z", complex=True)).all_coeffs()
     return np.asarray(coeffs, dtype=float)
 
 
@@ -296,7 +296,7 @@ def discrete_direct_plot():
                     f"<b>b:</b> {np.round(num,3)}<br>"
                     f"<b>a:</b> {np.round(den,3)}"
                 )
-            z = sp.symbols("z")
+            z = sp.symbols("z", complex=True)
             num_sym = _coeffs_to_poly_expr(num, z)
             den_sym = _coeffs_to_poly_expr(den, z)
             tf_ltx = r"\displaystyle H(z)=\frac{%s}{%s}" % (

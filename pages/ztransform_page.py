@@ -32,7 +32,8 @@ def ztransform():
         n0, n1 = 0, 10
 
     # Define symbols
-    n, z = sp.symbols('n z')
+    n = sp.symbols('n', integer=True)
+    z = sp.symbols('z', complex=True)
 
     # Helper dict for sympify (used in custom mode)
     local_dict = {

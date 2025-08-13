@@ -24,7 +24,7 @@ def parse_poly(poly_str: str) -> List[float]:
     Accepts variable  s  or  z.  Raises ValueError on syntax errors.
     """
     poly_str = poly_str.replace("^", "**")          # allow caret notation
-    s, z = sp.symbols("s z")
+    s, z = sp.symbols("s z", complex=True)
     transformations = standard_transformations + (implicit_multiplication_application,)
     expr = parse_expr(poly_str, local_dict={"s": s, "z": z}, transformations=transformations)
     poly = sp.Poly(expr, s if "s" in poly_str else z)
@@ -171,7 +171,7 @@ import re, networkx as nx, sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from control import tf2ss, TransferFunction
 
-s, z = sp.symbols("s z")
+s, z = sp.symbols("s z", complex=True)
 
 # ---- block → SymPy gain ----------------------------------------------
 def gain_expr(node, domain="s"):

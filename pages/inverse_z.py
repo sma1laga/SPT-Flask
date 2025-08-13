@@ -17,6 +17,8 @@ def _int_if_close(val, tol=1e-12):
     if isinstance(val, complex):
         if abs(val.imag) < tol:
             val = val.real
+        elif abs(val.real) < tol:
+            val = val.imag
         else:
             return val
     if isinstance(val, (float, np.floating, sp.Float)):
@@ -44,7 +46,7 @@ def _parse_poly(txt: str) -> np.ndarray:
                     for p in parts]
             return np.asarray(vals, dtype=complex)
     # else treat as symbolic expression in z
-    z = sp.symbols('z')
+    z = sp.symbols('z', complex=True)
     expr = parse_expr(txt.replace('j','I'),
                       local_dict={'z':z},
                       transformations=_TRANSFORMS,
@@ -54,7 +56,7 @@ def _parse_poly(txt: str) -> np.ndarray:
 
 def _coeffs_to_poly(coeffs):
     """Asc → poly:  [cn-1,cn-2,...,c1,c0]  →  cn-1 z^(n-1) + cn-2 z^(n-2) + ... + c1 z + c0"""
-    z = sp.symbols('z')
+    z = sp.symbols('z', complex=True)
     n = len(coeffs)
     return sum(
         sp.sympify(_int_if_close(c))*z**(n-1-i)

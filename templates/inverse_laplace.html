@@ -4,19 +4,16 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/inverse_laplace.css') }}">
 {% endblock %}
 {% block content %}
-<div class="inverse-laplace-container">
+<div class="inverse-laplace-container" style="max-width: 900px; margin: auto;">
   <div class="page-header text-center mb-5">
-    <h1 class="text-2xl font-semibold">Inverse Laplace Transform</h1>
-    <p class="text-gray-600">Enter a continuous transfer function and view its time-domain response.</p>
-  </div>
-
-  <div class="bg-blue-100 text-blue-800 text-sm p-2 rounded mb-4 text-center">
-    All transforms assume the signal is zero for <em>t</em> &lt; 0.
+    <h1 class="text-2xl font-semibold" style="text-align: center;">Inverse Laplace Transform</h1>
+    <p class="text-gray-600" style="text-align: center;">Enter a causal system function \(H(s)\) to calculate and plot its time-domain impulse response \(h(t)\) or step response \(s(t)\).<br>
+      The expression \(as^2+bs+c\) can be expressed as either <code>[a, b, c]</code> or <code>as^2+bs+c</code>.</p>
   </div>
 
   <form method="POST">
     <fieldset>
-      <legend class="font-medium mb-2">Transfer Function H(s)</legend>
+      <legend class="font-medium mb-2">System Function \(H(s)\)</legend>
       <label for="numerator">Numerator
         <input type="text" id="numerator" name="numerator" value="{{ default_num }}" placeholder="[1]" title="Polynomial coefficients or expression in s" required>
       </label>
@@ -31,17 +28,17 @@
         <p class="text-red-600 text-sm mt-1">{{ den_error }}</p>
       {% endif %}
 
-      <div class="examples">
-        <button type="button" class="example-btn" data-expr="1/(s**2+3*s+2)">1/(s**2+3*s+2)</button>
-        <button type="button" class="example-btn" data-expr="(s+2)/(s**2+4)">(s+2)/(s**2+4)</button>
-        <button type="button" class="example-btn" data-expr="s/(s+1)">s/(s+1)</button>
+      <div class="examples" style="font-size: 1.2rem;">
+        <button type="button" class="example-btn" data-expr="1/(s**2+3*s+2)">\(\frac{1}{s^2+3s+2}\)</button>
+        <button type="button" class="example-btn" data-expr="(s+2)/(s**2+4)">\(\frac{s+2}{s^2+4}\)</button>
+        <button type="button" class="example-btn" data-expr="s/(s+1)">\(\frac{s}{s+1}\)</button>
       </div>
     </fieldset>
 
     <fieldset class="radio-group">
       <legend class="font-medium mb-2">Output Type</legend>
-      <label><input type="radio" name="response_type" value="step" checked> Step</label>
-      <label><input type="radio" name="response_type" value="impulse"> Impulse</label>
+      <label><input type="radio" name="response_type" value="impulse" checked> Impulse response</label>
+      <label><input type="radio" name="response_type" value="step"> Step response</label>
     </fieldset>
 
     <button type="submit" class="compute-btn">Compute</button>
@@ -50,25 +47,26 @@
     {% endif %}
   </form>
 
-  {% if tf_latex %}
-    <div style="text-align:center;margin-top:25px;">
-      <h2>Your Transfer Function</h2>
-      <p>$$ H(s) = {{ tf_latex|safe }} $$</p>
+  {% if sf_latex %}
+    <div style="text-align:center;">
+      <h2>System Function</h2>
+      <p>$$
+        {% if pfd_latex %}
+          \begin{align}
+          H(s) &= {{ sf_latex|safe }}\\
+          &= {{ pfd_latex|safe }}
+          \end{align}
+        {% else %}
+          H(s) = {{ sf_latex|safe }}
+        {% endif %}
+      $$</p>
     </div>
   {% endif %}
 
-  {% if q_latex %}
-    <p class="text-sm text-gray-600 text-center mt-4">Improper transfer functions may produce δ(t) terms – see below.</p>
-    <details class="max-w-md mx-auto mt-2">
-      <summary class="cursor-pointer text-blue-600">Why do δ(t) and its derivatives appear?</summary>
-      <p class="mt-2">For improper transfer functions we perform long division:</p>
-      <p>$$H(s)= {{ q_latex|safe }} + {{ r_latex|safe }}$$</p>
-    </details>
-  {% endif %}
-  {% if latex_expr %}
-    <div class="result">
-      <h3>{{ title }}</h3>
-      <p>\[ {{ latex_expr|safe }} \]</p>
+  {% if time_signal_latex %}
+    <div class="result" style="text-align:center;margin-top:2rem;">
+      <h2>{{ title }}</h2>
+      <p>$$ {{ time_signal_latex|safe }} $$</p>
       <img src="data:image/png;base64,{{ plot_url }}" alt="{{ title }} plot" class="plot">
     </div>
   {% endif %}

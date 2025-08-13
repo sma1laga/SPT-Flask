@@ -4,9 +4,6 @@ import os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from functools import lru_cache
 from scipy.io import wavfile
