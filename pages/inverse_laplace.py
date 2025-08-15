@@ -6,14 +6,14 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from flask import Blueprint, render_template, request, abort
 import sympy as sp
 from utils.laplace_utils import (
-    parse_poly,
-    coeffs_to_poly,
+    parse_input,
     inverse_laplace_expr,
     step_response_expr,
-    pretty_latex,
-    factor_rational,
     eval_expression,
+    CustomLatexPrinter,
 )
+import utils.sympy_utils as sp_utils
+
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 rcParams["text.usetex"] = True # TeX-like font
@@ -24,7 +24,7 @@ import base64
 
 def _parse_poly(txt: str) -> np.ndarray:
     """Helper function used for testing."""
-    return parse_poly(txt)
+    return parse_input(txt).as_poly(sp.symbols("s", complex=True)).all_coeffs()
 
 
 def _inverse_laplace_expr(num, den) -> sp.Expr:
@@ -54,12 +54,12 @@ def inverse_laplace():
     
     if request.method == "POST":
         try:
-            num = parse_poly(num_txt)
+            num = parse_input(num_txt)
         except Exception as exc:
             logger.exception("parse numerator error")
             num_error = f"{type(exc).__name__}: {exc}"
         try:
-            den = parse_poly(den_txt)
+            den = parse_input(den_txt)
 
         except Exception as exc:
             logger.exception("parse denominator error")
@@ -67,28 +67,43 @@ def inverse_laplace():
 
         if not num_error and not den_error:
             try:
-                num_expr = coeffs_to_poly(num)
-                den_expr = coeffs_to_poly(den)
-                sf_ltx = pretty_latex(num_expr/ den_expr, simplify_expr=False)
-                sf_fac_ltx = pretty_latex(factor_rational(num_expr, den_expr), simplify_expr=False)
+                s = sp.symbols("s", complex=True)
+                ltx_printer = CustomLatexPrinter()
+                expr2ltx = lambda expr: ltx_printer.doprint(expr, simplify_expr=False)
+
+                H = sp.simplify(num / den)
+                num, den = H.as_numer_denom()
+                try:
+                    num_coeffs = num.as_poly(s).all_coeffs()
+                    den_coeffs = den.as_poly(s).all_coeffs()
+                except Exception as exc:
+                    raise NotImplementedError(f"No rational function input: {exc}")
+                # LaTeX for H(s)
+                num_expr = sp_utils.coeffs_to_poly(num_coeffs, s)
+                den_expr = sp_utils.coeffs_to_poly(den_coeffs, s)
+                if den_expr==1:
+                    sf_ltx = expr2ltx(num_expr)
+                else:
+                    sf_ltx = rf"\frac{{{expr2ltx(num_expr)}}}{{{expr2ltx(den_expr)}}}"
+                sf_fac_ltx = expr2ltx(sp_utils.factor_rational(num_expr, den_expr, s))
 
                 def worker() -> tuple[sp.Expr, sp.Expr]:
                     if response_type == "step":
-                        return step_response_expr(num, den)
-                    return inverse_laplace_expr(num, den)
+                        return step_response_expr(num_coeffs, den_coeffs)
+                    return inverse_laplace_expr(num_coeffs, den_coeffs)
                 with ThreadPoolExecutor(max_workers=1) as ex:
                     fut = ex.submit(worker)
                     expr_t, expr_pfd = fut.result(timeout=5)
 
-                time_signal_ltx = pretty_latex(expr_t, simplify_expr=False)
-                pfd_ltx = pretty_latex(expr_pfd, simplify_expr=False) if expr_pfd else None
+                time_signal_ltx = expr2ltx(expr_t)
+                pfd_ltx = expr2ltx(expr_pfd) if expr_pfd else None
                 if sf_ltx == pfd_ltx:
                     pfd_ltx = None
                 if sf_ltx != sf_fac_ltx:
                     sf_ltx = rf"{sf_ltx} = {sf_fac_ltx}"
 
                 # determine plotting range based on poles
-                poles = np.unique(np.roots(den))
+                poles = np.unique(np.roots(den_coeffs))
                 if len(poles) > 0:
                     # Use the slowest pole to choose a reasonable time span
                     tau_candidates = []
@@ -137,8 +152,9 @@ def inverse_laplace():
                 logger.exception("symbolic inverse laplace timeout")
                 abort(408, "Expression too complex, try numeric impulse")
             except Exception as exc:
-                logger.exception("inverse laplace failed")
-                error = f"{type(exc).__name__}: {exc}"
+                logger.exception("inverse laplace failed, error=%s", f"{type(exc).__name__}: {exc}")
+                error = type(exc).__name__
+    
     return render_template(
         "inverse_laplace.html",
         default_num=num_txt,

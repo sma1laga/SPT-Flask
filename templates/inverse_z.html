@@ -27,7 +27,7 @@
 
 </form>
 {% if error %}
-  <p style="color:red; text-align:center;">Error: {{ error }}</p>
+  <p style="color:red; text-align:center;">{{ error }}</p>
 {% endif %}
 
 {% if sf_latex %}
@@ -54,14 +54,13 @@
 {% if hk_latex %}
   <div style="text-align:center;margin-top:25px;">
     <p>$$ h[k] = {{ hk_latex|safe }} $$</p>
-
   </div>
 {% endif %}
 <!-- TODO: plot instead of text-->
 {% if seq %}
   <div style="text-align:center;margin-top:20px;">
-    <h3>First {{ seq|length }} samples</h3>
-    <pre>{{ seq }}</pre>
+    <h3>{{ seq_title|safe }}</h3>
+    <p>$$ h[k] = {{ seq|safe }} $$</p>
   </div>
 {% endif %}
 {% endblock %}
