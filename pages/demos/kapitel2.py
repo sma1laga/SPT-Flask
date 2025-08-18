@@ -3,7 +3,10 @@ from flask import Blueprint, render_template, request, jsonify, current_app
 import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")                 
+matplotlib.use("Agg")
+from matplotlib import rcParams
+rcParams["text.usetex"] = False
+rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import convolve
@@ -77,8 +80,8 @@ def compute():
     try:
         data = request.get_json(force=True) or {}
         x_type = (data.get("x_type") or "Arnold").strip()
-        delay = float(data.get("delay") or 0.5)
-        attenuation = float(data.get("attenuation") or 0.5)
+        delay = float(data.get("delay", 0.5))
+        attenuation = float(data.get("attenuation", 0.5))
 
         filename = AUDIO_MAP.get(x_type)
         if not filename:
@@ -101,16 +104,26 @@ def compute():
         t_y = np.arange(len(y))/fs
 
         axes[0].plot(t_x, x)
-        axes[0].set_title("Eingang x[k]")
+        axes[0].margins(x=0)
+        axes[0].set_title("Eingang")
+        axes[0].set_ylabel(r"x[k]")
         axes[0].set_xlabel("s")
 
         # h[k] stem plot
-        axes[1].stem(np.arange(len(h))/fs, h)  # no use_line_collection for new MPL
-        axes[1].set_title("Impulsantwort h[k]")
+        h_nonzero_ind = np.nonzero(h)[0]
+        axes[1].vlines(h_nonzero_ind/fs, 0, h[h_nonzero_ind])
+        axes[1].plot(h_nonzero_ind/fs, h[h_nonzero_ind], 'o', linewidth=1)
+        axes[1].set_ylim(0,2)
+        axes[1].set_xlim(0, len(h)/fs)
+        axes[1].margins(x=0)
+        axes[1].set_title("Impulsantwort")
+        axes[1].set_ylabel(r"h[k]")
         axes[1].set_xlabel("s")
 
         axes[2].plot(t_y, y)
-        axes[2].set_title("Ausgang y[k] = x*h")
+        axes[2].margins(x=0)
+        axes[2].set_title("Ausgang")
+        axes[2].set_ylabel(r"y[k] = x[k]✳h[k]")
         axes[2].set_xlabel("s")
 
         for ax in axes:

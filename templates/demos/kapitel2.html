@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Kapitel 2 – Echo (Faltung)</h1>
-<p>Eingangssignal x[k], Echo-Impulsantwort h[k] mit Dämpfung A und Verzögerung τ, Ausgang y[k] = x*h.</p>
+<h1>Kapitel 2: Echo (Faltung)</h1>
+<p>This demo shows the convolution of an input signal (audio) with a Finite Impulse Response (FIR) Filter \(h[k]=\delta[k]+A\delta[k-\kappa]\) with attenuation \(A\) and delay \(\kappa\). Thus, the output signal is calculated as \(y[k] = x[k]+A\cdot x[k-\kappa]\).</p>
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
@@ -13,18 +13,18 @@
 
 <div class="row">
   <div class="card">
-    <label>Eingangssignal x[k]</label>
+    <label>Eingangssignal \(x[k]\)</label>
     <select id="x_type">
       {% for o in audio_options %}
         <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
       {% endfor %}
     </select>
 
-    <label>Verzögerung τ (s): <span id="delay_val">{{defaults.delay}}</span></label>
-    <input id="delay" type="range" min="0.05" max="1.0" step="0.01" value="{{defaults.delay}}">
+    <label>Delay \(\kappa\ [\mathrm s]\): <span id="delay_val">{{defaults.delay}}</span></label>
+    <input id="delay" type="range" min="0.0" max="1.0" step="0.05" value="{{defaults.delay}}">
 
-    <label>Dämpfung A: <span id="att_val">{{defaults.attenuation}}</span></label>
-    <input id="attenuation" type="range" min="0.0" max="0.95" step="0.01" value="{{defaults.attenuation}}">
+    <label>Attenuation \(A\): <span id="att_val">{{defaults.attenuation}}</span></label>
+    <input id="attenuation" type="range" min="0.0" max="1.0" step="0.05" value="{{defaults.attenuation}}">
 
     <button id="run" style="margin-top:12px">Neu berechnen</button>
   </div>
@@ -32,10 +32,10 @@
   <div class="card"><img id="plot" alt="plot"></div>
 
   <div class="card">
-    <div><strong>Eingang x[k]</strong></div>
+    <div><strong>Eingang \(x[k]\)</strong></div>
     <audio id="x_audio" controls></audio>
     <div style="height:8px"></div>
-    <div><strong>Ausgang y[k]</strong></div>
+    <div><strong>Ausgang \(y[k]\)</strong></div>
     <audio id="y_audio" controls></audio>
   </div>
 </div>

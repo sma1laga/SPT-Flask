@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Demos</h1>
-<p>Interaktive Beispiele als Web-Seiten.</p>
-<ul>
+<p>Interactive Demos of the lecture "Signals and Systems I & II".</p>
+<b>Signals and Systems II</b>
+<ul style="list-style-type: none; padding-left: 20px;">
   {% for d in demos %}
     <li>
-      <a href="{{ url_for(d.endpoint) }}">{{ d.title }}</a>
-      – {{ d.desc }}
+      <a href="{{ url_for(d.endpoint) }}">{{ d.title }}:</a> {{ d.title_desc }}
     </li>
   {% endfor %}
 </ul>
