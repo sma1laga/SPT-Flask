@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Chapter 2: Echo (Faltung)</h1>
-<p>This demo shows the convolution of an input signal (audio) with a Finite Impulse Response (FIR) Filter \(h[k]=\delta[k]+A\delta[k-\kappa]\) with attenuation \(A\) and delay \(\kappa\). Thus, the output signal is calculated as \(y[k] = x[k]+A\cdot x[k-\kappa]\).</p>
+<p>This demo shows the convolution of an input audio-signal with a Finite Impulse Response (FIR) Filter \(h[k]=\delta[k]+A\delta[k-\kappa]\) with attenuation \(A\) and delay \(\kappa\). Thus, the output signal is calculated as \(y[k] = x[k]+A\cdot x[k-\kappa]\).</p>
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
-  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
   input[type=range]{width:280px}
   img{max-width:100%}
 </style>
 
 <div class="row">
-  <div class="card">
+  <div style="margin-top:12px" class="card">
     <label>Eingangssignal \(x[k]\)</label>
     <select id="x_type">
       {% for o in audio_options %}
@@ -26,7 +26,7 @@
     <label>Attenuation \(A\): <span id="att_val">{{defaults.attenuation}}</span></label>
     <input id="attenuation" type="range" min="0.0" max="1.0" step="0.05" value="{{defaults.attenuation}}">
 
-    <button id="run" style="margin-top:12px">Neu berechnen</button>
+    <button id="run" style="margin-top:12px">Recompute</button>
   </div>
 
   <div class="card"><img id="plot" alt="plot"></div>

@@ -4,6 +4,10 @@ import os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
+from matplotlib import rcParams
+rcParams["text.usetex"] = False
+rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from skimage.io import imread
 from scipy.signal import convolve2d
@@ -37,11 +41,6 @@ def _impulse_response(peak2: float):
 def _filter_image(x: np.ndarray, h: np.ndarray, row_wise: bool):
     ker = h[None, :] if row_wise else h[:, None]
     y = convolve2d(x, ker, mode="same")
-    mn, mx = np.min(y), np.max(y)
-    if mx - mn > 1e-12:
-        y = (y - mn) / (mx - mn)
-    else:
-        y = np.zeros_like(y)
     return y
 
 # ---- routes ----
@@ -51,7 +50,7 @@ def page():
     defaults = {
         "x_type": "Arnold",
         "peak2": 0.0,                # b in [-1, 0.5]
-        "filtering": "Zeilenweise",  # or Spaltenweise
+        "filtering": "Row-wise",  # or Spaltenweise
     }
     return render_template(
         "demos/kapitel6.html",
@@ -63,10 +62,10 @@ def page():
 def compute():
     try:
         data = request.get_json(force=True) or {}
-        x_type     = (data.get("x_type") or "Arnold").strip()
-        peak2      = float(data.get("peak2") or 0.0)
-        filtering  = (data.get("filtering") or "Zeilenweise").strip()
-        row_wise   = True if filtering == "Zeilenweise" else False
+        x_type     = (data.get("x_type", "Arnold")).strip()
+        peak2      = float(data.get("peak2", 0.0))
+        filtering  = (data.get("filtering", "Row-wise")).strip()
+        row_wise   = True if filtering == "Row-wise" else False
 
         filename = IMAGE_MAP.get(x_type)
         if not filename:
@@ -90,7 +89,7 @@ def compute():
 
         h_axis.set_xlabel("Index k")
         h_axis.set_ylabel("h[k]")
-        h_axis.set_title("Impulsantwort")
+        h_axis.set_title("Impulse Response")
         h_axis.set_ylim(-1.1, 1.1)
         h_axis.set_xlim(-1.1, 6.1)
         h_axis.set_yticks(np.arange(-1, 1.1, 0.5))
@@ -107,12 +106,12 @@ def compute():
         h_axis.plot(h_line_x, h_line_y, 'o', markersize=7)
 
         # images
-        x_axis.imshow(x, cmap="gray", aspect="auto", origin="upper")
-        x_axis.set_title("Eingang x[m,n]")
+        x_axis.imshow(x, cmap="gray", interpolation='none')
+        x_axis.set_title("Input")
         x_axis.axis("off")
 
-        y_axis.imshow(y, cmap="gray", aspect="auto", origin="upper")
-        y_axis.set_title("Gefiltertes Bild y[m,n]")
+        y_axis.imshow(np.abs(y), cmap="gray", interpolation='none')
+        y_axis.set_title("Output (Magnitude)")
         y_axis.axis("off")
 
         fig.tight_layout(h_pad=3, pad=3)

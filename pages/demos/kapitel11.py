@@ -4,6 +4,10 @@ import os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
+from matplotlib import rcParams
+rcParams["text.usetex"] = False
+rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import resample, correlate, butter, filtfilt, get_window
@@ -186,8 +190,8 @@ def page():
 def compute():
     try:
         data = request.get_json(force=True) or {}
-        x_type = (data.get("x_type") or "Sprache").strip()
-        plt_type = (data.get("plt") or "zeit").strip()
+        x_type = (data.get("x_type", "Sprache")).strip()
+        plt_type = (data.get("plt", "zeit")).strip()
 
         fs, x = _prepare_signal(x_type)
 

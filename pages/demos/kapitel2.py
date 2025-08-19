@@ -4,6 +4,7 @@ import os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
 from matplotlib import rcParams
 rcParams["text.usetex"] = False
 rcParams["text.parse_math"] = False

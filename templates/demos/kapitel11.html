@@ -5,7 +5,7 @@
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
-  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
   img{max-width:100%}
   select, .radio-group{width:100%}
@@ -13,7 +13,7 @@
 </style>
 
 <div class="row">
-  <div class="card" style="min-width:280px">
+  <div class="card" style="min-width:280px; margin-top:12px">
     <label>Eingangssignal x[k]</label>
     <select id="x_type">
       {% for s in sig_options %}
@@ -28,7 +28,7 @@
       {% endfor %}
     </div>
 
-    <button id="run" style="margin-top:12px">Neu berechnen</button>
+    <button id="run" style="margin-top:12px">Recompute</button>
   </div>
 
   <div class="card">

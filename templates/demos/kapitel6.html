@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Chapter 6 – Zeilen-/Spaltenweise Filterung (2-Tap)</h1>
-<p>Bild x[m,n], Filter h[k] = a·δ[k] + b·δ[k−1] mit a = 1−max(0,b). Wähle Bild, Filterrichtung und b.</p>
+<h1>Chapter 6: Image-Filter</h1>
+<p>This Demo shows the filtering of an image \(x[m,n]\) with a one-dimensional filter \(h[k]=a\cdot\delta[k]+b\cdot\delta[k-1]\).
+  The row-wise filtered image can be calculated as:
+  $$y[m,n] = \sum_{\kappa=0}^{N-1} x[m,\kappa]\cdot h[n-\kappa],$$
+  with column-index \(m\in \{0,M-1\}\) row-index \(n\in \{0,N-1\}\).
+</p>
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
-  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
   input[type=range]{width:280px}
   img{max-width:100%}
@@ -13,24 +17,24 @@
 </style>
 
 <div class="row">
-  <div class="card">
-    <label>Bild</label>
+  <div style="margin-top:12px" class="card">
+    <label>Image</label>
     <select id="x_type">
       {% for o in image_options %}
         <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
       {% endfor %}
     </select>
 
-    <label style="margin-top:8px;">Filterung</label>
+    <label style="margin-top:8px;">Filtering</label>
     <div class="radio-group">
-      <label><input type="radio" name="filtering" value="Zeilenweise" {% if defaults.filtering=='Zeilenweise' %}checked{% endif %}> Zeilenweise</label>
-      <label><input type="radio" name="filtering" value="Spaltenweise" {% if defaults.filtering=='Spaltenweise' %}checked{% endif %}> Spaltenweise</label>
+      <label><input type="radio" name="filtering" value="Row-wise" {% if defaults.filtering=='Row-wise' %}checked{% endif %}> Row-wise</label>
+      <label><input type="radio" name="filtering" value="Column-wise" {% if defaults.filtering=='Column-wise' %}checked{% endif %}> Column-wise</label>
     </div>
 
     <label style="margin-top:8px;">\(b\): <span id="b_val">{{defaults.peak2}}</span></label>
     <input id="peak2" type="range" min="-1" max="0.5" step="0.02" value="{{defaults.peak2}}">
 
-    <button id="run" style="margin-top:12px">Neu berechnen</button>
+    <button id="run" style="margin-top:12px">Recompute</button>
   </div>
 
   <div class="card">
@@ -43,7 +47,7 @@
 
   function currentFiltering(){
     const r = document.querySelector('input[name="filtering"]:checked');
-    return r ? r.value : "Zeilenweise";
+    return r ? r.value : "Row-wise";
   }
   function syncLabels(){
     $("b_val").textContent = $("peak2").value;

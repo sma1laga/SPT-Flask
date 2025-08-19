@@ -5,7 +5,7 @@
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
-  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
   input[type=range]{width:280px}
   img{max-width:100%}
@@ -13,7 +13,7 @@
 </style>
 
 <div class="row">
-  <div class="card">
+  <div style="margin-top:12px" class="card">
     <label>Eingangssignal x[k]</label>
     <select id="x_type">
       {% for o in audio_options %}
@@ -36,7 +36,7 @@
       Fensterung (Hann-Fenster)
     </label>
 
-    <button id="run" style="margin-top:12px">Neu berechnen</button>
+    <button id="run" style="margin-top:12px">Recompute</button>
   </div>
 
   <div class="card">
