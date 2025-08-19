@@ -3,7 +3,11 @@ from flask import Blueprint, render_template, request, jsonify, current_app
 import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg") 
+matplotlib.use("Agg")
+matplotlib.style.use("fast")
+from matplotlib import rcParams
+rcParams["text.usetex"] = False
+rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from utils.img import fig_to_base64
@@ -69,8 +73,8 @@ def compute():
     try:
         data = request.get_json(force=True) or {}
         x_type  = (data.get("x_type") or "Lalala").strip()
-        pos     = float(data.get("pos") or 0.8)
-        M       = int(data.get("len_dft") or DEFAULT_LEN_DFT)
+        pos     = float(data.get("pos", 0.8))
+        M       = int(data.get("len_dft", DEFAULT_LEN_DFT))
 
         filename = AUDIO_MAP.get(x_type)
         if not filename:
@@ -108,28 +112,37 @@ def compute():
 
         # full x with crop markers
         t = np.arange(len(x)) / fs
-        x_axis.plot(t, x)
+        x_axis.plot(t, x, lw=0.5)
         # show the crop window on the full signal
         t0 = ind_start / fs
         t1 = (ind_start + M) / fs
-        x_axis.axvline(t0, color="C1", linewidth=1)
-        x_axis.axvline(t1, color="C1", linewidth=1)
-        x_axis.set_title("Eingang x[k]")
-        x_axis.set_xlabel("s")
-        x_axis.grid(True, alpha=0.25)
+        x_axis.axvline(t0, color="C1", linewidth=2)
+        x_axis.axvline(t1, color="C1", linewidth=2)
+        x_axis.margins(x=0)
+        x_axis.set_title("Input")
+        x_axis.set_xlabel("Time [s]")
+        x_axis.set_ylabel("x[k]")
+        x_axis.grid(True)
+        x_axis.set_ylim([-1, 1])
 
         # cropped window
         tM = np.arange(M) / fs + t0
-        x_crop_axis.plot(tM, xM)
-        x_crop_axis.set_title(f"x[k] Ausschnitt, M={M}")
-        x_crop_axis.set_xlabel("s")
-        x_crop_axis.grid(True, alpha=0.25)
+        x_crop_axis.plot(tM, xM, lw=0.5)
+        x_crop_axis.margins(x=0)
+        x_crop_axis.set_title(f"Window, M={M}")
+        x_crop_axis.set_xlabel("Time [s]")
+        x_crop_axis.set_ylabel("x̃[k]")
+        x_crop_axis.grid(True)
+        x_crop_axis.set_ylim([-1, 1])
 
         # |DFT| magnitude
-        x_DFT_axis.plot(f, Xh)
-        x_DFT_axis.set_title("|DFT{x_M}|")
-        x_DFT_axis.set_xlabel("Hz")
-        x_DFT_axis.grid(True, alpha=0.25)
+        x_DFT_axis.plot(f, Xh, lw=1)
+        x_DFT_axis.margins(x=0)
+        x_DFT_axis.set_title("Spectrum (Magnitude)")
+        x_DFT_axis.set_xlabel("Frequency [Hz]")
+        x_DFT_axis.set_ylabel("|X[μ]|")
+        x_DFT_axis.grid(True)
+        x_DFT_axis.set_xlim(0, fs*25/512)
 
         png = fig_to_base64(fig)
 

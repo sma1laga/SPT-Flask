@@ -1,30 +1,32 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Kapitel 4 – DFT (Fenster & Betragsspektrum)</h1>
-<p>Wähle ein Eingangssignal, verschiebe die Fensterposition und wähle die Länge M für die DFT des Ausschnitts.</p>
-
+<h1>Chapter 4: DFT (Fenster-Betragsspektrum)</h1>
+<p>This demo shows the Discrete Fourier-Transformation (DFT) of length \(M\) of an audio input signal \(x[k]\) according to
+  $$ X[\mu] = \sum_{k=0}^{M-1}\tilde x[k]\omega_M^{\mu k}, $$
+  with the twiddle factor (Drehfaktor) \(\omega_M=\mathrm e^{-\mathrm j\frac{2\pi}{M}}\) and \(\tilde x[k]\), being a window of \(x[k]\) of length \(M\).
+</p>
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
-  .card{padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
-  input[type=range]{width:280px}
+  input[type=range]{width:100%}
   img{max-width:100%}
   .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
 </style>
 
 <div class="row">
-  <div class="card">
-    <label>Eingangssignal x[k]</label>
+  <div style="margin-top:12px" class="card">
+    <label>Input Signal \(x[k]\)</label>
     <select id="x_type">
       {% for o in audio_options %}
         <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
       {% endfor %}
     </select>
 
-    <label>Fenster-Position (0…1): <span id="pos_val">{{defaults.pos}}</span></label>
+    <label>Position (0...1): <span id="pos_val">{{defaults.pos}}</span></label>
     <input id="pos" type="range" min="0" max="1" step="0.01" value="{{defaults.pos}}">
 
-    <label style="margin-top:12px;">Länge M der DFT:</label>
+    <label style="margin-top:12px;">DFT-Length \(M\):</label>
     <div id="len_dft_group" class="radio-group">
       {% set M_options = [4096, 8192, 16384] %}
       {% for M in M_options %}
@@ -35,7 +37,7 @@
       {% endfor %}
     </div>
 
-    <button id="run" style="margin-top:12px">Neu berechnen</button>
+    <button id="run" style="margin-top:12px">Recompute</button>
   </div>
 
   <div class="card">
@@ -43,11 +45,11 @@
   </div>
 
   <div class="card">
-    <div><strong>Eingang x[k]</strong></div>
-    <audio id="x_audio" controls></audio>
+    <div><strong>Input \(x[k]\)</strong></div>
+    <audio style="width:100%" id="x_audio" controls></audio>
     <div style="height:8px"></div>
-    <div><strong>Ausschnitt x_M[k]</strong></div>
-    <audio id="xM_audio" controls></audio>
+    <div><strong>Window \(\tilde x[k]\)</strong></div>
+    <audio style="width:100%" id="xM_audio" controls></audio>
   </div>
 </div>
 
