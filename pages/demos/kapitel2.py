@@ -104,11 +104,11 @@ def compute():
         t_x = np.arange(len(x))/fs
         t_y = np.arange(len(y))/fs
 
-        axes[0].plot(t_x, x)
+        axes[0].plot(t_x, x, lw=0.5)
         axes[0].margins(x=0)
-        axes[0].set_title("Eingang")
-        axes[0].set_ylabel(r"x[k]")
-        axes[0].set_xlabel("s")
+        axes[0].set_title("Input")
+        axes[0].set_ylabel("x[k]")
+        axes[0].set_xlabel("Time [s]")
 
         # h[k] stem plot
         h_nonzero_ind = np.nonzero(h)[0]
@@ -117,15 +117,15 @@ def compute():
         axes[1].set_ylim(0,2)
         axes[1].set_xlim(0, len(h)/fs)
         axes[1].margins(x=0)
-        axes[1].set_title("Impulsantwort")
-        axes[1].set_ylabel(r"h[k]")
-        axes[1].set_xlabel("s")
+        axes[1].set_title("Impulse Response")
+        axes[1].set_ylabel("h[k]")
+        axes[1].set_xlabel("Time [s]")
 
-        axes[2].plot(t_y, y)
+        axes[2].plot(t_y, y, lw=0.5)
         axes[2].margins(x=0)
-        axes[2].set_title("Ausgang")
-        axes[2].set_ylabel(r"y[k] = x[k]✳h[k]")
-        axes[2].set_xlabel("s")
+        axes[2].set_title("Output")
+        axes[2].set_ylabel("y[k] = x[k]✳h[k]")
+        axes[2].set_xlabel("Time [s]")
 
         for ax in axes:
             ax.grid(True, alpha=0.25)

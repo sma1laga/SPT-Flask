@@ -20,10 +20,10 @@
       {% endfor %}
     </select>
 
-    <label>Delay \(\kappa\ [\mathrm s]\): <span id="delay_val">{{defaults.delay}}</span></label>
+    <label>Delay \(\kappa\ [\mathrm s]\) : <span id="delay_val">{{defaults.delay}}</span></label>
     <input id="delay" type="range" min="0.0" max="1.0" step="0.05" value="{{defaults.delay}}">
 
-    <label>Attenuation \(A\): <span id="att_val">{{defaults.attenuation}}</span></label>
+    <label>Attenuation \(A\) : <span id="att_val">{{defaults.attenuation}}</span></label>
     <input id="attenuation" type="range" min="0.0" max="1.0" step="0.05" value="{{defaults.attenuation}}">
 
     <button id="run" style="margin-top:12px">Recompute</button>
