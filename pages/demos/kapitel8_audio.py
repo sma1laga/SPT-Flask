@@ -53,10 +53,10 @@ def _load_mono_float_cached(path: str):
 def _lowpass_h(L: int, fg_norm: float, use_hann: bool):
     """
     Diskreter Tiefpass:
-        h[k] = fg_norm * sinc(fg_norm * (k - k0)), k0 = ceil(L/2)
+        h[k] = fg_norm * sinc(fg_norm * (k - k0)), k0 = floor(L/2)
     fg_norm = Ωg/π in [0, 1]
     """
-    k = np.arange(-np.ceil(L/2), L-np.ceil(L/2), dtype=np.float32)
+    k = np.arange(L, dtype=np.float32) - np.floor(L/2)
     assert len(k) == L, f"Expected L={L}, got {len(k)}"
     h = fg_norm * np.sinc(fg_norm * k).astype(np.float32)
     if use_hann:

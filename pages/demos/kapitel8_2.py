@@ -20,9 +20,9 @@ def bandpass_impulse(L, Omegag, Omega0, use_hann=True):
     """
     Windowed-sinc bandpass:
       h[k] = (2*Omegag/π) * sinc((Omegag/π)*(k-k0)) * cos(Omega0*(k-k0)) * w[k]
-      with k0 = ceil(L/2). Omegag is HALF-bandwidth, Omega0 is center.
+      with k0 = floor(L/2). Omegag is HALF-bandwidth, Omega0 is center.
     """
-    k = np.arange(L, dtype=np.float32) - np.ceil(L/2)
+    k = np.arange(L, dtype=np.float32) - np.floor(L/2)
     h = (2*Omegag/np.pi) * np.sinc((Omegag/np.pi) * k) * np.cos(Omega0 * k)
     if use_hann:
         h *= np.hanning(L)
