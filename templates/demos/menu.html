@@ -1,13 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .course-section {
+    margin-top: 40px;
+  }
+  .card h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.5em;
+  }
+</style>
+
 <h1>Demos</h1>
-<p>Interactive Demos of the lecture "Signals and Systems I & II".</p>
-<b>Signals and Systems II</b>
-<ul style="list-style-type: none; padding-left: 20px;">
-  {% for d in demos %}
-    <li>
-      <a href="{{ url_for(d.endpoint) }}">{{ d.title }}:</a> {{ d.title_desc }}
-    </li>
-  {% endfor %}
-</ul>
+<p>Interactive demos for the lectures Signals and Systems I & II. These demos were created specifically for the courses at FAU, but they can be helpful to students everywhere.</p>
+
+{% for lecture, sections in demos.items() %}
+  <div class="course-section">
+    <h2>{{ lecture }}</h2>
+    <div class="menu-container">
+      {% for section, demo_list in sections.items() %}
+        <div class="card">
+          <h3>{{ section }}</h3>
+          {% if demo_list %}
+            <ul>
+              {% for d in demo_list %}
+                <li>
+                  <a href="{{ url_for(d.endpoint) }}">{{ d.title }}:</a> {{ d.title_desc }}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>No demos available yet.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
 {% endblock %}
