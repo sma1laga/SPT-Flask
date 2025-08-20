@@ -1,39 +1,54 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Chapter 8 – Tiefpass (Audio)</h1>
-<p>Eingangssignal x[k] durch diskreten Tiefpass mit Grenzfrequenz Ω<sub>g</sub>/π, Länge M, optional Hann-Fenster.</p>
+<h1>Chapter 8: Low-Pass</h1>
+<p>
+  This demo shows the filtering of an input signal \(x[k]\) with a discrete low-pass filter of the form:
+  $$h_\mathrm{LP}[k] = \begin{cases}
+  \frac{\Omega_\mathrm g}{\pi}\cdot\mathrm{si}[(k-k_0)\Omega_\mathrm g] & 0\leq k\leq L-1\\
+  0 & \mathrm{otherwise}
+  \end{cases},$$
+  with the cut-off frequency \(\Omega_\mathrm g\in[0,\pi]\), length \(L\), and shift \(k_0=\left\lceil\frac{L}{2}\right\rceil\).
+</p>
+<p>
+  For smoothing the overshoot, a Hann-window (raised cosine) of length \(L\) can be used, which is defined as:
+  $$\begin{align}
+  w_\mathrm{Hann}[k] &= \frac{1}{2}\left[1-\cos\left(\frac{2\pi}{L-1}k\right)\right] \\
+  &= \sin^2\left(\frac{\pi}{L-1}k\right),
+  \end{align}$$
+  for \(k=\{0,\dots,L-1\}\). The resulting low-pass signal is denoted as \(x_\mathrm{LP}[k]=x[k]\ast (h_\mathrm{LP}[k]\cdot w[k])\).
+</p>
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
   .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
-  input[type=range]{width:280px}
+  input[type=range]{width:100%}
   img{max-width:100%}
   .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
 </style>
 
 <div class="row">
   <div style="margin-top:12px" class="card">
-    <label>Eingangssignal x[k]</label>
+    <label>Input \(x[k]\)</label>
     <select id="x_type">
       {% for o in audio_options %}
         <option value="{{o}}" {% if o == defaults.x_type %}selected{% endif %}>{{o}}</option>
       {% endfor %}
     </select>
 
-    <label>Grenzfrequenz (Ω<sub>g</sub>/π): <span id="fg_val">{{defaults.fg}}</span></label>
-    <input id="fg" type="range" min="0.01" max="1.00" step="0.01" value="{{defaults.fg}}">
+    <label>Cut-Off Frequency \(\Omega_\mathrm g/\pi\) : <span id="fg_val">{{defaults.fg}}</span></label>
+    <input width="100%" id="fg" type="range" min="0" max="1.00" step="0.05" value="{{defaults.fg}}">
 
-    <label style="margin-top:12px;">Länge M</label>
-    <div id="M_group" class="radio-group">
-      {% for M in M_options %}
-        <label><input type="radio" name="M" value="{{M}}" {% if M == defaults.M %}checked{% endif %}> {{M}}</label>
+    <label style="margin-top:12px;">Length \(L\)</label>
+    <div id="L_group" class="radio-group">
+      {% for L in L_options %}
+        <label><input type="radio" name="L" value="{{L}}" {% if L == defaults.L %}checked{% endif %}> {{L}}</label>
       {% endfor %}
     </div>
 
     <label style="margin-top:8px;">
       <input id="win" type="checkbox" {% if defaults.win %}checked{% endif %}>
-      Fensterung (Hann-Fenster)
+      Windowing (Hann-Window)
     </label>
 
     <button id="run" style="margin-top:12px">Recompute</button>
@@ -44,20 +59,20 @@
   </div>
 
   <div class="card">
-    <div><strong>Eingang x[k]</strong></div>
-    <audio id="x_audio" controls></audio>
+    <div><strong>Original</strong></div>
+    <audio style="width:100%" id="x_audio" controls></audio>
     <div style="height:8px"></div>
-    <div><strong>Gefiltert y[k]</strong></div>
-    <audio id="y_audio" controls></audio>
+    <div><strong>Filtered</strong></div>
+    <audio style="width:100%" id="y_audio" controls></audio>
   </div>
 </div>
 
 <script>
   const $ = (id) => document.getElementById(id);
 
-  function currentM(){
-    const r = document.querySelector('input[name="M"]:checked');
-    return r ? parseInt(r.value) : {{ defaults.M|int }};
+  function currentL(){
+    const r = document.querySelector('input[name="L"]:checked');
+    return r ? parseInt(r.value) : {{ defaults.L|int }};
   }
   function syncLabels(){
     $("fg_val").textContent = $("fg").value;
@@ -68,7 +83,7 @@
     const body = {
       x_type: $("x_type").value,
       fg: parseFloat($("fg").value),
-      M: currentM(),
+      L: currentL(),
       win: document.getElementById("win").checked
     };
     const resp = await fetch("./compute", {
@@ -84,7 +99,7 @@
   }
 
   ["x_type","fg","win"].forEach(id => $(id).addEventListener("input", () => recompute()));
-  document.querySelectorAll('input[name="M"]').forEach(r => r.addEventListener("change", () => recompute()));
+  document.querySelectorAll('input[name="L"]').forEach(r => r.addEventListener("change", () => recompute()));
   $("run").addEventListener("click", () => recompute());
   recompute();
 </script>

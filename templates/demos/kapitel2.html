@@ -7,7 +7,7 @@
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
   .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
-  input[type=range]{width:280px}
+  input[type=range]{width:100%}
   img{max-width:100%}
 </style>
 
@@ -33,10 +33,10 @@
 
   <div class="card">
     <div><strong>Eingang \(x[k]\)</strong></div>
-    <audio id="x_audio" controls></audio>
+    <audio style="width:100%" id="x_audio" controls></audio>
     <div style="height:8px"></div>
     <div><strong>Ausgang \(y[k]\)</strong></div>
-    <audio id="y_audio" controls></audio>
+    <audio style="width:100%" id="y_audio" controls></audio>
   </div>
 </div>
 

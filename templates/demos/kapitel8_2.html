@@ -1,35 +1,50 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Chapter 8.2 – Bandpass (Bild)</h1>
-<p>Bandpass im Ortsbereich (spaltenweise). Wähle Zentrum Ω₀/π, Breite Ω<sub>g</sub>/π und Länge M<sub>L</sub>.</p>
+<h1>Chapter 8: Band-Pass</h1>
+<p>
+  This demo shows the row-wise filtering of an input image \(x[m,n]\) with a one-dimensional discrete band-pass filter of the form:
+  $$h_\mathrm{BP}[k] = \begin{cases}
+  \frac{2\Omega_\mathrm g}{\pi}\cdot\mathrm{si}[(k-k_0)\Omega_\mathrm g]\cdot \cos[\Omega_0 k] & 0\leq k\leq L-1\\
+  0 & \mathrm{otherwise}
+  \end{cases},$$
+  with the center frequency \(\Omega_0\in[0,\pi]\), cut-off frequency \(\Omega_\mathrm g\in[0,\frac \pi 2]\), filter length \(L\), and shift \(k_0=\left\lceil\frac{L}{2}\right\rceil\).
+</p>
+<p>
+  For smoothing the overshoot, a Hann-window (raised cosine) of length \(L\) can be used, which is defined as:
+  $$\begin{align}
+  w_\mathrm{Hann}[k] &= \frac{1}{2}\left[1-\cos\left(\frac{2\pi}{L-1}k\right)\right] \\
+  &= \sin^2\left(\frac{\pi}{L-1}k\right),
+  \end{align}$$
+  for \(k=\{0,\dots,L-1\}\). The resulting band-pass filtered image is denoted as \(x_\mathrm{BP}[m,n]=x[m,n]\ast (h_\mathrm{BP}[n]\cdot w[n])\) for each image row \(m\in\{0,\dots,M-1\}\).
+</p>
 
 <style>
   .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
   .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
   label{display:block;margin-top:8px}
-  input[type=range]{width:280px}
+  input[type=range]{width:100%}
   img{max-width:100%}
   .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-right:14px;margin-top:6px}
 </style>
 
 <div class="row">
   <div style="margin-top:12px" class="card">
-    <label>Mitte Ω₀/π: <span id="o0_val">{{defaults.Omega0_over_pi}}</span></label>
-    <input id="o0" type="range" min="0.00" max="1.00" step="0.01" value="{{defaults.Omega0_over_pi}}">
+    <label>Center Frequency \(\Omega_0/\pi\) : <span id="o0_val">{{defaults.Omega0_over_pi}}</span></label>
+    <input id="o0" type="range" min="0.00" max="1.00" step="0.05" value="{{defaults.Omega0_over_pi}}">
 
-    <label>Breite Ω<sub>g</sub>/π: <span id="og_val">{{defaults.Omega_g_over_pi}}</span></label>
-    <input id="og" type="range" min="0.01" max="0.15" step="0.01" value="{{defaults.Omega_g_over_pi}}">
+    <label>Cut-Off Frequency \(\Omega_\mathrm{g}/\pi\) : <span id="og_val">{{defaults.Omega_g_over_pi}}</span></label>
+    <input id="og" type="range" min="0" max="0.5" step="0.05" value="{{defaults.Omega_g_over_pi}}">
 
-    <label style="margin-top:12px;">Länge M<sub>L</sub></label>
+    <label style="margin-top:12px;">Length \(L\)</label>
     <div class="radio-group">
-      {% for M in [16,32,64,128] %}
-        <label><input type="radio" name="M_L" value="{{M}}" {% if M == defaults.M_L %}checked{% endif %}> {{M}}</label>
+      {% for L in [16,32,64,128] %}
+        <label><input type="radio" name="L" value="{{L}}" {% if L == defaults.L %}checked{% endif %}> {{L}}</label>
       {% endfor %}
     </div>
 
     <label style="margin-top:8px;">
       <input id="use_hann" type="checkbox" {% if defaults.use_hann %}checked{% endif %}>
-      Hann-Fenster
+      Windowing (Hann-Window)
     </label>
 
     <button id="run" style="margin-top:12px">Recompute</button>
@@ -43,9 +58,9 @@
 <script>
   const $ = (id) => document.getElementById(id);
 
-  function currentML(){
-    const r = document.querySelector('input[name="M_L"]:checked');
-    return r ? parseInt(r.value) : {{ defaults.M_L|int }};
+  function currentL(){
+    const r = document.querySelector('input[name="L"]:checked');
+    return r ? parseInt(r.value) : {{ defaults.L|int }};
   }
   function syncLabels(){
     $("o0_val").textContent = $("o0").value;
@@ -56,7 +71,7 @@
     const body = {
       Omega0_over_pi: parseFloat($("o0").value),
       Omega_g_over_pi: parseFloat($("og").value),
-      M_L: currentML(),
+      L: currentL(),
       use_hann: document.getElementById("use_hann").checked
     };
     const resp = await fetch("./compute", {
@@ -68,7 +83,7 @@
     const data = await resp.json();
     $("plot").src = data.image;
   }
-  document.querySelectorAll('input[name="M_L"]').forEach(r => r.addEventListener("change", recompute));
+  document.querySelectorAll('input[name="L"]').forEach(r => r.addEventListener("change", recompute));
   ["o0","og","use_hann"].forEach(id => $(id).addEventListener("input", recompute));
   $("run").addEventListener("click", recompute);
   recompute();

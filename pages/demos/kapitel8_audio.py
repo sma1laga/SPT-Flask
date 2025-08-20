@@ -6,24 +6,21 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from functools import lru_cache
-from scipy.io import wavfile
-from scipy.signal import convolve, fftconvolve
+from scipy.signal import convolve, resample
 
 from utils.img import fig_to_base64
-from utils.audio import wav_data_url
+from utils.audio import wav_data_url, read_mono_audio
 
 demos_kapitel8_audio_bp = Blueprint(
     "demos_kapitel8_audio", __name__, template_folder="../../templates"
 )
 
 AUDIO_MAP = {
-    "Piano":     "piano_mono32.wav",
     "Fanfare": "fanfare.wav",
+    "Piano":     "piano_mono32.wav",
 }
 
-M_OPTIONS = [16, 32, 64, 128]  # length M
-PLOT_WINDOW = 16384            # samples used for spectra plots 
-RFFT_TICKS = (0.0, 0.5, 1.0)   # normalized ticks 
+L_OPTIONS = [16, 32, 64, 128]  # length L
 
 def _audio_path(filename: str) -> str:
     return os.path.join(current_app.static_folder, "demos", "audio", filename)
@@ -31,153 +28,136 @@ def _audio_path(filename: str) -> str:
 @lru_cache(maxsize=8)
 def _load_mono_float_cached(path: str):
     """Load+normalize audio once; cache by path."""
-    fs, x = wavfile.read(path)
-    if x.ndim > 1:
-        x = x[:, 0]
-    x = x.astype(np.float32)
-    x -= float(np.mean(x))
-    m = float(np.max(np.abs(x))) or 1.0
-    x /= m
+    fn = os.path.basename(path)
+    fs, x = read_mono_audio(path)
+    if "fanfare" in fn.lower():
+        # take next power of 2 for fft performance
+        n_2 = 2**int(np.ceil(np.log2(len(x))))
+        x = np.pad(x, (0, n_2-len(x)))
+    elif "piano" in fn.lower():
+        # discard initial silence
+        start = np.argmax(np.abs(x) > 0)
+        x = x[start:len(x)//2]
+        # resample to 16 kHz
+        x = resample(x, len(x)//4)
+        fs //= 4
+        # assure power of 2 for fft performance
+        n_2 = 2**int(np.log2(len(x)))
+        x = x[:n_2]
+        # fade in and out
+        n_in, n_out = 100, n_2//8
+        x[:n_in] *= np.hanning(2*n_in)[:n_in]
+        x[-n_out:] *= np.hanning(2*n_out)[n_out:]
     return fs, x
 
-def _lowpass_h(M: int, fg_norm: float, use_hann: bool):
+def _lowpass_h(L: int, fg_norm: float, use_hann: bool):
     """
     Diskreter Tiefpass:
-        h[k] = fg_norm * sinc(fg_norm * (k - k0)), k0 = ceil(M/2)
-    fg_norm = Ωg/π in (0, 1]
+        h[k] = fg_norm * sinc(fg_norm * (k - k0)), k0 = ceil(L/2)
+    fg_norm = Ωg/π in [0, 1]
     """
-    k = np.arange(-M//2 + 1, M//2 + 1, dtype=np.float32)
-    h = fg_norm * np.sinc(fg_norm * k)
+    k = np.arange(-np.ceil(L/2), L-np.ceil(L/2), dtype=np.float32)
+    assert len(k) == L, f"Expected L={L}, got {len(k)}"
+    h = fg_norm * np.sinc(fg_norm * k).astype(np.float32)
     if use_hann:
-        h *= np.hanning(M).astype(np.float32)
-    return h.astype(np.float32)
+        h *= np.hanning(L).astype(np.float32)
+    return h
 
-def _apply_fast(x, h):
-    """Switch to FFT-convolution when the signal is long enough to benefit."""
-    N, M = len(x), len(h)
-    if N >= 20000:
-        return fftconvolve(x, h, mode="same")
-    else:
-        return convolve(x, h, mode="same")
-
-def _abs_rfft_normed(x):
-    """Magnitude of rFFT on a short window for plotting (cheap)."""
-    n = min(len(x), PLOT_WINDOW)
-    if n <= 0:
-        return np.zeros(1)
-    X = np.abs(np.fft.rfft(x[:n]))
+def _abs_rfft(x):
+    """Magnitude of real-valued FFT."""
+    X = np.abs(np.fft.rfft(x))
     return X
-
-def _plot_zoomed_spectrum(ax, X, title):
-    """Plot |DFT| und zoome automatisch auf den relevanten Bereich."""
-    ax.clear()
-    ax.grid(True, alpha=0.25)
-    ax.set_title(title)
-    ax.set_xlabel("Ω")
-    ax.set_ylabel("Betrag")
-    ax.plot(np.arange(len(X)), X, linewidth=0.9)
-
-    e = X * X
-    cs = np.cumsum(e)
-    tot = cs[-1] + 1e-12
-    right = int(np.searchsorted(cs / tot, 0.995)) + 20
-    right = max(64, min(right, len(X) - 1))
-
-    ax.set_xlim(0, right)
-    ax.margins(x=0)
-
-    ax.set_xticks([0, right // 2, right])
-    ax.set_xticklabels(["0", "π/2", "π"])
-
 
 @demos_kapitel8_audio_bp.route("/", methods=["GET"])
 def page():
-    defaults = {"x_type": "Piano", "M": 128, "fg": 0.20, "win": True}
+    defaults = {"x_type": "Fanfare", "L": 128, "fg": 0.2, "win": False}
     return render_template(
         "demos/kapitel8_audio.html",
         audio_options=list(AUDIO_MAP.keys()),
         defaults=defaults,
-        M_options=M_OPTIONS
+        L_options=L_OPTIONS
     )
 
 @demos_kapitel8_audio_bp.route("/compute", methods=["POST"])
 def compute():
     try:
         data = request.get_json(force=True) or {}
-        x_type = (data.get("x_type") or "Piano").strip()
-        M      = int(data.get("M") or 128)
-        fg     = float(data.get("fg") or 0.20)  # Ωg/π
+        x_type = (data.get("x_type", "Fanfare")).strip()
+        L      = int(data.get("L", 128))
+        fg     = float(data.get("fg", 0.2))  # Ωg/π
         win    = bool(data.get("win"))
 
         if x_type not in AUDIO_MAP:
             return jsonify(error=f"Unknown x_type: {x_type}"), 400
-        if M not in M_OPTIONS:
-            return jsonify(error=f"Unsupported M: {M}"), 400
-        if not (0.0 < fg <= 1.0):
-            return jsonify(error=f"fg (Ωg/π) must be in (0, 1], got {fg}"), 400
+        if L not in L_OPTIONS:
+            return jsonify(error=f"Unsupported L: {L}"), 400
+        if not (0.0 <= fg <= 1.0):
+            return jsonify(error=f"fg (Ωg/π) must be in [0, 1], got {fg}"), 400
 
         path = _audio_path(AUDIO_MAP[x_type])
         if not os.path.exists(path):
             return jsonify(error=f"Audio file not found: {AUDIO_MAP[x_type]}", path=path), 500
 
         fs, x = _load_mono_float_cached(path)  # cached
-        h     = _lowpass_h(M, fg, win)
-        y     = _apply_fast(x, h)
+        h     = _lowpass_h(L, fg, win)
+        xf     = convolve(x, h)
 
         # ---------- plotting lightweight ----------
         fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.0))
-        ax_xf, ax_h, ax_yf, ax_H = axs.flatten()
+        ax_x, ax_h, ax_xf, ax_h_DFT = axs.flatten()
 
-        # DFT(x) (line plot; stem with 16k markers is too heavy)
-        X = _abs_rfft_normed(x)
-        _plot_zoomed_spectrum(ax_xf, X, "DFT des Originalsignals")
-        ax_xf.set_title("DFT des Originalsignals")
-        ax_xf.set_xlabel("Ω")
-        ax_xf.set_ylabel("Betrag")
-        ax_xf.plot(np.arange(len(X)), X, linewidth=0.8)
-        # place ticks at 0, π/2, π:
-        ax_xf.set_xticks([0, len(X)//2, len(X)-1])
-        ax_xf.set_xticklabels(["0", "π/2", "π"])
+        # DFT(x)
+        x_dft = _abs_rfft(x)
+        ax_x.grid(True)
+        ax_x.set_title("DFT of original Input")
+        ax_x.set_xlabel("Ω")
+        ax_x.set_ylabel("Magnitude")
+        ax_x.plot(np.arange(len(x_dft)), x_dft, linewidth=0.5)
+        ax_x.set_xlim(0, len(x_dft)-1)
+        ax_x.set_xticks([0, len(x_dft)//2, len(x_dft)-1])
+        ax_x.set_xticklabels(["0", "π/2", "π"])
+        ax_x.set_ylim(0, 1000)
 
-        # h[k] (M≤128 → stem is cheap, keep it)
-        ax_h.grid(True, alpha=0.25)
-        ax_h.set_title("Tiefpass (Zeitbereich)")
+        ax_h.grid(True)
+        ax_h.set_title("Low-Pass (Time Domain)")
         ax_h.set_xlabel("k")
         ax_h.set_ylabel("h[k]")
-        ax_h.hlines(0, 0, M+1, color='black', linewidth=1)
-        ml2, sl2, bl2 = ax_h.stem(np.arange(1, M+1), h, basefmt='none')
+        ax_h.hlines(0, -1, L, color='black')
+        ml2, _, _ = ax_h.stem(np.arange(L), h, basefmt='none')
         ml2.set_markerfacecolor('none')
-        ax_h.set_xlim(0, M+1)
+        ax_h.set_xlim(-1, L)
+        ax_h.set_ylim(-0.2, 1.1)
 
-        # DFT(y) (same trick: short window, line)
-        Y = _abs_rfft_normed(y)
-        _plot_zoomed_spectrum(ax_yf, Y, "DFT des gefilterten Signals")
-        ax_yf.set_title("DFT des gefilterten Signals")
-        ax_yf.set_xlabel("Ω")
-        ax_yf.set_ylabel("Betrag")
-        ax_yf.plot(np.arange(len(Y)), Y, linewidth=0.8)
-        ax_yf.set_xticks([0, len(Y)//2, len(Y)-1])
-        ax_yf.set_xticklabels(["0", "π/2", "π"])
+        xf_DFT = _abs_rfft(xf)
+        ax_xf.grid(True)
+        ax_xf.set_title("DFT of filtered Signal")
+        ax_xf.set_xlabel("Ω")
+        ax_xf.set_ylabel("Magnitude")
+        ax_xf.plot(np.arange(len(xf_DFT)), xf_DFT, linewidth=0.5)
+        ax_xf.set_xlim(0, len(xf_DFT)-1)
+        ax_xf.set_xticks([0, len(xf_DFT)//2, len(xf_DFT)-1])
+        ax_xf.set_xticklabels(["0", "π/2", "π"])
+        ax_xf.set_ylim(0, 1000)
 
-        # |H(e^{jΩ})| (length M -> tiny; plot full rFFT)
-        H = np.abs(np.fft.rfft(h))
-        ax_H.grid(True, alpha=0.25)
-        ax_H.set_title("Tiefpass (Frequenzbereich)")
-        ax_H.set_xlabel("Ω")
-        ax_H.set_ylabel("|H(e^{jΩ})|")
-        ax_H.plot(np.arange(len(H)), H, linewidth=1.0)
-        ax_H.set_xticks([0, len(H)//2, len(H)-1])
-        ax_H.set_xticklabels(["0", "π/2", "π"])
+        # |H(jΩ)| (length L -> tiny; plot full rFFT)
+        h_DFT = _abs_rfft(h)
+        ax_h_DFT.grid(True)
+        ax_h_DFT.set_title("Low-Pass (Frequency Domain)")
+        ax_h_DFT.set_xlabel("Ω")
+        ax_h_DFT.set_ylabel("|H(jΩ)|")
+        ax_h_DFT.plot(np.arange(len(h_DFT)), h_DFT, linewidth=1.0)
+        ax_h_DFT.set_xlim(0, len(h_DFT)-1)
+        ax_h_DFT.set_xticks([0, len(h_DFT)//2, len(h_DFT)-1])
+        ax_h_DFT.set_xticklabels(["0", "π/2", "π"])
+        ax_h_DFT.set_ylim(0, 1.2)
 
         fig.tight_layout(h_pad=2.5, pad=2.5)
         png = fig_to_base64(fig)
 
-        # audio (normalize y for playback)
-        y_norm = y / (np.max(np.abs(y)) + 1e-12)
         return jsonify({
             "image": png,
             "x_audio": wav_data_url(x, fs),
-            "y_audio": wav_data_url(y_norm, fs)
+            "y_audio": wav_data_url(xf, fs)
         })
 
     except Exception as e:
