@@ -9,178 +9,82 @@ from matplotlib import rcParams
 rcParams["text.usetex"] = False
 rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
-from scipy.io import wavfile
-from scipy.signal import resample, correlate, butter, filtfilt, get_window
+from scipy.signal import resample, correlate
 
 from utils.img import fig_to_base64
-from utils.audio import wav_data_url
+from utils.audio import wav_data_url, read_mono_audio
 
 demos_kapitel11_bp = Blueprint(
     "demos_kapitel11", __name__, template_folder="../../templates"
 )
 
-SIG_OPTIONS = ["Sprache", "Meeresrauschen", "Verkehr", "Weißes Rauschen", "Piano"]
+SIG_OPTIONS = ["Speech", "Ocean Sounds", "Traffic", "White Noise", "Piano"]
 PLOT_OPTIONS = [
-    ("Zeitverlauf", "zeit"),
-    ("Betragsspektrum |X(f)|", "dft"),
-    ("Autokorrelation (AKF)", "akf"),
-    ("Leistungsdichtespektrum (LDS)", "lds"),
+    ("Time Domain", "time"),
+    ("Magnitude Spectrum", "dft"),
+    ("Autocorrelation (ACF)", "acf"),
+    ("Power Spectral Density (PSD)", "psd"),
 ]
 
 # Files we try to use if present
 AUDIO_FILES = {
+    "Speech": "hollera.wav",
+    "Ocean Sounds":   "welle_kurz.wav",
+    "Traffic":   "strasse_kurz.wav",
+    "White Noise":   "white_noise.wav",
     "Piano":   "piano_mono32.wav",
-    "Sprache": "neil_armstrong_mono32.wav",  # fallback to synthetic speech if missing
-}
-DFT_XLIMS_HZ = {
-    "Sprache": 9000,
-    "Meeresrauschen": 10000,
-    "Verkehr": 8000,
-    "Weißes Rauschen": 10000,
-    "Piano": 2500,
 }
 
 # ----- helpers -----
-
 def _audio_path(filename: str) -> str:
     return os.path.join(current_app.static_folder, "demos", "audio", filename)
 
-def _load_mono_float(path: str):
-    fs, x = wavfile.read(path)
-    if x.ndim > 1:
-        x = x[:, 0]
-    x = x.astype(np.float32)
-    x -= float(np.mean(x))
-    m = float(np.max(np.abs(x))) or 1.0
-    x /= m
-    return fs, x
+def _cut_pow2(x):
+    n_2 = 2**int(np.log2(len(x)))
+    return x[:n_2]
 
-def _to_pow2_and_fade(x, fs, target_len_pow2=True):
-    # Cut to power-of-two length for fast FFTs; add a soft fade-in/out
-    n = len(x)
-    if target_len_pow2:
-        n2 = 1 << int(np.log2(n))
-        x = x[:n2]
-        n = len(x)
-    n_in, n_out = max(64, n // 256), max(256, n // 16)
-    win_in = np.hanning(2 * n_in)[:n_in]
-    win_out = np.hanning(2 * n_out)[n_out:]
-    x[:n_in] *= win_in
-    x[-n_out:] *= win_out
-    return x
+def _fade(x, n:list, type:str='out'):
+    assert type in ['in', 'out', 'inout']
+    assert len(n) < 3
+    n_in, n_out = n if len(n)==2 else (n[0], n[0])
 
-def _synth_white(fs, n):
-    return np.random.randn(n).astype(np.float32)
-
-def _synth_pink(fs, n):
-    b, a = butter(1, 0.1)  # normalized cutoff ~0.1 of Nyquist
-    x = filtfilt(b, a, np.random.randn(n)).astype(np.float32)
-    x /= (np.max(np.abs(x)) + 1e-12)
-    return x
-
-def _synth_traffic(fs, n):
-    t = np.arange(n) / fs
-    base = 20 + 10 * np.sin(2*np.pi*0.1*t)
-    sig = 0.7*np.sin(2*np.pi*base*t) \
-        + 0.2*np.sin(2*np.pi*2*base*t) \
-        + 0.1*np.sin(2*np.pi*3*base*t)
-    sig += 0.3 * _synth_pink(fs, n)
-    sig = sig.astype(np.float32)
-    sig /= (np.max(np.abs(sig)) + 1e-12)
-    return sig
-
-def _synth_speech_like(fs, n):
-    t = np.arange(n) / fs
-    env = 0.6 + 0.4*np.sin(2*np.pi*0.7*np.sin(2*np.pi*0.25*t)*t)
-    f1, f2, f3 = 180, 600, 1200
-    sig = (0.6*np.sin(2*np.pi*f1*t) +
-           0.3*np.sin(2*np.pi*f2*t) +
-           0.2*np.sin(2*np.pi*f3*t))
-    sig += 0.1*np.random.randn(n)
-    sig = (env * sig).astype(np.float32)
-    sig /= (np.max(np.abs(sig)) + 1e-12)
-    return sig
+    x_faded = np.array(x)
+    if 'in' in type:
+        x_faded[:n_in] *= np.hanning(2*n_in)[:n_in]
+    if 'out' in type:
+        x_faded[-n_out:] *= np.hanning(2*n_out)[n_out:]
+    return x_faded
 
 def _prepare_signal(x_type: str):
     """Return (fs, x) normalized and prepared for analysis."""
-    if x_type in AUDIO_FILES:
-        path = _audio_path(AUDIO_FILES[x_type])
-        if os.path.exists(path):
-            fs, x = _load_mono_float(path)
-        else:
-            fs = 32000
-            n = 32768
-            x = _synth_speech_like(fs, n) if x_type == "Sprache" else _synth_white(fs, n)
+    path = _audio_path(AUDIO_FILES[x_type])
+    if os.path.exists(path):
+        fs, x = read_mono_audio(path)
     else:
-        fs = 32000
-        n = 32768
-        if x_type == "Weißes Rauschen":
-            x = _synth_white(fs, n)
-        elif x_type == "Meeresrauschen":
-            x = _synth_pink(fs, n)
-        elif x_type == "Verkehr":
-            x = _synth_traffic(fs, n)
-        else:
-            x = _synth_white(fs, n)
-    x = _to_pow2_and_fade(x, fs, target_len_pow2=True)
+        raise FileNotFoundError(f"File not found: {AUDIO_FILES[x_type]}")
+    if x_type == "Piano": # cut/resample audio for performance
+        x = _cut_pow2(x)
+        start = np.argmax(np.abs(x) > 0)
+        x = x[start:start+len(x)//2]
+        x = resample(x, len(x)//4)
+        fs //= 4
+        x = _fade(x, [100, len(x)//8], type='inout')
     return fs, x
 
-# ---------- frequency-domain helpers (Hz, single-sided) ----------
+def _abs_rfft(x, fs=None):
+    """Frequencies and magnitudes of real-valued FFT."""
+    if fs is None:
+        return np.abs(np.fft.rfft(x))
+    return np.abs(np.fft.rfft(x)), np.fft.rfftfreq(len(x), d=1.0/fs)
 
-def _freq_axis_hz(N: int, fs: float):
-    """Single-sided frequency axis in Hz to match Jupyter."""
-    return np.fft.rfftfreq(N, d=1.0/fs)
-
-def _mag_spectrum_single_sided(x: np.ndarray, fs: float):
-    """
-    Single-sided |X(f)| with a Hann window and amplitude correction
-    so that component frequencies line up and magnitudes are comparable.
-    """
-    N = len(x)
-    win = get_window("hann", N, fftbins=True).astype(np.float32)
-    xw = x * win
-
-    # Coherent gain for Hann window (sum(win)/N) to avoid amplitude bias
-    cg = np.sum(win) / N
-
-    X = np.fft.rfft(xw)
-    f = _freq_axis_hz(N, fs)
-
-    # Single-sided scaling: divide by N and window gain; double non-DC/non-Nyquist bins
-    mag = np.abs(X) / (N * cg + 1e-12)
-    if N % 2 == 0 and len(mag) > 2:
-        mag[1:-1] *= 2.0
-    elif len(mag) > 1:
-        mag[1:] *= 2.0
-
-    return f, mag
-
-def _periodogram_psd(x: np.ndarray, fs: float):
-    """
-    Simple periodogram PSD estimate (single-sided) in power/Hz.
-    Returns f [Hz], Sxx.
-    """
-    N = len(x)
-    win = get_window("hann", N, fftbins=True).astype(np.float32)
-    xw = x * win
-    U = (np.sum(win**2) / N)  # window power normalization
-    X = np.fft.rfft(xw)
-    Sxx = (1.0 / (fs * N)) * (np.abs(X) ** 2) / (U + 1e-12)
-
-    # Single-sided doubling for non-DC/non-Nyquist
-    if N % 2 == 0 and len(Sxx) > 2:
-        Sxx[1:-1] *= 2.0
-    elif len(Sxx) > 1:
-        Sxx[1:] *= 2.0
-
-    f = _freq_axis_hz(N, fs)
-    return f, Sxx
+def _acf(x):
+    """Calculate autocorrelation of x."""
+    return correlate(x, x, mode='full')
 
 # ---------- routes ----------
-
 @demos_kapitel11_bp.route("/", methods=["GET"])
 def page():
-    defaults = {"x_type": "Sprache", "plt": "zeit"}
+    defaults = {"x_type": "Speech", "plt": "time"}
     return render_template("demos/kapitel11.html",
                            sig_options=SIG_OPTIONS,
                            plot_options=PLOT_OPTIONS,
@@ -190,74 +94,60 @@ def page():
 def compute():
     try:
         data = request.get_json(force=True) or {}
-        x_type = (data.get("x_type", "Sprache")).strip()
-        plt_type = (data.get("plt", "zeit")).strip()
+        x_type = (data.get("x_type", "Speech")).strip()
+        plt_type = (data.get("plt", "time")).strip()
 
         fs, x = _prepare_signal(x_type)
 
+        fig, ax = plt.subplots(figsize=(6.8, 4.0))
+        ax.grid(True)
         if plt_type == "dft":
-            # --- Single-sided Betragsspektrum |X(f)| in Hz ---
-            N = len(x)
-            # Hann-Fenster + amplitude-korrigierte Skalierung 
-            win = np.hanning(N).astype(np.float32)
-            xw = x * win
-            cg = np.sum(win) / N  # coherent gain
-            X = np.fft.rfft(xw)
-            f_hz = np.fft.rfftfreq(N, d=1.0/fs)
-
-            mag = np.abs(X) / (N * cg + 1e-12)
-            if N % 2 == 0 and len(mag) > 2:
-                mag[1:-1] *= 2.0   # single-sided Verdopplung, außer DC/Niquist
-            elif len(mag) > 1:
-                mag[1:] *= 2.0
-
-            # Achsenlimit je nach Signaltyp, aber nie > fs/2
-            fmax_req = DFT_XLIMS_HZ.get(x_type, fs/2)
-            fmax = min(float(fmax_req), fs/2)
-
-            fig, ax = plt.subplots(figsize=(6.8, 4.0))
-            ax.plot(f_hz, mag, linewidth=0.9)
-            ax.set_title("Betragsspektrum |X(f)|")
-            ax.set_xlabel("f [Hz]")
+            n_fft = len(x)
+            mag, f_hz = _abs_rfft(x, fs)
+            ax.plot(f_hz[:n_fft//4+2], mag[:n_fft//4+2], linewidth=0.5)
+            ax.set_title("Magnitude Spectrum |X(f)|")
+            ax.set_xlabel("Frequency [Hz]")
             ax.set_ylabel("|X(f)|")
-            ax.set_xlim(0, fmax)
 
-            # sinnvolle Ticks (0, fmax/2, fmax), ohne > fs/2 zu gehen
-            ax.set_xticks([0, fmax/2, fmax])
-            ax.grid(True, alpha=0.25)
-
-
-        elif plt_type == "akf":
-            from scipy.signal import correlate
-            r = correlate(x, x, mode='full')
-            lags = np.arange(-len(x)+1, len(x))
-            tau = lags / fs
-            fig, ax = plt.subplots(figsize=(6.8, 4.0))
-            ax.plot(tau, r, linewidth=0.9)
-            ax.set_title("Autokorrelation (AKF)")
-            ax.set_xlabel("τ [s]")
-            ax.set_ylabel("r[τ]")
-            ax.grid(True, alpha=0.25)
-
-        elif plt_type == "lds":
-            f, Sxx = _periodogram_psd(x, fs)
-            fig, ax = plt.subplots(figsize=(6.8, 4.0))
-            ax.plot(f, Sxx, linewidth=0.9)
-            ax.set_title("Leistungsdichtespektrum (LDS)")
-            ax.set_xlabel("f [Hz]")
-            ax.set_ylabel("Sxx(f) [Power/Hz]")
-            ax.set_xlim(0, fs/2)
-            ax.set_xticks([0, fs/4, fs/2])
-            ax.grid(True, alpha=0.25)
-
-        else:
+            if x_type == "Piano":
+                # get current xticks and labels
+                xticks = ax.get_xticks()
+                xticklabels = ax.get_xticklabels()
+                note_hz = 400
+                print(xticks, xticklabels)
+                xticks[2] = note_hz  # add A4 for piano
+                xticklabels[2] = f"{note_hz} ≙ A4"
+                ax.set_xticks(xticks)
+                ax.set_xticklabels(xticklabels)
+            ax.margins(x=0, y=0)
+        elif plt_type == "acf":
+            acf = correlate(x, x, mode='full')
+            lag_ms = np.arange(-len(x)+1, len(x)) / fs * 1000  # in ms
+            ax.plot(lag_ms, acf/acf.max())
+            ax.set_xlim(-25, 25)
+            ax.margins(x=0)
+            ax.set_title("Normalized Autocorrelation Function (ACF)")
+            ax.set_xlabel("Time-Lag [ms]")
+            ax.set_ylabel("ϕₓₓ(τ) / ϕₓₓ(τ=0)")
+        elif plt_type == "psd":
+            psd = _abs_rfft(_acf(x))
+            ax.plot(np.linspace(0, np.pi/2, len(psd)), psd, linewidth=0.5)
+            ax.set_title("Power Spectral Density (PSD)")
+            ax.set_xlabel("Ω")
+            ax.set_ylabel("|Φₓₓ(jΩ)|")
+            ax.set_xticks([0, np.pi/4, np.pi/2])
+            ax.set_xticklabels(["0", "π/4", "π/2"])
+            ax.set_ylim(0,2e6)
+            ax.margins(x=0)
+        else: # time
             t = np.arange(len(x)) / fs
-            fig, ax = plt.subplots(figsize=(6.8, 4.0))
-            ax.plot(t, x, linewidth=0.9)
-            ax.set_title("Zeitverlauf")
-            ax.set_xlabel("t [s]")
+            start, length = 10000, 5000
+            ax.plot(t[start:start+length], x[start:start+length], linewidth=0.5)
+            ax.margins(x=0)
+            ax.set_title("Amplitude")
+            ax.set_xlabel("Time [ms]")
             ax.set_ylabel("x[k]")
-            ax.grid(True, alpha=0.25)
+            ax.set_ylim(-1, 1)
 
         png = fig_to_base64(fig)
         x_audio = wav_data_url(x, fs)
