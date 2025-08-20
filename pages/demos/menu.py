@@ -51,18 +51,18 @@ def index():
             "endpoint": "demos_kapitel11.page",
         },
         {
-        "slug": "dtft_dft",
-        "title": "DTFT & DFT",
-        "title_desc": "Oscillation & Crop",
-        "desc": "Vergleich: DTFT‑Impulse und DFT einer Länge‑M‑Ausschnitts des Cosinus.",
-        "endpoint": "dtft_dft.page",
-        },
-        {
         "slug": "dtft_impulses",
         "title": "DTFT",
-        "title_desc": "Analytic Cosine (Impulses)",
+        "title_desc": "Discrete Cosine",
         "desc": "Zweifenster-Demo: Zeitsignal und Impuls-Spektrum bei ±ω₀ (ω₀/π ∈ [0,1]).",
         "endpoint": "dtft_impulses.page",
+        },
+        {
+        "slug": "dtft_dft",
+        "title": "DTFT & DFT",
+        "title_desc": "Discrete Cosine",
+        "desc": "Vergleich: DTFT‑Impulse und DFT einer Länge‑M‑Ausschnitts des Cosinus.",
+        "endpoint": "dtft_dft.page",
         },
     ]
     return render_template("demos/menu.html", demos=demos)

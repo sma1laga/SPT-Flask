@@ -5,8 +5,10 @@ import numpy as np
 
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
+from matplotlib import rcParams
+rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 dtft_dft_bp = Blueprint("dtft_dft", __name__, template_folder="../../templates")
 
@@ -64,8 +66,6 @@ def _render_png(fig):
     return buf.getvalue()
 
 def _make_figure(norm_freq, m, cfg):
-    mpl.style.use("fast")
-
     fig_w = float(cfg.get("fig_width", _DEFAULT_CONFIG["fig_width"]))
     fig_h = float(cfg.get("fig_height", _DEFAULT_CONFIG["fig_height"]))
     fig, axes = plt.subplots(2, 2, figsize=(1.2*fig_w, 1.0*fig_h))
@@ -85,8 +85,8 @@ def _make_figure(norm_freq, m, cfg):
     # --- Top-left: x[k] with highlighted crop ---
     _init_axes_styles(x_ax)
     x_ax.set_title("Zeitsignal")
-    x_ax.set_xlabel("Index k")
-    x_ax.set_ylabel("x[k]")
+    x_ax.set_xlabel("Index $k$")
+    x_ax.set_ylabel("$x[k]$")
     x_ax.set_xlim(-20.5, 20.5)
     x_ax.set_ylim(-1.1, 1.1)
     x_ax.set_yticks(np.arange(-1.0, 1.1, 0.5))
@@ -101,14 +101,14 @@ def _make_figure(norm_freq, m, cfg):
     # --- Top-right: DTFT impulses on Ω/π axis from -1..2 ---
     _init_axes_styles(dtft_ax)
     dtft_ax.set_title("DTFT")
-    dtft_ax.set_xlabel("Frequenz Ω")
-    dtft_ax.set_ylabel("X(e^{jΩ})")
+    dtft_ax.set_xlabel(r"Frequency $\Omega$")
+    dtft_ax.set_ylabel(r"$X(\mathrm{e}^{\mathrm{j}\Omega})$")
     dtft_ax.set_xlim(-1.0, 2.0)
     dtft_ax.set_ylim(0.0, 2.2)
     dtft_ax.set_xticks(np.arange(-1.0, 2.1, 0.5))
-    dtft_ax.set_xticklabels(["−π", "−π/2", "0", "π/2", "π", "3π/2", "2π"])
+    dtft_ax.set_xticklabels([r"$-\pi$", r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$", r"$3\pi/2$", r"$2\pi$"])
     dtft_ax.set_yticks([0, 1, 2])
-    dtft_ax.set_yticklabels(["0", "π", "2π"])
+    dtft_ax.set_yticklabels(["0", r"$\pi$", r"$2\pi$"])
     pos, val = get_DTFT_positions(norm_freq)
     dtft_ax.vlines(pos, 0.0, val, linewidth=1.8)
     dtft_ax.plot(pos, val, "^", markersize=6)
@@ -116,8 +116,8 @@ def _make_figure(norm_freq, m, cfg):
     # --- Bottom-left: crop ---
     _init_axes_styles(crop_ax)
     crop_ax.set_title("Ausschnitt")
-    crop_ax.set_xlabel("Index k")
-    crop_ax.set_ylabel("ẋ[k]")  # \tilde{x} visually
+    crop_ax.set_xlabel("Index $k$")
+    crop_ax.set_ylabel(r"$\tilde{x}[k]$")
     crop_ax.set_xlim(-0.5, len(crop))
     crop_ax.set_ylim(-1.1, 1.1)
     crop_ax.set_yticks(np.arange(-1.0, 1.1, 0.5))
@@ -128,8 +128,8 @@ def _make_figure(norm_freq, m, cfg):
     # --- Bottom-right: DFT magnitude ---
     _init_axes_styles(dft_ax)
     dft_ax.set_title("DFT")
-    dft_ax.set_xlabel("Frequenz μ")
-    dft_ax.set_ylabel("X[μ]")
+    dft_ax.set_xlabel(r"Frequency $\mu$")
+    dft_ax.set_ylabel(r"$X[\mu]$")
     xlim = (-len(dft)//2, len(dft))
     dft_ax.set_xlim(*xlim)
     dft_ax.set_xticks([0, len(dft)//2])
@@ -157,18 +157,15 @@ def page():
         m = int(request.args.get("m", "16"))
     except Exception:
         m = 16
-    if m < 2: 
-        m = 2
-    if m > 512: 
-        m = 512
+    m = max(2, min(1024, m))  # limit M to [2, 1024]
 
     ui = {
         "min_freq": 0.0,
         "max_freq": 1.0,
-        "step": 0.05,  # preferred increment @Paul
+        "step": 0.05,
         "value": norm_freq,
         "m": m,
-        "m_options": [2**i for i in range(1, 10)],  # 2..512
+        "m_options": [2**i for i in range(1, 11)],  # 2...1024
         "img_url": url_for("dtft_dft.image", freq=norm_freq, m=m, _=0),
     }
     return render_template("demos/dtft_dft.html", ui=ui)
@@ -186,10 +183,7 @@ def image():
         m = int(request.args.get("m", "16"))
     except Exception:
         m = 16
-    if m < 2: 
-        m = 2
-    if m > 512: 
-        m = 512
+    m = max(2, min(1024, m))  # limit M to [2, 1024]
 
     fig = _make_figure(norm_freq, m, cfg)
     png = _render_png(fig)

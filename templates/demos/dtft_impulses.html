@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>DTFT – Analytischer Cosinus (Impulse)</h1>
+<h1>DTFT: Discrete Cosine</h1>
+<p>
+  This demo shows the Discrete-Time Fourier Transformation (DTFT) \(X(\mathrm{e}^{\mathrm{j}\Omega})\) of a cosine signal \(x[k]=\cos(\omega k)\) with the adjustable frequency \(\omega\in[0,\pi]\).
+</p>
 
-<form class="controls" action="javascript:void(0)" style="margin-bottom:1rem;">
+<form class="controls" action="javascript:void(0)" style="margin-bottom:1rem;margin-top:20px;">
   {% if ui.use_slider %}
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <label for="freq"><span>\( {{ ui.desc|safe }} \)</span></label>
@@ -12,10 +15,10 @@
         min="{{ ui.min_freq }}" max="{{ ui.max_freq }}"
         step="{{ ui.step }}" value="{{ ui.value }}"
         oninput="updateReadout(this.value); scheduleRedraw(parseFloat(this.value));"
-        style="width:360px"
+        style="width:60%"
       />
-      <span id="freqVal">{{ "%.3f"|format(ui.value) }}</span>
-      <button type="button" onclick="redrawNow(parseFloat(freqEl.value))">Neu zeichnen</button>
+      <span id="freqVal">{{ ui.value }}</span>
+      <button type="button" onclick="redrawNow(parseFloat(freqEl.value))">Recompute</button>
     </div>
   {% else %}
     <div style="display:flex;align-items:center;gap:12px;">
@@ -23,13 +26,13 @@
       <input type="number" id="freq" name="freq"
              min="{{ ui.min_freq }}" max="{{ ui.max_freq }}"
              step="{{ ui.step }}" value="{{ ui.value }}" />
-      <button type="button" onclick="redrawNow(parseFloat(freqEl.value))">Neu zeichnen</button>
+      <button type="button" onclick="redrawNow(parseFloat(freqEl.value))">Recompute</button>
     </div>
   {% endif %}
 </form>
 
 <div style="border:1px solid #ccc;border-radius:8px;padding:8px;">
-  <img id="plotImg" alt="DTFT-Demo (Zeitsignal und Impuls-Spektrum)"
+  <img id="plotImg" alt="DTFT-Demo"
        src="{{ ui.img_url }}"
        style="width:100%;height:auto;display:block;" />
 </div>
@@ -39,7 +42,7 @@
   const imgEl  = document.getElementById('plotImg');
   const readout = document.getElementById('freqVal');
 
-  function updateReadout(v){ readout.textContent = Number(v).toFixed(3); }
+  function updateReadout(v){ readout.textContent = Number(v).toFixed(2); }
 
   let pending = null, rafId = null;
   function scheduleRedraw(value) {

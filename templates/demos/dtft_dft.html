@@ -1,28 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>DTFT und DFT von Schwingungen</h1>
-
-<form action="javascript:void(0)" style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:1rem;">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <label for="freq">Frequenz (0…π)</label>
+<h1>DTFT & DFT: Discrete Cosine</h1>
+<p>
+  This demo shows the Discrete-Time Fourier Transformation&nbsp;(DTFT) \(X(\mathrm{e}^{\mathrm{j}\Omega})\) as well as the Discrete Fourier Transformation&nbsp;(DFT) \(X[\mu]\) of a cosine signal \(x[k]=\cos(\omega k)\) with the adjustable frequency \(\omega\in[0,\pi]\) and DFT-length \(M\in[2,1024]\).
+</p>
+<form action="javascript:void(0)" style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:1rem;margin-top:12px;">
+  <div style="display:flex;align-items:center;gap:10px;width:60%;">
+    <label for="freq">Frequency \(\omega / \pi\)</label>
     <input type="range" id="freq" min="{{ ui.min_freq }}" max="{{ ui.max_freq }}"
            step="{{ ui.step }}" value="{{ ui.value }}"
-           oninput="readout.textContent=Number(this.value).toFixed(3); scheduleRedraw();" style="width:360px;">
-    <span id="readout">{{ '%.3f'|format(ui.value) }}</span>
+           oninput="readout.textContent=Number(this.value).toFixed(2); scheduleRedraw();" style="width:360px;">
+    <span id="readout">{{ '%.2f'|format(ui.value) }}</span>
   </div>
-
-  <div style="display:flex;align-items:center;gap:10px;">
-    <label for="mSel">M</label>
-    <input id="mSel" list="mOptions" type="number" value="{{ ui.m }}" min="2" step="2"
-           oninput="scheduleRedraw();" style="width:110px;">
-    <datalist id="mOptions">
+  <div style="display:flex;align-items:center;gap:10px;width:30%;">
+    <label for="mSel">DFT-Length \(M\)</label>
+    <input id="mSel" list="mOptions" type="number" value="{{ ui.m }}" oninput="scheduleRedraw();" style="width:110px;">
+    <datalist id="mOptions"><!-- TODO drop-down not working -->
       {% for opt in ui.m_options %}
-        <option value="{{ opt }}"></option>
-      {% endfor %}
+        <option value="{{ opt }}">{{ opt }}</option>
+        {% endfor %}
     </datalist>
   </div>
 
-  <button type="button" onclick="redrawNow()" class="btn">Neu zeichnen</button>
+  <button type="button" onclick="redrawNow()" class="btn">Recompute</button>
 </form>
 
 <div>

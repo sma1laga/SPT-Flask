@@ -1,12 +1,14 @@
 # pages/demos/dtft_impulses.py
 from flask import Blueprint, render_template, request, make_response, url_for
-import io, base64, json, os
+import io, json, os
 import numpy as np
 
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
+from matplotlib import rcParams
+rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 dtft_impulses_bp = Blueprint(
     "dtft_impulses", __name__, template_folder="../../templates"
@@ -15,7 +17,7 @@ dtft_impulses_bp = Blueprint(
 # --- Config (optional) ---
 SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 CONFIG_PATH = os.path.join(SRC_DIR, "config.json")
-_DEFAULT_CONFIG = {"fig_width": 8.0, "fig_height": 5.0, "use_slider": True, "slider_multiplier": 1.0}
+_DEFAULT_CONFIG = {"fig_width": 8.0, "fig_height": 6.0, "use_slider": True, "slider_multiplier": 1.0}
 
 def _load_config():
     cfg = dict(_DEFAULT_CONFIG)
@@ -44,38 +46,36 @@ def get_DTFT(norm_freq):
 def _draw_pi_axis_labels(ax):
     ax.margins(x=0)
     ax.grid()
-    ax.set_xlabel("Frequenz Ω")
-    ax.set_ylabel("X(e^{jΩ})")
+    ax.set_xlabel(r"Frequency $\Omega$")
+    ax.set_ylabel(r"$X(\mathrm{e}^{\mathrm{j}\Omega})$")
     ax.set_title("DTFT")
     ax.set_xlim(-1.0, 1.0)
     ax.set_ylim(0.0, 2.2)
 
-    # Use plain Unicode (no $…$). U+2212 is the minus sign.
-    ax.set_xticks(np.arange(-1.0, 1.0001, 0.5))
-    ax.set_xticklabels(["−π", "−π/2", "0", "π/2", "π"])
-
+    ax.set_xticks(np.arange(-1.0, 1.1, 0.5))
+    ax.set_xticklabels([r"$-\pi$", r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$"])
     ax.set_yticks([0, 1, 2])
-    ax.set_yticklabels(["0", "π", "2π"])
+    ax.set_yticklabels(["0", r"$\pi$", r"$2\pi$"])
 
 
 def _make_figure(norm_freq, cfg):
-    mpl.style.use("fast")
     fig_w = float(cfg.get("fig_width", _DEFAULT_CONFIG["fig_width"]))
     fig_h = float(cfg.get("fig_height", _DEFAULT_CONFIG["fig_height"]))
-    fig, (x_ax, dtft_ax) = plt.subplots(1, 2, figsize=(1.2 * fig_w, 0.8 * fig_h))
-    plt.tight_layout(h_pad=3, pad=3)
+    fig, (x_ax, dtft_ax) = plt.subplots(2, 1, figsize=(fig_w, fig_h))
+    plt.tight_layout(pad=4)
 
     # Zeitsignal
     k = np.arange(-20, 21)
     x = update_x(k, norm_freq)
-    x_ax.margins(x=0)
     x_ax.grid()
     x_ax.set_xlabel("Index $k$")
     x_ax.set_ylabel("$x[k]$")
-    x_ax.set_title("Zeitsignal")
-    x_ax.set_xlim(-20.5, 20.5)
-    x_ax.vlines(k, 0.0, x, linewidth=2)
-    x_ax.plot(k, x, "o", markersize=7)
+    x_ax.set_title("Time Domain")
+    xlim = 20.5
+    x_ax.set_xlim(-xlim, xlim)
+    x_ax.set_ylim(-1.1, 1.1)
+    x_ax.hlines(0, -xlim, xlim, color='black', linewidth=1)
+    x_ax.stem(k, x, markerfmt="o", basefmt=" ")
 
     # Impulsspektrum
     _draw_pi_axis_labels(dtft_ax)
@@ -108,7 +108,7 @@ def page():
         "max_freq": 1.0,
         "step": 0.05,
         "value": norm_freq,
-        "desc": "Frequenz (0…π)",
+        "desc": r"\omega / \pi",
         # initial image URL (cache-busted)
         "img_url": url_for("dtft_impulses.image", freq=norm_freq, _=0),
     }
@@ -116,19 +116,22 @@ def page():
 
 @dtft_impulses_bp.route("/img", methods=["GET"])
 def image():
-    cfg = _load_config()
     try:
-        norm_freq = float(request.args.get("freq", "0"))
-    except Exception:
-        norm_freq = 0.0
-    norm_freq = max(0.0, min(1.0, norm_freq))
+        cfg = _load_config()
+        try:
+            norm_freq = float(request.args.get("freq", "0"))
+        except Exception:
+            norm_freq = 0.0
+        norm_freq = max(0.0, min(1.0, norm_freq))
 
-    fig = _make_figure(norm_freq, cfg)
-    png = _fig_png_bytes(fig)
-    plt.close(fig)
+        fig = _make_figure(norm_freq, cfg)
+        png = _fig_png_bytes(fig)
+        plt.close(fig)
 
-    resp = make_response(png)
-    # Prevent stale images during rapid scrubbing; browser can still cache per URL
-    resp.headers["Content-Type"] = "image/png"
-    resp.headers["Cache-Control"] = "no-store"
-    return resp
+        resp = make_response(png)
+        # Prevent stale images during rapid scrubbing; browser can still cache per URL
+        resp.headers["Content-Type"] = "image/png"
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        print(e)
