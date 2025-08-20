@@ -12,14 +12,16 @@
            oninput="readout.textContent=Number(this.value).toFixed(2); scheduleRedraw();" style="width:360px;">
     <span id="readout">{{ '%.2f'|format(ui.value) }}</span>
   </div>
-  <div style="display:flex;align-items:center;gap:10px;width:30%;">
-    <label for="mSel">DFT-Length \(M\)</label>
-    <input id="mSel" list="mOptions" type="number" value="{{ ui.m }}" oninput="scheduleRedraw();" style="width:110px;">
-    <datalist id="mOptions"><!-- TODO drop-down not working -->
+  <div style="display:flex;align-items:center;gap:10px;width:30%;flex-wrap:wrap;">
+    <span>DFT-Length \(M\)</span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
       {% for opt in ui.m_options %}
-        <option value="{{ opt }}">{{ opt }}</option>
-        {% endfor %}
-    </datalist>
+        <label style="display:flex;align-items:center;gap:2px;">
+          <input type="radio" name="mSel" value="{{ opt }}" {% if opt == ui.m %}checked{% endif %} oninput="scheduleRedraw();">
+          {{ opt }}
+        </label>
+      {% endfor %}
+    </div>
   </div>
 
   <button type="button" onclick="redrawNow()" class="btn">Recompute</button>
@@ -32,7 +34,7 @@
 <script>
   const imgEl = document.getElementById('plotImg');
   const freqEl = document.getElementById('freq');
-  const mEl    = document.getElementById('mSel');
+  const mEls   = document.querySelectorAll('input[name="mSel"]');
   const readout= document.getElementById('readout');
 
   let pending=null, raf=null;
@@ -49,7 +51,8 @@
 
   function redrawNow(){
     const f = clamp(freqEl.value, {{ ui.min_freq }}, {{ ui.max_freq }});
-    const m = Math.max(2, parseInt(mEl.value||"16", 10));
+    let m = 16;
+    mEls.forEach(el => { if(el.checked) m = Math.max(2, parseInt(el.value, 10)); });
     const url = new URL("{{ url_for('dtft_dft.image') }}", window.location.origin);
     url.searchParams.set("freq", f.toString());
     url.searchParams.set("m", m.toString());
