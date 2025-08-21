@@ -84,7 +84,7 @@ def _make_figure(norm_freq, m, cfg):
 
     # --- Top-left: x[k] with highlighted crop ---
     _init_axes_styles(x_ax)
-    x_ax.set_title("Zeitsignal")
+    x_ax.set_title("Time Domain Signal")
     x_ax.set_xlabel("Index $k$")
     x_ax.set_ylabel("$x[k]$")
     x_ax.set_xlim(-20.5, 20.5)
@@ -115,7 +115,7 @@ def _make_figure(norm_freq, m, cfg):
 
     # --- Bottom-left: crop ---
     _init_axes_styles(crop_ax)
-    crop_ax.set_title("Ausschnitt")
+    crop_ax.set_title("Window")
     crop_ax.set_xlabel("Index $k$")
     crop_ax.set_ylabel(r"$\tilde{x}[k]$")
     crop_ax.set_xlim(-0.5, len(crop))
