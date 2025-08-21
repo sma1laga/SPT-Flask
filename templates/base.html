@@ -224,23 +224,24 @@
     </div>
 
     <!-- SIDEBAR + CONTENT -->
+    {% set is_discrete = request.path.startswith('/discrete') or request.path.startswith('/inverse_z') %}
     <div class="content-wrapper" style="display:flex;">
       <button id="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i> Menu</button>
       <aside class="sidebar modern-sidebar">
         <h3>Navigation</h3>
         <div class="toggle-tabs">
           <button id="tab-continuous"
-                  class="{% if not request.path.startswith('/discrete') %}active{% endif %}">
+                  class="{% if not is_discrete %}active{% endif %}">
             Continuous
           </button>
           <button id="tab-discrete"
-                  class="{% if request.path.startswith('/discrete') %}active{% endif %}">
+                  class="{% if is_discrete %}active{% endif %}">
             Discrete
           </button>
         </div>
 
         <!-- Continuous menu -->
-        <div id="menu-continuous" style="display: {% if not request.path.startswith('/discrete') %}block{% else %}none{% endif %};">
+        <div id="menu-continuous" style="display: {% if not is_discrete %}block{% else %}none{% endif %};">
           <ul class="sidebar-menu">
             <li class="section-title">Plotting</li>
             <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
@@ -289,7 +290,7 @@
         </div>
 
         <!-- Discrete menu -->
-        <div id="menu-discrete" style="display: {% if request.path.startswith('/discrete') %}block{% else %}none{% endif %};">
+        <div id="menu-discrete" style="display: {% if is_discrete %}block{% else %}none{% endif %};">
           <ul class="sidebar-menu">
             <li class="section-title">Plotting &amp; Transforms</li>
             <li><a href="{{ url_for('discrete_plot_functions.plot_functions') }}">Plot Functions</a></li>
