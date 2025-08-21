@@ -3,8 +3,11 @@
 <div class="page-header" style="margin-bottom:30px; text-align:center;">
   <h1 style="font-size:2.5em;">Autocorrelation Calculator</h1>
   <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
-    Enter <strong>x(t)</strong> to compute its autocorrelation
-    $$ \varphi_{xx}^E(\tau)=x(\tau)*x^*(-\tau)=\int_{-\infty}^{\infty} x(t)x^*(t-\tau)\, dt $$
+    Insert an energy signal \(x(t)\) and plot its autocorrelation according to
+    $$ \begin{align}
+    \varphi_{xx}^\mathrm E(\tau) &= \int_{-\infty}^{\infty} x(t+\tau)x^\ast(t)\mathrm dt \\
+    &= x(\tau)\ast x^\ast(-\tau).
+    \end{align} $$
   </p>
 </div>
 
@@ -14,17 +17,17 @@
   </div>
 
   <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">
+    <!-- TODO remove np. once implemented -->
     {% for lbl, ltx in [
       ('rect(t)', '\mathrm{rect}'),
       ('tri(t)', '\mathrm{tri}'),
-      ('sin(t)', '\sin'),
-      ('cos(t)', '\cos'),
-      ('step(t)', '\mathrm{step}'),
-      ('delta(t)', '\delta'),
-      ('exp_iwt(t)', '\mathrm e^{i\omega t}'),
-      ('inv_t(t)', '1/t'),
-      ('si(t)', '\mathrm{si}'),
-      ('si(t)**2', '\mathrm{si}^2'),
+      ('sin(np.pi*t)*rect(t/4)', '\sin'),
+      ('cos(np.pi*t)*rect(t/4)', '\cos'),
+      ('exp_iwt(np.pi*t)*rect(t/4)', '\mathrm e^{\mathrm j\omega t}'),
+      ('exp(-t)*step(t)', '\mathrm e^{-t}'),
+      ('inv_t(t)*step(t)', '1/t'),
+      ('si(np.pi*t)', '\mathrm{si}'),
+      ('si(np.pi*t)**2', '\mathrm{si}^2'),
       ] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">\({{ ltx }}\)</button>
     {% endfor %}
@@ -33,7 +36,7 @@
   <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:20px;">
     <button type="button" onclick="insertOperand('+')">\(+\)</button>
     <button type="button" onclick="insertOperand('-')">\(-\)</button>
-    <button type="button" onclick="insertOperand('*')">\(*\)</button>
+    <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
     <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
@@ -90,15 +93,15 @@
     Plotly.newPlot("plotAuto", [
       {
         x: data.tau, y: data.r_re,
-        mode: "lines", name: "Re{φ_xx(τ)}",
+        mode: "lines", name: "Re{φₓₓ(τ)}",
         line: { width:2, color: "#2ca02c" }
       },
       {
         x: data.tau, y: data.r_im,
-        mode: "lines", name: "Im{φ_xx(τ)}",
+        mode: "lines", name: "Im{φₓₓ(τ)}",
         line: { width:2, color: "#ff7f0e", dash: "dot" }
       }
-    ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φ_xx(τ)"} } });
+    ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φₓₓ(τ)"} } });
   }
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);

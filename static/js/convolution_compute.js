@@ -17,11 +17,11 @@
   function delta(t){ const eps=1e-3; return Math.exp(-t*t/eps)/Math.sqrt(Math.PI*eps); }
   function exp_iwt(t, omega_0=1){ return Math.cos(omega_0*t); }
   function inv_t(t){ return t!==0 ? 1/t : 0; }
-  function si(t){ return t===0 ? 1 : Math.sin(Math.PI*t)/(Math.PI*t); }
+  function si(t){ return t===0 ? 1 : Math.sin(t)/t; }
 
   const np = {exp: Math.exp, sin: Math.sin, cos: Math.cos, abs: Math.abs, pi: Math.PI};
 
-  function makeEvaluator(expr){
+  function makeEvaluator(expr){ // TODO allow pi, e, abs, exp without np.
     try {
       return new Function('t','rect','tri','step','cos','sin','sign','delta','exp_iwt','inv_t','si','exp','np',
         'return '+expr);
@@ -50,7 +50,7 @@
     return out;
   }
 
-    function maxAbs(arr){
+  function maxAbs(arr){
     let m = 0;
     for(let i=0;i<arr.length;i++){ const v = Math.abs(arr[i]); if(v>m) m = v; }
     return m;

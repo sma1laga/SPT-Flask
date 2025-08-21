@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   
-  function reverseT(expr){
+  function reverseT(expr){ // TODO better to handle time inversion in calculation instead of string manipulation.
     return expr.replace(/\bt\b/g, '(-t)');
   }
   function replaceExp(expr, funcName){
@@ -29,6 +29,8 @@
   }
 
   function compute_autocorrelation(func){
+    // TODO correct handling re/im part (hard to get from string)
+    // maybe define own helpers for complex numbers or with math.js?
     const fRe = replaceExp(func, 'Math.cos');
     const fIm = replaceExp(func, 'Math.sin');
 
@@ -45,7 +47,7 @@
       re[i] = rr.y_conv[i] + ii.y_conv[i];
       im[i] = ir.y_conv[i] - ri.y_conv[i];
     }
-    symmetrize(re, im);
+    // symmetrize(re, im); // shouldn't be necessary
     const tau = shiftAxis(rr.t_conv);
 
     return {
