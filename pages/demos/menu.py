@@ -79,6 +79,13 @@ def index():
                     "desc": "Vergleich: DTFT‑Impulse und DFT einer Länge‑M‑Ausschnitts des Cosinus.",
                     "endpoint": "dtft_dft.page",
                 },
+                {
+                    "slug": "z_trafo",
+                    "title": "DTFT & z-Transform",
+                    "title_desc": "Damped cosine",
+                    "desc": "x[k]=a^k·cos(ω₀ k)·u[k]; Zeitfolge, DTFT und PN‑Diagramm (z).",
+                    "endpoint": "demos_z_trafo.page",
+                },
             ],
         },
     }

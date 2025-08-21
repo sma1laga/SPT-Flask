@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>DTFT &amp; z-Transform</h1>
+<p>Notebook-equivalent demo of \(x[k] = a^k \cos(\omega_0 k)\,\varepsilon[k]\). Adjust \(\omega_0/\pi\) and \(a\) to see the time sequence, DTFT magnitude, and the pole–zero plot with ROC.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  input[type=range]{width:100%}
+  img{max-width:100%}
+</style>
+
+<div class="row">
+  <div style="margin-top:12px" class="card">
+    <label>Normalized frequency \(\omega_0/\pi\):
+      <span id="freq_val">{{defaults.norm_freq}}</span>
+    </label>
+    <input id="norm_freq" type="range" min="0.0" max="1.0" step="0.01" value="{{defaults.norm_freq}}">
+
+    <label>Decay \(a\):
+      <span id="a_val">{{defaults.a}}</span>
+    </label>
+    <input id="a" type="range" min="0.0" max="1.0" step="0.01" value="{{defaults.a}}">
+
+    <button id="run" style="margin-top:12px">Recompute</button>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="DTFT & z-Transform plot" loading="eager">
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function syncLabels(){
+    $("freq_val").textContent = $("norm_freq").value;
+    $("a_val").textContent = $("a").value;
+  }
+
+  // Debounce for smoothnes
+  let tHandle = null;
+  function debounced(fn, delay=120){
+    return function(...args){
+      if (tHandle) cancelAnimationFrame(tHandle);
+      const start = performance.now();
+      tHandle = requestAnimationFrame(() => {
+        const elapsed = performance.now() - start;
+        if (elapsed >= delay) fn.apply(this, args);
+        else setTimeout(() => fn.apply(this, args), delay - elapsed);
+      });
+    };
+  }
+
+  async function recompute(){
+    syncLabels();
+    const body = {
+      norm_freq: Math.round(parseFloat($("norm_freq").value) * 1000) / 1000,
+      a: Math.round(parseFloat($("a").value) * 1000) / 1000
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body),
+      keepalive: true
+    });
+    if (!resp.ok) {
+      console.error("Compute error", resp.status, await resp.text());
+      return;
+    }
+    const data = await resp.json();
+    $("plot").src = data.image;
+  }
+
+  const recomputeDebounced = debounced(recompute, 120);
+  ["norm_freq","a"].forEach(id => $(id).addEventListener("input", recomputeDebounced));
+  $("run").addEventListener("click", recompute);
+
+  // Initial render
+  recompute();
+</script>
+{% endblock %}

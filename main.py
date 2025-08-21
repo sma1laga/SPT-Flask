@@ -59,7 +59,7 @@ from pages.training.training_processing_chain import training_processing_chain_b
 from pages.exam_convolution import exam_convolution_bp
 from pages.exam_fourier import exam_fourier_bp
 
-
+# VL DEMOS SISY2
 from pages.demos.menu import demos_menu_bp
 from pages.demos.kapitel2 import demos_kapitel2_bp
 from pages.demos.kapitel4 import demos_kapitel4_bp
@@ -67,9 +67,11 @@ from pages.demos.kapitel6 import demos_kapitel6_bp
 from pages.demos.kapitel8_2 import demos_kapitel8_2_bp
 from pages.demos.kapitel8_audio import demos_kapitel8_audio_bp
 from pages.demos.kapitel11 import demos_kapitel11_bp
-
+# UEBUNG DEMOS SISY2
 from pages.demos.dtft_impulses import dtft_impulses_bp
 from pages.demos.dtft_dft import dtft_dft_bp
+from pages.demos.z_trafo import demos_z_trafo_bp
+
 
 
 
@@ -155,6 +157,8 @@ def create_app():
 
     app.register_blueprint(dtft_impulses_bp, url_prefix="/demos/dtft_impulses")
     app.register_blueprint(dtft_dft_bp, url_prefix="/demos/dtft_dft")
+    app.register_blueprint(demos_z_trafo_bp, url_prefix="/demos/z_trafo")
+
 
 
 
