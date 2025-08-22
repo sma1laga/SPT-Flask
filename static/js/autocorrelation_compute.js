@@ -1,9 +1,7 @@
 (function(){
   'use strict';
   
-  function reverseT(expr){ // TODO better to handle time inversion in calculation instead of string manipulation.
-    return expr.replace(/\bt\b/g, '(-t)');
-  }
+// TODO better to handle time inversion in calculation instead of string manipulation. (deleted here)
   function replaceExp(expr, funcName){
     return expr.replace(/exp_iwt\s*\(([^)]*)\)/g, funcName + '($1)');
   }
@@ -34,11 +32,12 @@
     const fRe = replaceExp(func, 'Math.cos');
     const fIm = replaceExp(func, 'Math.sin');
 
-    const rr = compute_convolution(fRe, reverseT(fRe));
+    // Convolve each part with a time-reversed copy to form the autocorrelation.
+    const rr = compute_convolution(fRe, fRe, true);
     if(rr.error) return rr;
-    const ii = compute_convolution(fIm, reverseT(fIm));
-    const ri = compute_convolution(fRe, reverseT(fIm));
-    const ir = compute_convolution(fIm, reverseT(fRe));
+    const ii = compute_convolution(fIm, fIm, true);
+    const ri = compute_convolution(fRe, fIm, true);
+    const ir = compute_convolution(fIm, fRe, true);
 
     const n = rr.y_conv.length;
     const re = new Float64Array(n);

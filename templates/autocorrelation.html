@@ -17,17 +17,17 @@
   </div>
 
   <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">
-    <!-- TODO remove np. once implemented -->
+    <!-- np. prefix removed after ading direct math constants -->
     {% for lbl, ltx in [
       ('rect(t)', '\mathrm{rect}'),
       ('tri(t)', '\mathrm{tri}'),
-      ('sin(np.pi*t)*rect(t/4)', '\sin'),
-      ('cos(np.pi*t)*rect(t/4)', '\cos'),
-      ('exp_iwt(np.pi*t)*rect(t/4)', '\mathrm e^{\mathrm j\omega t}'),
+      ('sin(pi*t)*rect(t/4)', '\sin'),
+      ('cos(pi*t)*rect(t/4)', '\cos'),
+      ('exp_iwt(pi*t)*rect(t/4)', '\mathrm e^{\mathrm j\omega t}'),
       ('exp(-t)*step(t)', '\mathrm e^{-t}'),
       ('inv_t(t)*step(t)', '1/t'),
-      ('si(np.pi*t)', '\mathrm{si}'),
-      ('si(np.pi*t)**2', '\mathrm{si}^2'),
+      ('si(pi*t)', '\mathrm{si}'),
+      ('(si(pi*t))**2', '\mathrm{si}^2'),
       ] %}
       <button type="button" onclick="insertOperand('{{ lbl }}')">\({{ ltx }}\)</button>
     {% endfor %}

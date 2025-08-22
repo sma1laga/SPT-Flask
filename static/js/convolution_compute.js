@@ -21,19 +21,22 @@
 
   const np = {exp: Math.exp, sin: Math.sin, cos: Math.cos, abs: Math.abs, pi: Math.PI};
 
-  function makeEvaluator(expr){ // TODO allow pi, e, abs, exp without np.
+  function makeEvaluator(expr){
+    // Allow direct usage of common math helpers like pi, e, abs, exp without np.
+    // This avoids the previous requirement of prefixing with "np.".
     try {
-      return new Function('t','rect','tri','step','cos','sin','sign','delta','exp_iwt','inv_t','si','exp','np',
-        'return '+expr);
+      return new Function(
+        't','rect','tri','step','cos','sin','sign','delta','exp_iwt','inv_t','si','exp','abs','pi','e','np',        'return '+expr);
     } catch(e){
       return null;
     }
   }
 
-  function evaluateArray(fn, tArr){
+  function evaluateArray(fn, tArr, reverse=false){
     const out = new Float64Array(tArr.length);
     for(let i=0;i<tArr.length;i++){
-      out[i] = fn(tArr[i],rect,tri,step,cos,sin,sign,delta,exp_iwt,inv_t,si,Math.exp,np);
+      const tt = reverse ? -tArr[i] : tArr[i];
+      out[i] = fn(tt,rect,tri,step,cos,sin,sign,delta,exp_iwt,inv_t,si,Math.exp,Math.abs,Math.PI,Math.E,np);
     }
     return out;
   }
@@ -78,7 +81,8 @@
     }
   }
 
-  function compute_convolution(func1, func2){
+  function compute_convolution(func1, func2, reverseSecond=false){
+    // reverseSecond enables time reversal of the second function without string manipulation.
     const N_SCAN = 8192;
     const tScan = linspace(-100,100,N_SCAN);
     const dtScan = tScan[1]-tScan[0];
@@ -87,7 +91,7 @@
     if(!f1 || !f2) return {error:'Error evaluating function'};
     let y1Scan, y2Scan;
     try { y1Scan = evaluateArray(f1, tScan); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
-    try { y2Scan = evaluateArray(f2, tScan); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
+    try { y2Scan = evaluateArray(f2, tScan, reverseSecond); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
 
     const amp1 = maxAbs(y1Scan);
     const amp2 = maxAbs(y2Scan);
@@ -137,7 +141,7 @@
 
     let y1, y2;
     try { y1 = evaluateArray(f1, t1); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
-    try { y2 = evaluateArray(f2, t2); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
+    try { y2 = evaluateArray(f2, t2, reverseSecond); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
 
     const yConvFull = convolve(y1Scan, y2Scan, dtScan);
     const convStart = 2*tScan[0];
