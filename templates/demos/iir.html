@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}IIR Echo Demo (Plotly){% endblock %}
+{% block content %}
+
+<h1 style="text-align:center;margin-bottom:18px;">IIR Echo Demo (Plotly)</h1>
+<p style="max-width:960px;margin:0 auto 18px auto;text-align:center;">
+  \(y[k] = x[k] + a\,y[k-K]\) with \(K=\mathrm{round}(\mathrm{delay}\cdot f_s)\).
+  Choose input, set delay (s) and attenuation \(a\). Plots: \(x[k]\), \(h[k]\) (stems), \(y[k]\).
+</p>
+
+<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1200px;margin:0 auto;">
+  <div class="card" style="flex:1;min-width:280px;">
+    <label>Input signal</label>
+    <select id="x_type" style="width:100%;">
+      {% for name in audio_choices %}
+        <option value="{{name}}" {% if name==defaults.x_type %}selected{% endif %}>{{name}}</option>
+      {% endfor %}
+    </select>
+
+    <label style="display:block;margin-top:8px;">Delay (seconds): <span id="delay_val">{{'%.2f' % defaults.delay}}</span></label>
+    <input id="delay" type="range" min="0.00" max="1.00" step="0.05" value="{{'%.2f' % defaults.delay}}" style="width:100%;">
+
+    <label style="display:block;margin-top:8px;">Attenuation \(a\): <span id="a_val">{{'%.2f' % defaults.a}}</span></label>
+    <input id="a" type="range" min="0.00" max="0.99" step="0.05" value="{{'%.2f' % defaults.a}}" style="width:100%;">
+
+    <button id="run" style="margin-top:12px">Recompute</button>
+
+    <div style="margin-top:12px">
+      <strong>Audio preview</strong>
+      <div>Input:</div>
+      <audio id="x_audio" controls preload="metadata" playsinline></audio>
+      <div>Output:</div>
+      <audio id="y_audio" controls preload="metadata" playsinline style="width:100%;"></audio>
+    </div>
+  </div>
+
+  <div class="card" style="flex:2;min-width:520px;">
+    <div id="plot" style="width:100%;height:720px;"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script>
+window.AUDIO_URLS = {{ audio_map|tojson }};
+(function(){
+  const $ = (id) => document.getElementById(id);
+
+  function quant05(v){
+    // 0.05 steps 
+    return Math.round(parseFloat(v) * 20) / 20;
+  }
+  function syncLabels(){
+    $("delay_val").textContent = quant05($("delay").value).toFixed(2);
+    $("a_val").textContent     = quant05($("a").value).toFixed(2);
+  }
+
+  // Figure scaff
+  const layoutBase = {
+    grid: {rows:3, columns:1, pattern:'independent', roworder:'top to bottom'},
+    margin:{l:60,r:20,t:30,b:40},
+    showlegend:false,
+    hovermode:false,
+    xaxis:  {title:{text:'k'}},
+    yaxis:  {title:{text:'x[k]'}, range:[-1,1]},
+    xaxis2: {title:{text:'k'}},
+    yaxis2: {title:{text:'h[k]'}, range:[0,1]},
+    xaxis3: {title:{text:'k'}},
+    yaxis3: {title:{text:'y[k]'}},
+    shapes: []
+  };
+
+  const traces = [
+    {name:'x', x:[], y:[], mode:'lines',   type:'scattergl', xaxis:'x',  yaxis:'y'},
+    {name:'h markers', x:[], y:[], mode:'markers', type:'scattergl', xaxis:'x2', yaxis:'y2', marker:{size:4}},
+    {name:'y', x:[], y:[], mode:'lines',   type:'scattergl', xaxis:'x3', yaxis:'y3'},
+  ];
+  {# plotly usage, right now set to static plot #}
+
+  Plotly.newPlot("plot", traces, layoutBase, {responsive:true, staticPlot:true});
+
+  let inflight = null;
+  let latestSeq = 0;
+
+  async function callUpdate(){
+    if (inflight) inflight.abort();
+    inflight = new AbortController();
+    const seq = ++latestSeq;
+
+    const body = {
+      x_type: $("x_type").value,
+      delay:  quant05($("delay").value),
+      a:      quant05($("a").value),
+      preview: false  // compute only on release
+    };
+
+    try {
+      const resp = await fetch("{{ url_for('demos_iir.update') }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body),
+        signal: inflight.signal
+      });
+      if (!resp.ok) return;
+      const d = await resp.json();
+      if (seq !== latestSeq) return;
+
+    const hx = [], hy = [];
+    for (let i = 0; i < (d.h_k?.length || 0); i++) {
+    const kx = d.h_k[i], a = d.h_amp[i];
+    hx.push(kx, kx, null);
+    hy.push(0,  a,  null);
+    }
+
+    const data = [
+    {name:'x', x:d.k,   y:d.x,   mode:'lines', type:'scattergl', xaxis:'x',  yaxis:'y'},
+    {name:'h stems',   x:hx, y:hy, mode:'lines', type:'scattergl', xaxis:'x2', yaxis:'y2', hoverinfo:'skip'},
+    {name:'h markers', x:d.h_k, y:d.h_amp, mode:'markers', type:'scattergl', xaxis:'x2', yaxis:'y2', marker:{size:4}},
+    {name:'y', x:d.k_y, y:d.y,   mode:'lines', type:'scattergl', xaxis:'x3', yaxis:'y3'}
+    ];
+
+    const layout = {
+    ...layoutBase,
+    yaxis:  {...layoutBase.yaxis,  range:d.x_ylim},
+    yaxis2: {...layoutBase.yaxis2, range:d.h_ylim},
+    yaxis3: {...layoutBase.yaxis3, range:d.y_ylim},
+    xaxis:  {...layoutBase.xaxis,  range:[0, Math.max(0, (d.k?.length||1)-1)],   dtick:d.dtick},
+    xaxis2: {...layoutBase.xaxis2, range:[0, Math.max(0, (d.k?.length||1)-1)],   dtick:d.dtick},
+    xaxis3: {...layoutBase.xaxis3, range:[0, Math.max(0, (d.k_y?.length||1)-1)], dtick:d.dtick},
+    // no shapes
+    };
+
+    await Plotly.react("plot", data, layout);
+
+
+    
+      if (d.y_audio) { const ya = $("y_audio"); ya.src = d.y_audio; ya.load(); }
+    } catch(e) {
+    }
+  }
+  (function initInputAudio(){
+    const xa = $("x_audio");
+    xa.preload = "metadata";
+    const src = AUDIO_URLS[$("x_type").value];
+    if (src) { xa.src = src; xa.load(); }
+  })();
+
+  // update labels while dragging compute only on release/change/click
+  $("delay").addEventListener("input",  syncLabels);
+  $("a").addEventListener("input",      syncLabels);
+
+  // Compute on release
+  ["delay","a"].forEach(id => {
+    $(id).addEventListener("change",    callUpdate);
+    $(id).addEventListener("pointerup", callUpdate);
+    $(id).addEventListener("touchend",  callUpdate);
+  });
+
+$("x_type").addEventListener("change", () => {
+  const xa = $("x_audio");
+  xa.preload = "metadata";
+  const src = AUDIO_URLS[$("x_type").value];
+  if (src && xa.src !== src) { xa.src = src; xa.load(); }
+
+  callUpdate(false);                                
+});
+
+  $("run").addEventListener("click",     callUpdate);
+
+  // initial render
+  syncLabels();
+  callUpdate();
+})();
+</script>
+
+<style>
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+</style>
+{% endblock %}

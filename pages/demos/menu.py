@@ -86,6 +86,13 @@ def index():
                     "desc": "x[k]=a^k·cos(ω₀ k)·u[k]; Zeitfolge, DTFT und PN‑Diagramm (z).",
                     "endpoint": "demos_z_trafo.page",
                 },
+                {
+                "slug": "iir",
+                "title": "IIR Echo",
+                "title_desc": "y[k] = x[k] + a·y[k−K]",
+                "desc": "Convolution view via impulse response h plus inline audio for x and y.",
+                "endpoint": "demos_iir.page",
+                },
             ],
         },
     }
