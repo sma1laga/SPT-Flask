@@ -93,6 +93,8 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
+  let debounceTimer = null;
+  let controller = null;
 
   function clampDisplacement(minD, maxD){
     const s = $("x_displacement");
@@ -104,28 +106,41 @@
   }
 
   async function recompute(){
+    if (controller) controller.abort();
+    controller = new AbortController();
     const body = {
       x_type: $("x_type").value,
       x_displacement: parseFloat($("x_displacement").value),
       x_width: parseFloat($("x_width").value),
       x_height: parseFloat($("x_height").value),
     };
-    const resp = await fetch("./compute", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(body)
-    });
-    if (!resp.ok) {
-      alert("Error: " + await resp.text());
-      return;
+    try {
+      const resp = await fetch("./compute", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      if (!resp.ok) {
+        alert("Error: " + await resp.text());
+        return;
+      }
+      const data = await resp.json();
+      $("plot").src = data.image;
+      clampDisplacement(data.min_displacement, data.max_displacement);
+    } catch(e){
+      if (e.name !== 'AbortError') console.error(e);
     }
-    const data = await resp.json();
-    $("plot").src = data.image;
-    clampDisplacement(data.min_displacement, data.max_displacement);
+  }
+
+  function schedule(){
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(recompute, 150);
   }
 
   ["x_type","x_displacement","x_width","x_height"].forEach(id => {
-    $(id).addEventListener("change", recompute);
+    $(id).addEventListener("input", schedule);
+    $(id).addEventListener("change", schedule);
     $(id).addEventListener("keyup", (e) => { if (e.key === "Enter") recompute(); });
   });
   $("run").addEventListener("click", recompute);

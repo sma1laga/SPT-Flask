@@ -9,6 +9,8 @@ rcParams["text.usetex"] = False
 rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
 from utils.img import fig_to_base64
+from functools import lru_cache
+
 
 demos_fouriertransformation_bp = Blueprint(
     "demos_fouriertransformation", __name__, template_folder="../../templates"
@@ -55,8 +57,8 @@ def _timepoints_for(x_type):
     t = np.linspace(t_start, t_end, NUM_TIMEPOINTS)
     return t, t_start, t_end
 
-def _omegapoints():
-    return np.linspace(OMEGA_START, OMEGA_END, NUM_OMEGA_POINTS)
+OMEGA_POINTS = np.linspace(OMEGA_START, OMEGA_END, NUM_OMEGA_POINTS)
+TIME_GRIDS = {xt: _timepoints_for(xt) for xt in ("rect", "triangle", "si", "si squared")}
 
 # ===== Notebook equivalent mappings =====
 def generate_x(t, x_type, x_displacement, x_width, x_height):
@@ -164,8 +166,8 @@ def _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
     phi_ax.set_title("Phase")
 
 def _render_plot(x_type, x_displacement, x_width, x_height):
-    t, t_start, t_end = _timepoints_for(x_type)
-    w = _omegapoints()
+    t, t_start, t_end = TIME_GRIDS[x_type]
+    w = OMEGA_POINTS
 
     x = generate_x(t, x_type, x_displacement, x_width, x_height)
     Xabs = generate_abs(w, x_type, x_displacement, x_width, x_height)
@@ -181,6 +183,12 @@ def _render_plot(x_type, x_displacement, x_width, x_height):
     phi_ax.plot(w, Xphi, linewidth=1.2, color="C2")
 
     return fig
+
+@lru_cache(maxsize=128)
+def _cached_image(x_type, x_displacement, x_width, x_height):
+    """Return rendered plot as base64 image using an LRU cache."""
+    fig = _render_plot(x_type, x_displacement, x_width, x_height)
+    return fig_to_base64(fig)
 
 # ===== Routes =====
 @demos_fouriertransformation_bp.route("/", methods=["GET"])
@@ -208,17 +216,16 @@ def compute():
     x_width = float(data.get("x_width", DEFAULTS["x_width"]))
     x_height = float(data.get("x_height", DEFAULTS["x_height"]))
 
-    x_width = float(np.clip(x_width, MIN_WIDTH, MAX_WIDTH))
-    x_height = float(np.clip(x_height, MIN_HEIGHT, MAX_HEIGHT))
+    x_width = round(float(np.clip(x_width, MIN_WIDTH, MAX_WIDTH)), 5)
+    x_height = round(float(np.clip(x_height, MIN_HEIGHT, MAX_HEIGHT)), 5)
 
-    t_start, t_end = (-15.0, 15.0) if x_type in ("si", "si squared") else (-5.0, 5.0)
+    t_start, t_end = TIME_GRIDS[x_type][1], TIME_GRIDS[x_type][2]
     min_disp = t_start + MAX_WIDTH
     max_disp = t_end - MAX_WIDTH
-    x_displacement = float(np.clip(x_displacement, min_disp, max_disp))
+    x_displacement = round(float(np.clip(x_displacement, min_disp, max_disp)), 5)
 
-    fig = _render_plot(x_type, x_displacement, x_width, x_height)
-    img = fig_to_base64(fig)
-    plt.close(fig)
+    img = _cached_image(x_type, x_displacement, x_width, x_height)
+
 
     return jsonify(dict(
         image=img,
