@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 matplotlib.style.use("fast")
 from matplotlib import rcParams
 rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
+rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from matplotlib.gridspec import GridSpec
