@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Fourier Transform</h1>
+<p>This interactive page draws the continuous-time signal \(x(t)\) and its Fourier transform \(X(j\omega)\): magnitude \(|X(j\omega)|\) and phase \(\phi(j\omega)\).
+Choose the signal, displacement, time-scale (width), and amplitude.</p>
+
+<style>
+  /* Compact, single-row controls that wrap gracefully on small screens */
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(90px, 1fr));
+    gap: 10px;
+    align-items: end;
+  }
+  @media (max-width: 1100px) {
+    .toolbar { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .toolbar { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+  }
+
+  .card {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    margin-bottom: 16px;
+    background: var(--card-bg, #fff);
+  }
+  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
+  select, input[type=number], button {
+    width: 100%;
+    padding: 7px 8px;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    background: var(--control-bg, #fff);
+  }
+  .actions { display:flex; gap:8px; }
+  .actions button { white-space: nowrap; }
+
+  /* Plot container */
+  #plot { width: 100%; height: auto; display: block; }
+</style>
+
+<div class="card">
+  <div class="toolbar">
+    <div>
+      <label for="x_type">x(t)</label>
+      <select id="x_type">
+        <option value="rect" {% if defaults.x_type=='rect' %}selected{% endif %}>rectangle</option>
+        <option value="triangle" {% if defaults.x_type=='triangle' %}selected{% endif %}>triangle</option>
+        <option value="si" {% if defaults.x_type=='si' %}selected{% endif %}>si</option>
+        <option value="si squared" {% if defaults.x_type=='si squared' %}selected{% endif %}>si²</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="x_displacement">Displacement t₀</label>
+      <input id="x_displacement" type="number"
+             step="{{ defaults.step_displacement }}"
+             min="{{ defaults.min_displacement }}" max="{{ defaults.max_displacement }}"
+             value="{{ defaults.x_displacement }}">
+    </div>
+
+    <div>
+      <label for="x_width">Time-scale / width</label>
+      <input id="x_width" type="number"
+             step="{{ defaults.step_width }}"
+             min="{{ defaults.min_width }}" max="{{ defaults.max_width }}"
+             value="{{ defaults.x_width }}">
+    </div>
+
+    <div>
+      <label for="x_height">Amplitude</label>
+      <input id="x_height" type="number"
+             step="{{ defaults.step_height }}"
+             min="{{ defaults.min_height }}" max="{{ defaults.max_height }}"
+             value="{{ defaults.x_height }}">
+    </div>
+
+    <div class="actions">
+      <button id="run">Update</button>
+      <button id="reset" type="button">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <img id="plot" alt="Fourier transform plots">
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function clampDisplacement(minD, maxD){
+    const s = $("x_displacement");
+    const v = parseFloat(s.value);
+    s.min = minD;
+    s.max = maxD;
+    if (v < minD) s.value = minD;
+    if (v > maxD) s.value = maxD;
+  }
+
+  async function recompute(){
+    const body = {
+      x_type: $("x_type").value,
+      x_displacement: parseFloat($("x_displacement").value),
+      x_width: parseFloat($("x_width").value),
+      x_height: parseFloat($("x_height").value),
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+      alert("Error: " + await resp.text());
+      return;
+    }
+    const data = await resp.json();
+    $("plot").src = data.image;
+    clampDisplacement(data.min_displacement, data.max_displacement);
+  }
+
+  ["x_type","x_displacement","x_width","x_height"].forEach(id => {
+    $(id).addEventListener("change", recompute);
+    $(id).addEventListener("keyup", (e) => { if (e.key === "Enter") recompute(); });
+  });
+  $("run").addEventListener("click", recompute);
+  $("reset").addEventListener("click", () => {
+    $("x_type").value = "{{ defaults.x_type }}";
+    $("x_displacement").value = "{{ defaults.x_displacement }}";
+    $("x_width").value = "{{ defaults.x_width }}";
+    $("x_height").value = "{{ defaults.x_height }}";
+    clampDisplacement({{ defaults.min_displacement }}, {{ defaults.max_displacement }});
+    recompute();
+  });
+
+  window.addEventListener("load", () => recompute());
+</script>
+{% endblock %}

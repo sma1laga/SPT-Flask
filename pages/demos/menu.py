@@ -24,6 +24,13 @@ def index():
                 "desc": "Visualize x(t)=|X̂| e^{σt} e^{j(ωt+φ)}; full or up to t.",
                 "endpoint": "demos_exponential.page",
                 },
+                {
+                "slug": "fouriertransformation",
+                "title": "Fouriertransformation (V4)",
+                "title_desc": "Betrag & Phase von X(jω)",
+                "desc": "Analytische Paare: rect, si, Dreieck, si²; interaktive Skalierung & Verschiebung.",
+                "endpoint": "demos_fouriertransformation.page",
+                },
                 ],
             "Tutorial": [],
         },

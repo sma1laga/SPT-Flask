@@ -75,6 +75,7 @@ from pages.demos.iir import demos_iir_bp
 from pages.demos.filter_demo import demos_filter_bp
 #VL DEMOS SISY1
 from pages.demos.exponential import demos_exponential_bp
+from pages.demos.fouriertransformation import demos_fouriertransformation_bp
 
 
 
@@ -166,6 +167,7 @@ def create_app():
     app.register_blueprint(demos_filter_bp, url_prefix="/demos/filter")
 
     app.register_blueprint(demos_exponential_bp, url_prefix="/demos/exponential")
+    app.register_blueprint(demos_fouriertransformation_bp, url_prefix="/demos/fouriertransformation")
 
 
 
