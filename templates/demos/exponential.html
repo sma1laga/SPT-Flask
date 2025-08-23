@@ -1,0 +1,106 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h1>Signals & Systems I — Complex Exponential Function</h1>
+<p>
+This interactive page visualizes \(x(t) = |\hat X|\,\mathrm e^{\sigma t}\,\mathrm e^{j(\omega t + \varphi)}\).
+Use the controls to adjust magnitude \(|\hat X|\), phase \(\varphi\), frequency \(\omega\), real part \(\sigma\), and the time cursor.
+</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  img{max-width:100%}
+  .kv{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center}
+  .hstack{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  input[type=range]{width:100%}
+</style>
+
+<div class="row">
+  <div class="card">
+    <div class="kv">
+      <div><strong>Magnitude \(|\hat X|\)</strong></div>
+      <div><input id="magnitude" type="range" min="0" max="2" step="0.25" value="{{ defaults.magnitude }}"><span id="magnitude_val">{{ defaults.magnitude }}</span></div>
+
+      <div><strong>Phase \(\varphi\) [rad]</strong></div>
+      <div><input id="phase" type="range" min="{{ -pi/2 }}" max="{{ pi/2 }}" step="0.05" value="{{ defaults.phase }}"><span id="phase_val">{{ defaults.phase }}</span></div>
+
+      <div><strong>Frequency \(\omega\)</strong></div>
+      <div><input id="omega" type="range" min="-10" max="10" step="0.5" value="{{ defaults.omega }}"><span id="omega_val">{{ defaults.omega }}</span></div>
+
+      <div><strong>Real part \(\sigma\)</strong></div>
+      <div><input id="sigma" type="range" min="-0.5" max="0.5" step="0.05" value="{{ defaults.sigma }}"><span id="sigma_val">{{ defaults.sigma }}</span></div>
+
+      <div><strong>Time cursor \(t\)</strong></div>
+      <div><input id="time" type="range" min="0" max="{{ t_max }}" step="0.05" value="{{ defaults.time }}"><span id="time_val">{{ defaults.time }}</span></div>
+
+      <div><strong>Mode</strong></div>
+      <div class="hstack">
+        <label><input type="radio" name="mode" value="Entirely" {% if defaults.mode == "Entirely" %}checked{% endif %}> Entirely</label>
+        <label><input type="radio" name="mode" value="Until t" {% if defaults.mode == "Until t" %}checked{% endif %}> Until t</label>
+      </div>
+    </div>
+
+    <div class="hstack" style="margin-top:12px">
+      <button id="run">Recompute</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="plot">
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function getMode(){
+    const r = document.querySelector('input[name="mode"]:checked');
+    return r ? r.value : "Until t";
+  }
+  function payload(){
+    return {
+      magnitude: parseFloat($("magnitude").value),
+      phase: parseFloat($("phase").value),
+      omega: parseFloat($("omega").value),
+      sigma: parseFloat($("sigma").value),
+      time: parseFloat($("time").value),
+      mode: getMode(),
+    };
+  }
+  function syncLabels(){
+    $("magnitude_val").textContent = $("magnitude").value;
+    $("phase_val").textContent = $("phase").value;
+    $("omega_val").textContent = $("omega").value;
+    $("sigma_val").textContent = $("sigma").value;
+    $("time_val").textContent = $("time").value;
+  }
+
+  async function recompute(){
+    syncLabels();
+    try{
+      const res = await fetch("./compute", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload())
+      });
+      const data = await res.json();
+      if(data.error){
+        alert(data.error);
+        return;
+      }
+      $("plot").src = data.image;
+      if (window.MathJax && MathJax.typeset) { MathJax.typeset(); }
+    }catch(e){
+      console.error(e);
+      alert(e);
+    }
+  }
+
+  ["magnitude","phase","omega","sigma","time"].forEach(id => $(id).addEventListener("input", () => recompute()));
+  document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", () => recompute()));
+  $("run").addEventListener("click", () => recompute());
+
+  // initial draw
+  recompute();
+</script>
+{% endblock %}

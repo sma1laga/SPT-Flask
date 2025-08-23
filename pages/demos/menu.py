@@ -16,7 +16,15 @@ def index():
 
     demos = {
         "Signals and Systems I": {
-            "Course": [],
+            "Course": [
+                {
+                "slug": "exponential",
+                "title": "Complex Exponential Function",
+                "title_desc": "3D spiral + Re/Im/|x|/phase",
+                "desc": "Visualize x(t)=|X̂| e^{σt} e^{j(ωt+φ)}; full or up to t.",
+                "endpoint": "demos_exponential.page",
+                },
+                ],
             "Tutorial": [],
         },
         "Signals and Systems II": {
