@@ -3,11 +3,11 @@ from flask import Blueprint, render_template, request, jsonify
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
-matplotlib.style.use("fast")
+import matplotlib.pyplot as plt
+plt.style.use("fast")
 from matplotlib import rcParams
 rcParams["text.usetex"] = False
 rcParams["text.parse_math"] = True
-import matplotlib.pyplot as plt
 from utils.img import fig_to_base64
 from functools import lru_cache
 
@@ -211,10 +211,17 @@ def page():
 @demos_fouriertransformation_bp.route("/compute", methods=["POST"])
 def compute():
     data = request.get_json(force=True) or {}
+
+    def _safe_float(value, default):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return float(default)
+
     x_type = data.get("x_type", DEFAULTS["x_type"])
-    x_displacement = float(data.get("x_displacement", DEFAULTS["x_displacement"]))
-    x_width = float(data.get("x_width", DEFAULTS["x_width"]))
-    x_height = float(data.get("x_height", DEFAULTS["x_height"]))
+    x_displacement = _safe_float(data.get("x_displacement"), DEFAULTS["x_displacement"])
+    x_width = _safe_float(data.get("x_width"), DEFAULTS["x_width"])
+    x_height = _safe_float(data.get("x_height"), DEFAULTS["x_height"])
 
     x_width = round(float(np.clip(x_width, MIN_WIDTH, MAX_WIDTH)), 5)
     x_height = round(float(np.clip(x_height, MIN_HEIGHT, MAX_HEIGHT)), 5)
