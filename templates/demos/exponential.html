@@ -96,7 +96,10 @@ Use the controls to adjust magnitude \(|\hat X|\), phase \(\varphi\), frequency 
     }
   }
 
-  ["magnitude","phase","omega","sigma","time"].forEach(id => $(id).addEventListener("input", () => recompute()));
+  ["magnitude","phase","omega","sigma","time"].forEach(id => {
+    $(id).addEventListener("input", () => syncLabels());
+    $(id).addEventListener("change", () => recompute());
+  });
   document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", () => recompute()));
   $("run").addEventListener("click", () => recompute());
 

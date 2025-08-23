@@ -1,4 +1,3 @@
-
 # pages/demos/exponential.py
 from flask import Blueprint, render_template, request, jsonify
 import numpy as np
@@ -8,8 +7,10 @@ import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
 from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
+import shutil
+# Use LaTeX rendering only if the system LaTeX installation is available
+if shutil.which("latex"):
+    rcParams["text.usetex"] = True
 rcParams["mathtext.fontset"] = "cm"
 
 import matplotlib.pyplot as plt
