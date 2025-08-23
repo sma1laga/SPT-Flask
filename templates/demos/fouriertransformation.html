@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Fourier Transform</h1>
-<p>This interactive page draws the continuous-time signal \(x(t)\) and its Fourier transform \(X(j\omega)\): magnitude \(|X(j\omega)|\) and phase \(\phi(j\omega)\).
-Choose the signal, displacement, time-scale (width), and amplitude.</p>
+<p>This interactive page draws the continuous-time signal \(x(t)\) and its Fourier transform \(X(j\omega)\): magnitude \(|X(j\omega)|\) and phase \(\phi(j\omega)\). Choose the signal, displacement, time-scale (width), and amplitude.</p>
 
 <style>
   /* Compact, single-row controls that wrap gracefully on small screens */
@@ -29,7 +28,7 @@ Choose the signal, displacement, time-scale (width), and amplitude.</p>
     background: var(--card-bg, #fff);
   }
   label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
-  select, input[type=number], button {
+  select, input[type=number] {
     width: 100%;
     padding: 7px 8px;
     border: 1px solid #bbb;
@@ -37,8 +36,10 @@ Choose the signal, displacement, time-scale (width), and amplitude.</p>
     background: var(--control-bg, #fff);
   }
   .actions { display:flex; gap:8px; }
-  .actions button { white-space: nowrap; }
-
+  .actions button {
+    white-space: nowrap;
+    flex: 1;
+  }
   /* Plot container */
   #plot { width: 100%; height: auto; display: block; }
 </style>

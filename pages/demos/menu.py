@@ -26,9 +26,9 @@ def index():
                 },
                 {
                 "slug": "fouriertransformation",
-                "title": "Fouriertransformation (V4)",
-                "title_desc": "Betrag & Phase von X(jω)",
-                "desc": "Analytische Paare: rect, si, Dreieck, si²; interaktive Skalierung & Verschiebung.",
+                "title": "Fourier Transform (Lecture 4)",
+                "title_desc": "Magnitude & Phase of X(jω)",
+                "desc": "Analytical pairs: rect, si, triangle, si²; interactive scaling & shifting.",
                 "endpoint": "demos_fouriertransformation.page",
                 },
                 ],
