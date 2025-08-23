@@ -72,6 +72,7 @@ from pages.demos.dtft_impulses import dtft_impulses_bp
 from pages.demos.dtft_dft import dtft_dft_bp
 from pages.demos.z_trafo import demos_z_trafo_bp
 from pages.demos.iir import demos_iir_bp
+from pages.demos.filter_demo import demos_filter_bp
 
 
 
@@ -160,6 +161,7 @@ def create_app():
     app.register_blueprint(dtft_dft_bp, url_prefix="/demos/dtft_dft")
     app.register_blueprint(demos_z_trafo_bp, url_prefix="/demos/z_trafo")
     app.register_blueprint(demos_iir_bp, url_prefix="/demos/iir")
+    app.register_blueprint(demos_filter_bp, url_prefix="/demos/filter")
 
 
 

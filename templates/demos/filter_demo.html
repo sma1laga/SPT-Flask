@@ -1,0 +1,116 @@
+
+{% extends "base.html" %}
+{% block content %}
+<h1>Filter Demo (Audio) – Magnitude, Phase, Pole–Zero, Impulse</h1>
+<p>This demo applies an IIR/FIR filter with coefficients \(a,b\) to an audio signal
+and shows (1) the input signal, (2) the filtered signal, and (3) one selected plot:
+magnitude response, phase response, pole–zero plot (z‑plane), or impulse response.</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  label{display:block;margin-top:8px}
+  img{max-width:100%}
+  .kv{display:grid;grid-template-columns:160px 1fr;gap:10px 12px;align-items:center}
+  .hstack{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+</style>
+
+<div class="row">
+  <div class="card">
+    <div class="kv">
+      <div><strong>Input \(x[k]\)</strong></div>
+      <div>
+        <select id="x_type">
+          {% for name in audio_options %}
+            <option value="{{name}}" {% if name==defaults.x_type %}selected{% endif %}>{{name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div><strong>Examples (coefficients)</strong></div>
+      <div>
+        <select id="ex">
+          {% for name in ex_options %}
+            <option value="{{name}}" {% if name==defaults.ex %}selected{% endif %}>{{name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div><strong>Plot</strong></div>
+      <div>
+        {% for p in plots %}
+          <label class="hstack"><input type="radio" name="plot" value="{{p}}" {% if p==defaults.plot %}checked{% endif %}> {{p}}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="hstack" style="margin-top:12px">
+      <button id="run">Recompute</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="plot">
+  </div>
+
+  <div class="card">
+    <div><strong>Audio</strong></div>
+    <div class="hstack" style="margin-top:8px">
+      <div style="flex:1">
+        <div><small>Input \(x[k]\)</small></div>
+        <audio style="width:100%" id="x_audio" controls></audio>
+      </div>
+      <div style="flex:1">
+        <div><small>Filtered \(y[k]\)</small></div>
+        <audio style="width:100%" id="y_audio" controls></audio>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  function currentPlot(){
+    const r = document.querySelector('input[name="plot"]:checked');
+    return r ? r.value : "{{ defaults.plot }}";
+  }
+  function payload(){
+    return {
+      x_type: $("x_type").value,
+      ex: $("ex").value,
+      plot: currentPlot(),
+    };
+  }
+
+  async function recompute(){
+    try{
+      const res = await fetch("./compute", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload())
+      });
+      const data = await res.json();
+      if(data.error){
+        console.error(data.error);
+        alert(data.error);
+        return;
+      }
+      $("plot").src = data.image;
+      $("x_audio").src = data.x_audio || "";
+      $("y_audio").src = data.y_audio || "";
+    }catch(e){
+      console.error(e);
+      alert(e);
+    }
+  }
+
+  ["x_type","ex"].forEach(id => $(id).addEventListener("change", () => recompute()));
+  document.querySelectorAll('input[name="plot"]').forEach(r =>
+    r.addEventListener("change", () => recompute())
+  );
+  $("run").addEventListener("click", () => recompute());
+
+  // initial draw
+  recompute();
+</script>
+{% endblock %}

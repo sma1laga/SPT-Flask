@@ -93,6 +93,14 @@ def index():
                 "desc": "Convolution view via impulse response h plus inline audio for x and y.",
                 "endpoint": "demos_iir.page",
                 },
+                {
+                "slug": "filter",
+                "title": "Filter Demo",
+                "title_desc": "Magnitude, Phase, Pole–Zero, Impulse",
+                "desc": "Apply IIR/FIR to audio; interactive plots + audio preview.",
+                "endpoint": "demos_filter.page",
+                },
+
             ],
         },
     }
