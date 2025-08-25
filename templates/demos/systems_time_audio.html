@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Systems — Time Domain (Audio)</h1>
+<p>
+  Exact UI as in the notebook: select the input signal \(x(t)\) and the impulse response \(h(t)\).
+  The page shows \(x(t)\), \(h(t)\), and the output \(y(t) = x(t) * h(t)\), plus audio players for each.
+</p>
+
+<style>
+  .card {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    margin-bottom: 16px;
+    background: var(--card-bg, #fff);
+  }
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(120px, 1fr));
+    gap: 10px;
+    align-items: end;
+  }
+  @media (max-width: 1200px) {
+    .toolbar { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .toolbar { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+  }
+  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
+  select, button {
+    width: 100%;
+    padding: 7px 8px;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    background: var(--control-bg, #fff);
+  }
+  #plot { width: 100%; height: auto; display: block; }
+</style>
+
+<div class="card">
+  <div class="toolbar">
+    <div>
+      <label for="x_choice">x(t):</label>
+      <select id="x_choice">
+        {% for opt in x_options %}
+          <option value="{{ opt }}" {% if opt == defaults.x_choice %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label for="h_choice">h(t):</label>
+      <select id="h_choice">
+        {% for opt in h_options %}
+          <option value="{{ opt }}" {% if opt == defaults.h_choice %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label style="opacity:0;">run</label>
+      <button id="run">Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <img id="plot" alt="x(t), h(t), y(t)=x*h">
+</div>
+
+<div class="card">
+  <h3>Listen</h3>
+  <div style="margin-bottom:8px">
+    <div><strong>Input signal</strong></div>
+    <audio id="audio_x" controls style="width:100%"></audio>
+  </div>
+  <div style="margin-bottom:8px">
+    <div><strong>Impulse response</strong></div>
+    <audio id="audio_h" controls style="width:100%"></audio>
+  </div>
+  <div>
+    <div><strong>Output signal (input convolved with impulse response)</strong></div>
+    <audio id="audio_y" controls style="width:100%"></audio>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  async function recompute(){
+    const body = {
+      x_choice: $("x_choice").value,
+      h_choice: $("h_choice").value,
+    };
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) {
+      alert("Error: " + await resp.text());
+      return;
+    }
+    const data = await resp.json();
+    $("plot").src = data.image;
+    $("audio_x").src = data.audio_x;
+    $("audio_h").src = data.audio_h;
+    $("audio_y").src = data.audio_y;
+  }
+
+  ["x_choice","h_choice"].forEach(id => {
+    $(id).addEventListener("change", recompute);
+  });
+  $("run").addEventListener("click", recompute);
+
+  window.addEventListener("load", () => recompute());
+</script>
+{% endblock %}

@@ -31,6 +31,13 @@ def index():
                 "desc": "Analytical pairs: rect, si, triangle, si²; interactive scaling & shifting.",
                 "endpoint": "demos_fouriertransformation.page",
                 },
+                {
+                "slug": "systems-time-audio",
+                "title": "Systems — Time Domain (Audio)",
+                "title_desc": "LTI with real audio",
+                "desc": "FIR/IIR systems (moving average, echo, comb, one-pole, custom b/a); listen to input vs. output; impulse response.",
+                "endpoint": "demos_systems_time_audio.page",
+                },
                 ],
             "Tutorial": [],
         },

@@ -76,6 +76,7 @@ from pages.demos.filter_demo import demos_filter_bp
 #VL DEMOS SISY1
 from pages.demos.exponential import demos_exponential_bp
 from pages.demos.fouriertransformation import demos_fouriertransformation_bp
+from pages.demos.systems_time_audio import demos_systems_time_audio_bp
 
 
 
@@ -168,6 +169,7 @@ def create_app():
 
     app.register_blueprint(demos_exponential_bp, url_prefix="/demos/exponential")
     app.register_blueprint(demos_fouriertransformation_bp, url_prefix="/demos/fouriertransformation")
+    app.register_blueprint(demos_systems_time_audio_bp, url_prefix="/demos/systems-time-audio")
 
 
 
