@@ -29,12 +29,16 @@
     .toolbar { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
   }
   label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
-  select, button {
+  select {
     width: 100%;
     padding: 7px 8px;
     border: 1px solid #bbb;
     border-radius: 8px;
     background: var(--control-bg, #fff);
+  }
+  button {
+    width: 100%;
+    padding: 7px 8px;
   }
   #plot { width: 100%; height: auto; display: block; }
 </style>
@@ -84,6 +88,14 @@
     <div><strong>Output signal (input convolved with impulse response)</strong></div>
     <audio id="audio_y" controls style="width:100%"></audio>
   </div>
+</div>
+<div class="card">
+  <h3>Sources</h3>
+  <ul>
+    <li>Marco Jeub, Magnus Schäfer, and Peter Vary, "A Binaural Room Impulse Response Database for the Evaluation of Dereverberation Algorithms," Proc. of International Conference on Digital Signal Processing (DSP), July 2009</li>
+    <li>Rebecca Stewart and Mark Sandler, "Database of Omnidirectional and B-Format Impulse Responses," Proc. of IEEE Int. Conf. on Acoustics, Speech, and Signal Processing (ICASSP 2010), Dallas, Texas, March 2010</li>
+    <li>Wikimedia Commons: <a href="https://commons.wikimedia.org/wiki/File:Neil_Armstrong_small_step.wav">Neil Armstrong small step.wav</a>, <a href="https://commons.wikimedia.org/wiki/File:Fur_Elise.ogg">Fur Elise.ogg</a>, <a href="https://commons.wikimedia.org/wiki/File:Snare_drum_rim.ogg">Snare drum rim.ogg</a></li>
+  </ul>
 </div>
 
 <script>
