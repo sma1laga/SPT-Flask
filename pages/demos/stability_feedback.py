@@ -16,7 +16,8 @@ rcParams.update({
     "savefig.bbox": "tight",
     "font.size": 13,
     "mathtext.fontset": "dejavusans",
-    "axes.titlesize": 16,
+    "axes.titlesize": 24,
+    "axes.titleweight": "bold",
     "axes.labelsize": 14,
 })
 
