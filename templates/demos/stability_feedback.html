@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Stability and Feedback Systems</h1>
+<p>
+  This demo shows the pole diagram of the original transfer function
+  \( H(s)=\frac{b}{s-a} \) and the transfer function of the feedback system
+  \( Q(s)=\frac{H(s)}{1+K\,H(s)}=\frac{b}{\,s-a+K\,b\,} \).
+  The background indicates stability: green for stable (all poles in the left half-plane), red for unstable.
+</p>
+
+<style>
+  .toolbar {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(90px, 1fr));
+    gap: 10px;
+    align-items: end;
+    margin: 8px 0 12px;
+  }
+  @media (max-width: 1200px) { .toolbar { grid-template-columns: repeat(6, minmax(110px, 1fr)); } }
+  @media (max-width: 700px)  { .toolbar { grid-template-columns: repeat(3, minmax(150px, 1fr)); } }
+  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
+  input[type=number], button {
+    width: 100%; padding: 7px 8px; border: 1px solid #bbb; border-radius: 8px; background: var(--control-bg, #fff);
+  }
+
+  /* Make the plot span the full content width */
+  .plots { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  #plot { grid-column: 1 / -1; width: 100%; height: auto; display: block; }
+
+</style>
+
+
+<div class="toolbar">
+  <div>
+    <label for="a">a</label>
+    <input id="a" type="number" step="{{ defaults.step }}"
+           min="{{ defaults.min_a }}" max="{{ defaults.max_a }}"
+           value="{{ defaults.a }}">
+  </div>
+  <div>
+    <label for="b">b</label>
+    <input id="b" type="number" step="{{ defaults.step }}"
+           min="{{ defaults.min_b }}" max="{{ defaults.max_b }}"
+           value="{{ defaults.b }}">
+  </div>
+  <div>
+    <label for="K">K</label>
+    <input id="K" type="number" step="{{ defaults.step }}"
+           min="{{ defaults.min_K }}" max="{{ defaults.max_K }}"
+           value="{{ defaults.K }}">
+  </div>
+  <div>
+    <label class="visually-hidden">&nbsp;</label>
+    <button id="reset" type="button">Reset</button>
+  </div>
+</div>
+
+<div class="plots">
+  <img id="plot" alt="Pole diagrams of H(s) and Q(s)">
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  let inFlight = null;
+  let debounceTimer = null;
+  let SEQ = 0; 
+
+  function send() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      if (inFlight) inFlight.abort();
+      inFlight = new AbortController();
+
+      const mySeq = ++SEQ;  
+      const body = {
+        a: parseFloat($("a").value),
+        b: parseFloat($("b").value),
+        K: parseFloat($("K").value),
+        seq: mySeq
+      };
+
+      try {
+        const resp = await fetch("./compute", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify(body),
+          signal: inFlight.signal
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        if (data.seq !== undefined && data.seq < SEQ) return;
+
+        if (data.image) $("plot").src = data.image;
+      } catch (e) {
+        /* aborted – ignr */
+      } finally {
+        inFlight = null;
+      }
+    }, 80); 
+  }
+
+  ["a","b","K"].forEach(id => {
+    $(id).addEventListener("input", send);
+    $(id).addEventListener("change", send);
+    $(id).addEventListener("keyup", e => { if (e.key === "Enter") send(); });
+  });
+
+  window.addEventListener("load", send);
+</script>
+
+{% endblock %}
