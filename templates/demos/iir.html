@@ -8,7 +8,7 @@
   Choose input, set delay (s) and attenuation \(a\). Plots: \(x[k]\), \(h[k]\) (stems), \(y[k]\).
 </p>
 
-<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1200px;margin:0 auto;">
+  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1200px;margin:0 auto;">
   <div class="card" style="flex:1;min-width:280px;">
     <label>Input signal</label>
     <select id="x_type" style="width:100%;">
@@ -37,10 +37,18 @@
   <div class="card" style="flex:2;min-width:520px;">
     <div id="plot" style="width:100%;height:720px;"></div>
   </div>
-</div>
+  </div>
 
-<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
-<script>
+  <div class="card" style="max-width:960px;margin:24px auto;">
+    <h3>Sources</h3>
+    <ul>
+      <li><a href="https://commons.wikimedia.org/wiki/File:Fur_Elise.ogg">Fur&nbsp;Elise.ogg</a></li>
+      <li><a href="https://commons.wikimedia.org/wiki/File:Neil_Armstrong_small_step.wav">Neil Armstrong small step.wav</a></li>
+      <li><a href="https://commons.wikimedia.org/wiki/File:Snare_drum_rim.ogg">Snare drum rim.ogg</a></li>
+    </ul>
+  </div>
+  <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+  <script>
 window.AUDIO_URLS = {{ audio_map|tojson }};
 (function(){
   const $ = (id) => document.getElementById(id);
