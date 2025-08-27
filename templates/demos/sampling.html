@@ -39,7 +39,7 @@
 <div class="toolbar">
   <div class="group">
     <div>
-      <label for="wg_over_pi">\u03C9_g / \u03C0</label>
+      <label for="wg_over_pi">\(\omega_g / \pi\)</label>
       <input id="wg_over_pi" type="number" step="{{ defaults.step }}"
              min="{{ defaults.min_wg }}" max="{{ defaults.max_wg }}"
              value="{{ defaults.w_g_over_pi }}">
@@ -54,15 +54,15 @@
 
   <div class="group">
     <div>
-      <label for="wa_over_pi">\u03C9_a / \u03C0</label>
+      <label for="wa_over_pi">\(\omega_a / \pi\)</label>
       <input id="wa_over_pi" type="number" step="{{ defaults.step }}"
              min="{{ defaults.min_wa }}" max="{{ defaults.max_wa }}"
              value="{{ defaults.w_a_over_pi }}">
     </div>
     <div class="checks">
-      <label><input id="show_X"  type="checkbox" {% if defaults.show_X %}checked{% endif %}> show X(j\u03C9)</label>
-      <label><input id="show_Xa" type="checkbox" {% if defaults.show_Xa %}checked{% endif %}> show X<sub>a</sub>(j\u03C9)</label>
-      <label><input id="show_Y"  type="checkbox" {% if defaults.show_Y %}checked{% endif %}> show Y(j\u03C9)</label>
+      <label><input id="show_X"  type="checkbox" {% if defaults.show_X %}checked{% endif %}> show \(X(j\omega)\)</label>
+      <label><input id="show_Xa" type="checkbox" {% if defaults.show_Xa %}checked{% endif %}> show \(X_a(j\omega)\)</label>
+      <label><input id="show_Y"  type="checkbox" {% if defaults.show_Y %}checked{% endif %}> show \(Y(j\omega)\)</label>
     </div>
   </div>
 </div>
