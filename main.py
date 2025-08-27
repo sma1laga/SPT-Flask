@@ -1,5 +1,5 @@
 # main.py
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from werkzeug.exceptions import HTTPException
 import crash_logging
 from pages.plot_function import plot_function_bp
@@ -61,6 +61,7 @@ from pages.exam_fourier import exam_fourier_bp
 
 # VL DEMOS SISY2
 from pages.demos.menu import demos_menu_bp
+from pages.demos.data import DEMOS
 from pages.demos.kapitel2 import demos_kapitel2_bp
 from pages.demos.kapitel4 import demos_kapitel4_bp
 from pages.demos.kapitel6 import demos_kapitel6_bp
@@ -91,6 +92,13 @@ from pages.demos.sampling import sampling_bp
 def create_app():
     app = Flask(__name__)
     app.register_blueprint(analytics_bp)
+    
+    @app.context_processor
+    def inject_demos_sidebar():
+        """Expose demo metadata for sidebar on demo pages."""
+        if request.path.startswith("/demos"):
+            return {"demos_sidebar": DEMOS}
+        return {}
 
     @app.errorhandler(Exception)
     def _handle_exception(e):
