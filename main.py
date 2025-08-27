@@ -79,6 +79,7 @@ from pages.demos.fouriertransformation import demos_fouriertransformation_bp
 from pages.demos.systems_time_audio import demos_systems_time_audio_bp
 from pages.demos.bandpass import demos_bandpass_bp
 from pages.demos.stability_feedback import stability_feedback_bp
+from pages.demos.sampling import sampling_bp
 
 
 
@@ -174,6 +175,7 @@ def create_app():
     app.register_blueprint(demos_systems_time_audio_bp, url_prefix="/demos/systems-time-audio")
     app.register_blueprint(demos_bandpass_bp, url_prefix="/demos/bandpass")
     app.register_blueprint(stability_feedback_bp, url_prefix="/demos/stability-feedback")
+    app.register_blueprint(sampling_bp, url_prefix="/demos/sampling")
 
 
 

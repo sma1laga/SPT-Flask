@@ -52,6 +52,13 @@ def index():
                 "desc": "Interactive pole plots; background color indicates stability. Parameters: a, b, K.",
                 "endpoint": "stability_feedback.page",
                 },
+                {
+                "slug": "sampling",
+                "title": "Sampling (Ch. 11)",
+                "title_desc": "Time & frequency before/after sampling",
+                "desc": "x(t)=ω_g/(2π)·si²(½ω_g t); spectra X, X_a, Y; adjustable ω_g and ω_a; optional sinc components.",
+                "endpoint": "sampling.page",
+                },
                 ],
             "Tutorial": [],
         },
