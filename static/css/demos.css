@@ -1,0 +1,51 @@
+/* Shared styling for demo pages */
+.demo .row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.demo .card {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+
+.demo .kv {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 10px 12px;
+  align-items: center;
+}
+
+.demo .hstack {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.demo label {
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.demo input,
+.demo select {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  background: var(--control-bg, #fff);
+}
+
+.demo img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}

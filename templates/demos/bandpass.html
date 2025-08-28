@@ -20,43 +20,37 @@
     .toolbar { grid-template-columns: 1fr; }
     .formula { text-align: left !important; }
   }
-  label { font-weight: 600; display:inline-block; margin-bottom:4px; }
-  input[type=number] {
-    width: 100%;
-    padding: 7px 8px;
-    border: 1px solid #bbb;
-    border-radius: 8px;
-    background: var(--control-bg, #fff);
-  }
-  #plot { width: 100%; height: auto; display: block; }
 </style>
 
-<div class="toolbar">
-  <div>
-    <label for="delta_omega">&Delta;&omega; (bandwidth)</label>
-    <input id="delta_omega" type="number"
-           step="{{ defaults.step }}"
-           min="{{ defaults.min_delta }}" max="{{ defaults.max_delta }}"
-           value="{{ defaults.delta_omega }}">
-  </div>
+<div class="demo">
+  <div class="toolbar">
+    <div>
+      <label for="delta_omega">&Delta;&omega; (bandwidth)</label>
+      <input id="delta_omega" type="number"
+             step="{{ defaults.step }}"
+             min="{{ defaults.min_delta }}" max="{{ defaults.max_delta }}"
+             value="{{ defaults.delta_omega }}">
+    </div>
+    <div class="formula" style="text-align:center;">
+      <div style="font-weight:600; margin-bottom:4px;">
+        Ideal band-pass filter:
+        \( H(j\omega) = \mathrm{rect}\!\left(\frac{\omega}{\Delta\omega}\right) * \big[\delta(\omega-\omega_0) + \delta(\omega+\omega_0)\big] \)
+      </div>
+    </div>
 
-  <div class="formula" style="text-align:center;">
-    <div style="font-weight:600; margin-bottom:4px;">
-      Ideal band-pass filter:
-      \( H(j\omega) = \mathrm{rect}\!\left(\frac{\omega}{\Delta\omega}\right) * \big[\delta(\omega-\omega_0) + \delta(\omega+\omega_0)\big] \)
+
+    <div>
+      <label for="omega0">&omega;<sub>0</sub> (center)</label>
+      <input id="omega0" type="number"
+             step="{{ defaults.step }}"
+             min="{{ defaults.min_omega0 }}" max="{{ defaults.max_omega0 }}"
+             value="{{ defaults.omega0 }}">
     </div>
   </div>
 
-  <div>
-    <label for="omega0">&omega;<sub>0</sub> (center)</label>
-    <input id="omega0" type="number"
-           step="{{ defaults.step }}"
-           min="{{ defaults.min_omega0 }}" max="{{ defaults.max_omega0 }}"
-           value="{{ defaults.omega0 }}">
-  </div>
-</div>
 
-<img id="plot" alt="Ideal band-pass: frequency and time plots">
+  <img id="plot" alt="Ideal band-pass: frequency and time plots">
+</div>
 
 <script>
   const $ = (id) => document.getElementById(id);

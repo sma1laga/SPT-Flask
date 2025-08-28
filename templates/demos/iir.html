@@ -8,8 +8,9 @@
   Choose input, set delay (s) and attenuation \(a\). Plots: \(x[k]\), \(h[k]\) (stems), \(y[k]\).
 </p>
 
-  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1200px;margin:0 auto;">
-  <div class="card" style="flex:1;min-width:280px;">
+<div class="demo">
+  <div class="row" style="max-width:1200px;margin:0 auto;">
+    <div class="card" style="flex:1;min-width:280px;">
     <label>Input signal</label>
     <select id="x_type" style="width:100%;">
       {% for name in audio_choices %}
@@ -47,6 +48,7 @@
       <li><a href="https://commons.wikimedia.org/wiki/File:Snare_drum_rim.ogg">Snare drum rim.ogg</a></li>
     </ul>
   </div>
+</div>
   <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
   <script>
 window.AUDIO_URLS = {{ audio_map|tojson }};
@@ -180,7 +182,4 @@ $("x_type").addEventListener("change", () => {
 })();
 </script>
 
-<style>
-  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-</style>
 {% endblock %}
