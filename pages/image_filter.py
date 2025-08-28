@@ -4,9 +4,10 @@ import io, os, base64
 from functools import lru_cache
 
 import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 from flask import Blueprint, current_app, render_template, request
 import matplotlib.pyplot as plt
+from werkzeug.utils import secure_filename
 from scipy import ndimage, signal
 
 image_filter_bp = Blueprint(
@@ -19,7 +20,8 @@ image_filter_bp = Blueprint(
 ALLOWED_EXT = {"png", "jpg", "jpeg", "bmp", "tiff"}
 MAX_SIDE    = 512
 DEMO_PATH   = "static/images/achilles.png"
-
+# Maximum upload size in bytes (5 MB)
+MAX_FILE_SIZE = 5 * 1024 * 1024
 # ───────── helpers ────────────────────────────────────────────────
 @lru_cache(maxsize=4)
 def _demo() -> np.ndarray:
@@ -120,11 +122,26 @@ def home():
             # 1) choose image
             context["img_choice"]=img_choice=request.form.get("img_choice","default")
             if img_choice=="upload":
-                f=request.files.get("image_file")
-                if not f or not f.filename: raise ValueError("No image uploaded")
-                if not any(f.filename.lower().endswith(ext) for ext in ALLOWED_EXT):
+                f = request.files.get("image_file")
+                if not f or not f.filename:
+                    raise ValueError("No image uploaded")
+                filename = secure_filename(f.filename)
+                if not filename:
+                    raise ValueError("Invalid filename")
+                ext = filename.rsplit(".", 1)[-1].lower()
+                if ext not in ALLOWED_EXT:
                     raise ValueError("Unsupported file type")
-                img=_prep(Image.open(f.stream))
+                f.stream.seek(0, os.SEEK_END)
+                if f.stream.tell() > MAX_FILE_SIZE:
+                    raise ValueError("File too large")
+                f.stream.seek(0)
+                try:
+                    img_file = Image.open(f.stream)
+                except UnidentifiedImageError:
+                    raise ValueError("Invalid image file")
+                if img_file.format.lower() not in ALLOWED_EXT:
+                    raise ValueError("Unsupported file type")
+                img = _prep(img_file)
             else:
                 img=_demo()
 
