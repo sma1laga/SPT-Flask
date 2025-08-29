@@ -95,9 +95,14 @@ def create_app():
     
     @app.context_processor
     def inject_demos_sidebar():
-        """Expose demo metadata for sidebar on demo pages."""
+        """Expose demo metadata and active lecture for sidebar on demo pages."""
         if request.path.startswith("/demos"):
-            return {"demos_sidebar": DEMOS}
+            path = request.path
+            sisy2_slugs = []
+            for section in DEMOS["Signals and Systems II"].values():
+                sisy2_slugs.extend(d["slug"] for d in section)
+            is_sisy2 = any(path.startswith(f"/demos/{slug}") for slug in sisy2_slugs)
+            return {"demos_sidebar": DEMOS, "is_sisy2": is_sisy2}
         return {}
 
     @app.errorhandler(Exception)

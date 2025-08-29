@@ -232,10 +232,14 @@
         <aside class="sidebar modern-sidebar">
           {% if is_demos %}
             <h3>Demos</h3>
-            <ul class="sidebar-menu">
-              {% for lecture, sections in demos_sidebar.items() %}
-                <li class="section-title">{{ lecture }}</li>
-                {% for section, demo_list in sections.items() %}
+            <div class="toggle-tabs">
+              <button id="tab-sisy1" class="{% if not is_sisy2 %}active{% endif %}">Sisy I</button>
+              <button id="tab-sisy2" class="{% if is_sisy2 %}active{% endif %}">Sisy II</button>
+            </div>
+
+            <div id="menu-sisy1" style="display: {% if not is_sisy2 %}block{% else %}none{% endif %};">
+              <ul class="sidebar-menu">
+                {% for section, demo_list in demos_sidebar['Signals and Systems I'].items() %}
                   {% if demo_list %}
                     <li class="section-title">{{ section }}</li>
                     {% for d in demo_list %}
@@ -243,8 +247,21 @@
                     {% endfor %}
                   {% endif %}
                 {% endfor %}
-              {% endfor %}
-            </ul>
+              </ul>
+            </div>
+
+            <div id="menu-sisy2" style="display: {% if is_sisy2 %}block{% else %}none{% endif %};">
+              <ul class="sidebar-menu">
+                {% for section, demo_list in demos_sidebar['Signals and Systems II'].items() %}
+                  {% if demo_list %}
+                    <li class="section-title">{{ section }}</li>
+                    {% for d in demo_list %}
+                      <li><a href="{{ url_for(d.endpoint) }}">{{ d.title }}</a></li>
+                    {% endfor %}
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </div>
           {% else %}
             <h3>Navigation</h3>
             <div class="toggle-tabs">
@@ -364,7 +381,10 @@
     const tabD = document.getElementById('tab-discrete');
     const menuC = document.getElementById('menu-continuous');
     const menuD = document.getElementById('menu-discrete');
-
+    const tabS1 = document.getElementById('tab-sisy1');
+    const tabS2 = document.getElementById('tab-sisy2');
+    const menuS1 = document.getElementById('menu-sisy1');
+    const menuS2 = document.getElementById('menu-sisy2');
     if (tabC && tabD && menuC && menuD) {
       tabC.addEventListener('click', () => {
         tabC.classList.add('active');
@@ -377,6 +397,21 @@
         tabC.classList.remove('active');
         menuD.style.display = 'block';
         menuC.style.display = 'none';
+      });
+    }
+
+    if (tabS1 && tabS2 && menuS1 && menuS2) {
+      tabS1.addEventListener('click', () => {
+        tabS1.classList.add('active');
+        tabS2.classList.remove('active');
+        menuS1.style.display = 'block';
+        menuS2.style.display = 'none';
+      });
+      tabS2.addEventListener('click', () => {
+        tabS2.classList.add('active');
+        tabS1.classList.remove('active');
+        menuS2.style.display = 'block';
+        menuS1.style.display = 'none';
       });
     }
   </script>
