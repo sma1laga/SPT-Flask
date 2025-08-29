@@ -1,98 +1,76 @@
-# Signal Processing Toolkit
+# Signal Processing Toolkit (SPT‑Flask)
 
-**Signal Processing Toolkit (SPT-Flask)** is an interactive, browser-based environment for exploring classic and modern DSP concepts.  The project grew from a simple plotting tool into a full learning platform with simulation and training modules.
+**SPT‑Flask** is a modern, browser‑based environment for learning and experimenting with digital and analogue signal‑processing concepts.  It was created at the Lehrstuhl für Multimediale Signalverarbeitung (LMS), FAU Erlangen‑Nürnberg and is provided licence‑free for educational and research use.
 
-**GitHub Repository:** [SPT-Flask](https://github.com/sma1laga/SPT-Flask)
+## 🎯 Project goals
 
----
+- Make complex DSP topics approachable through interactive visualisation.
+- Provide a one‑stop toolkit for plotting, transforms, convolution, filtering and modulation.
+- Support discrete‑ and continuous‑time analysis within a unified interface.
+- Offer training modules and exam‑style quizzes for self‑assessment.
+- Encourage community contributions and recognise those who improve the toolkit.
 
-## 📚 About the Project
+## 🚀 Features
 
-The application is organised as a set of small Flask blueprints, each covering a
-particular DSP topic. Students and hobbyists can:
+### Plotting & analysis
+- Time‑domain function plotter with adjustable parameters.
+- Continuous and discrete Fourier transform calculators (including FFT and DFT viewers).
+- Autocorrelation visualiser and kernel animator.
+- Bode‑plot generator for continuous‑time systems.
+- Inverse Laplace and Z‑transform calculators.
+- Image spectrum viewer and transform‑table reference.
 
-- Plot and analyse continuous or discrete signals in real time
-- Perform convolution, autocorrelation and Fourier analysis
-- Visualise Bode plots, inverse transforms and kernel animations
-- Model systems with process chains or editable block diagrams
-- Design filters with speech and image demos and experiment with modulation
-- Practise using the built-in training pages and exam modules
+### Convolution & filtering
+- Continuous, discrete and dynamic convolution calculators.
+- Custom filter designer with downloadable impulse responses.
+- Speech filter design and spectrogram analysis.
+- Image‑filter demo supporting low‑pass/high‑pass/band‑pass Butterworth filters.
+- Advanced noise‑reduction module using wavelet processing.
 
-The goal is a **practical, hands-on toolkit** that supports university courses and self-study alike.
-
-
-
-## 🔧 Built With
-
-- [Python 3](https://www.python.org/)
-- [Flask](https://flask.palletsprojects.com/)
-- [NumPy](https://numpy.org/)
-- [SciPy](https://scipy.org/)
-- [Matplotlib](https://matplotlib.org/)
-- [PyWavelets](https://pywavelets.readthedocs.io/)
-- [control](https://python-control.readthedocs.io/) (for Bode plots)
-- [Bootstrap](https://getbootstrap.com/) – responsive UI with optional dark and colorblind modes
-
-## ✨ Features
-
-### Plotting & Analysis
-- Time‑domain function plotter with interactive controls
-- Fourier Transform calculators (including FFT and DFT viewers)
-- Autocorrelation visualiser and kernel animator
-- Bode‑plot generator for control system analysis
-- Inverse Laplace and Z‑transform calculators
-- Image filter preview and transform table reference
-
-### Convolution & Filtering
-- Convolution calculator with dynamic and discrete variants
-- Custom filter designer with speech and image examples
-- Advanced noise reduction module using wavelet processing
-
-### System Modeling
-- Process‑chain simulator for chaining basic DSP blocks
-- Block‑diagram editor and direct‑form visualiser
+### System modelling
+- Process‑chain simulator that lets you chain basic DSP blocks and view intermediate outputs.
+- Block‑diagram editor and direct‑form visualiser.
+- Kernel animator to illustrate impulse responses.
 
 ### Modulation
-- Analog and digital modulation examples
+- Analog modulation examples (AM, FM).
+- Digital modulation demos (ASK, PSK, FSK) with adjustable carrier frequency, bit rate and deviation.
 
-### Discrete Tools
-- Discrete‑time plotting, convolution and autocorrelation utilities
-- FFT, DFT and discrete dynamic convolution demos
-- Z‑transform viewer and transform intuition page
+### Discrete‑time tools
+- Plot discrete sequences and explore Z‑transform intuition.
+- Perform discrete convolution and autocorrelation.
+- FFT/DFT and discrete dynamic convolution demos.
 
-### Learning Aids
-- Training modules for convolution, Fourier transforms and processing chains
-- Small exam modules for practice sessions
+### Learning aids
+- Training modules for convolution, Fourier transforms and process‑chain design.
+- Small exam modules with timed questions and feedback.
+- Downloadable plots and data for offline study.
+- All pages support dark mode and colour‑blind mode.
 
-All pages include downloadable plots/data, and the interface offers optional dark and colorblind modes.
+### Analytics & stability
+- A lightweight analytics component collects anonymous usage statistics (path, user agent, country) to improve the service.
+- Crash logging records unhandled exceptions for debugging; no personal data are stored.
 
+## 🛠️ Built with
 
-## 🔄 Installation
+- Python 3.11
+- [Flask](https://flask.palletsprojects.com/) for the web framework
+- [NumPy](https://numpy.org/), [SciPy](https://scipy.org/) and [control](https://python-control.readthedocs.io/) for numerical computations
+- [Matplotlib](https://matplotlib.org/) for plotting
+- [PyWavelets](https://pywavelets.readthedocs.io/) for noise‑reduction demos
+- A custom CSS theme with dark and colour‑blind modes
 
-### 1. Clone the repository
+## 🧑‍💻 Installation
+
 ```bash
 git clone https://github.com/sma1laga/SPT-Flask.git
 cd SPT-Flask
-```
-
-### 2. Set up a Python virtual environment (optional but recommended)
-```bash
 python -m venv venv
-source venv/bin/activate  # On Windows use: venv\Scripts\activate
-```
-
-### 3. Install the required packages
-```bash
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-### 4. Run the Flask application
-```bash
 python main.py
 ```
-
-### 5. Open the application
-Navigate to [http://127.0.0.1:5000/](http://127.0.0.1:5000/) in your browser.
+Then open your browser to http://127.0.0.1:5000/
 
 ## 🧪 Running Tests
 Install dependencies and run `pytest`. The included GitHub Actions workflow
