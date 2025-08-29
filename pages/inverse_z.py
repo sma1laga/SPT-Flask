@@ -17,7 +17,8 @@ def inverse_z():
     num_txt = request.form.get('numerator','[1,0]')
     den_txt = request.form.get('denominator','[1]')
     roc_type = request.form.get('roc_type','causal')
-    sf_ltx = sf_parts_ltx = hk_ltx = roc_ltx = seq = seq_title = error_msg = None
+    sf_ltx = sf_parts_ltx = hk_ltx = roc_ltx = seq = seq_title = seq_data = error_msg = None
+
 
     if request.method == 'POST':
         try:
@@ -54,13 +55,18 @@ def inverse_z():
                 seq_title = f"First {n} samples (k = 0, ..., {n-1})"
             else:
                 seq_title = f"Last {n} samples (k = {-n+1}, ..., 0)"
-            seq = eval_expression(hk, k_eval, k)
+            seq_raw = eval_expression(hk, k_eval, k)
             seq = r"\left[" \
-                + ", ".join([ltx_printer.doprint(s) for s in seq]) \
+                + ", ".join([ltx_printer.doprint(s) for s in seq_raw]) \
                 + r"\right]"
             if len(seq) > 100:
                 # print seq in latex vector format
                 seq = seq.replace(r"\left[", r"\begin{bmatrix}").replace(r"\right]", r"\end{bmatrix}").replace(r", ", r" \\ ")
+            seq_data = {
+                "k": k_eval.tolist(),
+                "re": [float(sp.N(sp.re(s))) for s in seq_raw],
+                "im": [float(sp.N(sp.im(s))) for s in seq_raw],
+            }
 
         except Exception as exc:
             error_msg = f"{type(exc).__name__}: {exc}"
@@ -76,6 +82,7 @@ def inverse_z():
         hk_latex=hk_ltx,
         seq=seq,
         seq_title=seq_title,
+        seq_data=seq_data,
         roc_type=roc_type,
         roc_latex=roc_ltx,
         error=error_msg.split(': ')[0] if error_msg else None,
