@@ -17,6 +17,8 @@
   <!-- The DFT can be computed efficiently using the
   <a href="{{ url_for('fft.fft') }}">Fast Fourier Transform (FFT)</a>. -->
 </p>
+  <a href="{{ url_for('static', filename='docs/dft.pdf') }}" target="_blank" class="subtle-btn">DFT Correspondence Table</a>
+
 </div>
 <!-- TODO under revision
 <div style="text-align:center;margin-bottom:20px;">
@@ -193,6 +195,22 @@ document.addEventListener("DOMContentLoaded", updatePlots);
 
 <!-- STYLES ------------------------------------------------------- -->
 <style>
+  .subtle-btn {
+    display:inline-block;
+    margin-top:10px;
+    padding:6px 12px;
+    font-size:0.9em;
+    border-radius:4px;
+    border:1px solid var(--primary-color);
+    color:var(--primary-color);
+    background-color:rgba(0,122,204,0.08);
+    text-decoration:none;
+    transition:background-color 0.2s ease,color 0.2s ease;
+  }
+  .subtle-btn:hover {
+    background-color:var(--primary-color);
+    color:#fff;
+  }
   .quick-buttons button{
     padding:8px 12px;font-size:0.9em;border-radius:4px;background:#007acc;
     color:#fff;border:none;cursor:pointer;transition:background-color .15s;
