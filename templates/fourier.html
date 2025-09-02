@@ -9,6 +9,8 @@
   <a href="{{ url_for('static', filename='docs/continuous_fourier.pdf') }}" target="_blank" class="subtle-btn">Fourier Correspondence Table</a>
 </div>
 
+<p id="errorMsg" style="max-width:700px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
+
 <form id="fourierForm" style="max-width:700px; margin:0 auto; text-align:center;">
   <div class="function-group" style="margin-bottom:20px;">
     <label style="font-weight:bold;">Function:</label>
@@ -64,6 +66,14 @@ let activeField = document.getElementById("func");
 function setActiveField(f){ activeField = f; }
 document.getElementById("func").addEventListener("focus", e=>activeField=e.target);
 
+const errorMsg = document.getElementById("errorMsg");
+const funcInput = document.getElementById("func");
+
+function clearErrors(){
+  funcInput.classList.remove('input-error');
+  if(errorMsg) errorMsg.textContent = "";
+}
+
 function insertOperand(op) {
   if (!activeField) {
     alert("Klicke zuerst in das Textfeld!");
@@ -93,9 +103,16 @@ function getValues(){
 }
 
 function updatePlots(){
+  clearErrors();
+
   const vals = getValues();
   const data = compute_fourier(vals.func, parseFloat(vals.phase));
-  if(data.error) return console.error(data.error);
+  if(data.error){
+    if(errorMsg) errorMsg.textContent = data.error;
+    funcInput.classList.add('input-error');
+    console.error(data.error);
+    return;
+  }
   const lc={margin:{t:30}};
   Plotly.newPlot("timePlot", [
     {x:data.t, y:data.y_real, type:"scatter", mode:"lines", name:"Re", line: { color: "navy" }},
@@ -123,6 +140,8 @@ document.getElementById("clearBtn").addEventListener("click", ()=>{
   document.getElementById("phase").value=0;
   Plotly.purge("timePlot"); Plotly.purge("magPlot"); Plotly.purge("phasePlot");
   document.getElementById("fourier_transformation_label").innerText="";
+  clearErrors();
+
 });
 </script>
 
@@ -185,6 +204,8 @@ document.getElementById("clearBtn").addEventListener("click", ()=>{
   #clearBtn:hover {
     background-color: #c82333;
   }
+  input.input-error{border-color:#d00;}
+
 </style>
 
 {% endblock %}
