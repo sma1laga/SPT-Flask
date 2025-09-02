@@ -33,8 +33,14 @@ def compute_autocorrelation(func_str: str):
     if isinstance(rr, dict) and rr.get("error"):
         return rr
     ii = compute_convolution(f_im, _reverse_t(f_im))
+    if isinstance(ii, dict) and ii.get("error"):
+        return ii
     ri = compute_convolution(f_re, _reverse_t(f_im))
+    if isinstance(ri, dict) and ri.get("error"):
+        return ri
     ir = compute_convolution(f_im, _reverse_t(f_re))
+    if isinstance(ir, dict) and ir.get("error"):
+        return ir
 
     re_part = np.array(rr["y_conv"]) + np.array(ii["y_conv"])
     im_part = np.array(ir["y_conv"]) - np.array(ri["y_conv"])

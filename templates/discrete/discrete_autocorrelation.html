@@ -9,9 +9,11 @@
     and its discrete autocorrelation, calculated as
     $$ \varphi_{xx}^\mathrm{E}[\kappa]=\sum_{k=-\infty}^{\infty} x[k+\kappa]x^\ast[k]. $$
   </p>
-</div>
+  </div>
 
-<form id="acorrForm" style="max-width:820px;margin:0 auto;text-align:center;">
+  <p id="errorMsg" style="max-width:700px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
+
+  <form id="acorrForm" style="max-width:820px;margin:0 auto;text-align:center;">
   <div class="function-group" style="display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:20px;">
     <input id="func" placeholder="x[k]" onfocus="setActiveField(this)"
            style="width:90%;padding:8px;border:1px solid #ccd0d5;border-radius:4px;font-size:1em;">
@@ -52,8 +54,14 @@
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
 let activeField = document.getElementById('func');
+const errorMsg = document.getElementById('errorMsg');
+const funcInput = document.getElementById('func');
 function setActiveField(f){ activeField = f; }
 document.getElementById('func').addEventListener('focus',e=>activeField=e.target);
+function clearErrors(){
+  funcInput.classList.remove('input-error');
+  if(errorMsg) errorMsg.textContent = '';
+}
 function insertOperand(op){
   if(!activeField) return alert('Click in an input field first.');
   const s=activeField.selectionStart, e=activeField.selectionEnd, v=activeField.value;
@@ -65,6 +73,8 @@ function values(){
   return { func: func.value };
 }
 function updatePlots(){
+  clearErrors();
+
   fetch("{{ url_for('discrete_autocorrelation.discrete_autocorrelation_update') }}",{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -72,7 +82,12 @@ function updatePlots(){
   })
   .then(r=>r.json())
   .then(d=>{
-    if(d.error){ console.error(d.error); return; }
+    if(d.error){
+      if(errorMsg) errorMsg.textContent = d.error;
+      funcInput.classList.add('input-error');
+      console.error(d.error);
+      return;
+    }
     const lc = {margin:{t:30},showlegend:false};
     const stem = (x,y,color)=>({
         x:[].concat(...x.map(xi=>[xi,xi,xi])),
@@ -94,6 +109,7 @@ computeBtn.onclick = updatePlots;
 clearBtn.onclick = ()=>{
   func.value='';
   ['plot1','plotAuto'].forEach(id=>Plotly.purge(id));
+  clearErrors();
 };
 </script>
 <style>
@@ -105,5 +121,6 @@ clearBtn.onclick = ()=>{
   .action-btn{ padding:8px 22px;font-size:0.9em;border:none;border-radius:4px;cursor:pointer; }
   .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
   .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
-</style>
-{% endblock %}
+  input.input-error{border-color:#d00;}
+  </style>
+  {% endblock %}

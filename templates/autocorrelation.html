@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-header" style="margin-bottom:30px; text-align:center;">
-  <h1 style="font-size:2.5em;">Autocorrelation Calculator</h1>
+  <div class="page-header" style="margin-bottom:30px; text-align:center;">
+    <h1 style="font-size:2.5em;">Autocorrelation Calculator</h1>
   <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
     Insert an energy signal \(x(t)\) and plot its autocorrelation according to
     $$ \begin{align}
@@ -10,6 +10,8 @@
     \end{align} $$
   </p>
 </div>
+
+<p id="errorMsg" style="max-width:700px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
 
 <form id="acorrForm" style="max-width:800px; margin:0 auto; text-align:center;">
   <div class="function-group" style="display:flex; justify-content:center; align-items:center; gap:8px; margin-bottom:20px;">
@@ -53,64 +55,79 @@
 
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/convolution_compute.js') }}"></script>
-<script src="{{ url_for('static', filename='js/autocorrelation_compute.js') }}"></script>
-<script>
-  let activeField = document.getElementById("func");
-  function setActiveField(f){ activeField = f; }
-  document.getElementById("func").addEventListener("focus", e => activeField = e.target);
+  <script src="{{ url_for('static', filename='js/autocorrelation_compute.js') }}"></script>
+  <script>
+    let activeField = document.getElementById("func");
+    const errorMsg = document.getElementById("errorMsg");
+    const funcInput = document.getElementById("func");
 
-  function insertOperand(op){
-    if(!activeField) return alert("Click in an input field first.");
-    const s = activeField.selectionStart, e = activeField.selectionEnd, v = activeField.value;
-    activeField.value = v.slice(0, s) + op + v.slice(e);
-    activeField.selectionStart = activeField.selectionEnd = s + op.length;
-    activeField.focus();
-  }
+    function setActiveField(f){ activeField = f; }
+    document.getElementById("func").addEventListener("focus", e => activeField = e.target);
 
-  function getValues(){
-    return { func: document.getElementById("func").value };
-  }
+    function clearErrors(){
+      funcInput.classList.remove('input-error');
+      if(errorMsg) errorMsg.textContent = "";
+    }
 
-  function updatePlots(){
-    const vals = getValues();
-    const data = compute_autocorrelation(vals.func);
-    if(data.error) return console.error(data.error);
-    const lc = { margin:{ t:30 } };
+    function insertOperand(op){
+      if(!activeField) return alert("Click in an input field first.");
+      const s = activeField.selectionStart, e = activeField.selectionEnd, v = activeField.value;
+      activeField.value = v.slice(0, s) + op + v.slice(e);
+      activeField.selectionStart = activeField.selectionEnd = s + op.length;
+      activeField.focus();
+    }
 
-    Plotly.newPlot("plotSignal", [
-      {
-        x: data.t, y: data.y_re,
-        mode: "lines", name: "Re{x(t)}",
-        line: { width:2, color: "#1f77b4" }
-      },
-      {
-        x: data.t, y: data.y_im,
-        mode: "lines", name: "Im{x(t)}",
-        line: { width:2, color: "#d62728", dash: "dot" }
+    function getValues(){
+      return { func: document.getElementById("func").value };
+    }
+
+    function updatePlots(){
+      clearErrors();
+      const vals = getValues();
+      const data = compute_autocorrelation(vals.func);
+      if(data.error){
+        if(errorMsg) errorMsg.textContent = data.error;
+        funcInput.classList.add('input-error');
+        console.error(data.error);
+        return;
       }
-    ], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
+      const lc = { margin:{ t:30 } };
 
-    Plotly.newPlot("plotAuto", [
-      {
-        x: data.tau, y: data.r_re,
-        mode: "lines", name: "Re{φₓₓ(τ)}",
-        line: { width:2, color: "#2ca02c" }
-      },
-      {
-        x: data.tau, y: data.r_im,
-        mode: "lines", name: "Im{φₓₓ(τ)}",
-        line: { width:2, color: "#ff7f0e", dash: "dot" }
-      }
-    ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φₓₓ(τ)"} } });
-  }
+      Plotly.newPlot("plotSignal", [
+        {
+          x: data.t, y: data.y_re,
+          mode: "lines", name: "Re{x(t)}",
+          line: { width:2, color: "#1f77b4" }
+        },
+        {
+          x: data.t, y: data.y_im,
+          mode: "lines", name: "Im{x(t)}",
+          line: { width:2, color: "#d62728", dash: "dot" }
+        }
+      ], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
 
-  document.getElementById("computeBtn").addEventListener("click", updatePlots);
-  document.getElementById("clearBtn").addEventListener("click", () => {
-    document.getElementById("func").value = "";
-    Plotly.purge("plotSignal");
-    Plotly.purge("plotAuto");
-  });
-</script>
+      Plotly.newPlot("plotAuto", [
+        {
+          x: data.tau, y: data.r_re,
+          mode: "lines", name: "Re{φₓₓ(τ)}",
+          line: { width:2, color: "#2ca02c" }
+        },
+        {
+          x: data.tau, y: data.r_im,
+          mode: "lines", name: "Im{φₓₓ(τ)}",
+          line: { width:2, color: "#ff7f0e", dash: "dot" }
+        }
+      ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φₓₓ(τ)"} } });
+    }
+
+    document.getElementById("computeBtn").addEventListener("click", updatePlots);
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      document.getElementById("func").value = "";
+      Plotly.purge("plotSignal");
+      Plotly.purge("plotAuto");
+      clearErrors();
+    });
+  </script>
 
 <style>
   .quick-buttons.functions button,
@@ -152,5 +169,7 @@
   #clearBtn:hover {
     background-color: #c82333;
   }
+input.input-error{border-color:#d00;}
+
 </style>
 {% endblock %}

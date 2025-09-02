@@ -3,6 +3,7 @@ import pytest
 from main import create_app
 from pages.fourier_page import compute_fourier
 from pages.convolution import compute_convolution
+from pages.autocorrelation import compute_autocorrelation
 import analytics
 
 
@@ -17,6 +18,12 @@ def test_compute_convolution_invalid_function_returns_error():
     res = compute_convolution('rect(t)', 'invalid(')
     assert 'error' in res
     assert 'Error evaluating Function 2' in res['error']
+
+
+def test_compute_autocorrelation_invalid_function_returns_error():
+    res = compute_autocorrelation('invalid(')
+    assert 'error' in res
+    assert 'Error evaluating Function 1' in res['error']
 
 
 def test_plot_function_update_invalid_expression():

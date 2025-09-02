@@ -36,8 +36,12 @@
     const rr = compute_convolution(fRe, fRe, true);
     if(rr.error) return rr;
     const ii = compute_convolution(fIm, fIm, true);
+    if(ii.error) return ii;
     const ri = compute_convolution(fRe, fIm, true);
+    if(ri.error) return ri;
     const ir = compute_convolution(fIm, fRe, true);
+    if(ir.error) return ir;
+
 
     const n = rr.y_conv.length;
     const re = new Float64Array(n);
