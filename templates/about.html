@@ -71,7 +71,17 @@
 <style>
 .container { max-width: 900px; margin: 0 auto; }
 .feature-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
-.feature-item { flex: 1 1 280px; background: #f9f9f9; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,.05); }
+.feature-item {
+  flex: 1 1 280px;
+  background: var(--card-background);
+  color: var(--text-color);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,.05);
+}
+body.dark-mode .feature-item {
+  box-shadow: 0 2px 5px rgba(0,0,0,.4);
+}
 .note { margin-top: 1rem; font-style: italic; }
 .btn { background: var(--primary-color); color: #fff; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; }
 .btn:hover { background: var(--primary-gradient-end); }
