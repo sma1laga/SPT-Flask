@@ -9,11 +9,13 @@
     and click <b>Compute</b> to display
     both sequences and their discrete convolution.
   </p>
-    <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:8px auto 0;">
+  <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:8px auto 0;">
     The discrete convolution of \(x[k]\) with \(h[k]\) is defined as
     $$ y[k] = x[k]*h[k] = \sum_{\kappa=-\infty}^{\infty} x[\kappa]h[k-\kappa] $$
   </p>
 </div>
+
+<p id="errorMsg" style="max-width:700px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
 
 <form id="convForm" style="max-width:820px;margin:0 auto;text-align:center;">
   <!-- input boxes -->
@@ -73,6 +75,15 @@
 /* active field + operand insert --------------------------------- */
 let activeField = document.getElementById("func1");
 
+const errorMsg = document.getElementById("errorMsg");
+const func1 = document.getElementById("func1");
+const func2 = document.getElementById("func2");
+
+function clearErrors(){
+  [func1, func2].forEach(el=>el.classList.remove('input-error'));
+  if(errorMsg) errorMsg.textContent = "";
+}
+
 function setActiveField(f){ activeField = f; }
 ["func1","func2"].forEach(id=>{
   document.getElementById(id).addEventListener("focus",e=>activeField=e.target);
@@ -95,6 +106,7 @@ function values(){
 
 /* fetch + plot --------------------------------------------------- */
 function updatePlots(){
+  clearErrors();
   fetch("{{ url_for('discrete_convolution.discrete_convolution_update') }}",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
@@ -102,8 +114,13 @@ function updatePlots(){
   })
   .then(r=>r.json())
   .then(d=>{
-    if(d.error){ console.error(d.error); return; }
-
+    if(d.error){
+      if(errorMsg) errorMsg.textContent = d.error;
+      if(/sequence 1/i.test(d.error)) func1.classList.add('input-error');
+      if(/sequence 2/i.test(d.error)) func2.classList.add('input-error');
+      console.error(d.error);
+      return;
+    }
     const lc = {margin:{t:30},showlegend:false};
     const stem = (x,y,color)=> ({
         x:[].concat(...x.map((xi,i)=>[xi,xi,xi])),          // xi, xi
@@ -134,6 +151,8 @@ function updatePlots(){
 computeBtn.onclick = updatePlots;
 clearBtn.onclick = ()=>{
   func1.value=func2.value="";
+  clearErrors();
+
   ["plot1","plot2","plotConv"].forEach(id=>Plotly.purge(id));
 };
 </script>
@@ -148,5 +167,6 @@ clearBtn.onclick = ()=>{
   .action-btn{ padding:8px 22px;font-size:0.9em;border:none;border-radius:4px;cursor:pointer; }
   .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
   .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
+  input.input-error{ border-color:#d00; }
 </style>
 {% endblock %}

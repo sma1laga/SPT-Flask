@@ -8,6 +8,8 @@
   </p>
 </div>
 
+<p id="errorMsg" style="max-width:700px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
+
 <form id="convForm" style="max-width:800px; margin:0 auto; text-align:center;">
   <!-- Zwei Inputs nebeneinander mit leicht erhöhtem Sternchen -->
   <div class="function-group"
@@ -69,6 +71,15 @@
   document.getElementById("func1").addEventListener("focus", e => activeField = e.target);
   document.getElementById("func2").addEventListener("focus", e => activeField = e.target);
 
+  const errorMsg = document.getElementById("errorMsg");
+  const func1 = document.getElementById("func1");
+  const func2 = document.getElementById("func2");
+
+  function clearErrors(){
+    [func1, func2].forEach(el => el.classList.remove('input-error'));
+    if(errorMsg) errorMsg.textContent = "";
+  }
+
   function insertOperand(op) {
     if (!activeField) return alert("Click in an input field first.");
     const s = activeField.selectionStart, e = activeField.selectionEnd, v = activeField.value;
@@ -79,15 +90,22 @@
 
   function getValues() {
     return {
-      func1: document.getElementById("func1").value,
-      func2: document.getElementById("func2").value
+      func1: func1.value,
+      func2: func2.value
     };
   }
 
   function updatePlots() {
+    clearErrors();
     const vals = getValues();
     const data = compute_convolution(vals.func1, vals.func2);
-    if (data.error) return console.error(data.error);
+    if (data.error){
+      if(errorMsg) errorMsg.textContent = data.error;
+      if(/Function 1/.test(data.error)) func1.classList.add('input-error');
+      if(/Function 2/.test(data.error)) func2.classList.add('input-error');
+      console.error(data.error);
+      return;
+    }
       const lc = { margin: { t: 30 } };
 
       Plotly.newPlot("plot1", [{
@@ -112,8 +130,9 @@
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);
   document.getElementById("clearBtn").addEventListener("click", () => {
-    document.getElementById("func1").value = "";
-    document.getElementById("func2").value = "";
+    func1.value = "";
+    func2.value = "";
+    clearErrors();
     Plotly.purge("plot1");
     Plotly.purge("plot2");
     Plotly.purge("plotConv");
@@ -162,6 +181,10 @@
   }
   #clearBtn:hover {
     background-color: #c82333;
+  }
+
+  input.input-error {
+    border-color: #d00;
   }
 </style>
 {% endblock %}
