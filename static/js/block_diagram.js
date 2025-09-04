@@ -48,6 +48,49 @@ let nextId = 1;
 
 let selectedNode = null, selectedEdge = null;
 
+/* palette block definitions */
+const BLOCK_LIBRARY = [
+  { name: 'Source',      type: 'Input',      label: 'X(s)',  kx: 'X(s)' },
+  { name: 'Gain',        type: 'Gain',       label: 'K',     kx: 'K' },
+  { name: 'TF',          type: 'TF',         label: 'H(s)',  kx: '\\dfrac{N(s)}{D(s)}' },
+  { name: 'Zero-Pole',   type: 'ZeroPole',   label: 'Z/P',   kx: 'Z/P' },
+  { name: 'Integrator',  type: 'Integrator', label: '1/s',   kx: '\\dfrac{1}{s}' },
+  { name: 'Derivative',  type: 'Derivative', label: 's',     kx: 's' },
+  { name: 'Saturation',  type: 'Saturation', label: 'Sat',   kx: 'Sat' },
+  { name: 'Delay',       type: 'Delay',      label: 'Delay', kx: 'Delay' },
+  { name: 'Scope',       type: 'Scope',      label: 'Scope', kx: 'Scope' },
+  { name: 'Sum',         type: 'Adder',      label: 'Σ',     kx: '\\Sigma' },
+  { name: 'Mux',         type: 'Mux',        label: 'Mux',   kx: 'Mux' },
+  { name: 'Demux',       type: 'Demux',      label: 'Demux', kx: 'Demux' },
+  { name: 'PID',         type: 'PID',        label: 'PID',   kx: 'PID' }
+];
+
+let ghostBlock = null;
+
+function initPalette(){
+  const list = document.getElementById('blockList');
+  BLOCK_LIBRARY.forEach(b => {
+    const li = document.createElement('li');
+    li.dataset.type  = b.type;
+    li.dataset.label = b.label;
+    li.dataset.name  = b.name.toLowerCase();
+    li.innerHTML = `<span>${b.name}</span><span class="kx">${b.kx}</span>`;
+    li.addEventListener('click', () => {
+      ghostBlock = { ...b, x:0, y:0, w:90, h:45 };
+    });
+    list.appendChild(li);
+  });
+
+  document.getElementById('blockSearch').addEventListener('input', e => {
+    const term = e.target.value.toLowerCase();
+    list.querySelectorAll('li').forEach(li => {
+      li.style.display = li.dataset.name.includes(term) ? 'flex' : 'none';
+    });
+  });
+
+  list.querySelectorAll('.kx').forEach(el => katex.render(el.textContent, el));
+}
+
 
 /* ---------------- palette helpers ------------------------------------ */
 function addNode(type, label, x = 120, y = 80) {
@@ -75,8 +118,16 @@ let connectMode = false, connectFrom = null;
 let dragNode = null, dragOffset = {x:0,y:0};
 
 canvas.addEventListener("mousedown", ev => {
-  const p = mouse(ev), n = nodeAt(p.x, p.y);
+  const p = mouse(ev);
 
+  if (ghostBlock) {
+    addNode(ghostBlock.type, ghostBlock.label, p.x - ghostBlock.w/2, p.y - ghostBlock.h/2);
+    ghostBlock = null;
+    drawAll();
+    return;
+  }
+
+  const n = nodeAt(p.x, p.y);
   /* connect mode */
   if (connectMode) {
     if (!n) return;
@@ -92,23 +143,23 @@ canvas.addEventListener("mousedown", ev => {
     drawAll(); return;
   }
 
-/* drag, select or edit */
-if (n) {                                  // clicked a block
-  if (ev.detail === 2 &&                 // double-click → open editor
-      (n.type === "TF" || n.type === "Gain" || n.type === "Input")) {
+  /* drag, select or edit */
+  if (n) {                                  // clicked a block
+    if (ev.detail === 2 &&                 // double-click → open editor
+        (n.type === "TF" || n.type === "Gain" || n.type === "Input")) {
 
-    openEditModal(n);
-  } else {                               // single-click → select block
-    selectedNode = n; selectedEdge = null;
-    dragNode = n;                     // start drag on mouse-move
-    dragOffset = { x: p.x - n.x, y: p.y - n.y };
-    canvas.style.cursor = "grabbing";
+      openEditModal(n);
+    } else {                               // single-click → select block
+      selectedNode = n; selectedEdge = null;
+      dragNode = n;                     // start drag on mouse-move
+      dragOffset = { x: p.x - n.x, y: p.y - n.y };
+      canvas.style.cursor = "grabbing";
+    }
+  } else {                                 // maybe we hit a wire
+    const eHit = edgeAt(p.x, p.y);
+    selectedEdge = eHit; selectedNode = null;
   }
-} else {                                 // maybe we hit a wire
-  const eHit = edgeAt(p.x, p.y);
-  selectedEdge = eHit; selectedNode = null;
-}
-drawAll();
+  drawAll();
 
 });
 
@@ -129,8 +180,14 @@ canvas.addEventListener("dblclick", ev=>{
 
 
 canvas.addEventListener("mousemove", ev => {
-  if (!dragNode) return;
   const p = mouse(ev);
+  if (ghostBlock) {
+    ghostBlock.x = p.x - ghostBlock.w/2;
+    ghostBlock.y = p.y - ghostBlock.h/2;
+    drawAll();
+    return;
+  }
+  if (!dragNode) return;
   dragNode.x = p.x - dragOffset.x;
   dragNode.y = p.y - dragOffset.y;
   drawAll();
@@ -447,6 +504,23 @@ function drawAll(){
 
   edges.forEach(e => drawOrthEdge(ctx, e));
 
+  if (ghostBlock) {
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.setLineDash([5,5]);
+    ctx.fillStyle = '#f0f0f0';
+    ctx.strokeStyle = '#777';
+    ctx.fillRect(ghostBlock.x, ghostBlock.y, ghostBlock.w, ghostBlock.h);
+    ctx.strokeRect(ghostBlock.x, ghostBlock.y, ghostBlock.w, ghostBlock.h);
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#000';
+    ctx.font = '14px sans-serif';
+    const tw = ctx.measureText(ghostBlock.label).width;
+    ctx.fillText(ghostBlock.label, ghostBlock.x + ghostBlock.w/2 - tw/2, ghostBlock.y + ghostBlock.h/2 + 5);
+    ctx.restore();
+  }
+
   if (changed) requestAnimationFrame(drawAll);
 }
 
@@ -593,11 +667,6 @@ function drawOrthEdge(ctx, e){
 }
 
 /* ---------------- toolbar hooks --------------------------------------- */
-document.getElementById("btnAddGain").onclick =() => addNode("Gain", "", 180, 80);
-document.getElementById("btnAddAdder").onclick=()=>addNode("Adder","Σ");
-document.getElementById("btnAddIntegrator").onclick=()=>addNode("Integrator","1/s");
-document.getElementById("btnAddDerivative").onclick=()=>addNode("Derivative","s");
-document.getElementById("btnAddTF").onclick=()=>addNode("TF","",180,80);  // NEW
 document.getElementById("btnClear").onclick=clearScene;
 document.getElementById("btnCompile").onclick=compileDiagram;
 
@@ -665,5 +734,6 @@ document.getElementById("btnSimulate").onclick = async () => {
 
 
 /* initial paint */
+initPalette();
 document.querySelectorAll('.kx-btn').forEach(el=>katex.render(el.textContent, el));
 drawAll();
