@@ -132,6 +132,12 @@ def tf_from_block(node):
     if t == "Delay":             # z-¹  (treat as discrete 1-step delay)
         return TransferFunction([1, 0], [0, 1])
 
+    if t == "PID":
+        kp = float(p.get("kp", 0) or 0)
+        ki = float(p.get("ki", 0) or 0)
+        kd = float(p.get("kd", 0) or 0)
+        return TransferFunction([kd, kp, ki], [1, 0])
+
     # Input, Output, Adder – unity TF
     return TransferFunction([1], [1])
 
@@ -189,7 +195,12 @@ def gain_expr(node, domain="s"):
     if t == "Delay":
         return var**-1
     if t == "Derivative":
-        return var  
+        return var
+    if t == "PID":
+        kp = sp.sympify(p.get("kp", 0) or 0)
+        ki = sp.sympify(p.get("ki", 0) or 0)
+        kd = sp.sympify(p.get("kd", 0) or 0)
+        return (kd*var**2 + kp*var + ki) / var
     if t in ("Source", "Input"):
         kind = p.get("kind", "step")
         if kind == "impulse": return 1

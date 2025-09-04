@@ -146,7 +146,7 @@ canvas.addEventListener("mousedown", ev => {
   /* drag, select or edit */
   if (n) {                                  // clicked a block
     if (ev.detail === 2 &&                 // double-click → open editor
-        (n.type === "TF" || n.type === "Gain" || n.type === "Input")) {
+        (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "PID")) {
 
       openEditModal(n);
     } else {                               // single-click → select block
@@ -221,15 +221,18 @@ function openEditModal(node) {
   const isTF   = node.type === "TF";
   const isGain = node.type === "Gain";
   const isInput = (node.type === "Input");
+  const isPID   = node.type === "PID";
+
 
 
   document.getElementById("modalTitle").textContent =
         isTF ? "Edit Transfer Function" :
-        isGain ? "Edit Gain" : "Edit";
-
+        isGain ? "Edit Gain" :
+        isPID ? "Edit PID" : "Edit";
   // Toggle field groups
   document.getElementById("tfFields").style.display   = isTF ? "block" : "none";
   document.getElementById("gainFields").style.display = isGain ? "block" : "none";
+  document.getElementById("pidFields").style.display  = isPID ? "block" : "none";
   document.getElementById("srcFields").style.display  = isInput ? "block":"none";
 
 if (isInput) {
@@ -245,6 +248,10 @@ if (isInput) {
     document.getElementById("denInput").value = node.params.den || "";
   } else if (isGain) {
     document.getElementById("gainInput").value = node.params.k ?? "";
+  } else if (isPID) {
+    document.getElementById("kpInput").value = node.params.kp ?? "";
+    document.getElementById("kiInput").value = node.params.ki ?? "";
+    document.getElementById("kdInput").value = node.params.kd ?? "";
   }
 
   new bootstrap.Modal("#editModal").show();
@@ -269,6 +276,10 @@ document.getElementById("btnModalSave").onclick = () => {
       editTarget.params.num = srcNum.value.trim();
       editTarget.params.den = srcDen.value.trim();
     }
+  } else if (editTarget.type === "PID") {
+    editTarget.params.kp = parseFloat(document.getElementById("kpInput").value);
+    editTarget.params.ki = parseFloat(document.getElementById("kiInput").value);
+    editTarget.params.kd = parseFloat(document.getElementById("kdInput").value);
   }
 
   drawAll();
@@ -480,6 +491,17 @@ function drawAll(){
                n.params.num && n.params.den)
         expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
       else expr = "X(s)";
+    } else if (n.type === "PID") {
+      const kp = n.params.kp, ki = n.params.ki, kd = n.params.kd;
+      if ([kp, ki, kd].some(v => Number.isFinite(v))) {
+        const parts = [];
+        if (Number.isFinite(kp)) parts.push(`${kp}`);
+        if (Number.isFinite(ki)) parts.push(`\\frac{${ki}}{s}`);
+        if (Number.isFinite(kd)) parts.push(`${kd} s`);
+        expr = parts.join(" + ");
+      } else {
+        expr = "PID";
+      }
     }
 
     if (expr) {

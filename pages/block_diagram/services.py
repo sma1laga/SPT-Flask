@@ -41,9 +41,9 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
     # ultimately causing ``float()`` conversion failures.
     var = s if domain == "s" else z
     def expr_to_coeffs(e):
-        n,d = sp.fraction(e)
-        return [float(c) for c in Poly(n,var).all_coeffs()],\
-               [float(c) for c in Poly(d,var).all_coeffs()]
+        n, d = sp.fraction(sp.together(e))
+        return [float(c) for c in Poly(n, var).all_coeffs()],\
+               [float(c) for c in Poly(d, var).all_coeffs()]
 
     # properness guard on loop TF only (optional for X or Y too)
     numL, denL = expr_to_coeffs(loop_tf_expr)

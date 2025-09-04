@@ -8,19 +8,25 @@
 
   <strong>What you can do on this page</strong>
   <ul style="margin:4px 0 8px 18px; padding:0;">
-    <li><b>Build block diagrams</b> with <code>Σ</code>,
-        <code>Gain K</code>, <code>TF N(s)/D(s)</code>,
-        <code>Integrator 1/s</code> and <code>Derivative s</code>.</li>
-    <li><b>Compute</b> the overall Transfer-Function, State-Space matrices
-        and ODE after one click.</li>
+    <li><b>Build block diagrams</b> with a rich palette including
+        <code>Σ</code>, <code>Gain K</code>,
+        <code>TF N(s)/D(s)</code>, <code>Zero-Pole</code>,
+        <code>Integrator 1/s</code>, <code>Derivative s</code>,
+        <code>Saturation</code>, <code>Delay</code>, <code>Scope</code>,
+        <code>Mux/Demux</code> and <code>PID</code>.</li>
+    <li><b>Save</b> or <b>load</b> diagrams and explore
+        pre-built examples.</li>
+    <li><b>Compute</b> the overall Transfer-Function,
+        State-Space matrices and ODE after one click.</li>
     <li><b>Plot a Laplace step response</b> immediately.</li>
     <li><b>Export / copy-paste</b> every result in LaTeX.</li>
   </ul>
 
   <strong>How to use it</strong>
   <ol style="margin:0 0 8px 18px; padding:0;">
-    <li><b>Add blocks</b> from the palette. Drag them to reposition.</li>
-    <li><b>Wire blocks</b>  
+    <li><b>Add blocks</b> from the palette or search by name.
+        Drag them to reposition.</li>
+    <li><b>Wire blocks</b>
         <code>Connect ► click source ► click destination ► Connect</code> again
         to leave wiring mode.  Wires route automatically; double-click the
         <b>+</b>/<b>–</b> badge to switch sign.</li>
@@ -29,11 +35,13 @@
         • <b>TF</b>   ⇒ edit numerator / denominator polynomials<br>
         • <b>Input</b> ⇒ choose <em>step</em>, <em>impulse</em> or
           a custom <em>N(s)/D(s)</em></li>
+    <li><b>Save or load</b> diagrams with the buttons above the canvas
+        or pick a pre-loaded example.</li>
     <li><b>Select</b> a block or wire (single click → red highlight) and press
         <kbd>Delete</kbd> or the <em>Delete ⌫</em> button to remove it.
         Use <em>Clear</em> to start from scratch.</li>
     <li>When the diagram is ready press
-        <em>Compile ⇢ TF&nbsp;/&nbsp;SS&nbsp;/&nbsp;ODE</em>.  
+        <em>Compile ⇢ TF&nbsp;/&nbsp;SS&nbsp;/&nbsp;ODE</em>.
         Results appear in the panel below in fully-typeset KaTeX.</li>
     <li>The <em>Simulate Step Response</em> button appears after a successful
         compile; click it again whenever you change the model and re-compile.
@@ -121,6 +129,18 @@
               <label class="form-label">Gain K</label>
               <input id="gainInput" type="number" step="any"
                      class="form-control" placeholder="4">
+            </div>
+            <!-- --- PID fields --- -->
+            <div id="pidFields">
+              <label class="form-label">Kp</label>
+              <input id="kpInput" type="number" step="any"
+                     class="form-control" placeholder="Kp">
+              <label class="form-label mt-2">Ki</label>
+              <input id="kiInput" type="number" step="any"
+                     class="form-control" placeholder="Ki">
+              <label class="form-label mt-2">Kd</label>
+              <input id="kdInput" type="number" step="any"
+                     class="form-control" placeholder="Kd">
             </div>
 
             <!-- --- Input fields --- -->
