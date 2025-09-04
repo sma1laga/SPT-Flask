@@ -9,6 +9,7 @@ from .utils import (
     mason_gain,
     coeffs_to_state_space,
     coeffs_to_ode_str,
+    gain_expr,
     s,
     z,
 )
@@ -27,11 +28,8 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
     loop_tf_expr = mason_gain(G, src_id, dst_id)
 
     # 3) source TF X(s)
-    from .utils import gain_expr
-    X_expr = gain_expr({ "type":"Source", 
-                         "params":next(n for n in graph_json["nodes"]
-                                      if n["id"]==src_id)["params"] },
-                       domain)
+    src_node = next(n for n in graph_json["nodes"] if n["id"] == src_id)
+    X_expr = gain_expr(src_node, domain)
 
     # 4) output TF Y(s)
     Y_expr = sp.simplify( loop_tf_expr * X_expr )

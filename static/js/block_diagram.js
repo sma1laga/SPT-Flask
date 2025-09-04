@@ -95,8 +95,8 @@ canvas.addEventListener("mousedown", ev => {
 /* drag, select or edit */
 if (n) {                                  // clicked a block
   if (ev.detail === 2 &&                 // double-click → open editor
-      (n.type === "TF" || n.type === "Gain" ||
-       n.type === "Input" || n.type === "Source")) {
+      (n.type === "TF" || n.type === "Gain" || n.type === "Input")) {
+
     openEditModal(n);
   } else {                               // single-click → select block
     selectedNode = n; selectedEdge = null;
@@ -163,7 +163,7 @@ function openEditModal(node) {
   editTarget = node;
   const isTF   = node.type === "TF";
   const isGain = node.type === "Gain";
-  const isSource = (node.type === "Source" || node.type === "Input");
+  const isInput = (node.type === "Input");
 
 
   document.getElementById("modalTitle").textContent =
@@ -173,9 +173,9 @@ function openEditModal(node) {
   // Toggle field groups
   document.getElementById("tfFields").style.display   = isTF ? "block" : "none";
   document.getElementById("gainFields").style.display = isGain ? "block" : "none";
-  document.getElementById("srcFields").style.display  = isSource ? "block":"none";
+  document.getElementById("srcFields").style.display  = isInput ? "block":"none";
 
-if (isSource) {
+if (isInput) {
   const kind = node.params.kind || "step";
   srcSelect.value = kind;
   srcCustom.style.display = kind === "custom" ? "block" : "none";
@@ -205,25 +205,15 @@ document.getElementById("btnModalSave").onclick = () => {
     editTarget.params.den = document.getElementById("denInput").value.trim();
   } else if (editTarget.type === "Gain") {
     editTarget.params.k = parseFloat(document.getElementById("gainInput").value);
+  } else if (editTarget.type === "Input") {
+    const kind = srcSelect.value;
+    editTarget.params.kind = kind;
+    if (kind === "custom") {
+      editTarget.params.num = srcNum.value.trim();
+      editTarget.params.den = srcDen.value.trim();
+    }
   }
-  else if (editTarget.type === "Source") {
-  const kind = document.getElementById("srcSelect").value;
-  editTarget.params.kind = kind;
-  if (kind === "custom") {
-    editTarget.params.num =
-        document.getElementById("srcNum").value.trim();
-    editTarget.params.den =
-        document.getElementById("srcDen").value.trim();
-  }
-}
-else if (editTarget.type === "Input") {          // NEW
-  const kind = srcSelect.value;
-  editTarget.params.kind = kind;
-  if (kind === "custom") {
-    editTarget.params.num = srcNum.value.trim();
-    editTarget.params.den = srcDen.value.trim();
-  }
-}
+
   drawAll();
   bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
 };
@@ -426,13 +416,13 @@ function drawAll(){
       expr = String(n.params.k);
     } else if (n.type === "Derivative") {
       expr = "s";
-    } else if (n.type === "Source" || n.type === "Input") {
+    } else if (n.type === "Input") {
       if      (n.params.kind === "step")    expr = "\\frac{1}{s}";
       else if (n.params.kind === "impulse") expr = "1";
       else if (n.params.kind === "custom" &&
                n.params.num && n.params.den)
         expr = `\\displaystyle\\frac{${n.params.num}}{${n.params.den}}`;
-      else expr = n.type === "Input" ? "X(s)" : "SRC";
+      else expr = "X(s)";
     }
 
     if (expr) {
@@ -603,7 +593,6 @@ function drawOrthEdge(ctx, e){
 }
 
 /* ---------------- toolbar hooks --------------------------------------- */
-document.getElementById("btnAddSource").onclick = () => addNode("Source", "", 60, 80);
 document.getElementById("btnAddGain").onclick =() => addNode("Gain", "", 180, 80);
 document.getElementById("btnAddAdder").onclick=()=>addNode("Adder","Σ");
 document.getElementById("btnAddIntegrator").onclick=()=>addNode("Integrator","1/s");
@@ -676,4 +665,5 @@ document.getElementById("btnSimulate").onclick = async () => {
 
 
 /* initial paint */
+document.querySelectorAll('.kx-btn').forEach(el=>katex.render(el.textContent, el));
 drawAll();

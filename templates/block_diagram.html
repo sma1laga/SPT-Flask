@@ -8,7 +8,7 @@
 
   <strong>What you can do on this page</strong>
   <ul style="margin:4px 0 8px 18px; padding:0;">
-    <li><b>Build block diagrams</b> with <code>Source</code>, <code>Σ</code>,
+    <li><b>Build block diagrams</b> with <code>Σ</code>,
         <code>Gain K</code>, <code>TF N(s)/D(s)</code>,
         <code>Integrator 1/s</code> and <code>Derivative s</code>.</li>
     <li><b>Compute</b> the overall Transfer-Function, State-Space matrices
@@ -27,7 +27,7 @@
     <li><b>Edit a block</b> &nbsp;⇢&nbsp; double-click it.<br>
         • <b>Gain</b> ⇒ enter <em>K</em><br>
         • <b>TF</b>   ⇒ edit numerator / denominator polynomials<br>
-        • <b>Source</b> ⇒ choose <em>step</em>, <em>impulse</em> or
+        • <b>Input</b> ⇒ choose <em>step</em>, <em>impulse</em> or
           a custom <em>N(s)/D(s)</em></li>
     <li><b>Select</b> a block or wire (single click → red highlight) and press
         <kbd>Delete</kbd> or the <em>Delete ⌫</em> button to remove it.
@@ -55,12 +55,11 @@
 
 <div class="toolbar">
   <h4>Blocks</h4>
-  <button id="btnAddSource">Add Source</button>
-  <button id="btnAddAdder">Add Σ</button>
-  <button id="btnAddGain">Add Gain</button>
-  <button id="btnAddTF">Add TF N(s)/D(s)</button>
-  <button id="btnAddIntegrator">Add Integrator 1/s</button>
-  <button id="btnAddDerivative">Add Derivative s</button>
+  <button id="btnAddAdder">Add <span class="kx-btn">\\Sigma</span></button>
+  <button id="btnAddGain">Add Gain <span class="kx-btn">K</span></button>
+  <button id="btnAddTF">Add TF <span class="kx-btn">\\dfrac{N(s)}{D(s)}</span></button>
+  <button id="btnAddIntegrator">Add Integrator <span class="kx-btn">\\dfrac{1}{s}</span></button>
+  <button id="btnAddDerivative">Add Derivative <span class="kx-btn">s</span></button>
 </div>
 
 
@@ -128,7 +127,7 @@
                  class="form-control" placeholder="4">
         </div>
 
-        <!-- --- Source / Input fields --- -->
+        <!-- --- Input fields --- -->
         <div id="srcFields">
           <label class="form-label">Input type</label>
           <select id="srcSelect" class="form-select">

@@ -146,7 +146,7 @@ def chain_to_coeffs(graph: dict):
         G.add_edge(e["from"], e["to"])
 
     # pick first Input and first Output block ids
-    src = next(n["id"] for n in graph["nodes"] if n["type"] in ("Input", "Source"))
+    src = next(n["id"] for n in graph["nodes"] if n["type"] == "Input")
     dst = next(n["id"] for n in graph["nodes"] if n["type"] == "Output")
 
     try:
@@ -190,7 +190,7 @@ def gain_expr(node, domain="s"):
         return var**-1
     if t == "Derivative":
         return var  
-    if t == "Source":
+    if t in ("Source", "Input"):
         kind = p.get("kind", "step")
         if kind == "impulse": return 1
         if kind == "step":    return 1/var
@@ -218,7 +218,7 @@ def build_sfg(graph: dict):
         G.add_edge(e["from"], e["to"], gain=gain)
 
     src = next(n["id"] for n in graph["nodes"]
-               if n["type"] in ("Input", "Source"))
+               if n["type"] == "Input")
     dst = next(n["id"] for n in graph["nodes"] if n["type"] == "Output")
     return G, src, dst, domain
 # ----------------------------------------------------------------------
