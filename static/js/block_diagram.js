@@ -94,7 +94,7 @@ function initPalette(){
 
 /* ---------------- palette helpers ------------------------------------ */
 function addNode(type, label, x = 120, y = 80) {
-  nodes.push({
+  const node = {
     id: nextId++,
     type,
     label,
@@ -103,7 +103,10 @@ function addNode(type, label, x = 120, y = 80) {
     h: 45,
     params: {},            // for TF blocks: {num:'', den:''}
     latexEl: null          // DOM <div> where KaTeX renders
-  });
+  };
+  if(type === "Mux")   node.params.inputs  = 2;
+  if(type === "Demux") node.params.outputs = 2;
+  nodes.push(node);
   drawAll();
 }
 
@@ -146,7 +149,7 @@ canvas.addEventListener("mousedown", ev => {
   /* drag, select or edit */
   if (n) {                                  // clicked a block
     if (ev.detail === 2 &&                 // double-click → open editor
-        (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "PID")) {
+        (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "PID" || n.type === "Mux" || n.type === "Demux")) {
 
       openEditModal(n);
     } else {                               // single-click → select block
@@ -218,22 +221,28 @@ let editTarget = null;
 
 function openEditModal(node) {
   editTarget = node;
-  const isTF   = node.type === "TF";
-  const isGain = node.type === "Gain";
+  const isTF    = node.type === "TF";
+  const isGain  = node.type === "Gain";
   const isInput = (node.type === "Input");
   const isPID   = node.type === "PID";
+  const isMux   = node.type === "Mux";
+  const isDemux = node.type === "Demux";
 
 
 
   document.getElementById("modalTitle").textContent =
         isTF ? "Edit Transfer Function" :
         isGain ? "Edit Gain" :
-        isPID ? "Edit PID" : "Edit";
-  // Toggle field groups
-  document.getElementById("tfFields").style.display   = isTF ? "block" : "none";
-  document.getElementById("gainFields").style.display = isGain ? "block" : "none";
-  document.getElementById("pidFields").style.display  = isPID ? "block" : "none";
-  document.getElementById("srcFields").style.display  = isInput ? "block":"none";
+        isPID ? "Edit PID" :
+        isMux ? "Edit Mux" :
+        isDemux ? "Edit Demux" : "Edit";
+    // Toggle field groups
+  document.getElementById("tfFields").style.display    = isTF ? "block" : "none";
+  document.getElementById("gainFields").style.display  = isGain ? "block" : "none";
+  document.getElementById("pidFields").style.display   = isPID ? "block" : "none";
+  document.getElementById("muxFields").style.display   = isMux ? "block" : "none";
+  document.getElementById("demuxFields").style.display = isDemux ? "block" : "none";
+  document.getElementById("srcFields").style.display   = isInput ? "block":"none";
 
 if (isInput) {
   const kind = node.params.kind || "step";
@@ -252,6 +261,10 @@ if (isInput) {
     document.getElementById("kpInput").value = node.params.kp ?? "";
     document.getElementById("kiInput").value = node.params.ki ?? "";
     document.getElementById("kdInput").value = node.params.kd ?? "";
+  } else if (isMux) {
+    document.getElementById("muxInput").value = node.params.inputs ?? "";
+  } else if (isDemux) {
+    document.getElementById("demuxInput").value = node.params.outputs ?? "";
   }
 
   new bootstrap.Modal("#editModal").show();
@@ -280,6 +293,10 @@ document.getElementById("btnModalSave").onclick = () => {
     editTarget.params.kp = parseFloat(document.getElementById("kpInput").value);
     editTarget.params.ki = parseFloat(document.getElementById("kiInput").value);
     editTarget.params.kd = parseFloat(document.getElementById("kdInput").value);
+  } else if (editTarget.type === "Mux") {
+    editTarget.params.inputs = parseInt(document.getElementById("muxInput").value);
+  } else if (editTarget.type === "Demux") {
+    editTarget.params.outputs = parseInt(document.getElementById("demuxInput").value);
   }
 
   drawAll();
@@ -502,6 +519,12 @@ function drawAll(){
       } else {
         expr = "PID";
       }
+    } else if (n.type === "Mux") {
+      const m = n.params.inputs;
+      expr = m ? `\\text{Mux}_{${m}}` : `\\text{Mux}`;
+    } else if (n.type === "Demux") {
+      const m = n.params.outputs;
+      expr = m ? `\\text{Demux}_{${m}}` : `\\text{Demux}`;
     }
 
     if (expr) {

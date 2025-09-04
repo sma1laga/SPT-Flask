@@ -201,6 +201,8 @@ def gain_expr(node, domain="s"):
         ki = sp.sympify(p.get("ki", 0) or 0)
         kd = sp.sympify(p.get("kd", 0) or 0)
         return (kd*var**2 + kp*var + ki) / var
+    if t in ("Mux", "Demux"):
+        return 1
     if t in ("Source", "Input"):
         kind = p.get("kind", "step")
         if kind == "impulse": return 1
