@@ -15,7 +15,8 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     implicit_multiplication_application
 )
-
+from control.matlab import zpk2tf
+import re
 
 # ────────────────────────────────────────────────────────────────────────
 def parse_poly(poly_str: str) -> List[float]:
@@ -29,6 +30,22 @@ def parse_poly(poly_str: str) -> List[float]:
     expr = parse_expr(poly_str, local_dict={"s": s, "z": z}, transformations=transformations)
     poly = sp.Poly(expr, s if "s" in poly_str else z)
     return [float(c) for c in poly.all_coeffs()]
+
+def _parse_root_list(root_str: str) -> List[complex]:
+    """Return list of roots from a comma/space separated string."""
+    root_str = root_str.strip()
+    if not root_str:
+        return []
+    parts = re.split(r"[\s,]+", root_str)
+    roots: List[complex] = []
+    for part in parts:
+        if not part:
+            continue
+        # allow both 'j' and 'i' for imaginary unit
+        part = part.replace("i", "j")
+        roots.append(complex(sp.N(sp.sympify(part))))
+    return roots
+
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -129,8 +146,19 @@ def tf_from_block(node):
     if t == "Derivative":          #   s
         return TransferFunction([1, 0], [1])
 
-    if t == "Delay":             # z-¹  (treat as discrete 1-step delay)
-        return TransferFunction([1, 0], [0, 1])
+    if t == "Delay":
+        tau = float(p.get("tau", 0) or 0)
+        if tau == 0:
+            return TransferFunction([1], [1])
+        num, den = control.pade(tau, 1)
+        return TransferFunction(num, den)
+
+    if t == "ZeroPole":
+        zeros = _parse_root_list(p.get("zeros", ""))
+        poles = _parse_root_list(p.get("poles", ""))
+        k = float(p.get("k", 1) or 1)
+        num, den = zpk2tf(zeros, poles, k)
+        return TransferFunction(num, den)
 
     if t == "PID":
         kp = float(p.get("kp", 0) or 0)
@@ -193,9 +221,22 @@ def gain_expr(node, domain="s"):
     if t == "Integrator":
         return 1/var
     if t == "Delay":
-        return var**-1
+        tau = float(p.get("tau", 0) or 0)
+        if tau == 0:
+            return 1
+        num, den = control.pade(tau, 1)
+        num_expr = sum(num[i] * var**(len(num)-1-i) for i in range(len(num)))
+        den_expr = sum(den[i] * var**(len(den)-1-i) for i in range(len(den)))
+        return num_expr/den_expr
     if t == "Derivative":
         return var
+    if t == "ZeroPole":
+        zeros = _parse_root_list(p.get("zeros", ""))
+        poles = _parse_root_list(p.get("poles", ""))
+        k = sp.sympify(p.get("k", 1) or 1)
+        num_expr = sp.prod([var - z0 for z0 in zeros]) if zeros else 1
+        den_expr = sp.prod([var - p0 for p0 in poles]) if poles else 1
+        return k * num_expr / den_expr
     if t == "PID":
         kp = sp.sympify(p.get("kp", 0) or 0)
         ki = sp.sympify(p.get("ki", 0) or 0)

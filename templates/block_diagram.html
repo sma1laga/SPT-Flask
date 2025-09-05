@@ -124,6 +124,17 @@
               <input id="denInput" class="form-control" placeholder="s^3 + 1">
             </div>
 
+            <!-- --- Zero/Pole fields --- -->
+            <div id="zpFields">
+              <label class="form-label">Zeros (comma-separated)</label>
+              <input id="zeroInput" class="form-control" placeholder="-1, -2">
+              <label class="form-label mt-2">Poles (comma-separated)</label>
+              <input id="poleInput" class="form-control" placeholder="-3, -4">
+              <label class="form-label mt-2">Gain K</label>
+              <input id="zpGainInput" type="number" step="any"
+                     class="form-control" placeholder="1">
+            </div>
+
             <!-- --- Gain field --- -->
             <div id="gainFields">
               <label class="form-label">Gain K</label>
@@ -155,6 +166,12 @@
               <label class="form-label">Outputs</label>
               <input id="demuxInput" type="number" min="1" step="1"
                      class="form-control" placeholder="2">
+            </div>
+            <!-- --- Delay field --- -->
+            <div id="delayFields">
+              <label class="form-label">Delay \(\tau\)</label>
+              <input id="delayInput" type="number" step="any"
+                     class="form-control" placeholder="1">
             </div>
 
             <!-- --- Input fields --- -->

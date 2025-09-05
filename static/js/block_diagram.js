@@ -149,8 +149,8 @@ canvas.addEventListener("mousedown", ev => {
   /* drag, select or edit */
   if (n) {                                  // clicked a block
     if (ev.detail === 2 &&                 // double-click → open editor
-        (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "PID" || n.type === "Mux" || n.type === "Demux")) {
-
+        (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "PID" ||
+         n.type === "Mux" || n.type === "Demux" || n.type === "ZeroPole" || n.type === "Delay")) {
       openEditModal(n);
     } else {                               // single-click → select block
       selectedNode = n; selectedEdge = null;
@@ -222,27 +222,33 @@ let editTarget = null;
 function openEditModal(node) {
   editTarget = node;
   const isTF    = node.type === "TF";
-  const isGain  = node.type === "Gain";
-  const isInput = (node.type === "Input");
-  const isPID   = node.type === "PID";
-  const isMux   = node.type === "Mux";
-  const isDemux = node.type === "Demux";
+  const isGain    = node.type === "Gain";
+  const isInput   = (node.type === "Input");
+  const isPID     = node.type === "PID";
+  const isMux     = node.type === "Mux";
+  const isDemux   = node.type === "Demux";
+  const isZeroPole = node.type === "ZeroPole";
+  const isDelay    = node.type === "Delay";
 
 
 
   document.getElementById("modalTitle").textContent =
         isTF ? "Edit Transfer Function" :
         isGain ? "Edit Gain" :
+        isZeroPole ? "Edit Zero/Pole" :
+        isDelay ? "Edit Delay" :
         isPID ? "Edit PID" :
         isMux ? "Edit Mux" :
         isDemux ? "Edit Demux" : "Edit";
     // Toggle field groups
-  document.getElementById("tfFields").style.display    = isTF ? "block" : "none";
-  document.getElementById("gainFields").style.display  = isGain ? "block" : "none";
-  document.getElementById("pidFields").style.display   = isPID ? "block" : "none";
-  document.getElementById("muxFields").style.display   = isMux ? "block" : "none";
-  document.getElementById("demuxFields").style.display = isDemux ? "block" : "none";
-  document.getElementById("srcFields").style.display   = isInput ? "block":"none";
+  document.getElementById("tfFields").style.display     = isTF ? "block" : "none";
+  document.getElementById("gainFields").style.display   = isGain ? "block" : "none";
+  document.getElementById("pidFields").style.display    = isPID ? "block" : "none";
+  document.getElementById("muxFields").style.display    = isMux ? "block" : "none";
+  document.getElementById("demuxFields").style.display  = isDemux ? "block" : "none";
+  document.getElementById("zpFields").style.display     = isZeroPole ? "block" : "none";
+  document.getElementById("delayFields").style.display  = isDelay ? "block" : "none";
+  document.getElementById("srcFields").style.display    = isInput ? "block":"none";
 
 if (isInput) {
   const kind = node.params.kind || "step";
@@ -257,6 +263,10 @@ if (isInput) {
     document.getElementById("denInput").value = node.params.den || "";
   } else if (isGain) {
     document.getElementById("gainInput").value = node.params.k ?? "";
+  } else if (isZeroPole) {
+    document.getElementById("zeroInput").value = node.params.zeros || "";
+    document.getElementById("poleInput").value = node.params.poles || "";
+    document.getElementById("zpGainInput").value = node.params.k ?? "";
   } else if (isPID) {
     document.getElementById("kpInput").value = node.params.kp ?? "";
     document.getElementById("kiInput").value = node.params.ki ?? "";
@@ -265,6 +275,8 @@ if (isInput) {
     document.getElementById("muxInput").value = node.params.inputs ?? "";
   } else if (isDemux) {
     document.getElementById("demuxInput").value = node.params.outputs ?? "";
+  } else if (isDelay) {
+    document.getElementById("delayInput").value = node.params.tau ?? "";
   }
 
   new bootstrap.Modal("#editModal").show();
@@ -282,6 +294,10 @@ document.getElementById("btnModalSave").onclick = () => {
     editTarget.params.den = document.getElementById("denInput").value.trim();
   } else if (editTarget.type === "Gain") {
     editTarget.params.k = parseFloat(document.getElementById("gainInput").value);
+  } else if (editTarget.type === "ZeroPole") {
+    editTarget.params.zeros = document.getElementById("zeroInput").value.trim();
+    editTarget.params.poles = document.getElementById("poleInput").value.trim();
+    editTarget.params.k = parseFloat(document.getElementById("zpGainInput").value);
   } else if (editTarget.type === "Input") {
     const kind = srcSelect.value;
     editTarget.params.kind = kind;
@@ -297,6 +313,8 @@ document.getElementById("btnModalSave").onclick = () => {
     editTarget.params.inputs = parseInt(document.getElementById("muxInput").value);
   } else if (editTarget.type === "Demux") {
     editTarget.params.outputs = parseInt(document.getElementById("demuxInput").value);
+  } else if (editTarget.type === "Delay") {
+    editTarget.params.tau = parseFloat(document.getElementById("delayInput").value);
   }
 
   drawAll();
