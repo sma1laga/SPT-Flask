@@ -43,8 +43,8 @@ def test_saturation_and_scope_block():
         "edges": [
             {"from": 1, "to": 2, "sign": "+"},
             {"from": 2, "to": 3, "sign": "+"},
+            {"from": 3, "to": 5, "sign": "+"},
             {"from": 3, "to": 4, "sign": "+"},
-            {"from": 4, "to": 5, "sign": "+"},
         ],
         "domain": "s",
     }

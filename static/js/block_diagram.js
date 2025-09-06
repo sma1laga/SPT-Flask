@@ -145,7 +145,7 @@ function addNode(type, label, x = 120, y = 80) {
 })();
 
 /* ---------------- connection mode & drag ------------------------------ */
-let connectMode = false, connectFrom = null;
+let connectMode = false, connectFrom = null, connectEdge = null;
 let dragNode = null, dragOffset = {x:0,y:0};
 
 canvas.addEventListener("mousedown", ev => {
@@ -164,19 +164,30 @@ canvas.addEventListener("mousedown", ev => {
   }
 
   const n = nodeAt(p.x, p.y);
+  const eHit = edgeAt(p.x, p.y);
+
   /* connect mode */
   if (connectMode) {
-    if (!n) return;
-    if (!connectFrom) { connectFrom = n; return; }
-    if (n !== connectFrom) 
-        edges.push({
-        from: connectFrom.id,
-        to:   n.id,
-        sign: "+",
-
-        });
-    connectFrom = null;
-    drawAll(); return;
+    if (!connectFrom && !connectEdge) {
+      if (eHit) { connectEdge = eHit; return; }
+      if (n)   { connectFrom = n; return; }
+      return;
+    }
+    if (connectEdge) {
+      if (n && n.type === "Scope") {
+        edges.push({ from: connectEdge.from, to: n.id, sign: connectEdge.sign });
+        drawAll();
+      }
+      connectEdge = null;
+      return;
+    }
+    if (connectFrom) {
+      if (n && n !== connectFrom)
+        edges.push({ from: connectFrom.id, to: n.id, sign: "+" });
+      connectFrom = null;
+      drawAll();
+      return;
+    }
   }
 
   /* drag, select or edit */
@@ -533,7 +544,7 @@ function nodeAt(x,y){return nodes.find(n=>x>=n.x&&x<=n.x+n.w &&
                                          y>=n.y&&y<=n.y+n.h);}
 function toggleConnect(){connectMode=!connectMode;
   document.getElementById("btnConnect").classList.toggle("active",connectMode);
-  if(!connectMode)connectFrom=null;}
+  if(!connectMode){connectFrom=null; connectEdge=null;}}
 function clearScene(){nodes=[];edges=[];nextId=1;selectedNode = selectedEdge = null;
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
   (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
