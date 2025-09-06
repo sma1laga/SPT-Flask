@@ -31,7 +31,30 @@ function chooseSide(node, isOut){
   return pref.find(p => !used.includes(p)) || pref[0];
 }
 
-function portPos(node, side){
+function portPos(node, side, edge, isFrom){
+  if(node.type === "Mux"){
+    if(isFrom){
+      return {x: node.x + node.w, y: node.y + node.h/2};
+    } else {
+      const inputs   = node.params.inputs || 1;
+      const inbound  = edges.filter(e => e.to === node.id);
+      const idx      = Math.max(0, inbound.indexOf(edge));
+      const spacing  = node.h / (inputs + 1);
+      return {x: node.x, y: node.y + spacing * (idx + 1)};
+    }
+  }
+
+  if(node.type === "Demux"){
+    if(isFrom){
+      const outputs  = node.params.outputs || 1;
+      const outbound = edges.filter(e => e.from === node.id);
+      const idx      = Math.max(0, outbound.indexOf(edge));
+      const spacing  = node.h / (outputs + 1);
+      return {x: node.x + node.w, y: node.y + spacing * (idx + 1)};
+    } else {
+      return {x: node.x, y: node.y + node.h/2};
+    }
+  }
   switch(side){
     case "E": return {x: node.x + node.w,     y: node.y + node.h/2};
     case "W": return {x: node.x,              y: node.y + node.h/2};
@@ -172,10 +195,15 @@ canvas.addEventListener("dblclick", ev=>{
     const a = nodes.find(n=>n.id===e.from);
     const b = nodes.find(n=>n.id===e.to);
     if(!a||!b)return false;
-    // simple bounding-box hit test
-    const ax=a.x+a.w, ay=a.y+a.h/2, bx=b.x, by=b.y+b.h/2;
-    const minX=Math.min(ax,bx), maxX=Math.max(ax,bx);
-    const minY=Math.min(ay,by)-4, maxY=Math.max(ay,by)+4;
+    const ac = { x: a.x + a.w/2, y: a.y + a.h/2 };
+    const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
+    const face = autoSides(ac.x, ac.y, bc.x, bc.y);
+    if (a.type === "Mux"  || a.type === "Demux") face.out = "E";
+    if (b.type === "Mux"  || b.type === "Demux") face.inn = "W";
+    const from = portPos(a, face.out, e, true);
+    const  to  = portPos(b, face.inn, e, false);
+    const minX=Math.min(from.x,to.x), maxX=Math.max(from.x,to.x);
+    const minY=Math.min(from.y,to.y)-4, maxY=Math.max(from.y,to.y)+4;
     return x>=minX&&x<=maxX&&y>=minY&&y<=maxY;
   });
   if(hit){ hit.sign = hit.sign==="+"? "–" : "+"; drawAll(); }
@@ -206,8 +234,14 @@ function edgeAt(x, y) {
     const a = nodes.find(n => n.id === e.from);
     const b = nodes.find(n => n.id === e.to);
     if (!a || !b) return false;
-    const ax = a.x + a.w,         ay = a.y + a.h / 2;
-    const bx = b.x,               by = b.y + b.h / 2;
+    const ac = { x: a.x + a.w/2, y: a.y + a.h/2 };
+    const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
+    const face = autoSides(ac.x, ac.y, bc.x, bc.y);
+    if (a.type === "Mux"  || a.type === "Demux") face.out = "E";
+    if (b.type === "Mux"  || b.type === "Demux") face.inn = "W";
+    const from = portPos(a, face.out, e, true);
+    const  to  = portPos(b, face.inn, e, false);
+    const ax = from.x, ay = from.y, bx = to.x, by = to.y;
     const minX = Math.min(ax, bx) - 4, maxX = Math.max(ax, bx) + 4;
     const minY = Math.min(ay, by) - 4, maxY = Math.max(ay, by) + 4;
     return x >= minX && x <= maxX && y >= minY && y <= maxY;
@@ -547,6 +581,15 @@ function drawAll(){
 
     if (expr) {
       if (renderLatex(n, expr)) changed = true;
+      if (n.type === "Mux") {
+        const reqH = Math.max(45, (n.params.inputs || 1) * 20 + 10);
+        if (n.h < reqH) { n.h = reqH; changed = true; }
+        if (n.latexEl) n.latexEl.style.top = canvas.offsetTop + n.y + n.h/2 + "px";
+      } else if (n.type === "Demux") {
+        const reqH = Math.max(45, (n.params.outputs || 1) * 20 + 10);
+        if (n.h < reqH) { n.h = reqH; changed = true; }
+        if (n.latexEl) n.latexEl.style.top = canvas.offsetTop + n.y + n.h/2 + "px";
+      }
     }
 
     const sel = n === selectedNode;
@@ -555,6 +598,32 @@ function drawAll(){
     ctx.lineWidth   = sel ? 3 : 2;
     ctx.fillRect(n.x, n.y, n.w, n.h);
     ctx.strokeRect(n.x, n.y, n.w, n.h);
+
+    if (n.type === "Mux") {
+      ctx.fillStyle = arrowCol;
+      const m = n.params.inputs || 1;
+      const sp = n.h / (m + 1);
+      for (let i = 1; i <= m; i++) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y + sp * i, 3, 0, 2*Math.PI);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(n.x + n.w, n.y + n.h/2, 3, 0, 2*Math.PI);
+      ctx.fill();
+    } else if (n.type === "Demux") {
+      ctx.fillStyle = arrowCol;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y + n.h/2, 3, 0, 2*Math.PI);
+      ctx.fill();
+      const m = n.params.outputs || 1;
+      const sp = n.h / (m + 1);
+      for (let i = 1; i <= m; i++) {
+        ctx.beginPath();
+        ctx.arc(n.x + n.w, n.y + sp * i, 3, 0, 2*Math.PI);
+        ctx.fill();
+      }
+    }
 
     if (!expr) {
       ctx.fillStyle="#000";ctx.font="14px sans-serif";
@@ -698,11 +767,13 @@ function drawOrthEdge(ctx, e){
   const ac = { x: a.x + a.w/2, y: a.y + a.h/2 };
   const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
 
-  /* faces decided fresh every frame – no more “wrong side” wires ------- */
+  /* faces decided fresh every frame – enforce mux/demux orientation ---- */
   const face = autoSides(ac.x, ac.y, bc.x, bc.y);
 
-  const from = portPos(a, face.out);
-  const  to  = portPos(b, face.inn);
+  if (a.type === "Mux"  || a.type === "Demux") face.out = "E";
+  if (b.type === "Mux"  || b.type === "Demux") face.inn = "W";
+  const from = portPos(a, face.out, e, true);
+  const  to  = portPos(b, face.inn, e, false);
 
   const pts  = smartRoute(from, to, face.out, face.inn);
 

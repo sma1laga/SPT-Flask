@@ -70,7 +70,7 @@
   margin: 0 auto 3rem;
   overflow: visible;
   width: 100%;
-  max-width: none;
+  max-width: 500px;
 }
 
 #plotContainer img {
@@ -128,7 +128,10 @@
 }
 
 .submit-row {
-  text-align:center;
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:12px;
   margin-top:1rem;
 }
 
@@ -141,11 +144,20 @@
   text-align:center;
   margin-bottom:10px;
 }
+.plot-options label {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  margin-bottom:0;
+}
 
 .plot-area {
-  border:none;
+  border:1px solid var(--border-color, #ccc);
   border-radius:4px;
   overflow:hidden;
+  max-width:500px;
+  margin:0 auto;
+  background: var(--card-background, #fff);
 }
 
 .plot-desc {
@@ -191,3 +203,7 @@ body.dark-mode .image-filter-form input[type=file] {
   border-color:#555;
 }
 body.dark-mode .plot-options label { color:#f5f5f5; }
+body.dark-mode .plot-area {
+  border-color:#444;
+  background:#2a2a2a;
+}
