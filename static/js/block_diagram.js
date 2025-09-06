@@ -17,6 +17,9 @@ const srcNum    = document.getElementById("srcNum");
 const srcDen    = document.getElementById("srcDen");
 const btnSimulate = document.getElementById("btnSimulate");
 const simCanvas  = document.getElementById("simCanvas");
+const scopeWindow = document.getElementById("scopeWindow");
+const scopeCanvas = document.getElementById("scopeCanvas");
+const scopeClose  = document.getElementById("scopeClose");
 
 
 /* -----------  side selection & geometry helpers  ------------------- */
@@ -171,10 +174,12 @@ canvas.addEventListener("mousedown", ev => {
 
   /* drag, select or edit */
   if (n) {                                  // clicked a block
-    if (ev.detail === 2 &&                 // double-click → open editor
-        (n.type === "TF" || n.type === "Gain" || n.type === "Input" || n.type === "PID" ||
-         n.type === "Mux" || n.type === "Demux" || n.type === "ZeroPole" || n.type === "Delay")) {
-      openEditModal(n);
+    if (ev.detail === 2) {                  // double-click
+      if (["TF","Gain","Input","PID","Mux","Demux","ZeroPole","Delay","Saturation"].includes(n.type)) {
+        openEditModal(n);
+      } else if (n.type === "Scope") {
+        openScopeWindow();
+      }
     } else {                               // single-click → select block
       selectedNode = n; selectedEdge = null;
       dragNode = n;                     // start drag on mouse-move
@@ -263,6 +268,8 @@ function openEditModal(node) {
   const isDemux   = node.type === "Demux";
   const isZeroPole = node.type === "ZeroPole";
   const isDelay    = node.type === "Delay";
+  const isSaturation = node.type === "Saturation";
+
 
 
 
@@ -273,7 +280,8 @@ function openEditModal(node) {
         isDelay ? "Edit Delay" :
         isPID ? "Edit PID" :
         isMux ? "Edit Mux" :
-        isDemux ? "Edit Demux" : "Edit";
+        isDemux ? "Edit Demux" :
+        isSaturation ? "Edit Saturation" : "Edit";
     // Toggle field groups
   document.getElementById("tfFields").style.display     = isTF ? "block" : "none";
   document.getElementById("gainFields").style.display   = isGain ? "block" : "none";
@@ -282,6 +290,7 @@ function openEditModal(node) {
   document.getElementById("demuxFields").style.display  = isDemux ? "block" : "none";
   document.getElementById("zpFields").style.display     = isZeroPole ? "block" : "none";
   document.getElementById("delayFields").style.display  = isDelay ? "block" : "none";
+  document.getElementById("satFields").style.display    = isSaturation ? "block" : "none";
   document.getElementById("srcFields").style.display    = isInput ? "block":"none";
 
 if (isInput) {
@@ -311,6 +320,9 @@ if (isInput) {
     document.getElementById("demuxInput").value = node.params.outputs ?? "";
   } else if (isDelay) {
     document.getElementById("delayInput").value = node.params.tau ?? "";
+  } else if (isSaturation) {
+    document.getElementById("satLower").value = node.params.lower ?? "";
+    document.getElementById("satUpper").value = node.params.upper ?? "";
   }
 
   new bootstrap.Modal("#editModal").show();
@@ -349,6 +361,9 @@ document.getElementById("btnModalSave").onclick = () => {
     editTarget.params.outputs = parseInt(document.getElementById("demuxInput").value);
   } else if (editTarget.type === "Delay") {
     editTarget.params.tau = parseFloat(document.getElementById("delayInput").value);
+  } else if (editTarget.type === "Saturation") {
+    editTarget.params.lower = parseFloat(document.getElementById("satLower").value);
+    editTarget.params.upper = parseFloat(document.getElementById("satUpper").value);
   }
 
   drawAll();
@@ -358,6 +373,12 @@ document.getElementById("btnModalSave").onclick = () => {
 
 let lastOutputTf = null;  // <-- up at top of file
 let simChart = null;
+let scopeChart = null;
+
+scopeClose.onclick = () => {
+  scopeWindow.style.display = "none";
+  if (scopeChart) scopeChart.destroy();
+};
 
 function compileDiagram(){
   const domain = "s";          
@@ -865,6 +886,31 @@ document.getElementById("btnSimulate").onclick = async () => {
     }
   });
 };
+async function openScopeWindow(){
+  if (!lastOutputTf) return alert("Nothing to simulate!");
+
+  const resp = await fetch("/block_diagram/simulate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lastOutputTf)
+  });
+  const sim = await resp.json();
+
+  scopeWindow.style.display = "block";
+  if (scopeChart) scopeChart.destroy();
+  scopeChart = new Chart(scopeCanvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: sim.time,
+      datasets: [{
+        data: sim.y,
+        borderWidth: 2,
+        fill: false
+      }]
+    },
+    options: { scales: { x: { display:false } }, plugins:{legend:{display:false}} }
+  });
+}
 
 
 /* initial paint */

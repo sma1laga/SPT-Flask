@@ -166,6 +166,9 @@ def tf_from_block(node):
         kd = float(p.get("kd", 0) or 0)
         return TransferFunction([kd, kp, ki], [1, 0])
 
+    if t == "Saturation" or t == "Scope":
+        return TransferFunction([1], [1])
+
     # Input, Output, Adder – unity TF
     return TransferFunction([1], [1])
 

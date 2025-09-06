@@ -173,6 +173,13 @@
               <input id="delayInput" type="number" step="any"
                      class="form-control" placeholder="1">
             </div>
+            <!-- --- Saturation fields --- -->
+            <div id="satFields">
+              <label class="form-label">Lower limit</label>
+              <input id="satLower" type="number" step="any" class="form-control" placeholder="-1">
+              <label class="form-label mt-2">Upper limit</label>
+              <input id="satUpper" type="number" step="any" class="form-control" placeholder="1">
+            </div>
 
             <!-- --- Input fields --- -->
             <div id="srcFields">
@@ -216,6 +223,13 @@
     <canvas id="simCanvas" width="600" height="240"
             style="border:1px solid #ddd; display:none; margin-top:10px">
     </canvas>
+    <div id="scopeWindow" class="scope-window" style="display:none;">
+      <div class="scope-header">
+        <span>Scope</span>
+        <button type="button" id="scopeClose" class="btn-close"></button>
+      </div>
+      <canvas id="scopeCanvas" width="280" height="140"></canvas>
+    </div>
   </div> <!-- /.workspace -->
 </div> <!-- /#diagramArea -->
 <style>
