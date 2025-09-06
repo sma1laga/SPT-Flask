@@ -106,6 +106,18 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
         except (TypeError, ValueError):
             upper = None
         saturation = {"lower": lower, "upper": upper}
+    # compute transfer-functions for all Scope blocks
+    scope_tfs = {}
+    for n in graph_json.get("nodes", []):
+        if n.get("type") == "Scope":
+            sid = n["id"]
+            scope_expr = sp.simplify(mason_gain(G, src_id, sid) * X_expr)
+            sn, sd = expr_to_coeffs(scope_expr)
+            scope_tfs[sid] = {
+                "num": sn,
+                "den": sd,
+                "latex": sp.latex(scope_expr)
+            }
 
     return {
         "loop_tf":    { "num": loop_num, "den": loop_den,
@@ -124,4 +136,5 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
         "ode": ode_string,
         "ode_latex": ode_latex,
         "saturation": saturation,
+        "scopes": scope_tfs,
      }

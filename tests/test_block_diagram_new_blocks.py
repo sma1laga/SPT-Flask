@@ -51,6 +51,8 @@ def test_saturation_and_scope_block():
 
     res = compile_diagram(graph, domain="s")
     assert res["saturation"] == {"lower": -1.0, "upper": 1.0}
+    assert res["scopes"][4]["num"] == [2.0]
+    assert res["scopes"][4]["den"] == [1.0]
 
     app = create_app()
     app.config["TESTING"] = True

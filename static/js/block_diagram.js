@@ -134,6 +134,8 @@ function addNode(type, label, x = 120, y = 80) {
   if(type === "Demux") node.params.outputs = 2;
   nodes.push(node);
   drawAll();
+  return node;
+
 }
 
 /* default source & sink ------------------------------------------------ */
@@ -150,7 +152,12 @@ canvas.addEventListener("mousedown", ev => {
   const p = mouse(ev);
 
   if (ghostBlock) {
-    addNode(ghostBlock.type, ghostBlock.label, p.x - ghostBlock.w/2, p.y - ghostBlock.h/2);
+    const edgeHit = edgeAt(p.x, p.y);
+    const newNode = addNode(ghostBlock.type, ghostBlock.label,
+                            p.x - ghostBlock.w/2, p.y - ghostBlock.h/2);
+    if(edgeHit){
+      edges.push({from: edgeHit.from, to: newNode.id, sign:"+"});
+    }
     ghostBlock = null;
     drawAll();
     return;
@@ -178,7 +185,7 @@ canvas.addEventListener("mousedown", ev => {
       if (["TF","Gain","Input","PID","Mux","Demux","ZeroPole","Delay","Saturation"].includes(n.type)) {
         openEditModal(n);
       } else if (n.type === "Scope") {
-        openScopeWindow();
+        openScopeWindow(n.id);
       }
     } else {                               // single-click → select block
       selectedNode = n; selectedEdge = null;
@@ -371,7 +378,8 @@ document.getElementById("btnModalSave").onclick = () => {
 };
 
 
-let lastOutputTf = null;  // <-- up at top of file
+let lastOutputTf = null;  // overall system output TF
+let lastScopeTfs = {};    // per-scope transfer functions by node id
 let simChart = null;
 let scopeChart = null;
 
@@ -404,6 +412,8 @@ function compileDiagram(){
     if (js.saturation) {
       lastOutputTf.saturation = js.saturation;
     }
+    lastScopeTfs = js.scopes || {};
+
 
     // build new HTML
     box.innerHTML = `
@@ -857,7 +867,6 @@ document.getElementById("btnDelete").onclick =
 document.getElementById("btnSimulate").onclick = async () => {
   if (!lastOutputTf) return alert("Nothing to simulate!");
 
-  // 1) POST the most recent TF
   const resp = await fetch("/block_diagram/simulate", {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
@@ -865,11 +874,9 @@ document.getElementById("btnSimulate").onclick = async () => {
   });
   const sim = await resp.json();
 
-  // 2) Reveal and clear out old chart
   simCanvas.style.display = "block";
   if (simChart) simChart.destroy();
 
-  // 3) Draw new one and save the instance
   simChart = new Chart(simCanvas.getContext("2d"), {
     type: "line",
     data: {
@@ -889,13 +896,15 @@ document.getElementById("btnSimulate").onclick = async () => {
     }
   });
 };
-async function openScopeWindow(){
-  if (!lastOutputTf) return alert("Nothing to simulate!");
+
+async function openScopeWindow(id){
+  const tf = lastScopeTfs[id];
+  if (!tf) return alert("Compile diagram first.");
 
   const resp = await fetch("/block_diagram/simulate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(lastOutputTf)
+    body: JSON.stringify(tf)
   });
   const sim = await resp.json();
 
