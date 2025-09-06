@@ -41,4 +41,15 @@ def simulate():
     num, den = tf_json["num"], tf_json["den"]
     sys = control.TransferFunction(num, den)
     t, y = control.step_response(sys, T=np.linspace(0, 10, 500))
+
+    sat = tf_json.get("saturation")
+    if sat:
+        lower = sat.get("lower")
+        upper = sat.get("upper")
+        if lower is not None or upper is not None:
+            # np.clip handles None by treating them as -/+inf
+            lo = lower if lower is not None else -np.inf
+            hi = upper if upper is not None else np.inf
+            y = np.clip(y, lo, hi)
+
     return jsonify(time=t.tolist(), y=y.tolist())

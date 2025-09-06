@@ -17,6 +17,8 @@ import sympy as sp
 from sympy import Matrix, Poly
 import re
 import control
+import networkx as nx
+
 
 
 def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
@@ -80,10 +82,35 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
 
     ode_latex = coeffs_to_ode_str(loop_num, loop_den, domain)  # ideally wrap with proper braces
 
+    # Detect a saturation block along a path from source to sink. The
+    # scope block is linear (unity gain) so it does not influence the
+    # transfer-function but the saturation limits are required for
+    # time-domain simulation.
+    sat_node = None
+    for n in graph_json.get("nodes", []):
+        if n.get("type") == "Saturation":
+            node_id = n["id"]
+            if nx.has_path(G, src_id, node_id) and nx.has_path(G, node_id, dst_id):
+                sat_node = n
+                break
+
+    saturation = None
+    if sat_node:
+        p = sat_node.get("params", {})
+        try:
+            lower = float(p.get("lower"))
+        except (TypeError, ValueError):
+            lower = None
+        try:
+            upper = float(p.get("upper"))
+        except (TypeError, ValueError):
+            upper = None
+        saturation = {"lower": lower, "upper": upper}
+
     return {
         "loop_tf":    { "num": loop_num, "den": loop_den,
                         "latex": sp.latex(loop_tf_expr) },
-        "input_tf":   { "num": in_num,  "den": in_den,  
+        "input_tf":   { "num": in_num,  "den": in_den,
                         "latex": sp.latex(X_expr) },
         "output_tf":  { "num": out_num, "den": out_den,
                         "latex": sp.latex(Y_expr) },
@@ -95,5 +122,6 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
              "latex": ss_latex
              },
         "ode": ode_string,
-        "ode_latex": ode_latex
+        "ode_latex": ode_latex,
+        "saturation": saturation,
      }

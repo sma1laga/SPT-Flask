@@ -399,8 +399,11 @@ function compileDiagram(){
       return;
     }
 
-    // remember for simulate
-    lastOutputTf = js.output_tf;
+    // remember for simulate (include optional saturation block)
+    lastOutputTf = { num: js.output_tf.num, den: js.output_tf.den };
+    if (js.saturation) {
+      lastOutputTf.saturation = js.saturation;
+    }
 
     // build new HTML
     box.innerHTML = `
