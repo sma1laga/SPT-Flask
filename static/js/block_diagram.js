@@ -20,7 +20,20 @@ const simCanvas  = document.getElementById("simCanvas");
 const scopeWindow = document.getElementById("scopeWindow");
 const scopeCanvas = document.getElementById("scopeCanvas");
 const scopeClose  = document.getElementById("scopeClose");
-
+const scopeRun    = document.getElementById("scopeRun");
+const scopeStop   = document.getElementById("scopeStop");
+const scopeAutoscale = document.getElementById("scopeAutoscale");
+const scopeZoomIn = document.getElementById("scopeZoomIn");
+const scopeZoomOut= document.getElementById("scopeZoomOut");
+const scopePanLeft = document.getElementById("scopePanLeft");
+const scopePanRight = document.getElementById("scopePanRight");
+const scopeGrid   = document.getElementById("scopeGrid");
+const scopeLegend = document.getElementById("scopeLegend");
+const scopeHold   = document.getElementById("scopeHold");
+const cursorAButton = document.getElementById("scopeCursorA");
+const cursorBButton = document.getElementById("scopeCursorB");
+const cursorReadout = document.getElementById("cursorReadout");
+const scopeStats = document.getElementById("scopeStats");
 
 /* -----------  side selection & geometry helpers  ------------------- */
 const DIRS = {E:[1,0], W:[-1,0], N:[0,-1], S:[0,1]};
@@ -408,10 +421,18 @@ let lastOutputTf = null;  // overall system output TF
 let lastScopeTfs = {};    // per-scope transfer functions by node id
 let simChart = null;
 let scopeChart = null;
+let scopeInterval = null;
+let scopeActiveId = null;
+let holdData = null;
+let activeCursor = null;
+let cursorA = null;
+let cursorB = null;
 
 scopeClose.onclick = () => {
   scopeWindow.style.display = "none";
   if (scopeChart) scopeChart.destroy();
+  if (scopeInterval) { clearInterval(scopeInterval); scopeInterval = null; }
+
 };
 
 function compileDiagram(){
@@ -736,10 +757,12 @@ function renderLatex(node, expr) {
   const changed = newW !== node.w || newH !== node.h;
   node.w = newW;
   node.h = newH;
+  const canvasRect = canvas.getBoundingClientRect();
+
   node.latexEl.style.left =
-    canvas.offsetLeft + node.x + node.w / 2 + "px";
+    canvasRect.left + window.scrollX + node.x + node.w / 2 + "px";
   node.latexEl.style.top =
-    canvas.offsetTop + node.y + node.h / 2 + "px";
+    canvasRect.top + window.scrollY + node.y + node.h / 2 + "px";
   node.latexEl.style.display = "block";
   
   return changed;
@@ -931,41 +954,169 @@ document.getElementById("btnSimulate").onclick = async () => {
   });
 };
 
-async function openScopeWindow(id){
-  scopeWindow.style.display = "block";
+async function fetchScopeData(id){
 
   const tf = lastScopeTfs[id];
+  if (!tf) return { error: "compile" };
+  try {
+    const resp = await fetch("/block_diagram/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tf)
+    });
+    if (!resp.ok) return { error: "network" };
+    const js = await resp.json();
+    if (js.error) return { error: js.error };
+    return js;
+  } catch (e) {
+    return { error: "network" };
+  }
+}
 
-  if (!tf) {
+function updateStats(data){
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const mean = data.reduce((a,b)=>a+b,0)/data.length;
+  const rms = Math.sqrt(data.reduce((a,b)=>a+b*b,0)/data.length);
+  scopeStats.textContent = `min:${min.toFixed(3)} max:${max.toFixed(3)} mean:${mean.toFixed(3)} RMS:${rms.toFixed(3)}`;
+}
+
+function updateCursorReadout(){
+  const fmt = v => (v==null ? "\u2013" : Number(v).toFixed(3));
+  let text = `tA:${fmt(cursorA?.t)} yA:${fmt(cursorA?.y)} tB:${fmt(cursorB?.t)} yB:${fmt(cursorB?.y)}`;
+  if (cursorA && cursorB){
+    const dt = cursorB.t - cursorA.t;
+    const dy = cursorB.y - cursorA.y;
+    const slope = dy / dt;
+    text += ` \u0394t:${fmt(dt)} \u0394y:${fmt(dy)} slope:${fmt(slope)}`;
+  }
+  cursorReadout.textContent = text;
+}
+
+const cursorPlugin = {
+  id: 'cursorPlugin',
+  afterDatasetsDraw(chart){
+    const {ctx, chartArea:{top,bottom}, scales:{x}} = chart;
+    ctx.save();
+    ctx.strokeStyle = 'red';
+    if(cursorA){ const xA = x.getPixelForValue(cursorA.t); ctx.beginPath(); ctx.moveTo(xA, top); ctx.lineTo(xA, bottom); ctx.stroke(); }
+    if(cursorB){ const xB = x.getPixelForValue(cursorB.t); ctx.beginPath(); ctx.moveTo(xB, top); ctx.lineTo(xB, bottom); ctx.stroke(); }
+    ctx.restore();
+  }
+};
+
+function zoom(factor){
+  const xScale = scopeChart.options.scales.x;
+  const center = (xScale.min + xScale.max)/2;
+  const range = (xScale.max - xScale.min) * factor / 2;
+  xScale.min = center - range;
+  xScale.max = center + range;
+  scopeChart.update();
+}
+
+function pan(frac){
+  const xScale = scopeChart.options.scales.x;
+  const range = xScale.max - xScale.min;
+  xScale.min += frac * range;
+  xScale.max += frac * range;
+  scopeChart.update();
+}
+
+async function runScope(){
+  const sim = await fetchScopeData(scopeActiveId);
+  if (sim.error){
     if (scopeChart) scopeChart.destroy();
     const g = scopeCanvas.getContext("2d");
     g.clearRect(0,0,scopeCanvas.width,scopeCanvas.height);
     g.fillStyle = "#666";
     g.font = "12px sans-serif";
-    g.fillText("Compile diagram first.", 10, 20);
+    const msg = sim.error === "compile" ? "Compile diagram first." : "Simulation error";
+    g.fillText(msg, 10, 20);
     return;
   }
-  const resp = await fetch("/block_diagram/simulate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(tf)
-  });
-  const sim = await resp.json();
-
+  const datasets = [];
+  if (holdData) datasets.push({data: holdData, borderColor:'rgba(0,0,0,0.3)', borderWidth:1, fill:false, label:'prev'});
+  datasets.push({label:'y(t)', data: sim.y, borderWidth:2, fill:false});
   if (scopeChart) scopeChart.destroy();
   scopeChart = new Chart(scopeCanvas.getContext("2d"), {
-    type: "line",
-    data: {
-      labels: sim.time,
-      datasets: [{
-        data: sim.y,
-        borderWidth: 2,
-        fill: false
-      }]
-    },
-    options: { scales: { x: { display:false } }, plugins:{legend:{display:false}} }
+    type:'line',
+    data:{labels:sim.time, datasets},
+    options:{responsive:false, plugins:{legend:{display:true}}, scales:{x:{title:{display:true,text:'Time'}}, y:{title:{display:true,text:'Value'}}}},
+    plugins:[cursorPlugin]
   });
+  scopeChart.options.scales.x.min = sim.time[0];
+  scopeChart.options.scales.x.max = sim.time[sim.time.length-1];
+  scopeChart.options.scales.y.min = Math.min(...sim.y);
+  scopeChart.options.scales.y.max = Math.max(...sim.y);
+  scopeChart.update();
+  updateStats(sim.y);
+  holdData = scopeHold.classList.contains('active') ? sim.y.slice() : null;
 }
+async function openScopeWindow(id){
+  scopeActiveId = id;
+  scopeWindow.style.display = 'block';
+  if (scopeInterval){ clearInterval(scopeInterval); scopeInterval = null; }
+  cursorA = null; cursorB = null; updateCursorReadout();
+  await runScope();
+}
+
+scopeRun.onclick = () => {
+  if (!scopeActiveId) return;
+  if (!scopeInterval){
+    runScope();
+    scopeInterval = setInterval(runScope, 1000);
+  }
+};
+
+scopeStop.onclick = () => {
+  if (scopeInterval){ clearInterval(scopeInterval); scopeInterval = null; }
+};
+
+scopeAutoscale.onclick = () => {
+  if (scopeChart){
+    scopeChart.options.scales.x.min = undefined;
+    scopeChart.options.scales.x.max = undefined;
+    scopeChart.options.scales.y.min = undefined;
+    scopeChart.options.scales.y.max = undefined;
+    scopeChart.update();
+  }
+};
+
+scopeZoomIn.onclick = () => { if (scopeChart) zoom(0.5); };
+scopeZoomOut.onclick = () => { if (scopeChart) zoom(2); };
+scopePanLeft.onclick = () => { if (scopeChart) pan(-0.1); };
+scopePanRight.onclick = () => { if (scopeChart) pan(0.1); };
+scopeGrid.onclick = () => {
+  if (scopeChart){
+    const disp = !scopeChart.options.scales.x.grid.display;
+    scopeChart.options.scales.x.grid.display = disp;
+    scopeChart.options.scales.y.grid.display = disp;
+    scopeChart.update();
+  }
+};
+scopeLegend.onclick = () => {
+  if (scopeChart){
+    scopeChart.options.plugins.legend.display = !scopeChart.options.plugins.legend.display;
+    scopeChart.update();
+  }
+};
+scopeHold.onclick = () => { scopeHold.classList.toggle('active'); };
+cursorAButton.onclick = () => { activeCursor = 'A'; };
+cursorBButton.onclick = () => { activeCursor = 'B'; };
+scopeCanvas.onclick = (evt) => {
+  if (!scopeChart || !activeCursor) return;
+  const pts = scopeChart.getElementsAtEventForMode(evt, 'nearest', {intersect:false}, false);
+  if (pts.length){
+    const idx = pts[0].index;
+    const t = scopeChart.data.labels[idx];
+    const data = scopeChart.data.datasets[scopeChart.data.datasets.length-1].data;
+    const y = data[idx];
+    if (activeCursor === 'A') cursorA = {t,y}; else cursorB = {t,y};
+    updateCursorReadout();
+    scopeChart.update();
+  }
+};
+
 
 
 /* initial paint */

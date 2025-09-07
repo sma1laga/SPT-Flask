@@ -228,7 +228,25 @@
         <span>Scope</span>
         <button type="button" id="scopeClose" class="btn-close"></button>
       </div>
-      <canvas id="scopeCanvas" width="280" height="140"></canvas>
+      <div class="scope-controls">
+        <button id="scopeRun">Run</button>
+        <button id="scopeStop">Stop</button>
+        <button id="scopeAutoscale">Autoscale</button>
+        <button id="scopeZoomIn">Zoom+</button>
+        <button id="scopeZoomOut">Zoom-</button>
+        <button id="scopePanLeft">&#9664;</button>
+        <button id="scopePanRight">&#9654;</button>
+        <button id="scopeGrid">Grid</button>
+        <button id="scopeLegend">Legend</button>
+        <button id="scopeHold">Hold</button>
+        <button id="scopeCursorA">Cursor A</button>
+        <button id="scopeCursorB">Cursor B</button>
+      </div>
+      <canvas id="scopeCanvas" width="400" height="200"></canvas>
+      <div class="scope-readouts">
+        <div id="cursorReadout"></div>
+        <div id="scopeStats"></div>
+      </div>
     </div>
   </div> <!-- /.workspace -->
 </div> <!-- /#diagramArea -->

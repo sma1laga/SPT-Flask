@@ -45,6 +45,8 @@ body.dark-mode .latexNode { color:#000; }
 
 .workspace {
   flex: 1;
+  position: relative; /* allow absolutely positioned scope window */
+
 }
 
 .block-palette {
@@ -106,9 +108,9 @@ body.dark-mode .block-palette li:hover {
 
 .scope-window {
   position:absolute;
-  top:40px;
-  left:40px;
-  width:300px;
+  top:10px;
+  left:10px;
+  width:420px;
   background:#fff;
   border:1px solid #ccc;
   box-shadow:0 2px 6px rgba(0,0,0,.2);
@@ -122,6 +124,18 @@ body.dark-mode .block-palette li:hover {
   background:#eee;
   padding:2px 6px;
   margin-bottom:4px;
+}
+
+.scope-controls {
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-bottom:4px;
+}
+
+.scope-readouts {
+  font:12px monospace;
+  margin-top:4px;
 }
 body.dark-mode .scope-window {background:#1f1f1f; border-color:#444;}
 body.dark-mode .scope-header {background:#333;}
