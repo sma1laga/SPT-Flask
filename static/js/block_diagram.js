@@ -169,21 +169,28 @@ canvas.addEventListener("mousedown", ev => {
   /* connect mode */
   if (connectMode) {
     if (!connectFrom && !connectEdge) {
-      if (eHit) { connectEdge = eHit; return; }
+      if (eHit) { connectEdge = { edge: eHit, x: p.x, y: p.y }; return; }
       if (n)   { connectFrom = n; return; }
       return;
     }
     if (connectEdge) {
       if (n && n.type === "Scope") {
-        edges.push({ from: connectEdge.from, to: n.id, sign: connectEdge.sign });
+        edges.push({ from: connectEdge.edge.from, to: n.id,
+                     sign: connectEdge.edge.sign,
+                     tap: { x: connectEdge.x, y: connectEdge.y } });
         drawAll();
       }
       connectEdge = null;
       return;
     }
     if (connectFrom) {
-      if (n && n !== connectFrom)
+      if (n && n !== connectFrom) {
         edges.push({ from: connectFrom.id, to: n.id, sign: "+" });
+      } else if (eHit && connectFrom.type === "Scope") {
+        edges.push({ from: eHit.from, to: connectFrom.id,
+                     sign: eHit.sign,
+                     tap: { x: p.x, y: p.y } });
+      }
       connectFrom = null;
       drawAll();
       return;
@@ -195,8 +202,7 @@ canvas.addEventListener("mousedown", ev => {
     if (ev.detail === 2) {                  // double-click
       if (["TF","Gain","Input","PID","Mux","Demux","ZeroPole","Delay","Saturation"].includes(n.type)) {
         openEditModal(n);
-      } else if (n.type === "Scope") {
-        openScopeWindow(n.id);
+
       }
     } else {                               // single-click → select block
       selectedNode = n; selectedEdge = null;
@@ -212,25 +218,33 @@ canvas.addEventListener("mousedown", ev => {
 
 });
 
-canvas.addEventListener("dblclick", ev=>{
-  const {x, y} = mouse(ev);
-  const hit = edges.find(e=>{
-    const a = nodes.find(n=>n.id===e.from);
-    const b = nodes.find(n=>n.id===e.to);
-    if(!a||!b)return false;
+canvas.addEventListener("dblclick", ev => {
+  const { x, y } = mouse(ev);
+  const n = nodeAt(x, y);
+  if (n && n.type === "Scope") {
+    openScopeWindow(n.id);
+    return;
+  }
+  const hit = edges.find(e => {
+    const a = nodes.find(n => n.id === e.from);
+    const b = nodes.find(n => n.id === e.to);
+    if (!a || !b) return false;
     const ac = { x: a.x + a.w/2, y: a.y + a.h/2 };
     const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
-    const face = autoSides(ac.x, ac.y, bc.x, bc.y);
-    if (a.type === "Mux"  || a.type === "Demux") face.out = "E";
-    if (b.type === "Mux"  || b.type === "Demux") face.inn = "W";
-    const from = portPos(a, face.out, e, true);
-    const  to  = portPos(b, face.inn, e, false);
-    const minX=Math.min(from.x,to.x), maxX=Math.max(from.x,to.x);
-    const minY=Math.min(from.y,to.y)-4, maxY=Math.max(from.y,to.y)+4;
-    return x>=minX&&x<=maxX&&y>=minY&&y<=maxY;
+    const start = e.tap || ac;
+    const face = autoSides(start.x, start.y, bc.x, bc.y);
+    if (!e.tap && (a.type === "Mux" || a.type === "Demux")) face.out = "E";
+    if (b.type === "Mux" || b.type === "Demux") face.inn = "W";
+    const from = e.tap || portPos(a, face.out, e, true);
+    const to = portPos(b, face.inn, e, false);
+    const minX = Math.min(from.x, to.x), maxX = Math.max(from.x, to.x);
+    const minY = Math.min(from.y, to.y) - 4, maxY = Math.max(from.y, to.y) + 4;
+    return x >= minX && x <= maxX && y >= minY && y <= maxY;
   });
-  if(hit){ hit.sign = hit.sign==="+"? "–" : "+"; drawAll(); }
-});
+  if (hit) {
+    hit.sign = hit.sign === "+" ? "–" : "+";
+    drawAll();
+  }});
 
 
 canvas.addEventListener("mousemove", ev => {
@@ -259,10 +273,11 @@ function edgeAt(x, y) {
     if (!a || !b) return false;
     const ac = { x: a.x + a.w/2, y: a.y + a.h/2 };
     const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
-    const face = autoSides(ac.x, ac.y, bc.x, bc.y);
-    if (a.type === "Mux"  || a.type === "Demux") face.out = "E";
+    const start = e.tap || ac;
+    const face = autoSides(start.x, start.y, bc.x, bc.y);
+    if (!e.tap && (a.type === "Mux"  || a.type === "Demux")) face.out = "E";
     if (b.type === "Mux"  || b.type === "Demux") face.inn = "W";
-    const from = portPos(a, face.out, e, true);
+    const from = e.tap || portPos(a, face.out, e, true);
     const  to  = portPos(b, face.inn, e, false);
     const ax = from.x, ay = from.y, bx = to.x, by = to.y;
     const minX = Math.min(ax, bx) - 4, maxX = Math.max(ax, bx) + 4;
@@ -813,11 +828,12 @@ function drawOrthEdge(ctx, e){
   const bc = { x: b.x + b.w/2, y: b.y + b.h/2 };
 
   /* faces decided fresh every frame – enforce mux/demux orientation ---- */
-  const face = autoSides(ac.x, ac.y, bc.x, bc.y);
+  const start = e.tap || ac;
+  const face = autoSides(start.x, start.y, bc.x, bc.y);
 
-  if (a.type === "Mux"  || a.type === "Demux") face.out = "E";
+  if (!e.tap && (a.type === "Mux"  || a.type === "Demux")) face.out = "E";
   if (b.type === "Mux"  || b.type === "Demux") face.inn = "W";
-  const from = portPos(a, face.out, e, true);
+  const from = e.tap || portPos(a, face.out, e, true);
   const  to  = portPos(b, face.inn, e, false);
 
   const pts  = smartRoute(from, to, face.out, face.inn);
@@ -826,6 +842,13 @@ function drawOrthEdge(ctx, e){
   ctx.moveTo(pts[0].x, pts[0].y);
   for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
   ctx.stroke();
+
+  if (e.tap) {
+    ctx.beginPath();
+    ctx.arc(e.tap.x, e.tap.y, 3, 0, 2*Math.PI);
+    ctx.fill();
+  }
+
 
   /* arrow-head on final leg */
   const n = pts.length;
@@ -909,9 +932,19 @@ document.getElementById("btnSimulate").onclick = async () => {
 };
 
 async function openScopeWindow(id){
-  const tf = lastScopeTfs[id];
-  if (!tf) return alert("Compile diagram first.");
+  scopeWindow.style.display = "block";
 
+  const tf = lastScopeTfs[id];
+
+  if (!tf) {
+    if (scopeChart) scopeChart.destroy();
+    const g = scopeCanvas.getContext("2d");
+    g.clearRect(0,0,scopeCanvas.width,scopeCanvas.height);
+    g.fillStyle = "#666";
+    g.font = "12px sans-serif";
+    g.fillText("Compile diagram first.", 10, 20);
+    return;
+  }
   const resp = await fetch("/block_diagram/simulate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -919,7 +952,6 @@ async function openScopeWindow(id){
   });
   const sim = await resp.json();
 
-  scopeWindow.style.display = "block";
   if (scopeChart) scopeChart.destroy();
   scopeChart = new Chart(scopeCanvas.getContext("2d"), {
     type: "line",
