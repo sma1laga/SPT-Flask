@@ -957,15 +957,19 @@ document.getElementById("btnSimulate").onclick = async () => {
 async function fetchScopeData(id){
 
   const tf = lastScopeTfs[id];
-  if (!tf) return { error: "compile" };
+  if (!tf){
+    return Object.keys(lastScopeTfs).length ?
+      { error: "unconnected" } : { error: "compile" };
+  }
   try {
     const resp = await fetch("/block_diagram/simulate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(tf)
     });
-    if (!resp.ok) return { error: "network" };
-    const js = await resp.json();
+    let js = {};
+    try { js = await resp.json(); } catch (e) {}
+    if (!resp.ok) return { error: js.error || "network" };
     if (js.error) return { error: js.error };
     return js;
   } catch (e) {
@@ -1030,7 +1034,13 @@ async function runScope(){
     g.clearRect(0,0,scopeCanvas.width,scopeCanvas.height);
     g.fillStyle = "#666";
     g.font = "12px sans-serif";
-    const msg = sim.error === "compile" ? "Compile diagram first." : "Simulation error";
+    let msg;
+    switch(sim.error){
+      case "compile": msg = "Compile diagram first."; break;
+      case "unconnected": msg = "Scope not connected."; break;
+      case "network": msg = "Simulation error"; break;
+      default: msg = sim.error;
+    }
     g.fillText(msg, 10, 20);
     return;
   }

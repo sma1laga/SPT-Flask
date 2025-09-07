@@ -111,6 +111,11 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
     for n in graph_json.get("nodes", []):
         if n.get("type") == "Scope":
             sid = n["id"]
+            # Only include scopes that are connected to the source node.
+            # An unconnected scope would otherwise attempt simulation and
+            # trigger confusing errors on the client.
+            if not nx.has_path(G, src_id, sid):
+                continue
             scope_expr = sp.simplify(mason_gain(G, src_id, sid) * X_expr)
             sn, sd = expr_to_coeffs(scope_expr)
             scope_tfs[sid] = {

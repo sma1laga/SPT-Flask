@@ -41,8 +41,10 @@ def simulate():
     tf_json = request.get_json()
     num, den = tf_json["num"], tf_json["den"]
     T = np.linspace(0, 10, 500)
-    sys, t, y = simulate_tf(num, den, T)
-
+    try:
+        sys, t, y = simulate_tf(num, den, T)
+    except Exception as exc:
+        return jsonify({"error": f"simulation failed: {exc}"}), 400
     sat = tf_json.get("saturation")
     if sat:
         lower = sat.get("lower")
@@ -65,11 +67,17 @@ def simulate():
 
     scopes_data = {}
     for sid, tf in tf_json.get("scopes", {}).items():
-        ssys, st, sy = simulate_tf(tf["num"], tf["den"], T)
+        try:
+            ssys, st, sy = simulate_tf(tf["num"], tf["den"], T)
+        except Exception as exc:
+            scopes_data[str(sid)] = {"error": f"simulation failed: {exc}"}
+            continue
         if np.isnan(sy).any():
+            scopes_data[str(sid)] = {"error": "NaN detected—check TF or input"}
             continue
         st, sy = decimate(st, sy)
         scopes_data[str(sid)] = {
+            "time": st.tolist(),
             "y": sy.tolist(),
             "stats": quick_stats(sy),
             "metrics": control_metrics(ssys),
