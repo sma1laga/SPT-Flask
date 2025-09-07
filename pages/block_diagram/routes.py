@@ -5,8 +5,9 @@ GET  /block_diagram/          → HTML page with the canvas
 POST /block_diagram/compile   → JSON API: graph-in, TF/SS/ODE-out
 """
 from flask import render_template, request, jsonify, current_app
-from . import block_diagram_bp as bp 
+from . import block_diagram_bp as bp
 from .services import compile_diagram
+from .scope import decimate, quick_stats, control_metrics, simulate_tf
 import control
 import numpy as np
 from pathlib import Path
@@ -39,17 +40,42 @@ def compile_diagram_api():
 def simulate():
     tf_json = request.get_json()
     num, den = tf_json["num"], tf_json["den"]
-    sys = control.TransferFunction(num, den)
-    t, y = control.step_response(sys, T=np.linspace(0, 10, 500))
+    T = np.linspace(0, 10, 500)
+    sys, t, y = simulate_tf(num, den, T)
 
     sat = tf_json.get("saturation")
     if sat:
         lower = sat.get("lower")
         upper = sat.get("upper")
         if lower is not None or upper is not None:
-            # np.clip handles None by treating them as -/+inf
             lo = lower if lower is not None else -np.inf
             hi = upper if upper is not None else np.inf
             y = np.clip(y, lo, hi)
 
-    return jsonify(time=t.tolist(), y=y.tolist())
+    if np.isnan(y).any():
+        return jsonify({"error": "NaN detected—check TF or input"}), 400
+
+    t, y = decimate(t, y)
+    result = {
+        "time": t.tolist(),
+        "y": y.tolist(),
+        "stats": quick_stats(y),
+        "metrics": control_metrics(sys),
+    }
+
+    scopes_data = {}
+    for sid, tf in tf_json.get("scopes", {}).items():
+        ssys, st, sy = simulate_tf(tf["num"], tf["den"], T)
+        if np.isnan(sy).any():
+            continue
+        st, sy = decimate(st, sy)
+        scopes_data[str(sid)] = {
+            "y": sy.tolist(),
+            "stats": quick_stats(sy),
+            "metrics": control_metrics(ssys),
+        }
+
+    if scopes_data:
+        result["scopes"] = scopes_data
+
+    return jsonify(result)
