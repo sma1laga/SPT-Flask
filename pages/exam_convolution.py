@@ -4,8 +4,12 @@ import numpy as np
 import io, base64
 import matplotlib
 matplotlib.use("Agg")
+from matplotlib.ticker import MultipleLocator
+from matplotlib import rcParams
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
+
+DELTA_EPS = 1e-2
 
 exam_convolution_bp = Blueprint("exam_convolution", __name__)
 
@@ -19,7 +23,6 @@ def start_exam():
     problems = []
     for _ in range(10):
         problems.append(create_problem_params())
-
     session["exam_convolution_data"] = {
         "start_time": time.time(),
         "problems": problems
@@ -66,154 +69,211 @@ def exam_convolution():
 
     else:
         # POST => user finalizing answers
-        exam_data = session.get("exam_convolution_data")
-        if not exam_data:
-            return "No exam found in session. Please start again."
+        try:
+            exam_data = session.get("exam_convolution_data")
+            if not exam_data:
+                return "No exam found in session. Please start again."
 
-        # read user answers
-        user_answers = []
-        for i in range(10):
-            ans_str = request.form.get(f"answer_{i}")
-            if ans_str is None:
-                user_answers.append(None)
-            else:
-                user_answers.append(int(ans_str))
+            # read user answers
+            user_answers = []
+            for i in range(10):
+                ans_str = request.form.get(f"answer_{i}")
+                if ans_str is None:
+                    user_answers.append(None)
+                else:
+                    user_answers.append(int(ans_str))
 
-        correct_count = 0
-        for i in range(10):
-            problem = exam_data["problems"][i]
-            correct_idx = problem.get("correctIndex")
-            if correct_idx is None:
-                return f"Error: problem {i} has no correctIndex key!"
-            if user_answers[i] == correct_idx:
-                correct_count += 1
+            correct_count = 0
+            for i in range(10):
+                problem = exam_data["problems"][i]
+                correct_idx = problem.get("correctIndex")
+                if correct_idx is None:
+                    return f"Error: problem {i} has no correctIndex key!"
+                if user_answers[i] == correct_idx:
+                    correct_count += 1
 
-        accuracy = correct_count / 10.0
-        start_time = exam_data["start_time"]
-        end_time = time.time()
-        total_time = end_time - start_time
+            accuracy = correct_count / 10.0
+            start_time = exam_data["start_time"]
+            end_time = time.time()
+            total_time = end_time - start_time
 
-        # simple formula => 70% accuracy, 30% time factor
-        base_accuracy_score = accuracy * 70
-        time_factor = max(0, 1 - (total_time - 60)/300)
-        time_score = time_factor * 30
-        final_score = base_accuracy_score + time_score
-        final_score = max(0, min(final_score, 100))
+            # simple formula => 70% accuracy, 30% time factor
+            base_accuracy_score = accuracy * 70
+            # under 7.5min for full time score, no time score after 20min
+            time_factor = np.clip(1 - (total_time - 60*7.5)/(60*12.5), 0, 1)
+            time_score = time_factor * 30
+            final_score = base_accuracy_score + time_score
+            final_score = np.clip(final_score, 0, 100)
 
-        # We'll build a results_for_template so we can show each problem figure again,
-        # now color-coded for correctIndex vs userIndex
-        results_for_template = []
-        for i in range(10):
-            problem = exam_data["problems"][i]
-            correct_idx = problem["correctIndex"]
-            user_idx = user_answers[i]
+            # We'll build a results_for_template so we can show each problem figure again,
+            # now color-coded for correctIndex vs userIndex
+            results_for_template = []
+            for i in range(10):
+                problem = exam_data["problems"][i]
+                correct_idx = problem["correctIndex"]
+                user_idx = user_answers[i]
 
-            # re-generate the figure, highlight the correct option in green,
-            # and if user_idx != correct_idx, highlight user_idx in red
-            # if user_idx == correct_idx => highlight both in green
-            base64_result_img = generate_problem_plot(problem, highlight_index=user_idx, correct_index=correct_idx)
+                # re-generate the figure, highlight the correct option in green,
+                # and if user_idx != correct_idx, highlight user_idx in red
+                # if user_idx == correct_idx => highlight both in green
+                base64_result_img = generate_problem_plot(problem, highlight_index=user_idx)
 
-            results_for_template.append({
-                "index": i,
-                "userIndex": user_idx,
-                "correctIndex": correct_idx,
-                "img_data": base64_result_img
-            })
+                results_for_template.append({
+                    "index": i,
+                    "userIndex": user_idx,
+                    "correctIndex": correct_idx,
+                    "img_data": base64_result_img
+                })
 
-        # remove from session => done
-        session.pop("exam_convolution_data", None)
+            # remove from session => done
+            session.pop("exam_convolution_data", None)
 
-        return render_template("exam_convolution_result.html",
-                               accuracy=round(accuracy*100,1),
-                               correct_count=correct_count,
-                               total_time=round(total_time,1),
-                               final_score=round(final_score,1),
-                               results=results_for_template)
+            return render_template("exam_convolution_result.html",
+                                accuracy=round(accuracy*100,1),
+                                correct_count=correct_count,
+                                total_time=round(total_time,1),
+                                final_score=round(final_score,1),
+                                results=results_for_template)
+        except Exception as e:
+            print(e)
+            return render_template("exam_convolution.html",
+                                   started=False,
+                                   error_message="An error occurred while processing your exam. Please try again.")
+
+# function definitions
+def tri(t):
+    return np.maximum(1 - np.abs(t), 0)
+def step(t):
+    return np.where(t >= 0, 1, 0)
+def rect(t):
+    """rect(t/2)"""
+    return np.where(np.abs(t) < 1, 1, 0)
+def delta(t):
+    return 1/(np.sqrt(np.pi)*DELTA_EPS) * np.exp(-(t/DELTA_EPS)**2)
+
+_func_dict = {"tri(t)": tri, "step(t)": step, "rect(t)": rect, "delta(t)": delta}
+shift_min, shift_max = -1, 1
+scale_min, scale_max = -2, 2
+width_min, width_max = 0.5, 1.5
 
 def create_problem_params():
     """Random seeds for two signals. correctIndex=None initially."""
-    def tri(t):
-        return np.maximum(1 - np.abs(t),0)
-    def step(t):
-        return np.where(t>=0,1,0)
-    def rect(t):
-        return np.where(np.abs(t)<0.5,1,0)
-    def delta(t):
-        d=np.zeros_like(t)
-        idx=np.argmin(np.abs(t))
-        d[idx]=1
-        return d
+    # choose functions
+    chosen = random.choices(list(_func_dict.keys()), k=2)
+    if all("delta" in name for name in chosen):
+        fnames = list(_func_dict.keys())
+        chosen[random.randint(0,1)] = random.choice([n for n in fnames if "delta" not in n])
+    # choose additional function parameters
+    shift_choices = np.arange(shift_min, shift_max + 0.1, 0.5).tolist()
+    scale_choices = np.arange(scale_min, scale_max + 0.1, 0.5).tolist()
+    scale_choices.remove(0)  # avoid zero scale
+    width_choices = np.arange(width_min, width_max + 0.1, 0.5).tolist()
+    shift1 = float(random.choice(shift_choices))
+    scale1 = float(random.choice(scale_choices))
+    width1 = float(random.choice(width_choices))
+    if "delta" in chosen[0]:  # delta function should not be stretched
+        width1 = 1.0
 
-    func_dict = {"tri(t)": tri,"step(t)": step,"rect(t)": rect,"delta(t)": delta}
-
-    chosen = random.sample(list(func_dict.keys()),2)
-    shift1 = float(random.choice(np.arange(-2,2.5,0.5)))
-    scale1 = float(random.choice(np.arange(0.5,2.1,0.5)))
-    shift2 = float(random.choice(np.arange(-2,2.5,0.5)))
-    scale2 = float(random.choice(np.arange(0.5,2.1,0.5)))
+    if np.abs(scale1*2) % 2: # avoid double 0.5 scale
+        scale_choices = np.arange(scale_min, scale_max + 0.1, 1).tolist()
+        scale_choices.remove(0)
+    shift2 = float(random.choice(shift_choices))
+    scale2 = float(random.choice(scale_choices))
+    width2 = float(random.choice(width_choices))
+    if "delta" in chosen[1]:  # delta function should not be stretched
+        width2 = 1.0
 
     return {
         "func1_name": chosen[0],
         "func2_name": chosen[1],
         "shift1": shift1,
         "scale1": scale1,
+        "width1": width1,
         "shift2": shift2,
         "scale2": scale2,
+        "width2": width2,
         "correctIndex": None
     }
 
-def generate_problem_plot(problem, highlight_index=None, correct_index=None):
+def generate_problem_plot(problem, highlight_index=None):
     """
     Evaluate f1,f2 => correct_conv + 3 distractors => 6-subplot figure => base64
     Sets problem["correctIndex"] if not set. 
-    highlight_index: userIndex (0..3 or None). 
-    correct_index: if provided, we'll color that subplot green. 
-      If highlight_index != correct_index, highlight userIndex in red.
+    highlight_index: userIndex (0..3 or None).
 
+    If highlight_index != correct_index, highlight userIndex in red.
     If highlight_index is None => normal exam question (no color-coded highlight).
     If highlight_index is not None => final results page => color-coded subplots.
     """
-    def tri(t):
-        return np.maximum(1 - np.abs(t),0)
-    def step(t):
-        return np.where(t>=0,1,0)
-    def rect(t):
-        return np.where(np.abs(t)<0.5,1,0)
-    def delta(t):
-        d=np.zeros_like(t)
-        idx=np.argmin(np.abs(t))
-        d[idx]=1
-        return d
-
-    func_dict = {"tri(t)": tri,"step(t)": step,"rect(t)": rect,"delta(t)": delta}
-
     f1_name = problem["func1_name"]
     f2_name = problem["func2_name"]
     shift1  = problem["shift1"]
     scale1  = problem["scale1"]
+    width1  = problem["width1"]
     shift2  = problem["shift2"]
     scale2  = problem["scale2"]
+    width2  = problem["width2"]
+    func1 = _func_dict[f1_name]
+    func2 = _func_dict[f2_name]
+    tmax = 10 # calculation time span
+    p_per_timestep = 128 # should be power of 2, <128 can lead to scaling errors for delta!
+    t = np.linspace(-tmax, tmax, 2*tmax*p_per_timestep+1)
+    dt = t[1] - t[0]
 
-    t = np.linspace(-5,5,200)
-    dt = t[1]-t[0]
+    def conv_cont(f1, f2, t_diff):
+        """
+        Continuous convolution of two functions with constant time span between samples.
+        """
+        return convolve(f1, f2, mode='same') * t_diff
 
-    def convme(a,b):
-        return convolve(a,b, mode='same')
+    f1 = scale1 * func1((t - shift1) / width1)
+    f2 = scale2 * func2((t - shift2) / width2)
+    correct_conv = conv_cont(f1, f2, dt)
 
-    y1 = scale1*func_dict[f1_name](t - shift1)
-    y2 = scale2*func_dict[f2_name](t - shift2)
-    correct_conv = convme(y1,y2)
+    # Distractors (make sure, correct solution appears only once and no mathematically duplicate options are created)
+    non_stretchable = ["delta(t)", "step(t)"]
+    shift_choices = np.arange(shift_min, shift_max + 0.1, 0.5).tolist()
+    scale_choices = np.arange(scale_min, scale_max + 0.1, 0.5).tolist()
+    scale_choices.remove(0)  # avoid zero scale
+    if np.abs(scale1*2) % 2: # avoid double 0.5 scale
+        scale_choices = np.arange(scale_min, scale_max + 0.1, 1).tolist()
+        scale_choices.remove(0)
+    width_choices = np.arange(width_min, width_max + 0.1, 0.5).tolist()
+    # 1) Modify width1
+    if f1_name not in non_stretchable:
+        width1_remaining = [w for w in width_choices if w != width1]
+        new_width1 = random.choice(width1_remaining)
+        f1_d1 = scale1 * func1((t - shift1) / new_width1)
+        dconv1 = conv_cont(f1_d1, f2, dt)
+    elif f2_name not in non_stretchable:
+        width2_remaining = [w for w in width_choices if w != width2]
+        new_width2 = random.choice(width2_remaining)
+        f2_d1 = scale2 * func2((t - shift2) / new_width2)
+        dconv1 = conv_cont(f1, f2_d1, dt)
+    else: # modify shift1 if both not stretchable
+        shift1_remaining = [s for s in shift_choices if s != shift1]
+        new_shift1 = random.choice(shift1_remaining)
+        f1_d1 = scale1 * func1((t - new_shift1) / width1)
+        dconv1 = conv_cont(f1_d1, f2, dt)
 
-    # distractors
-    y1d1 = (scale1 + random.choice([-0.5,0.5]))*func_dict[f1_name](t - shift1)
-    dconv1= convme(y1d1, y2)
-    y2d2 = (scale2 + random.choice([-0.5,0.5]))*func_dict[f2_name](t - shift2)
-    dconv2= convme(y1, y2d2)
-    y1d3 = (scale1 + random.choice([-0.5,0.5]))*func_dict[f1_name](t - shift1)
-    y2d3 = (scale2 + random.choice([-0.5,0.5]))*func_dict[f2_name](t - shift2)
-    dconv3= convme(y1d3,y2d3)
+    # 2) Modify scale2
+    scale2_remaining = [s for s in scale_choices if s != scale2]
+    new_scale2 = random.choice(scale2_remaining)
+    f2_d2 = new_scale2 * func2((t - shift2) / width2)
+    dconv2 = conv_cont(f1, f2_d2, dt)
 
-    options = [correct_conv, dconv1, dconv2, dconv3]
+    # 3) Modify shift1 if possible else scale2
+    if not all(func in non_stretchable for func in [f1_name, f2_name]):
+        shift1_remaining = [s for s in shift_choices if s != shift1]
+        new_shift1 = random.choice(shift1_remaining)
+        f1_d3 = scale1 * func1((t - new_shift1) / width1)
+        dconv3 = conv_cont(f1_d3, f2, dt)
+    else:
+        scale2_remaining = [s for s in scale2_remaining if s != new_scale2]
+        new_scale2 = random.choice(scale2_remaining)
+        f2_d3 = new_scale2 * func2((t - shift2) / width2)
+        dconv3 = conv_cont(f1, f2_d3, dt)
+
     idxs = list(range(4))
     random.shuffle(idxs)
 
@@ -223,82 +283,96 @@ def generate_problem_plot(problem, highlight_index=None, correct_index=None):
         problem["correctIndex"] = c_idx
     else:
         c_idx = problem["correctIndex"]
-
-    # we now know c_idx is the correct index
-    # place the correct conv in that c_idx, etc.
-    # but to show the same random shuffle each time, we do:
-    #  actually let's do the same shuffle each time by seeding:
-    # or simpler approach => we'll do a smaller random again, but
-    # typically you'd store the shuffle in problem as well.
-    # We'll just re-shuffle so that the correctIndex is c_idx => do a partial approach:
-
-    # We'll build a new 'shuffled' array where the correct conv is at c_idx
-    # and the others fill the remaining slots
     
-    new_options = [None,None,None,None]
-    new_options[c_idx] = correct_conv
-    distracts = [dconv1, dconv2, dconv3]
-    d_i = 0
-    for j in range(4):
-        if new_options[j] is None:
-            new_options[j] = distracts[d_i]
-            d_i+=1
-    all_opt_vals = np.concatenate(new_options)
-    y_min, y_max = all_opt_vals.min(), all_opt_vals.max()
-    pad = 0.05 * (y_max - y_min if y_max != y_min else 1.0)
-    y_min -= pad
-    y_max += pad
+    options = [correct_conv, dconv1, dconv2, dconv3]
+    options_shuffled = [options[i] for i in idxs]
+
+    # Debugging code in case of duplicate options:
+    # if any(np.allclose(options_shuffled[i], options_shuffled[j]) for i in range(4) for j in range(i+1,4)):
+    #     print("Warning: duplicate options detected!")
+    #     print(f"f1: {f1_name}, shift1: {shift1}, scale1: {scale1}, width1: {width1}")
+    #     print(f"f2: {f2_name}, shift2: {shift2}, scale2: {scale2}, width2: {width2}")
+    #     for i in range(4):
+    #         for j in range(i+1,4):
+    #             if np.allclose(options_shuffled[i], options_shuffled[j]):
+    #                 print(f"Options {i} and {j} are duplicates.")
+    #                 # print(f"Indices: {idxs[i]}, {idxs[j]}")
+    #                 print(shift_choices)
+    #                 print(shift1_remaining)
+    #                 print(new_shift1)
     
     # Now create the figure
+    rcParams['text.parse_math'] = True
+    rcParams['text.usetex'] = True
+    
     fig = plt.figure(figsize=(8,8))
-    gs = fig.add_gridspec(nrows=3,ncols=2,hspace=0.5,wspace=0.3)
+    gs = fig.add_gridspec(nrows=3, ncols=2, hspace=0.5, wspace=0.3)
 
     # top row => f1, f2
     axf1 = fig.add_subplot(gs[0,0])
     axf2 = fig.add_subplot(gs[0,1])
-    axf1.plot(t,y1, color="blue")
-    axf2.plot(t,y2, color="green")
-    axf1.set_title(f"Input1: {f1_name}\nshift={shift1},scale={scale1}")
-    axf2.set_title(f"Input2: {f2_name}\nshift={shift2},scale={scale2}")
-    axf1.grid(True)
-    axf2.grid(True)
-    axf1.set_xlim(t[0],t[-1])
-    axf2.set_xlim(t[0],t[-1])
+    axf1.set_title("$x(t)$")
+    axf2.set_title("$h(t)$")
+    corr_fac = np.sqrt(np.pi) * DELTA_EPS
+    if "delta" in f1_name: # correct delta scaling (calculation with narrow Gaussian)
+        f1 *= corr_fac
+    if "delta" in f2_name:
+        f2 *= corr_fac
+    axf1.plot(t, f1, color="blue", lw=2, zorder=3)
+    axf2.plot(t, f2, color="green", lw=2, zorder=3)
 
-    # bottom => 4 subplots
-    ax_o1 = fig.add_subplot(gs[1,0])
-    ax_o2 = fig.add_subplot(gs[1,1])
-    ax_o3 = fig.add_subplot(gs[2,0])
-    ax_o4 = fig.add_subplot(gs[2,1])
-    option_axes = [ax_o1, ax_o2, ax_o3, ax_o4]
+    # bottom 4 subplots
+    for i in range(4):
+        if highlight_index is not None: # highlight logic if highlight_index != None
+            if i == highlight_index: # option picked by user
+                if i == c_idx: # correct
+                    color = "green"
+                    lw = 3.0
+                else: # incorrect
+                    color = "red"
+                    lw = 3.0
+            elif i == c_idx: # user did not pick correct option
+                color = "red"
+                lw = 2
+            else: # user did not pick incorrect option
+                color = "green"
+                lw = 2
+        else: # appearance during exam
+            color="black"
+            lw = 2
+        
+        row, col = 1 + i // 2, i % 2
+        ax = fig.add_subplot(gs[row, col])
+        ax.set_title(f"$y_{i+1}(t)$")
+        ax.plot(t, options_shuffled[i], color=color, lw=lw, zorder=3)
 
-    # highlight logic if highlight_index != None
-    for i, ax in enumerate(option_axes):
-        color = "red"
-        lw = 1.5
-        if highlight_index is not None and i == highlight_index and i == c_idx:
-            # user picked i, which is correct => let's do green
-            color = "green"
-            lw=3.0
-        elif highlight_index is not None and i == highlight_index and i != c_idx:
-            # user picked i incorrectly => red
-            color = "red"
-            lw=3.0
-        elif highlight_index is not None and i == c_idx:
-            # correct index is i, user didn't pick it => green
-            color = "green"
-            lw=2.5
+    # settings for all axes
+    xlim = 5.5
+    xlim_mask = np.abs(t) <= xlim
+    for i, ax in enumerate(fig.get_axes()):
+        ax.set_xlabel("$t$")
+        ax.axhline(0, color='dimgray', zorder=2)
+        ax.axvline(0, color='dimgray', zorder=2)
+        ax.set_xlim(-xlim, xlim)
+        # select ylim only based on values in t = -xlim...xlim
+        ydata_visible = ax.get_lines()[0].get_ydata()[xlim_mask]
+        y_abs_max = np.abs(ydata_visible).max()
+        y_span = ydata_visible.max() - ydata_visible.min()
+        if y_abs_max <= 2.1: # plot symmetric y range
+            ylim_abs = max(y_abs_max * 1.1, 1.1)
+            ax.set_ylim(-ylim_abs, ylim_abs)
         else:
-            color="gray"
-            lw=1.5
-
-        ax.plot(t,new_options[i], color=color, linewidth=lw)
-        ax.set_title(f"Option {i+1}")
-        ax.grid(True)
-        ax.set_xlim(t[0], t[-1])
-        ax.set_ylim(y_min, y_max)
-
-    fig.tight_layout()
+            ax.set_ylim(ydata_visible.min() - 0.05 * y_span, ydata_visible.max() + 0.05 * y_span)
+        ax.xaxis.set_major_locator(MultipleLocator(1))
+        ax.xaxis.set_minor_locator(MultipleLocator(0.5))
+        if y_span <= 8:
+            ax.yaxis.set_major_locator(MultipleLocator(1))
+            ax.yaxis.set_minor_locator(MultipleLocator(0.5))
+        else:
+            ax.yaxis.set_major_locator(MultipleLocator(5))
+            ax.yaxis.set_minor_locator(MultipleLocator(1))
+        ax.grid(which='both', zorder=0)
+    
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)

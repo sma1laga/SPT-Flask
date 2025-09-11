@@ -17,11 +17,11 @@
       <img src="data:image/png;base64,{{ item.img_data }}" alt="Problem {{ item.index+1 }}">
 
       <!-- We'll have 4 radio buttons for each question -->
-      <p>Select your answer:</p>
-      <label><input type="radio" name="answer_{{ item.index }}" value="0"> Option 1</label><br>
-      <label><input type="radio" name="answer_{{ item.index }}" value="1"> Option 2</label><br>
-      <label><input type="radio" name="answer_{{ item.index }}" value="2"> Option 3</label><br>
-      <label><input type="radio" name="answer_{{ item.index }}" value="3"> Option 4</label><br>
+      <p>Select your answer:</p><!-- add small margin before label text -->
+      <label style="display:inline-block; margin-right:10px;"><input type="radio" name="answer_{{ item.index }}" value="0"> \(y_1(t)\) </label>
+      <label style="display:inline-block; margin-right:10px;"><input type="radio" name="answer_{{ item.index }}" value="1"> \(y_2(t)\) </label>
+      <label style="display:inline-block; margin-right:10px;"><input type="radio" name="answer_{{ item.index }}" value="2"> \(y_3(t)\) </label>
+      <label style="display:inline-block; margin-right:10px;"><input type="radio" name="answer_{{ item.index }}" value="3"> \(y_4(t)\) </label>
     </div>
   {% endfor %}
 
