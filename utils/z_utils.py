@@ -105,7 +105,7 @@ def inverse_z_expr(num, den, roc_type="causal"):
         ri_expr = sp_utils.render_number(ri, complex_polar=True)
         pi_expr = sp_utils.render_number(pi, complex_polar=True)
 
-        if pole_count == 3: # sum up all previous parts with same 
+        if pole_count == 3 and not np.isclose(pi, 0): # sum up all previous parts with same pole for nonzero pole position
             term_2 = expr_pfd_parts[-1] * (z - pi_expr) ** 3
             term_1 = expr_pfd_parts[-2] * (z - pi_expr) ** 3
             expr_buf = sp.simplify(term_1 + term_2 + ri_expr) / (z - pi_expr) ** pole_count
@@ -218,7 +218,7 @@ def roc_latex(roc_type:str, roc_radius, exclude_origin:bool) -> str:
         else:
             return r"z\in \mathbb{C}"
     else:
-        if roc_radius == np.inf:
+        if roc_radius in [np.inf, 0]:
             if exclude_origin:
                 return r"z\in \mathbb{C} \setminus \{0\}"
             else:
