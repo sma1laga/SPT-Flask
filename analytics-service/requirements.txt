@@ -1,0 +1,6 @@
+Flask==3.0.3
+gunicorn==21.2.0
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.32
+geoip2==4.8.0
+user-agents==2.2.0

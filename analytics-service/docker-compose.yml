@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: spt_analytics
+      POSTGRES_USER: spt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} # spaeter
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+  analytics:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://spt:${POSTGRES_PASSWORD}@db:5432/spt_analytics
+      SECRET_KEY: ${SECRET_KEY}
+      SALT: ${SALT}
+      BASE_DOMAIN: analytics.lms-spt.de
+      ALLOWED_ORIGINS: https://lms-spt.de,https://www.lms-spt.de
+      GEOIP_DB: /app/geoip/GeoLite2-Country.mmdb
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASS: ${ADMIN_PASS}
+    depends_on: [db]
+    expose: ["8000"]
+    volumes:
+      - ./geoip:/app/geoip:ro
+
+volumes:
+  dbdata:
