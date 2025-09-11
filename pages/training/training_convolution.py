@@ -231,7 +231,11 @@ def create_convolution_problem(difficulty):
 
         # 5) Plot
         rcParams['text.parse_math'] = True
-        rcParams['text.usetex'] = True
+        # latex for rendering requires a full TeX installation which is
+        # not available in many environments...
+        # Matplotlibs internal mathtext can render the formulas well
+        # enough  I guess for this training view, so disable external latex rendering, if good enough.
+        rcParams['text.usetex'] = False
         fig = plt.figure(figsize=(10, 8))
         gs = fig.add_gridspec(nrows=3, ncols=2, hspace=0.5, wspace=0.3)
 
