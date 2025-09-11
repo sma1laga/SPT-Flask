@@ -47,7 +47,6 @@
 
 <div class="hero">
   <h1>Signal Processing Toolkit</h1>
-  <p>Explore advanced tools, filters, and training modules to process and analyze your signals.</p>
 </div>
 
 <div class="menu-container">
@@ -56,14 +55,14 @@
     <h2>Plotting</h2>
     <ul>
       <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
-      <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform Calculator</a></li>
-      <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot</a></li>
+      <!-- <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform Calculator</a></li> -->
+      <!-- <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot</a></li> -->
       <li><a href="{{ url_for('convolution.convolution') }}">Convolution</a></li>
     </ul>
   </div>
 
   <!-- System-level Modeling & Control -->
-<div class="card">
+<!-- <div class="card">
   <h2>System Modeling & Control</h2>
   <ul>
     <li><a href="{{ url_for('process_chain.show_chain') }}">
@@ -73,44 +72,47 @@
     <li><a href="{{ url_for('direct_plot.direct_plot') }}">
         Direct-Form Visualiser</a></li>
   </ul>
-</div>
+</div> -->
   
   <!-- Filter Design Category Card -->
-  <div class="card">
+  <!-- <div class="card">
     <h2>Filter Design</h2>
     <ul>
       <li><a href="{{ url_for('filter_design.filter_design') }}">Custom Filter Design</a></li>
       <li><a href="{{ url_for('speech_filter_input.speech_filter_input') }}">Speech Filter Input</a></li>
       <li><a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a></li>
     </ul>
-  </div>
-    <!-- Modulation Category Card -->
-    <div class="card">
-      <h2>Modulation</h2>
-      <ul>
-        <li><a href="{{ url_for('modulation.modulation') }}">Analog Modulation</a></li>
-        <li><a href="{{ url_for('digital_modulation.digital_modulation') }}">Digital Modulation</a></li>
-      </ul>
-    </div>
+  </div> -->
+  <!-- Modulation Category Card -->
+  <!-- <div class="card">
+    <h2>Modulation</h2>
+    <ul>
+      <li><a href="{{ url_for('modulation.modulation') }}">Analog Modulation</a></li>
+      <li><a href="{{ url_for('digital_modulation.digital_modulation') }}">Digital Modulation</a></li>
+    </ul>
+  </div> -->
   
   <!-- Theory & Documentation Category Card -->
   <div class="card">
     <h2>Theory & Documentation</h2>
     <ul>
-      <li><a href="{{ url_for('function_definitions.function_definitions') }}">Function Definitions</a></li>
-      <li><a href="{{ url_for('transform_table.transform_table') }}">Transform Tables</a></li>
-      <li><a href="{{ url_for('theory.theory') }}">Core Theory</a></li>
+      <!-- TODO under revision -->
+      <!-- <li><a href="{{ url_for('function_definitions.function_definitions') }}">Function Definitions</a></li> -->
+      <!-- <li><a href="{{ url_for('transform_table.transform_table') }}">Transform Tables</a></li> -->
+      <!-- TODO under revision -->
+      <!-- <li><a href="{{ url_for('theory.theory') }}">Core Theory</a></li> -->
       <li><a href="{{ url_for('demos_menu.index') }}">Demos</a></li>
     </ul>
   </div>
   
   <!-- Training Modules Category Card -->
   <div class="card">
-    <h2>Training Modules</h2>
+    <h2>Training</h2>
     <ul>
-      <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Training</a></li>
-      <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li>
-      <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li>
+      <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution</a></li>
+      <!-- TODO under revision -->
+      <!-- <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier</a></li> -->
+      <!-- <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain</a></li> -->
     </ul>
   </div>
 </div>
