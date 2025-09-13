@@ -28,6 +28,7 @@
     <button class="option-btn action-btn" data-index="1">\(y_2(t)\)</button>
     <button class="option-btn action-btn" data-index="2">\(y_3(t)\)</button>
     <button class="option-btn action-btn" data-index="3">\(y_4(t)\)</button>
+    <button id="nextBtn" class="action-btn" style="display:none;">Next Problem</button>
   </div>
 
   <!-- Feedback -->
@@ -45,6 +46,8 @@
     document.querySelectorAll('.option-btn').forEach(btn => {
       btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
     });
+    document.getElementById('nextBtn').addEventListener('click', () => generateProblem());
+
 
     function getDifficulty() {
       return document.querySelector('input[name="difficulty"]:checked').value;
@@ -52,6 +55,10 @@
 
     function generateProblem() {
       const diff = getDifficulty();
+      if (!diff) {
+        showFeedback('Please select a difficulty first!');
+        return;
+      }
       fetch("{{ url_for('training_convolution.generate_problem') }}", {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ difficulty: diff })
@@ -64,6 +71,11 @@
         img.style.display = 'block';
         correctIndex = data.correctIndex;
         showFeedback('Problem generated. Select the correct option.');
+        document.getElementById('nextBtn').style.display = 'inline-block';
+        document.querySelectorAll('.option-btn').forEach(b => {
+          b.classList.remove('correct', 'incorrect');
+          b.disabled = false;
+        });
       })
       .catch(() => showFeedback('Error generating problem.'));
     }
@@ -75,7 +87,15 @@
         body: JSON.stringify({ selectedIndex: selected, correctIndex: correctIndex })
       })
       .then(res => res.json())
-      .then(data => showFeedback(data.feedback || ''))
+      .then(data => {
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach(b => b.disabled = true);
+        buttons[correctIndex].classList.add('correct');
+        if (selected !== correctIndex) {
+          buttons[selected].classList.add('incorrect');
+        }
+        showFeedback(data.feedback || '');
+      })
       .catch(() => showFeedback('Error checking answer.'));
     }
 
@@ -100,6 +120,10 @@
       transition: background-color 0.2s ease;
     }
     .action-btn:hover { background-color: #005fa3; }
+    #nextBtn {
+      background-color: #3CB371;
+    }
+    #nextBtn:hover { background-color: #2E8B57; }
     .feedback { min-height: 1.4em; margin-top: 10px; }
     .link-btn {
       color: #007acc;
@@ -107,5 +131,7 @@
       font-weight: bold;
     }
     .link-btn:hover { text-decoration: underline; }
+    .option-btn.correct { background-color: #28a745; }
+    .option-btn.incorrect { background-color: #c0392b; }
   </style>
 {% endblock %}
