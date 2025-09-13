@@ -34,6 +34,13 @@
   <!-- Feedback -->
   <div id="feedback" class="feedback" style="text-align: center; font-size: 1.1em; color: var(--text-color); min-height: 1.2em;"></div>
 
+<!-- Streak Panel (client-side only) -->
+<div id="streakPanel" class="streak-panel" style="max-width:700px;margin:0 auto 8px;display:flex;justify-content:center;gap:12px;align-items:center;">
+  <div>Streak: <strong id="streakCur">0</strong></div>
+  <div style="opacity:.8;">Best: <strong id="streakBest">0</strong></div>
+  <button id="streakReset" class="action-btn" style="padding:6px 10px;background:#555;">Reset</button>
+</div>
+
   <!-- Exam Link -->
   <p style="text-align: center; margin-top: 30px;">
     Want a 10-question exam? <a href="{{ url_for('exam_convolution.start_exam') }}" class="link-btn">Take the Convolution Exam</a>
@@ -66,6 +73,7 @@
   // Destroy cache when difficulty changes (user did something else)
   document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
     radio.addEventListener('change', () => {
+      refreshStreakUI();
       destroyPrefetch();
       hidePlot();
       document.getElementById('nextBtn').style.display = 'none';
@@ -153,6 +161,8 @@
       buttons[correctIndex].classList.add('correct');
       if (selected !== correctIndex) buttons[selected].classList.add('incorrect');
       showFeedback(data.feedback || '');
+      const isCorrect = (selected === correctIndex);
+      bumpStreak(isCorrect);
 
       // Kick off background prefetch ONCE per round
       if (!answeredThisRound) {
@@ -204,6 +214,50 @@
   function showFeedback(msg) {
     document.getElementById('feedback').innerText = msg;
   }
+// ===== Streak (client-side, per difficulty) =====
+function streakKey(diff){ return `conv:streak:${diff}`; }
+function bestKey(diff){ return `conv:best:${diff}`; }
+function readInt(k){ const v = localStorage.getItem(k); return v ? parseInt(v,10) : 0; }
+function writeInt(k,v){ localStorage.setItem(k, String(v)); }
+
+function getStreak(diff){ return readInt(streakKey(diff)); }
+function setStreak(diff,v){ writeInt(streakKey(diff), v); }
+function getBest(diff){ return readInt(bestKey(diff)); }
+function setBest(diff,v){ writeInt(bestKey(diff), v); }
+
+function refreshStreakUI(){
+  const diff = getDifficulty();
+  document.getElementById('streakCur').textContent = getStreak(diff);
+  document.getElementById('streakBest').textContent = getBest(diff);
+}
+
+function bumpStreak(isCorrect){
+  const diff = getDifficulty();
+  if (isCorrect){
+    const cur = getStreak(diff) + 1;
+    setStreak(diff, cur);
+    if (cur > getBest(diff)) setBest(diff, cur);
+    flashStreak();
+  } else {
+    setStreak(diff, 0);
+  }
+  refreshStreakUI();
+}
+
+function flashStreak(){
+  const el = document.getElementById('streakPanel');
+  el.style.transition = 'transform 0.2s ease';
+  el.style.transform = 'scale(1.05)';
+  setTimeout(() => { el.style.transform = 'scale(1)'; }, 200);
+}
+
+// Reset button (resets current difficulty only)
+document.getElementById('streakReset').addEventListener('click', () => {
+  const diff = getDifficulty();
+  setStreak(diff, 0);
+  refreshStreakUI();
+});
+refreshStreakUI();
 </script>
 
 
