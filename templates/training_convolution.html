@@ -40,69 +40,172 @@
   </p>
 
   <!-- Scripts -->
-  <script>
-    let correctIndex = null;
-    document.getElementById('generateBtn').addEventListener('click', generateProblem);
-    document.querySelectorAll('.option-btn').forEach(btn => {
-      btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
+<script>
+  // --- State ---
+  let correctIndex = null;
+
+  // Prefetch pipeline state
+  let cachedProblem = null;     // { plot_data, correctIndex,...}
+  let cachedDiff = null;        // difficulty string this cache was created for
+  let prefetchCtrl = null;      // abbortController for in-flight prefetch
+  let prefetchInFlight = false; // flag to avoid duplicate prefetches
+  let answeredThisRound = false;// to trigger prefetch only once per problem
+
+  // --- Hooks ---
+  document.getElementById('generateBtn').addEventListener('click', () => {
+    destroyPrefetch();          // user chose something else -> drop cached
+    generateProblem();
+  });
+
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', onNextProblemClick);
+
+  // Destroy cache when difficulty changes (user did something else)
+  document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      destroyPrefetch();
+      hidePlot();
+      document.getElementById('nextBtn').style.display = 'none';
+      showFeedback('Difficulty changed. Generate a problem.');
     });
-    document.getElementById('nextBtn').addEventListener('click', () => generateProblem());
+  });
 
+  // --- Helpers ---
+  function getDifficulty() {
+    return document.querySelector('input[name="difficulty"]:checked').value;
+  }
 
-    function getDifficulty() {
-      return document.querySelector('input[name="difficulty"]:checked').value;
+  function req(url, payload, signal) {
+    return fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+      signal
+    }).then(r => r.json());
+  }
+
+  function renderProblemFromData(data) {
+    if (data.error) {
+      showFeedback('Error: ' + data.error);
+      return;
     }
+    const img = document.getElementById('conv_plot_image');
+    img.src = 'data:image/png;base64,' + data.plot_data;
+    img.style.display = 'block';
+    correctIndex = data.correctIndex;
 
-    function generateProblem() {
-      const diff = getDifficulty();
-      if (!diff) {
-        showFeedback('Please select a difficulty first!');
-        return;
-      }
-      fetch("{{ url_for('training_convolution.generate_problem') }}", {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ difficulty: diff })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) return showFeedback('Error: ' + data.error);
-        const img = document.getElementById('conv_plot_image');
-        img.src = 'data:image/png;base64,' + data.plot_data;
-        img.style.display = 'block';
-        correctIndex = data.correctIndex;
-        showFeedback('Problem generated. Select the correct option.');
-        document.getElementById('nextBtn').style.display = 'inline-block';
-        document.querySelectorAll('.option-btn').forEach(b => {
-          b.classList.remove('correct', 'incorrect');
-          b.disabled = false;
-        });
-      })
+    // Reset UI for anorger diff.
+    const optBtns = document.querySelectorAll('.option-btn');
+    optBtns.forEach(b => {
+      b.classList.remove('correct', 'incorrect');
+      b.disabled = false;
+    });
+    document.getElementById('nextBtn').style.display = 'inline-block';
+    showFeedback('Problem generated. Select the correct option.');
+
+    //  at a fresh round
+    answeredThisRound = false;
+  }
+
+  function hidePlot() {
+    const img = document.getElementById('conv_plot_image');
+    img.style.display = 'none';
+    img.removeAttribute('src');
+  }
+
+  // Main flows 
+  function generateProblem() {
+    const diff = getDifficulty();
+    if (!diff) return showFeedback('Please select a difficulty first!');
+    // Render fresh problem from server
+    req("{{ url_for('training_convolution.generate_problem') }}", { difficulty: diff })
+      .then(data => renderProblemFromData(data))
       .catch(() => showFeedback('Error generating problem.'));
-    }
+  }
 
-    function checkAnswer(selected) {
-      if (correctIndex === null) return showFeedback('Please generate a problem first!');
-      fetch("{{ url_for('training_convolution.check_answer') }}", {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ selectedIndex: selected, correctIndex: correctIndex })
-      })
-      .then(res => res.json())
+  function onNextProblemClick() {
+    const diff = getDifficulty();
+
+    // If we have a warm problem for this difficulty -> instant render
+    if (cachedProblem && cachedDiff === diff) {
+      const warm = cachedProblem;
+      cachedProblem = null; // consume cache
+      renderProblemFromData(warm);
+      // Immediately start prefetch for the next problem
+      prefetchNextProblem();
+    } else {
+      // No cache available -> normal generation
+      generateProblem();
+    }
+  }
+
+  function checkAnswer(selected) {
+    if (correctIndex === null) return showFeedback('Please generate a problem first!');
+    req("{{ url_for('training_convolution.check_answer') }}", {
+      selectedIndex: selected, correctIndex: correctIndex
+    })
+    .then(data => {
+      const buttons = document.querySelectorAll('.option-btn');
+      buttons.forEach(b => b.disabled = true);
+      buttons[correctIndex].classList.add('correct');
+      if (selected !== correctIndex) buttons[selected].classList.add('incorrect');
+      showFeedback(data.feedback || '');
+
+      // Kick off background prefetch ONCE per round
+      if (!answeredThisRound) {
+        answeredThisRound = true;
+        prefetchNextProblem();
+      }
+    })
+    .catch(() => showFeedback('Error checking answer.'));
+  }
+
+  // --- Prefetch pipeline ---
+  function prefetchNextProblem() {
+    const diff = getDifficulty();
+
+    // If something is in-flight or we already have a warm one for this diff, skip
+    if (prefetchInFlight) return;
+    if (cachedProblem && cachedDiff === diff) return;
+
+    // Abort any old prefetch
+    destroyPrefetch(false);
+
+    prefetchCtrl = new AbortController();
+    prefetchInFlight = true;
+    cachedProblem = null;
+    cachedDiff = diff;
+
+    req("{{ url_for('training_convolution.generate_problem') }}", { difficulty: diff }, prefetchCtrl.signal)
       .then(data => {
-        const buttons = document.querySelectorAll('.option-btn');
-        buttons.forEach(b => b.disabled = true);
-        buttons[correctIndex].classList.add('correct');
-        if (selected !== correctIndex) {
-          buttons[selected].classList.add('incorrect');
+        // Only keep it if difficulty still matches current selection
+        if (getDifficulty() === diff) {
+          cachedProblem = data;
+          cachedDiff = diff;
         }
-        showFeedback(data.feedback || '');
       })
-      .catch(() => showFeedback('Error checking answer.'));
-    }
+      .catch(() => { /* aborted or failed -> ignore */ })
+      .finally(() => { prefetchInFlight = false; });
+  }
 
-    function showFeedback(msg) {
-      document.getElementById('feedback').innerText = msg;
+  function destroyPrefetch(abort = true) {
+    if (abort && prefetchCtrl) {
+      try { prefetchCtrl.abort(); } catch(_) {}
     }
-  </script>
+    prefetchCtrl = null;
+    prefetchInFlight = false;
+    cachedProblem = null;
+    cachedDiff = null;
+  }
+
+  function showFeedback(msg) {
+    document.getElementById('feedback').innerText = msg;
+  }
+</script>
+
 
   <!-- Styles -->
   <style>
