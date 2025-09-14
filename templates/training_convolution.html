@@ -17,10 +17,21 @@
     <button id="generateBtn" class="action-btn">Generate Problem</button>
   </div>
 
-  <!-- Plot Container -->
-  <div class="plot-container" style="text-align: center; margin-bottom: 20px;">
-    <img id="conv_plot_image" src="" alt="Training Convolution Plot" style="display:none; max-width:100%; border:1px solid #ccd0d5; border-radius:4px;">
+<!-- Plot Container -->
+<div class="plot-container" style="text-align: center; margin-bottom: 20px;">
+  <div id="plotWrap" class="plot-wrap" style="position:relative; display:inline-block;">
+    <img id="conv_plot_image" src="" alt="Training Convolution Plot"
+         style="display:none; max-width:100%; border:1px solid #ccd0d5; border-radius:4px;">
+    <!-- Overlay-Hitboxen for y1..y4 -->
+    <div id="plotOverlay" class="plot-overlay" style="display:none;">
+      <div class="plot-hit" data-index="0" title="Select y₁(t)"></div>
+      <div class="plot-hit" data-index="1" title="Select y₂(t)"></div>
+      <div class="plot-hit" data-index="2" title="Select y₃(t)"></div>
+      <div class="plot-hit" data-index="3" title="Select y₄(t)"></div>
+    </div>
   </div>
+</div>
+
 
   <!-- Answer Options -->
   <div class="options" style="max-width: 700px; margin: 0 auto 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
@@ -57,7 +68,7 @@
   let prefetchCtrl = null;      // abbortController for in-flight prefetch
   let prefetchInFlight = false; // flag to avoid duplicate prefetches
   let answeredThisRound = false;// to trigger prefetch only once per problem
-  
+
   // Tracks the acctual difficulty of the problem 
   let currentProblemDifficulty = null;
 
@@ -82,8 +93,19 @@
   });
 
 
+  // Plot directly choosable (y1...y4)
+  document.querySelectorAll('.plot-hit').forEach(hit => {
+    hit.addEventListener('click', () => checkAnswer(parseInt(hit.dataset.index)));
+  });
   document.querySelectorAll('.option-btn').forEach(btn => {
     btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
+  });
+
+  // Re-Layout of hitboxes
+  document.getElementById('conv_plot_image').addEventListener('load', layoutOverlayBoxes);
+  window.addEventListener('resize', () => {
+    const img = document.getElementById('conv_plot_image');
+    if (img.style.display !== 'none') layoutOverlayBoxes();
   });
 
   document.getElementById('nextBtn').addEventListener('click', onNextProblemClick);
@@ -133,6 +155,7 @@
     });
     document.getElementById('nextBtn').style.display = 'inline-block';
     showFeedback('Problem generated. Select the correct option.');
+    resetOverlayUI();
     answeredThisRound = false;
   }
 
@@ -141,7 +164,53 @@
     const img = document.getElementById('conv_plot_image');
     img.style.display = 'none';
     img.removeAttribute('src');
+    const overlay = document.getElementById('plotOverlay');
+    overlay.style.display = 'none';
   }
+  function layoutOverlayBoxes() {
+    const img = document.getElementById('conv_plot_image');
+    const overlay = document.getElementById('plotOverlay');
+    if (!img || img.style.display === 'none') return;
+
+    // Overlay hover
+    overlay.style.display = 'block';
+
+    const w = img.clientWidth;
+    const h = img.clientHeight;
+    if (!w || !h) return;
+
+    // 3x2 Grid
+    const colW = w / 2;
+    const rowH = h / 3;
+
+    const pad = Math.round(Math.min(colW, rowH) * 0.04);
+
+    const hits = document.querySelectorAll('.plot-hit');
+    hits.forEach((hit, i) => {
+      const gridRow = 1 + Math.floor(i / 2); // 1..2
+      const gridCol = i % 2;                 // 0..1
+      const left = gridCol * colW + pad;
+      const top  = gridRow * rowH + pad;
+      const width = colW - 2*pad;
+      const height = rowH - 2*pad;
+
+      hit.style.left = left + 'px';
+      hit.style.top = top + 'px';
+      hit.style.width = width + 'px';
+      hit.style.height = height + 'px';
+    });
+  }
+
+  function resetOverlayUI() {
+    const overlay = document.getElementById('plotOverlay');
+    overlay.style.display = 'block';
+    document.querySelectorAll('.plot-hit').forEach(h => {
+      h.classList.remove('correct','incorrect');
+      h.style.pointerEvents = 'auto';
+    });
+    layoutOverlayBoxes();
+  }
+
 
   // Main flows 
   function generateProblem() {
@@ -181,6 +250,12 @@
       const buttons = document.querySelectorAll('.option-btn');
       buttons.forEach(b => b.disabled = true);
       buttons[correctIndex].classList.add('correct');
+      // Plot-Overlay visually marked
+      const hits = document.querySelectorAll('.plot-hit');
+      hits.forEach(h => h.style.pointerEvents = 'none');
+      // right option green, false red
+      hits[correctIndex].classList.add('correct');
+      if (selected !== correctIndex) hits[selected].classList.add('incorrect');
       if (selected !== correctIndex) buttons[selected].classList.add('incorrect');
       showFeedback(data.feedback || '');
       const isCorrect = (selected === correctIndex);
@@ -326,5 +401,35 @@ refreshStreakUI();
     .link-btn:hover { text-decoration: underline; }
     .option-btn.correct { background-color: #28a745; }
     .option-btn.incorrect { background-color: #c0392b; }
+    /* Overlay exakt über dem Bild */
+    .plot-wrap { position: relative; display: inline-block; }
+    .plot-overlay { position: absolute; inset: 0; pointer-events: none; }
+
+    /* Klickbare Bereiche (Hitboxen) */
+    .plot-hit {
+      position: absolute;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      box-shadow: 0 0 0 0 rgba(0,0,0,0);
+      transition: box-shadow 0.12s ease, border-color 0.12s ease;
+      pointer-events: auto; /* wichtig für Klicks */
+      cursor: pointer;
+    }
+
+    /* Subtiler Hover-Ring */
+    .plot-hit:hover {
+      box-shadow: 0 0 0 3px rgba(0,122,204,0.28);
+    }
+
+    /* Ergebniszustände */
+    .plot-hit.correct {
+      border-color: #28a745;
+      box-shadow: 0 0 0 3px rgba(40,167,69,0.5);
+    }
+    .plot-hit.incorrect {
+      border-color: #c0392b;
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.5);
+    }
+
   </style>
 {% endblock %}
