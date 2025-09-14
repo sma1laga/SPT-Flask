@@ -144,6 +144,7 @@ def _make_freq_vector(num, den, override=None):
 @bode_plot_bp.route('/bode_plot', methods=['GET', 'POST'])
 def bode_plot():
     error = ""
+    warning = ""
     # Default inputs; here we use a coefficient list for H(s) = (s+1)/(s^2+2)
     default_num = "[1, 1]"
     default_den = "[1, 0, 2]"
@@ -166,6 +167,7 @@ def bode_plot():
             "bode_plot.html",
             plot_url=None,
             error=None,
+            warning=None,
             default_num=default_num,
             default_den=default_den,
             function_str=None,
@@ -237,12 +239,42 @@ def bode_plot():
     phase = np.angle(H, deg=True)
     
     # Poles and zeros
+    # Poles and zeros
     zeros = np.roots(num)
     poles = np.roots(den)
+
+    # (5) Friendly warnings (non-fatal)
+    deg_num = len(num) - 1
+    deg_den = len(den) - 1
+    if deg_num >= deg_den:
+        warning += ("Warning: Non-proper transfer function (deg(num) ≥ deg(den)). "
+                    "Magnitude may not settle at high frequency.\n")
+    if np.any(np.real(poles) > 0):
+        warning += "System has right-half-plane pole(s): open-loop unstable.\n"
+    if np.any(np.real(zeros) > 0):
+        warning += "Non-minimum-phase zero(s) detected (RHP zero).\n"
 
     # Gain and phase margins
     sys = control.TransferFunction(num, den)
     gm, pm, wg, wp = control.margin(sys)
+
+    # (7) Pole–Zero map (mini plot)
+    figpz, axpz = plt.subplots(figsize=(3, 3))
+    axpz.axhline(0, color='#cccccc'); axpz.axvline(0, color='#cccccc')
+    if zeros.size:
+        axpz.scatter(np.real(zeros), np.imag(zeros), marker='o', label='zeros')
+    if poles.size:
+        axpz.scatter(np.real(poles), np.imag(poles), marker='x', label='poles')
+    axpz.set_xlabel('Re{s}'); axpz.set_ylabel('Im{s}')
+    axpz.set_title('Pole–Zero Map')
+    axpz.grid(True, linestyle='--', alpha=0.4)
+    bufpz = BytesIO()
+    plt.tight_layout()
+    figpz.savefig(bufpz, format='png', dpi=150)
+    bufpz.seek(0)
+    pz_img = base64.b64encode(bufpz.getvalue()).decode('utf-8')
+    plt.close(figpz)
+
 
     
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
@@ -289,17 +321,20 @@ def bode_plot():
         "bode_plot.html",
         plot_url=image_base64,
         error=error,
+        warning=(warning if warning else None),
         default_num=user_num,
         default_den=user_den,
         function_str=function_str,
         zeros=zero_list,
         poles=pole_list,
         pz_pairs=pz_pairs,
+        pz_img=pz_img,
         gm=gm,
         pm=pm,
         wg=wg,
         wp=wp,
     )
+
     
 
 @bode_plot_bp.route('/download_csv')

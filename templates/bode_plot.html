@@ -53,6 +53,12 @@
     <p style="color:red;">Error: {{ error }}</p>
   {% endif %}
   
+  {% if warning %}
+    <p style="color:#8a6d3b;background:#fcf8e3;border:1px solid #faebcc;padding:8px;border-radius:4px;">
+      {{ warning|replace('\n','<br>')|safe }}
+    </p>
+  {% endif %}
+
   {% if function_str %}
     <h2>Your Transfer Function</h2>
     <p style="font-size:1.2em;">$$ {{ function_str }} $$</p>
@@ -78,7 +84,12 @@
       >Download CSV</a>
     </div>
   {% endif %}
-  
+  {% if pz_img %}
+    <div style="text-align:center; margin:10px 0;">
+      <img src="data:image/png;base64,{{ pz_img }}" alt="Pole–Zero Map">
+    </div>
+  {% endif %}
+
   {% if pz_pairs %}
     <div style="max-width:300px;margin:20px auto;">
       <h3 style="text-align:center;">Poles &amp; Zeros</h3>
