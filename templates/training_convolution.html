@@ -57,12 +57,30 @@
   let prefetchCtrl = null;      // abbortController for in-flight prefetch
   let prefetchInFlight = false; // flag to avoid duplicate prefetches
   let answeredThisRound = false;// to trigger prefetch only once per problem
+  
+  // Tracks the acctual difficulty of the problem 
+  let currentProblemDifficulty = null;
+
+  // Boot-prefetch for first problem (always medium, because its faster)
+  let bootCachedProblem = null;
+  let bootCtrl = null;
+  let bootInFlight = false;
 
   // --- Hooks ---
   document.getElementById('generateBtn').addEventListener('click', () => {
-    destroyPrefetch();          // user chose something else -> drop cached
+    // If the preloaded medium-problem exists -< instant plot 
+    if (bootCachedProblem) {
+      if (bootCtrl) { try { bootCtrl.abort(); } catch(_){}; bootCtrl = null; }
+      destroyPrefetch(); // sicherheitshalber
+      renderProblemFromData(bootCachedProblem, bootCachedProblem._difficulty); // -> MEDIUM
+      bootCachedProblem = null; // Boot-Cache used
+      return;
+    }
+    // 2. no boot cache (user clicks fast) - normal generation 
+    destroyPrefetch();
     generateProblem();
   });
+
 
   document.querySelectorAll('.option-btn').forEach(btn => {
     btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
@@ -95,17 +113,19 @@
     }).then(r => r.json());
   }
 
-  function renderProblemFromData(data) {
+  function renderProblemFromData(data, difficultyTag = null) {
     if (data.error) {
       showFeedback('Error: ' + data.error);
       return;
     }
+
+    currentProblemDifficulty = difficultyTag || getDifficulty();
+
     const img = document.getElementById('conv_plot_image');
     img.src = 'data:image/png;base64,' + data.plot_data;
     img.style.display = 'block';
     correctIndex = data.correctIndex;
 
-    // Reset UI for anorger diff.
     const optBtns = document.querySelectorAll('.option-btn');
     optBtns.forEach(b => {
       b.classList.remove('correct', 'incorrect');
@@ -113,10 +133,9 @@
     });
     document.getElementById('nextBtn').style.display = 'inline-block';
     showFeedback('Problem generated. Select the correct option.');
-
-    //  at a fresh round
     answeredThisRound = false;
   }
+
 
   function hidePlot() {
     const img = document.getElementById('conv_plot_image');
@@ -130,8 +149,11 @@
     if (!diff) return showFeedback('Please select a difficulty first!');
     // Render fresh problem from server
     req("{{ url_for('training_convolution.generate_problem') }}", { difficulty: diff })
-      .then(data => renderProblemFromData(data))
-      .catch(() => showFeedback('Error generating problem.'));
+  .then(data => {
+    data._difficulty = diff;               // tag
+    renderProblemFromData(data, diff);     // set active problem diff. 
+  })      
+  .catch(() => showFeedback('Error generating problem.'));
   }
 
   function onNextProblemClick() {
@@ -141,7 +163,7 @@
     if (cachedProblem && cachedDiff === diff) {
       const warm = cachedProblem;
       cachedProblem = null; // consume cache
-      renderProblemFromData(warm);
+      renderProblemFromData(warm, warm._difficulty); // zeigt die korrekte, getaggte Difficulty
       // Immediately start prefetch for the next problem
       prefetchNextProblem();
     } else {
@@ -191,14 +213,26 @@
 
     req("{{ url_for('training_convolution.generate_problem') }}", { difficulty: diff }, prefetchCtrl.signal)
       .then(data => {
-        // Only keep it if difficulty still matches current selection
         if (getDifficulty() === diff) {
+          data._difficulty = diff; // merken, worauf dieses Prefetch passt
           cachedProblem = data;
           cachedDiff = diff;
         }
       })
       .catch(() => { /* aborted or failed -> ignore */ })
       .finally(() => { prefetchInFlight = false; });
+  }
+  function prefetchBootMedium() {
+    if (bootInFlight || bootCachedProblem) return; // only once
+    bootCtrl = new AbortController();
+    bootInFlight = true;
+    req("{{ url_for('training_convolution.generate_problem') }}", { difficulty: "MEDIUM" }, bootCtrl.signal)
+      .then(data => {
+        data._difficulty = "MEDIUM";
+        bootCachedProblem = data;
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => { bootInFlight = false; });
   }
 
   function destroyPrefetch(abort = true) {
@@ -232,7 +266,7 @@ function refreshStreakUI(){
 }
 
 function bumpStreak(isCorrect){
-  const diff = getDifficulty();
+  const diff = currentProblemDifficulty || getDifficulty();
   if (isCorrect){
     const cur = getStreak(diff) + 1;
     setStreak(diff, cur);
@@ -243,6 +277,7 @@ function bumpStreak(isCorrect){
   }
   refreshStreakUI();
 }
+
 
 function flashStreak(){
   const el = document.getElementById('streakPanel');
@@ -257,6 +292,7 @@ document.getElementById('streakReset').addEventListener('click', () => {
   setStreak(diff, 0);
   refreshStreakUI();
 });
+prefetchBootMedium();
 refreshStreakUI();
 </script>
 
