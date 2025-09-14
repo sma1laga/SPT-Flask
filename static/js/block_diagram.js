@@ -500,42 +500,6 @@ function compileDiagram(){
 
 
 
-btnSimulate.onclick = async () => {
-  // 1) Grab the last output_tf object you received
-  //    (you may want to store it in a module-level variable inside compileDiagram)
-  const tf = lastOutputTf;  
-
-  // 2) Call the new simulate endpoint
-  const resp = await fetch("/block_diagram/simulate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(tf)
-  });
-  const sim = await resp.json();  // { time: [...], y: [...] }
-
-  // 3) Un-hide the canvas
-  simCanvas.style.display = "block";
-
-  // 4) Draw with Chart.js
-  new Chart(simCanvas.getContext("2d"), {
-    type: "line",
-    data: {
-      labels: sim.time,
-      datasets: [{
-        label: "y(t)",
-        data: sim.y,
-        fill: false,
-        borderWidth: 2
-      }]
-    },
-    options: {
-      scales: { x: { title: { display: true, text: "Time (s)" } },
-                y: { title: { display: true, text: "Response" } } }
-    }
-  });
-};
-
-
 /* ── Save / Load ------------------------------------------------------ */
 function downloadDiagram(){
   /* strip the KaTeX overlay handles so JSON is clean                     */
@@ -582,6 +546,8 @@ function toggleConnect(){connectMode=!connectMode;
   document.getElementById("btnConnect").classList.toggle("active",connectMode);
   if(!connectMode){connectFrom=null; connectEdge=null;}}
 function clearScene(){nodes=[];edges=[];nextId=1;selectedNode = selectedEdge = null;
+  if (simChart) { simChart.destroy(); simChart = null; }
+  simCanvas.style.display = "none";
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
   (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
         addNode("Output","Y(s)",canvas.width-120,canvas.height/2-60);})();
@@ -873,11 +839,11 @@ function drawOrthEdge(ctx, e){
   }
 
 
-  /* arrow-head on final leg */
+  /* arrowhead on final leg */
   const n = pts.length;
   arrow(pts[n-2].x, pts[n-2].y, pts[n-1].x, pts[n-1].y);
 
-  /* badge on negative edges – halfway down the 2nd segment */
+  /* badge on negative edges – halfway down the 2 segment */
   if (e.sign === "–"){
     const mid = {
       x:(pts[1].x + pts[2].x)/2,
@@ -898,7 +864,7 @@ document.getElementById("btnCompile").onclick=compileDiagram;
 document.addEventListener("keydown", ev => {
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
 
-  // dot delete anything while the edit modal is open
+  // dot delete anything while the edit modal is openn
   const modal = document.getElementById("editModal");
   if (modal && modal.classList.contains("show")) return;
 
@@ -955,12 +921,15 @@ document.getElementById("btnSimulate").onclick = async () => {
 };
 
 async function fetchScopeData(id){
-
-  const tf = lastScopeTfs[id];
-  if (!tf){
-    return Object.keys(lastScopeTfs).length ?
-      { error: "unconnected" } : { error: "compile" };
+  const key = String(id);
+  const base = lastScopeTfs && lastScopeTfs[key];
+  if (!base){
+    return Object.keys(lastScopeTfs || {}).length ? { error: "unconnected" }
+                                                  : { error: "compile" };
   }
+  const tf = { num: base.num, den: base.den };
+  if (lastOutputTf && lastOutputTf.saturation) tf.saturation = lastOutputTf.saturation;
+
   try {
     const resp = await fetch("/block_diagram/simulate", {
       method: "POST",
@@ -968,14 +937,15 @@ async function fetchScopeData(id){
       body: JSON.stringify(tf)
     });
     let js = {};
-    try { js = await resp.json(); } catch (e) {}
-    if (!resp.ok) return { error: js.error || "network" };
-    if (js.error) return { error: js.error };
+    try { js = await resp.json(); } catch {}
+    if (!resp.ok)  return { error: js.error || "network" };
+    if (js.error)  return { error: js.error };
     return js;
-  } catch (e) {
+  } catch {
     return { error: "network" };
   }
 }
+
 
 function updateStats(data){
   const min = Math.min(...data);
@@ -1010,19 +980,18 @@ const cursorPlugin = {
 };
 
 function zoom(factor){
-  const xScale = scopeChart.options.scales.x;
-  const center = (xScale.min + xScale.max)/2;
-  const range = (xScale.max - xScale.min) * factor / 2;
-  xScale.min = center - range;
-  xScale.max = center + range;
+  const sx = scopeChart.scales.x;                     // resolved values
+  const center = (sx.min + sx.max) / 2;
+  const range  = (sx.max - sx.min) * factor / 2;
+  scopeChart.options.scales.x.min = center - range;
+  scopeChart.options.scales.x.max = center + range;
   scopeChart.update();
 }
-
 function pan(frac){
-  const xScale = scopeChart.options.scales.x;
-  const range = xScale.max - xScale.min;
-  xScale.min += frac * range;
-  xScale.max += frac * range;
+  const sx = scopeChart.scales.x;
+  const range = sx.max - sx.min;
+  scopeChart.options.scales.x.min = sx.min + frac * range;
+  scopeChart.options.scales.x.max = sx.max + frac * range;
   scopeChart.update();
 }
 
@@ -1032,8 +1001,8 @@ async function runScope(){
     if (scopeChart) scopeChart.destroy();
     const g = scopeCanvas.getContext("2d");
     g.clearRect(0,0,scopeCanvas.width,scopeCanvas.height);
-    g.fillStyle = "#666";
-    g.font = "12px sans-serif";
+    g.fillStyle = "#e66";
+    g.font = "14px sans-serif"
     let msg;
     switch(sim.error){
       case "compile": msg = "Compile diagram first."; break;
@@ -1044,23 +1013,53 @@ async function runScope(){
     g.fillText(msg, 10, 20);
     return;
   }
+  // Build {x,y} points for a linear x-axis
+  const points = sim.time.map((t, i) => ({ x: t, y: sim.y[i] }));
   const datasets = [];
-  if (holdData) datasets.push({data: holdData, borderColor:'rgba(0,0,0,0.3)', borderWidth:1, fill:false, label:'prev'});
-  datasets.push({label:'y(t)', data: sim.y, borderWidth:2, fill:false});
+
+  if (holdData) {
+    const prevPts = holdData.time.map((t, i) => ({ x: t, y: holdData.y[i] }));
+    datasets.push({
+      label: 'prev',
+      data: prevPts,
+      borderWidth: 1,
+      fill: false,
+      borderColor: 'rgba(0,0,0,0.3)'
+    });
+  }
+
+  datasets.push({ label: 'y(t)', data: points, borderWidth: 2, fill: false });
+
   if (scopeChart) scopeChart.destroy();
-  scopeChart = new Chart(scopeCanvas.getContext("2d"), {
-    type:'line',
-    data:{labels:sim.time, datasets},
-    options:{responsive:false, plugins:{legend:{display:true}}, scales:{x:{title:{display:true,text:'Time'}}, y:{title:{display:true,text:'Value'}}}},
-    plugins:[cursorPlugin]
+  scopeChart = new Chart(scopeCanvas.getContext('2d'), {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: false,
+      parsing: false, // IMPORTANT: were passing {x,y} objects
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Time (s)' } },
+        y: { title: { display: true, text: 'Value' } }
+      }
+    },
+    plugins: [cursorPlugin]
   });
-  scopeChart.options.scales.x.min = sim.time[0];
-  scopeChart.options.scales.x.max = sim.time[sim.time.length-1];
-  scopeChart.options.scales.y.min = Math.min(...sim.y);
-  scopeChart.options.scales.y.max = Math.max(...sim.y);
+
+  // Let Chart.js autoscale 
+  scopeChart.options.scales.x.min = undefined;
+  scopeChart.options.scales.x.max = undefined;
+  scopeChart.options.scales.y.min = undefined;
+  scopeChart.options.scales.y.max = undefined;
   scopeChart.update();
+
   updateStats(sim.y);
-  holdData = scopeHold.classList.contains('active') ? sim.y.slice() : null;
+
+  // Store both time nd y when Hold is active
+  holdData = scopeHold.classList.contains('active')
+    ? { time: sim.time.slice(), y: sim.y.slice() }
+    : null;
+
 }
 async function openScopeWindow(id){
   scopeActiveId = id;
@@ -1115,17 +1114,20 @@ cursorAButton.onclick = () => { activeCursor = 'A'; };
 cursorBButton.onclick = () => { activeCursor = 'B'; };
 scopeCanvas.onclick = (evt) => {
   if (!scopeChart || !activeCursor) return;
-  const pts = scopeChart.getElementsAtEventForMode(evt, 'nearest', {intersect:false}, false);
-  if (pts.length){
-    const idx = pts[0].index;
-    const t = scopeChart.data.labels[idx];
-    const data = scopeChart.data.datasets[scopeChart.data.datasets.length-1].data;
-    const y = data[idx];
-    if (activeCursor === 'A') cursorA = {t,y}; else cursorB = {t,y};
-    updateCursorReadout();
-    scopeChart.update();
-  }
+  const pts = scopeChart.getElementsAtEventForMode(evt, 'nearest', { intersect:false }, false);
+  if (!pts.length) return;
+
+  const idx  = pts[0].index;
+  const ds   = scopeChart.data.datasets[scopeChart.data.datasets.length - 1];
+  const dp   = ds.data[idx];                  // {x, y} or number
+  const t    = (dp && typeof dp === 'object') ? dp.x : idx;
+  const y    = (dp && typeof dp === 'object') ? dp.y : dp;
+
+  if (activeCursor === 'A') cursorA = { t, y }; else cursorB = { t, y };
+  updateCursorReadout();
+  scopeChart.update();
 };
+
 
 
 
