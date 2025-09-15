@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
 
 dtft_impulses_bp = Blueprint(
@@ -53,16 +51,15 @@ def _draw_pi_axis_labels(ax):
     ax.set_ylim(0.0, 2.2)
 
     ax.set_xticks(np.arange(-1.0, 1.1, 0.5))
-    ax.set_xticklabels([r"$-\pi$", r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$"])
+    ax.set_xticklabels([r"$-\pi$", r"$-\frac{\pi}{2}$", "0", r"$\frac{\pi}{2}$", r"$\pi$"])
     ax.set_yticks([0, 1, 2])
-    ax.set_yticklabels(["0", r"$\pi$", r"$2\pi$"])
+    ax.set_yticklabels([r"$0$", r"$\pi$", r"$2\pi$"])
 
 
 def _make_figure(norm_freq, cfg):
     fig_w = float(cfg.get("fig_width", _DEFAULT_CONFIG["fig_width"]))
     fig_h = float(cfg.get("fig_height", _DEFAULT_CONFIG["fig_height"]))
-    fig, (x_ax, dtft_ax) = plt.subplots(2, 1, figsize=(fig_w, fig_h))
-    plt.tight_layout(pad=4)
+    fig, (x_ax, dtft_ax) = plt.subplots(2, 1, figsize=(fig_w, fig_h), layout="constrained")
 
     # Zeitsignal
     k = np.arange(-20, 21)
@@ -126,7 +123,6 @@ def image():
 
         fig = _make_figure(norm_freq, cfg)
         png = _fig_png_bytes(fig)
-        plt.close(fig)
 
         resp = make_response(png)
         # Prevent stale images during rapid scrubbing; browser can still cache per URL

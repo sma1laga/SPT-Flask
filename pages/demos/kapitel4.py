@@ -5,9 +5,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from utils.img import fig_to_base64
@@ -102,7 +99,7 @@ def compute():
 
         # ------- Plot mirroring the notebook layout -------
         # 2x2 grid with bottom spanning both columns
-        fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.4))
+        fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.4), layout="constrained")
         x_axis = axs[0, 0]
         x_crop_axis = axs[0, 1]
         gs = axs[1, 0].get_gridspec()
@@ -121,7 +118,7 @@ def compute():
         x_axis.margins(x=0)
         x_axis.set_title("Input")
         x_axis.set_xlabel("Time [s]")
-        x_axis.set_ylabel("x[k]")
+        x_axis.set_ylabel("$x[k]$")
         x_axis.grid(True)
         x_axis.set_ylim([-1, 1])
 
@@ -131,7 +128,7 @@ def compute():
         x_crop_axis.margins(x=0)
         x_crop_axis.set_title(f"Window, M={M}")
         x_crop_axis.set_xlabel("Time [s]")
-        x_crop_axis.set_ylabel("x̃[k]")
+        x_crop_axis.set_ylabel(r"$\tilde x[k]$")
         x_crop_axis.grid(True)
         x_crop_axis.set_ylim([-1, 1])
 
@@ -140,7 +137,7 @@ def compute():
         x_DFT_axis.margins(x=0)
         x_DFT_axis.set_title("Spectrum (Magnitude)")
         x_DFT_axis.set_xlabel("Frequency [Hz]")
-        x_DFT_axis.set_ylabel("|X[μ]|")
+        x_DFT_axis.set_ylabel(r"$|X[\mu]|$")
         x_DFT_axis.grid(True)
         x_DFT_axis.set_xlim(0, fs*25/512)
 

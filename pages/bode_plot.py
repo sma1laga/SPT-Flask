@@ -259,7 +259,7 @@ def bode_plot():
     gm, pm, wg, wp = control.margin(sys)
 
     # (7) Pole–Zero map (mini plot)
-    figpz, axpz = plt.subplots(figsize=(3, 3))
+    figpz, axpz = plt.subplots(figsize=(3, 3), layout="constrained")
     axpz.axhline(0, color='#cccccc'); axpz.axvline(0, color='#cccccc')
     if zeros.size:
         axpz.scatter(np.real(zeros), np.imag(zeros), marker='o', label='zeros')
@@ -268,16 +268,15 @@ def bode_plot():
     axpz.set_xlabel('Re{s}'); axpz.set_ylabel('Im{s}')
     axpz.set_title('Pole–Zero Map')
     axpz.grid(True, linestyle='--', alpha=0.4)
+
     bufpz = BytesIO()
-    plt.tight_layout()
     figpz.savefig(bufpz, format='png', dpi=150)
-    bufpz.seek(0)
     pz_img = base64.b64encode(bufpz.getvalue()).decode('utf-8')
     plt.close(figpz)
 
 
     
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True, layout="constrained")
     ax1.semilogx(w, magnitude)
     ax1.set_title("Bode Plot - Magnitude")
     ax1.set_ylabel("Magnitude (dB)")
@@ -304,11 +303,9 @@ def bode_plot():
         legend_labels.append("Gain crossover")
     if legend_lines:
         ax1.legend(legend_lines, legend_labels, loc="best")
-    plt.tight_layout()
     
     buf = BytesIO()
     plt.savefig(buf, format="png")
-    buf.seek(0)
     image_base64 = base64.b64encode(buf.getvalue()).decode("utf8")
     plt.close(fig)
     
@@ -412,7 +409,7 @@ def download_png():
 
 
     # Re‑generate Bode plot at high DPI
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True, layout="constrained")
     ax1.semilogx(w, mag)
     ax1.set_ylabel("Magnitude (dB)")
     ax1.grid(True, which='both', linestyle='--')
@@ -421,12 +418,11 @@ def download_png():
     ax2.set_xlabel("Frequency (rad/s)")
     ax2.grid(True, which='both', linestyle='--')
     fig.suptitle(function_str, y=0.98)
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    # plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     buf = BytesIO()
     # Save at 300 DPI for high‑resolution
     plt.savefig(buf, format='png', dpi=300)
-    buf.seek(0)
     plt.close(fig)
 
     return Response(

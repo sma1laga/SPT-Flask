@@ -8,18 +8,14 @@ import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
 from utils.img import fig_to_base64
 
-rcParams.update({
-    "figure.dpi": 140,
+RC_PARAMS = {
     "savefig.bbox": "tight",
-    "font.size": 13,
-    "mathtext.fontset": "dejavusans",
     "axes.titlesize": 24,
-    "axes.titleweight": "bold",
-    "axes.labelsize": 14,
-})
+    "axes.labelsize": 22,
+    "font.size": 20,
+}
 
 stability_feedback_bp = Blueprint(
     "stability_feedback", __name__, template_folder="../../templates"
@@ -64,10 +60,11 @@ def _draw_axes(ax):
 
 def _fig_to_svg_data_url(fig) -> str:
     try:
-        rcParams["svg.fonttype"] = "none"
-        buf = io.BytesIO()
-        fig.savefig(buf, format="svg")
-        return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+        with plt.rc_context({"svg.fonttype": "none"}):
+            buf = io.BytesIO()
+            fig.savefig(buf, format="svg")
+            plt.close(fig)
+            return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
     except Exception:
         return fig_to_base64(fig)
 
@@ -76,23 +73,21 @@ def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
     a = a_q / 2.0; b = b_q / 2.0; K = K_q / 2.0
     p_H = a
     p_Q = a - K*b
+    with plt.rc_context(RC_PARAMS):
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20.0, 8.5), layout="constrained")
+        ax1.set_title(r"$H(s)=\dfrac{b}{s-a}$")
+        ax1.set_facecolor(_bg_for_stability(p_H))
+        _draw_axes(ax1)
+        ax1.plot([p_H],[0.0], marker="x", ms=18, mew=2.6, color="crimson")
+        ax1.text(p_H+1.2, 1.2, r"$\times\ \text{pole}$", color="crimson", fontsize=13)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20.0, 8.5))
-    ax1.set_title(r"$H(s)=\dfrac{b}{s-a}$")
-    ax1.set_facecolor(_bg_for_stability(p_H))
-    _draw_axes(ax1)
-    ax1.plot([p_H],[0.0], marker="x", ms=18, mew=2.6, color="crimson")
-    ax1.text(p_H+1.2, 1.2, r"$\times\ \text{pole}$", color="crimson", fontsize=13)
+        ax2.set_title(r"$Q(s)=\dfrac{H(s)}{1+K\,H(s)}=\dfrac{b}{\,s-a+K\,b\,}$")
+        ax2.set_facecolor(_bg_for_stability(p_Q))
+        _draw_axes(ax2)
+        ax2.plot([p_Q],[0.0], marker="x", ms=18, mew=2.6, color="crimson")
+        ax2.text(p_Q+1.2, 1.2, r"$\times\ \text{pole}$", color="crimson", fontsize=13)
 
-    ax2.set_title(r"$Q(s)=\dfrac{H(s)}{1+K\,H(s)}=\dfrac{b}{\,s-a+K\,b\,}$")
-    ax2.set_facecolor(_bg_for_stability(p_Q))
-    _draw_axes(ax2)
-    ax2.plot([p_Q],[0.0], marker="x", ms=18, mew=2.6, color="crimson")
-    ax2.text(p_Q+1.2, 1.2, r"$\times\ \text{pole}$", color="crimson", fontsize=13)
-
-    plt.tight_layout(pad=1.0, w_pad=3.4)
-    img = _fig_to_svg_data_url(fig)
-    plt.close(fig)
+        img = _fig_to_svg_data_url(fig)
     return img
 
 # cache for defaults

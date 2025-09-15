@@ -37,8 +37,9 @@ def _prep(img: Image.Image) -> np.ndarray:
 def _png(arr: np.ndarray) -> str:
     fig, ax = plt.subplots(figsize=(3, 3), dpi=100)
     ax.axis("off"); ax.imshow(arr, cmap="gray", vmin=0, vmax=1)
-    buf = io.BytesIO(); plt.savefig(buf, format="png",
-                                    bbox_inches="tight", pad_inches=0); plt.close(fig)
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 # ───────── Butterworth core ───────────────────────────────────────
@@ -91,10 +92,11 @@ def _autocorr(arr):
 
 def _psd_plot(arr, y):
     f, P = signal.welch(arr[y,:], nperseg=min(256, arr.shape[1]))
-    fig, ax = plt.subplots(figsize=(3,2), dpi=110)
+    fig, ax = plt.subplots(figsize=(3,2), dpi=110, layout="constrained")
     ax.plot(f, P); ax.set_xlabel("Normalised frequency"); ax.set_ylabel("PSD")
-    fig.tight_layout()
-    buf = io.BytesIO(); plt.savefig(buf, format="png"); plt.close(fig)
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close(fig)
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 def radial_profile(img_fft_mag):

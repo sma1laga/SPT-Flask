@@ -70,7 +70,7 @@ def filter_design():
             
             # Create a figure with three subplots:
             # 1) Spectrum of original noise; 2) Spectrum of filtered noise; 3) Filter frequency response.
-            fig, ax = plt.subplots(3, 1, figsize=(8, 12))
+            fig, ax = plt.subplots(3, 1, figsize=(8, 12), layout="constrained")
             
             # Plot 1: FFT Spectrum of Original Noise Signal
             ax[0].plot(freqs, orig_fft_db)
@@ -101,13 +101,10 @@ def filter_design():
             ax[2].set_xlabel("Frequency (Hz)")
             ax[2].set_ylabel("Magnitude (dB)")
             ax[2].grid(True)
-            
-            plt.tight_layout()
-            
+                        
             # Save plot to a BytesIO buffer and encode as Base64.
             buf = BytesIO()
             plt.savefig(buf, format="png", dpi=100)
-            buf.seek(0)
             plot_data = buf.getvalue()
             plot_url = base64.b64encode(plot_data).decode("utf-8")
             plt.close(fig)
@@ -207,7 +204,7 @@ def live_plot():
         fft_vals = np.abs(np.fft.rfft(filtered_signal))
         fft_db = 20 * np.log10(np.maximum(fft_vals, 1e-10))
         
-        fig, ax = plt.subplots(3, 1, figsize=(6, 9))
+        fig, ax = plt.subplots(3, 1, figsize=(6, 9), layout="constrained")
         
         ax[0].plot(freqs, orig_fft_db)
         ax[0].set_title("Spectrum of Original Noise Signal")
@@ -227,11 +224,9 @@ def live_plot():
         ax[2].set_ylabel("Magnitude (dB)")
         ax[2].grid(True)
         
-        plt.tight_layout()
         buf = BytesIO()
         plt.savefig(buf, format="png", dpi=100)
         plt.close(fig)
-        buf.seek(0)
         return buf.getvalue(), 200, {'Content-Type': 'image/png'}
     except Exception as e:
         return f"Error: {e}", 400

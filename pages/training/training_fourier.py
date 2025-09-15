@@ -292,7 +292,7 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
     correct_idx = indices.index(0)
 
     try:
-        fig = plt.figure(figsize=(10, 8))
+        fig = plt.figure(figsize=(10, 8), layout="constrained")
         if direction == "TIME_TO_FREQ":
             gs = fig.add_gridspec(nrows=3, ncols=2)
             ax0 = fig.add_subplot(gs[0, :])
@@ -332,10 +332,8 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
                 ax.set_title(f"Option {i + 1}")
                 ax.grid(True)
 
-        fig.tight_layout()
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
-        buf.seek(0)
         plot_data = base64.b64encode(buf.getvalue()).decode()
         plt.close(fig)
     except Exception:

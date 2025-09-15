@@ -5,7 +5,6 @@ import io, base64
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib.ticker import MultipleLocator
-from matplotlib import rcParams
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
 
@@ -301,10 +300,7 @@ def generate_problem_plot(problem, highlight_index=None):
     #                 print(shift1_remaining)
     #                 print(new_shift1)
     
-    # Now create the figure
-    rcParams['text.parse_math'] = True
-    rcParams['text.usetex'] = True
-    
+    # Now create the figure    
     fig = plt.figure(figsize=(8,8))
     gs = fig.add_gridspec(nrows=3, ncols=2, hspace=0.5, wspace=0.3)
 
@@ -375,7 +371,6 @@ def generate_problem_plot(problem, highlight_index=None):
     
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
-    buf.seek(0)
     base64_img = base64.b64encode(buf.getvalue()).decode()
     plt.close(fig)
 

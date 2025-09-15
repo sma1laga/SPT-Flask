@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib.ticker import MultipleLocator
-from matplotlib import rcParams
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
 
@@ -230,12 +229,6 @@ def create_convolution_problem(difficulty):
         correct_idx = indices.index(0)  # where the correct one went
 
         # 5) Plot
-        rcParams['text.parse_math'] = True
-        # latex for rendering requires a full TeX installation which is
-        # not available in many environments...
-        # Matplotlibs internal mathtext can render the formulas well
-        # enough  I guess for this training view, so disable external latex rendering, if good enough.
-        rcParams['text.usetex'] = False
         fig = plt.figure(figsize=(10, 8))
         gs = fig.add_gridspec(nrows=3, ncols=2, hspace=0.5, wspace=0.3)
 
@@ -285,7 +278,6 @@ def create_convolution_problem(difficulty):
         # Convert to base64
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
-        buf.seek(0)
         plot_data = base64.b64encode(buf.getvalue()).decode()
         plt.close(fig)
 

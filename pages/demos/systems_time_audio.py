@@ -21,6 +21,12 @@ demos_systems_time_audio_bp = Blueprint(
     "demos_systems_time_audio", __name__, template_folder="../../templates"
 )
 
+RC_PARAMS = {
+    "axes.titlesize": 18,
+    "axes.labelsize": 15,
+    "font.size": 14,
+}
+
 # --- Exact notebook options ----------------------------------------------------
 X_OPTIONS = ["Elise", "Armstrong", "Snare"]
 H_OPTIONS = ["Studio Booth", "Meeting Room", "Office", "Lecture Hall", "Great Hall"]
@@ -107,7 +113,7 @@ def _times_like_notebook(n_samples, fs):
 def _make_figure(x_t, x, h_t, h, y_t, y):
     # Notebook used: plt.subplots(1,3, figsize=(config["fig_width"], config["fig_height"]*0.4))
     # We aproximate with a wide, short canvas.
-    fig, (ax_x, ax_h, ax_y) = plt.subplots(1, 3, figsize=(12, 3.8))
+    fig, (ax_x, ax_h, ax_y) = plt.subplots(1, 3, figsize=(12, 3.8), layout="constrained")
     for ax in (ax_x, ax_h, ax_y):
         ax.grid(True)
         ax.set_xlabel("$t$")
@@ -123,7 +129,6 @@ def _make_figure(x_t, x, h_t, h, y_t, y):
     ax_h.plot(h_t, h, color="blue", linewidth=1)
     ax_y.plot(y_t, y, color="green", linewidth=1)
 
-    plt.tight_layout(pad=2.0)
     return fig
 
 # --- Routes --------------------------------------------------------------------
@@ -177,9 +182,9 @@ def compute():
     y_t = _times_like_notebook(len(y_sig), fs)
 
     # Plot
-    fig = _make_figure(x_t, x_sig, h_t, h_sig, y_t, y_sig)
-    img = fig_to_base64(fig)
-    plt.close(fig)
+    with plt.rc_context(RC_PARAMS):
+        fig = _make_figure(x_t, x_sig, h_t, h_sig, y_t, y_sig)
+        img = fig_to_base64(fig)
 
     # Audio players as data URLs
     x_url = _to_data_url("audio/wav", _wav_bytes(fs, x_sig))

@@ -10,7 +10,7 @@ func_defs_bp = Blueprint("function_definitions", __name__, url_prefix="/function
 
 def make_plot(x, y, kind="line"):
     """Render x,y to a PNG and return it base64-encoded."""
-    fig, ax = plt.subplots(figsize=(3,2))
+    fig, ax = plt.subplots(figsize=(3,2), layout="constrained")
     if kind == "comb":
         # draw as true Dirac impulses
         ax.vlines(x, 0, y, colors="C0", linewidth=1)
@@ -44,8 +44,7 @@ def make_plot(x, y, kind="line"):
     buf = BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
     plt.close(fig)
-    buf.seek(0)
-    return base64.b64encode(buf.read()).decode("ascii")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
 
 @func_defs_bp.route("/")
 def function_definitions():

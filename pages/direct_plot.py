@@ -357,7 +357,7 @@ def _make_diagram(num, den, form: str):
     if order > 2:
         return None  # fall back to plain text table
 
-    fig, ax = plt.subplots(figsize=(7, 3))
+    fig, ax = plt.subplots(figsize=(7, 3), layout="constrained")
     
     if form == "1":
         _draw_df1(ax, num, den)
@@ -366,7 +366,6 @@ def _make_diagram(num, den, form: str):
     else:
         _draw_df2(ax, num, den)
     buf = io.BytesIO()
-    fig.tight_layout()
     fig.savefig(buf, format="png", dpi=140)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("ascii")

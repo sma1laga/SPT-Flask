@@ -4,6 +4,7 @@ import os
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
 import matplotlib.pyplot as plt
 from functools import lru_cache
 from scipy.signal import convolve, resample
@@ -103,25 +104,25 @@ def compute():
         xf     = convolve(x, h)
 
         # ---------- plotting lightweight ----------
-        fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.0))
+        fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.0), layout='constrained')
         ax_x, ax_h, ax_xf, ax_h_DFT = axs.flatten()
 
         # DFT(x)
         x_dft = _abs_rfft(x)
         ax_x.grid(True)
         ax_x.set_title("DFT of original Input")
-        ax_x.set_xlabel("Ω")
+        ax_x.set_xlabel(r"$\Omega$")
         ax_x.set_ylabel("Magnitude")
         ax_x.plot(np.arange(len(x_dft)), x_dft, linewidth=0.5)
         ax_x.set_xlim(0, len(x_dft)-1)
         ax_x.set_xticks([0, len(x_dft)//2, len(x_dft)-1])
-        ax_x.set_xticklabels(["0", "π/2", "π"])
+        ax_x.set_xticklabels([r"$0$", r"$\frac{\pi}{2}$", r"$\pi$"])
         ax_x.set_ylim(0, 1000)
 
         ax_h.grid(True)
         ax_h.set_title("Low-Pass (Time Domain)")
-        ax_h.set_xlabel("k")
-        ax_h.set_ylabel("h[k]")
+        ax_h.set_xlabel("$k$")
+        ax_h.set_ylabel("$h[k]$")
         ax_h.hlines(0, -1, L, color='black')
         ml2, _, _ = ax_h.stem(np.arange(L), h, basefmt='none')
         ml2.set_markerfacecolor('none')
@@ -131,27 +132,26 @@ def compute():
         xf_DFT = _abs_rfft(xf)
         ax_xf.grid(True)
         ax_xf.set_title("DFT of filtered Signal")
-        ax_xf.set_xlabel("Ω")
+        ax_xf.set_xlabel(r"$\Omega$")
         ax_xf.set_ylabel("Magnitude")
         ax_xf.plot(np.arange(len(xf_DFT)), xf_DFT, linewidth=0.5)
         ax_xf.set_xlim(0, len(xf_DFT)-1)
         ax_xf.set_xticks([0, len(xf_DFT)//2, len(xf_DFT)-1])
-        ax_xf.set_xticklabels(["0", "π/2", "π"])
+        ax_xf.set_xticklabels([r"$0$", r"$\frac{\pi}{2}$", r"$\pi$"])
         ax_xf.set_ylim(0, 1000)
 
         # |H(jΩ)| (length L -> tiny; plot full rFFT)
         h_DFT = _abs_rfft(h)
         ax_h_DFT.grid(True)
         ax_h_DFT.set_title("Low-Pass (Frequency Domain)")
-        ax_h_DFT.set_xlabel("Ω")
-        ax_h_DFT.set_ylabel("|H(jΩ)|")
+        ax_h_DFT.set_xlabel(r"$\Omega$")
+        ax_h_DFT.set_ylabel(r"$|H(\mathrm{j}\Omega)|$")
         ax_h_DFT.plot(np.arange(len(h_DFT)), h_DFT, linewidth=1.0)
         ax_h_DFT.set_xlim(0, len(h_DFT)-1)
         ax_h_DFT.set_xticks([0, len(h_DFT)//2, len(h_DFT)-1])
-        ax_h_DFT.set_xticklabels(["0", "π/2", "π"])
+        ax_h_DFT.set_xticklabels([r"$0$", r"$\frac{\pi}{2}$", r"$\pi$"])
         ax_h_DFT.set_ylim(0, 1.2)
 
-        fig.tight_layout(h_pad=2.5, pad=2.5)
         png = fig_to_base64(fig)
 
         return jsonify({

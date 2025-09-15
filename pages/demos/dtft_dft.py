@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
 
 dtft_dft_bp = Blueprint("dtft_dft", __name__, template_folder="../../templates")
@@ -61,16 +59,15 @@ def _init_axes_styles(ax):
 
 def _render_png(fig):
     buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+    fig.savefig(buf, format="png", bbox_inches="tight")
     buf.seek(0)
     return buf.getvalue()
 
 def _make_figure(norm_freq, m, cfg):
     fig_w = float(cfg.get("fig_width", _DEFAULT_CONFIG["fig_width"]))
     fig_h = float(cfg.get("fig_height", _DEFAULT_CONFIG["fig_height"]))
-    fig, axes = plt.subplots(2, 2, figsize=(1.2*fig_w, 1.0*fig_h))
+    fig, axes = plt.subplots(2, 2, figsize=(1.2*fig_w, 1.0*fig_h), layout="constrained")
     (x_ax, dtft_ax), (crop_ax, dft_ax) = axes
-    plt.tight_layout(h_pad=3, pad=3)
 
     # --- Data ---
     k = np.arange(-20, 21)                  # time index

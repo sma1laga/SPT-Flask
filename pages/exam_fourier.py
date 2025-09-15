@@ -183,7 +183,7 @@ def _render_problem(prob, highlight=None):
     shuffled = [opts[i] for i in idxs]
     prob["correct"] = idxs.index(0)
     # Plot
-    fig = plt.figure(figsize=(10, 8))
+    fig = plt.figure(figsize=(10, 8), layout="constrained")
     gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1])
     ax0 = fig.add_subplot(gs[0, :])
     if prob["direction"] == "TIME_TO_FREQ":
@@ -207,10 +207,8 @@ def _render_problem(prob, highlight=None):
         if highlight is not None and i == highlight:
             color = 'lightgreen' if i == prob['correct'] else 'lightcoral'
             ax.patch.set_facecolor(color)
-    fig.tight_layout()
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
-    buf.seek(0)
     img_str = base64.b64encode(buf.getvalue()).decode()
     plt.close(fig)
     return img_str, shuffled

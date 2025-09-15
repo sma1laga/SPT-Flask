@@ -15,8 +15,6 @@ from utils.laplace_utils import (
 import utils.sympy_utils as sp_utils
 
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
-rcParams["text.usetex"] = True # TeX-like font
 import numpy as np
 import io
 import base64
@@ -133,7 +131,8 @@ def inverse_laplace():
                     time_signal_ltx = r"h(t)=" + time_signal_ltx
                 
                 t_signal_name_ltx = time_signal_ltx.split("=")[0]
-                fig, ax = plt.subplots(figsize=(5, 3))
+
+                fig, ax = plt.subplots(figsize=(5, 3), layout="constrained")
                 ax.axhline(0, color='k', linewidth=0.9)
                 ax.plot(t_vals, y.real, label=rf"$\mathrm{{Re}}\{{{t_signal_name_ltx}\}}$")
                 ax.plot(t_vals, y.imag, label=rf"$\mathrm{{Im}}\{{{t_signal_name_ltx}\}}$", linestyle="--")
@@ -142,10 +141,9 @@ def inverse_laplace():
                 ax.set_ylabel("$"+t_signal_name_ltx+"$")
                 ax.grid()
                 ax.legend()
-                fig.tight_layout()
+                
                 buf = io.BytesIO()
                 fig.savefig(buf, format="png")
-                buf.seek(0)
                 plt.close(fig)
                 plot_url = base64.b64encode(buf.getvalue()).decode("utf8")
             except TimeoutError:

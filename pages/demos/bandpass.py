@@ -8,13 +8,7 @@ import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
 from utils.img import fig_to_base64
-
-rcParams["text.usetex"] = False
-rcParams["mathtext.fontset"] = "dejavusans"
-rcParams["figure.dpi"] = 90
-rcParams["savefig.bbox"] = "tight"
 
 demos_bandpass_bp = Blueprint(
     "demos_bandpass", __name__, template_folder="../../templates"
@@ -54,18 +48,18 @@ def _render_img_cached(dw_q: int, w0_q: int) -> str:
     env = envelope_ht(T_GRID, delta_omega)
     ht  = env * np.cos(omega0 * T_GRID)
 
-    fig, (axF, axT) = plt.subplots(1, 2, figsize=(8.6, 3.0))
+    fig, (axF, axT) = plt.subplots(1, 2, figsize=(8.6, 3.0), layout="constrained")
     # Frequency domain
-    axF.plot(W_GRID, H, color="red", lw=1.0, antialiased=False)
+    axF.plot(W_GRID, H, color="red")
     axF.set_xlim(W_MIN, W_MAX)
     axF.set_ylim(-0.05, 1.05)
     axF.grid(True)
     axF.set_title("Frequency domain")
     axF.set_xlabel(r"$\omega$")
-    axF.set_ylabel(r"$H(j\omega)$")
+    axF.set_ylabel(r"$H(\mathrm{j}\omega)$")
     # Time domain
-    axT.plot(T_GRID, ht,          color="C0", lw=1.0, antialiased=False, label=r"$h(t)$")
-    axT.plot(T_GRID, np.abs(env), color="C2", lw=1.0, ls="--", antialiased=False, label="Envelope")
+    axT.plot(T_GRID, ht,          color="C0", label=r"$h(t)$")
+    axT.plot(T_GRID, np.abs(env), color="C2", ls="--", label="Envelope")
     axT.set_xlim(T_MIN, T_MAX)
     axT.set_ylim(-4.0, 4.0)
     axT.grid(True)
@@ -74,9 +68,7 @@ def _render_img_cached(dw_q: int, w0_q: int) -> str:
     axT.set_ylabel(r"$h(t)$")
     axT.legend(loc="upper right", frameon=False)
 
-    plt.tight_layout(pad=1.0, w_pad=2.0)
     img = fig_to_base64(fig)
-    plt.close(fig)
     return img
 
 #  cache for default

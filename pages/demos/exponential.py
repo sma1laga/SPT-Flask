@@ -6,16 +6,9 @@ import math
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-import shutil
-# Use LaTeX rendering only if the system LaTeX installation is available
-if shutil.which("latex"):
-    rcParams["text.usetex"] = True
-rcParams["mathtext.fontset"] = "cm"
 
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
-from mpl_toolkits.mplot3d import Axes3D  
 
 from utils.img import fig_to_base64
 
@@ -23,6 +16,13 @@ from utils.img import fig_to_base64
 demos_exponential_bp = Blueprint(
     "demos_exponential", __name__, template_folder="../../templates"
 )
+
+RC_PARAMS = {
+    "savefig.bbox": "tight",
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "font.size": 12,
+}
 
 # Fixed time axis 
 T_MAX = 2.5 * np.pi
@@ -71,83 +71,82 @@ def compute():
 
         t, x = _compute_curve(magnitude, phase, omega, sigma, t_cursor, mode)
 
-        # Figure layout: 3D spiral + Re/Im + abs(x| + phase
-        fig = plt.figure(figsize=(11, 6))
-        gs_main = GridSpec(1, 12, figure=fig)
-        gs_3d   = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_main[0:5])
-        gs_reim = GridSpecFromSubplotSpec(2, 1, subplot_spec=gs_main[6:9])
-        gs_magph= GridSpecFromSubplotSpec(2, 1, subplot_spec=gs_main[9:12])
+        # Figure layout: 3D spiral + Re/Im + abs(x| + phase)
+        with plt.rc_context(RC_PARAMS):
+            fig = plt.figure(figsize=(11, 6), layout="tight")
+            gs_main = GridSpec(1, 12, figure=fig)
+            gs_3d   = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_main[0:5])
+            gs_reim = GridSpecFromSubplotSpec(2, 1, subplot_spec=gs_main[6:9])
+            gs_magph= GridSpecFromSubplotSpec(2, 1, subplot_spec=gs_main[9:12])
 
-        ax3d = fig.add_subplot(gs_3d[0], projection="3d")
-        ax_re = fig.add_subplot(gs_reim[0])
-        ax_im = fig.add_subplot(gs_reim[1])
-        ax_ma = fig.add_subplot(gs_magph[0])
-        ax_ph = fig.add_subplot(gs_magph[1])
+            ax3d = fig.add_subplot(gs_3d[0], projection="3d")
+            ax_re = fig.add_subplot(gs_reim[0])
+            ax_im = fig.add_subplot(gs_reim[1])
+            ax_ma = fig.add_subplot(gs_magph[0])
+            ax_ph = fig.add_subplot(gs_magph[1])
 
-        # 3D spiral (blue)
-        ax3d.set_xlabel(r"$t$")
-        ax3d.set_xlim(0, T_MAX)
-        ax3d.set_ylabel(r"$\mathrm{Re}\{x(t)\}$")
-        ax3d.set_ylim(-10, 10)
-        ax3d.set_zlabel(r"$\mathrm{Im}\{x(t)\}$")
-        ax3d.set_zlim(-10, 10)
-        ax3d.plot(t, x.real, x.imag, color="blue")
-        if mode == "Until t":
-            ax3d.plot([t[-1]], [x[-1].real], [x[-1].imag], "o", color="black")
-            ax3d.text(t[-1]+0.3, x[-1].real, x[-1].imag, r"$t$", fontsize=12)
+            # 3D spiral (blue)
+            ax3d.set_xlabel(r"$t$")
+            ax3d.set_xlim(0, T_MAX)
+            ax3d.set_ylabel(r"$\mathrm{Re}\{x(t)\}$")
+            ax3d.set_ylim(-10, 10)
+            ax3d.set_zlabel(r"$\mathrm{Im}\{x(t)\}$")
+            ax3d.set_zlim(-10, 10)
+            ax3d.plot(t, x.real, x.imag, color="blue")
+            if mode == "Until t":
+                ax3d.plot([t[-1]], [x[-1].real], [x[-1].imag], "o", color="black")
+                ax3d.text(t[-1]+0.3, x[-1].real, x[-1].imag, r"$t$", fontsize=12)
 
-        # Real (red)
-        ax_re.plot(t, x.real, color="red")
-        ax_re.set_xlabel(r"$t$", labelpad=-2)
-        ax_re.set_xlim(0, T_MAX)
-        ax_re.set_ylabel(r"$\mathrm{Re}\{x(t)\}$", labelpad=-4)
-        ax_re.set_ylim(-10, 10)
-        ax_re.grid(True)
-        if mode == "Until t":
-            ax_re.plot([t[-1]], [x[-1].real], "o", color="black")
-            ax_re.text(t[-1]+0.3, x[-1].real, r"$t$", fontsize=12)
+            # Real (red)
+            ax_re.plot(t, x.real, color="red")
+            ax_re.set_xlabel(r"$t$", labelpad=-2)
+            ax_re.set_xlim(0, T_MAX)
+            ax_re.set_ylabel(r"$\mathrm{Re}\{x(t)\}$", labelpad=-4)
+            ax_re.set_ylim(-10, 10)
+            ax_re.grid(True)
+            if mode == "Until t":
+                ax_re.plot([t[-1]], [x[-1].real], "o", color="black")
+                ax_re.text(t[-1]+0.3, x[-1].real, r"$t$", fontsize=12)
 
-        # Imag (green)
-        ax_im.plot(t, x.imag, color="green")
-        ax_im.set_xlabel(r"$t$", labelpad=-2)
-        ax_im.set_xlim(0, T_MAX)
-        ax_im.set_ylabel(r"$\mathrm{Im}\{x(t)\}$", labelpad=-4)
-        ax_im.set_ylim(-10, 10)
-        ax_im.grid(True)
-        if mode == "Until t":
-            ax_im.plot([t[-1]], [x[-1].imag], "o", color="black")
-            ax_im.text(t[-1]+0.3, x[-1].imag, r"$t$", fontsize=12)
+            # Imag (green)
+            ax_im.plot(t, x.imag, color="green")
+            ax_im.set_xlabel(r"$t$", labelpad=-2)
+            ax_im.set_xlim(0, T_MAX)
+            ax_im.set_ylabel(r"$\mathrm{Im}\{x(t)\}$", labelpad=-4)
+            ax_im.set_ylim(-10, 10)
+            ax_im.grid(True)
+            if mode == "Until t":
+                ax_im.plot([t[-1]], [x[-1].imag], "o", color="black")
+                ax_im.text(t[-1]+0.3, x[-1].imag, r"$t$", fontsize=12)
 
-        # Magnitude (purple)
-        ax_ma.plot(t, np.abs(x), color="purple")
-        ax_ma.set_xlabel(r"$t$", labelpad=-2)
-        ax_ma.set_xlim(0, T_MAX)
-        ax_ma.set_ylabel(r"$|x(t)|$", labelpad=-4)
-        ax_ma.set_ylim(0, 10)
-        ax_ma.grid(True)
-        if mode == "Until t":
-            ax_ma.plot([t[-1]], [abs(x[-1])], "o", color="black")
-            ax_ma.text(t[-1]+0.3, abs(x[-1]), r"$t$", fontsize=12)
+            # Magnitude (purple)
+            ax_ma.plot(t, np.abs(x), color="purple")
+            ax_ma.set_xlabel(r"$t$", labelpad=-2)
+            ax_ma.set_xlim(0, T_MAX)
+            ax_ma.set_ylabel(r"$|x(t)|$", labelpad=-4)
+            ax_ma.set_ylim(0, 10)
+            ax_ma.grid(True)
+            if mode == "Until t":
+                ax_ma.plot([t[-1]], [abs(x[-1])], "o", color="black")
+                ax_ma.text(t[-1]+0.3, abs(x[-1]), r"$t$", fontsize=12)
 
-        # Phase (orange)
-        ph = np.zeros_like(t) if magnitude == 0.0 else np.angle(x)
-        ax_ph.plot(t, ph, color="orange")
-        ax_ph.set_xlabel(r"$t$", labelpad=-2)
-        ax_ph.set_xlim(0, T_MAX)
-        ax_ph.set_ylabel(r"$\varphi\{x(t)\}$", labelpad=-4)
-        yticks = np.arange(-np.pi, np.pi + 0.1, np.pi/2)
-        ax_ph.set_yticks(yticks)
-        ax_ph.set_yticklabels([
-            r"$-\pi$", r"$-\frac{\pi}{2}$", r"$0$", r"$\frac{\pi}{2}$", r"$\pi$"
-        ])
-        ax_ph.grid(True)
-        if mode == "Until t":
-            ax_ph.plot([t[-1]], [ph[-1]], "o", color="black")
-            ax_ph.text(t[-1]+0.3, ph[-1], r"$t$", fontsize=12)
+            # Phase (orange)
+            ph = np.zeros_like(t) if magnitude == 0.0 else np.angle(x)
+            ax_ph.plot(t, ph, color="orange")
+            ax_ph.set_xlabel(r"$t$", labelpad=-2)
+            ax_ph.set_xlim(0, T_MAX)
+            ax_ph.set_ylabel(r"$\varphi\{x(t)\}$", labelpad=-4)
+            yticks = np.arange(-np.pi, np.pi + 0.1, np.pi/2)
+            ax_ph.set_yticks(yticks)
+            ax_ph.set_yticklabels([
+                r"$-\pi$", r"$-\frac{\pi}{2}$", r"$0$", r"$\frac{\pi}{2}$", r"$\pi$"
+            ])
+            ax_ph.grid(True)
+            if mode == "Until t":
+                ax_ph.plot([t[-1]], [ph[-1]], "o", color="black")
+                ax_ph.text(t[-1]+0.3, ph[-1], r"$t$", fontsize=12)
 
-        fig.tight_layout()
-        png = fig_to_base64(fig)
-        plt.close(fig)
+            png = fig_to_base64(fig)
 
         return jsonify({"image": png})
     except Exception as e:

@@ -5,9 +5,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.signal import resample, correlate
 
@@ -99,15 +96,15 @@ def compute():
 
         fs, x = _prepare_signal(x_type)
 
-        fig, ax = plt.subplots(figsize=(6.8, 4.0))
+        fig, ax = plt.subplots(figsize=(6.8, 4.0), layout="constrained")
         ax.grid(True)
         if plt_type == "dft":
             n_fft = len(x)
             mag, f_hz = _abs_rfft(x, fs)
             ax.plot(f_hz[:n_fft//4+2], mag[:n_fft//4+2], linewidth=0.5)
-            ax.set_title("Magnitude Spectrum |X(f)|")
+            ax.set_title("Magnitude Spectrum")
             ax.set_xlabel("Frequency [Hz]")
-            ax.set_ylabel("|X(f)|")
+            ax.set_ylabel("$|X(f)|$")
 
             if x_type == "Piano":
                 # get current xticks and labels
@@ -128,25 +125,25 @@ def compute():
             ax.margins(x=0)
             ax.set_title("Normalized Autocorrelation Function (ACF)")
             ax.set_xlabel("Time-Lag [ms]")
-            ax.set_ylabel("ϕₓₓ(τ) / ϕₓₓ(τ=0)")
+            ax.set_ylabel(r"$\varphi_{xx}(\tau) / \varphi_{xx}(\tau=0)$")
         elif plt_type == "psd":
             psd = _abs_rfft(_acf(x))
             ax.plot(np.linspace(0, np.pi/2, len(psd)), psd, linewidth=0.5)
             ax.set_title("Power Spectral Density (PSD)")
-            ax.set_xlabel("Ω")
-            ax.set_ylabel("|Φₓₓ(jΩ)|")
+            ax.set_xlabel(r"$\Omega$")
+            ax.set_ylabel(r"$|\Phi_{xx}(\mathrm{e}^{\mathrm{j}\Omega})|$")
             ax.set_xticks([0, np.pi/4, np.pi/2])
-            ax.set_xticklabels(["0", "π/4", "π/2"])
+            ax.set_xticklabels([r"$0$", r"$\frac{\pi}{4}$", r"$\frac{\pi}{2}$"])
             ax.set_ylim(0,2e6)
             ax.margins(x=0)
         else: # time
-            t = np.arange(len(x)) / fs
+            t_ms = np.arange(len(x)) / fs * 1e3
             start, length = 10000, 5000
-            ax.plot(t[start:start+length], x[start:start+length], linewidth=0.5)
+            ax.plot(t_ms[start:start+length], x[start:start+length], linewidth=0.5)
             ax.margins(x=0)
             ax.set_title("Amplitude")
             ax.set_xlabel("Time [ms]")
-            ax.set_ylabel("x[k]")
+            ax.set_ylabel("$x[k]$")
             ax.set_ylim(-1, 1)
 
         png = fig_to_base64(fig)

@@ -3,9 +3,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
 
@@ -79,21 +76,21 @@ def compute():
         H = mag_response(h)
 
         # ---------- plotting ----------
-        fig, axs = plt.subplots(2, 2, figsize=(9.6, 6.4))
+        fig, axs = plt.subplots(2, 2, figsize=(9.6, 6.4), layout='constrained')
         ax_x, ax_h, ax_xf, ax_h_dft = axs.flatten()
 
         # Originalbild
         ax_x.imshow(np.repeat(x[None], M, axis=0), cmap="gray", interpolation="none", aspect='auto')
         ax_x.set_title("Original Image")
-        ax_x.set_ylabel("m")
-        ax_x.set_xlabel("n")
+        ax_x.set_ylabel("$m$")
+        ax_x.set_xlabel("$n$")
         ax_x.tick_params(axis='both', which='both', left=False, labelleft=False, bottom=False, labelbottom=False)
 
         # h[n] (stem)
         ax_h.grid(True)
         ax_h.set_title("Band-Pass (Spatial Domain)")
-        ax_h.set_xlabel("n")
-        ax_h.set_ylabel("h[n]")
+        ax_h.set_xlabel("$n$")
+        ax_h.set_ylabel("$h[n]$")
         ax_h.hlines(0, -1, L, color="black")
         markerline, _, _ = ax_h.stem(np.arange(L), h, basefmt='none')
         markerline.set_markerfacecolor('none')
@@ -103,22 +100,21 @@ def compute():
         # Filtered Image
         ax_xf.imshow(np.repeat(xf[None], M, axis=0), cmap="gray", interpolation="none", aspect='auto', vmin=0, vmax=1)
         ax_xf.set_title("Filtered Image")
-        ax_xf.set_ylabel("m")
-        ax_xf.set_xlabel("n")
+        ax_xf.set_ylabel("$m$")
+        ax_xf.set_xlabel("$n$")
         ax_xf.tick_params(axis='both', which='both', left=False, labelleft=False, bottom=False, labelbottom=False)
 
         ax_h_dft.grid(True)
         ax_h_dft.set_title("Band-Pass (Frequency Domain)")
-        ax_h_dft.set_xlabel("Ω")
-        ax_h_dft.set_ylabel("|H(jΩ)|")
+        ax_h_dft.set_xlabel(r"$\Omega$")
+        ax_h_dft.set_ylabel(r"$|H(\mathrm{j}\Omega)|$")
         w = np.linspace(0, 2*np.pi, len(H), endpoint=True)
         ax_h_dft.plot(w, H)
         ax_h_dft.set_xlim(0, 2*np.pi)
         ax_h_dft.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
-        ax_h_dft.set_xticklabels(["0", "π/2", "π", "3π/2", "2π"])
+        ax_h_dft.set_xticklabels([r"$0$", r"$\frac{\pi}{2}$", r"$\pi$", r"$\frac{3\pi}{2}$", r"$2\pi$"])
         ax_h_dft.set_ylim(0, 2.2)
 
-        fig.tight_layout()
         png = fig_to_base64(fig)
         return jsonify({"image": png})
 

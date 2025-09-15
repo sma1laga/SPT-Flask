@@ -3,11 +3,8 @@ from flask import Blueprint, render_template, request, jsonify
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
+matplotlib.style.use("fast")
 import matplotlib.pyplot as plt
-plt.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = True
 from utils.img import fig_to_base64
 from functools import lru_cache
 
@@ -15,6 +12,12 @@ from functools import lru_cache
 demos_fouriertransformation_bp = Blueprint(
     "demos_fouriertransformation", __name__, template_folder="../../templates"
 )
+
+RC_PARAMS = {
+    "axes.titlesize": 14,
+    "axes.labelsize": 13,
+    "font.size": 11,
+}
 
 NUM_TIMEPOINTS = 2048
 NUM_OMEGA_POINTS = 8096
@@ -146,7 +149,7 @@ def _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
         abs_ax.set_xticks(ticks, [fr"${k}\pi$" for k in range(k0, k1 + 1)])
     abs_ax.grid()
     abs_ax.set_xlabel(r"$\omega$")
-    abs_ax.set_ylabel(r"$|X(j\omega)|$")
+    abs_ax.set_ylabel(r"$|X(\mathrm{j}\omega)|$")
     abs_ax.set_title("Magnitude")
 
     # Phase
@@ -162,7 +165,7 @@ def _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
     phi_ax.set_xticks(ticks, [fr"${k}\pi$" for k in range(k0, k1 + 1)])
     phi_ax.grid()
     phi_ax.set_xlabel(r"$\omega$")
-    phi_ax.set_ylabel(r"$\phi(j\omega)$")
+    phi_ax.set_ylabel(r"$\phi(\mathrm{j}\omega)$")
     phi_ax.set_title("Phase")
 
 def _render_plot(x_type, x_displacement, x_width, x_height):
@@ -173,8 +176,7 @@ def _render_plot(x_type, x_displacement, x_width, x_height):
     Xabs = generate_abs(w, x_type, x_displacement, x_width, x_height)
     Xphi = generate_phi(w, x_type, x_displacement, x_width, x_height)
 
-    fig, (x_ax, abs_ax, phi_ax) = plt.subplots(3, 1, figsize=(9, 6))
-    plt.tight_layout(h_pad=2.2, pad=1.6)
+    fig, (x_ax, abs_ax, phi_ax) = plt.subplots(3, 1, figsize=(9, 6), layout="constrained")
 
     _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end)
 
@@ -230,8 +232,8 @@ def compute():
     min_disp = t_start + MAX_WIDTH
     max_disp = t_end - MAX_WIDTH
     x_displacement = round(float(np.clip(x_displacement, min_disp, max_disp)), 5)
-
-    img = _cached_image(x_type, x_displacement, x_width, x_height)
+    with plt.rc_context(RC_PARAMS):
+        img = _cached_image(x_type, x_displacement, x_width, x_height)
 
 
     return jsonify(dict(

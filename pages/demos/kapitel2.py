@@ -5,9 +5,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import convolve
@@ -100,14 +97,14 @@ def compute():
         y = _compute(fs, x, h)
 
         # Plot x, h, y
-        fig, axes = plt.subplots(3, 1, figsize=(8, 6))
+        fig, axes = plt.subplots(3, 1, figsize=(8, 6), layout="constrained")
         t_x = np.arange(len(x))/fs
         t_y = np.arange(len(y))/fs
 
         axes[0].plot(t_x, x, lw=0.5)
         axes[0].margins(x=0)
         axes[0].set_title("Input")
-        axes[0].set_ylabel("x[k]")
+        axes[0].set_ylabel("$x[k]$")
         axes[0].set_xlabel("Time [s]")
 
         # h[k] stem plot
@@ -118,18 +115,18 @@ def compute():
         axes[1].set_xlim(0, len(h)/fs)
         axes[1].margins(x=0)
         axes[1].set_title("Impulse Response")
-        axes[1].set_ylabel("h[k]")
+        axes[1].set_ylabel("$h[k]$")
         axes[1].set_xlabel("Time [s]")
 
         axes[2].plot(t_y, y, lw=0.5)
         axes[2].margins(x=0)
         axes[2].set_title("Output")
-        axes[2].set_ylabel("y[k] = x[k]✳h[k]")
+        axes[2].set_ylabel(r"$y[k] = x[k]\ast h[k]$")
         axes[2].set_xlabel("Time [s]")
 
         for ax in axes:
             ax.grid(True, alpha=0.25)
-
+        
         png = fig_to_base64(fig)
 
         # Normalize y for playback

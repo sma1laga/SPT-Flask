@@ -101,7 +101,7 @@ def ztransform():
             if mag.max() > 0:
                 mag /= mag.max()
 
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4))
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4), layout="constrained")
             ax1.plot(ω, mag)
             ax1.set_title(r'|X(e^{j\omega})| (normalized)')
             ax1.set_xlabel(r'$\omega$ (rad/sample)'); ax1.grid(True)
@@ -110,10 +110,8 @@ def ztransform():
             ax2.set_title(r'∠X(e^{j\omega})')
             ax2.set_xlabel(r'$\omega$ (rad/sample)'); ax2.grid(True)
 
-            plt.tight_layout()
             buf = io.BytesIO()
             plt.savefig(buf, format="png")
-            buf.seek(0)
             plot_data = base64.b64encode(buf.getvalue()).decode()
             plt.close(fig)
 

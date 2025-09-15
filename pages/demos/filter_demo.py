@@ -7,9 +7,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = True
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 from matplotlib.gridspec import GridSpec
@@ -178,7 +175,7 @@ def compute():
         y = lfilter(b, a, x)
 
         # figure: 2x2 grid (top: x and y; bottom: selected plot)
-        fig = plt.figure(figsize=(10, 7))
+        fig = plt.figure(figsize=(10, 7), layout="constrained")
         gs = GridSpec(2, 2, figure=fig)
         x_ax = fig.add_subplot(gs[0, 0])
         y_ax = fig.add_subplot(gs[0, 1])
@@ -278,7 +275,6 @@ def compute():
             w, mag_db = get_mag_dB(a, b)
             plot_ax.plot(w, mag_db, linewidth=1)
 
-        plt.tight_layout(h_pad=3.0, pad=3.0)
         png = fig_to_base64(fig)
         plt.close(fig)
 

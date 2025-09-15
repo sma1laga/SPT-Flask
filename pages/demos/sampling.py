@@ -9,17 +9,8 @@ import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
 from utils.img import fig_to_base64
 
-rcParams.update({
-    "figure.dpi": 130,
-    "savefig.bbox": "tight",
-    "font.size": 12.5,
-    "mathtext.fontset": "dejavusans",
-    "axes.titlesize": 14,
-    "axes.labelsize": 13,
-})
 
 sampling_bp = Blueprint(
     "sampling", __name__, template_folder="../../templates"
@@ -122,10 +113,11 @@ def reconstruct_y(t, T, w_g, x_samples, t_samples, partials=False):
 
 def _fig_to_svg_data_url(fig) -> str:
     try:
-        rcParams["svg.fonttype"] = "none"
-        buf = io.BytesIO()
-        fig.savefig(buf, format="svg")
-        return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+        with plt.rc_context({"svg.fonttype": "none"}):
+            buf = io.BytesIO()
+            fig.savefig(buf, format="svg")
+            plt.close(fig)
+            return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
     except Exception:
         return fig_to_base64(fig)
 
@@ -169,7 +161,7 @@ def _render_cached(
     Yw  = Y_freq(w_grid, w_g, w_a)   if show_Y  else None
 
     # ---- Plotting ----
-    fig, (axT, axF) = plt.subplots(1, 2, figsize=(16.5, 6.8))
+    fig, (axT, axF) = plt.subplots(1, 2, figsize=(8.2, 3.4), layout="constrained")
 
     # Time domain
     axT.set_title("Time Domain")
@@ -219,19 +211,8 @@ def _render_cached(
     if any([show_X, show_Xa, show_Y]):
         axF.legend(loc="upper right")
 
-    plt.tight_layout(pad=1.2, w_pad=2.0)
     img = _fig_to_svg_data_url(fig)
-    plt.close(fig)
     return img
-
-def _fig_to_svg_data_url(fig) -> str:
-    try:
-        rcParams["svg.fonttype"] = "none"
-        buf = io.BytesIO()
-        fig.savefig(buf, format="svg")
-        return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
-    except Exception:
-        return fig_to_base64(fig)
 
 def _flags_from_defaults() -> int:
     f = 0

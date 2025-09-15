@@ -5,9 +5,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
-from matplotlib import rcParams
-rcParams["text.usetex"] = False
-rcParams["text.parse_math"] = False
 import matplotlib.pyplot as plt
 from skimage.io import imread
 from scipy.signal import convolve2d
@@ -79,7 +76,7 @@ def compute():
         h = _impulse_response(peak2)
         y = _filter_image(x, h, row_wise=row_wise)
 
-        fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.4), gridspec_kw={'height_ratios': [1, 2]})
+        fig, axs = plt.subplots(2, 2, figsize=(9.0, 5.4), gridspec_kw={'height_ratios': [1, 2]}, layout='constrained')
         x_axis = axs[1, 0]
         y_axis = axs[1, 1]
         gs = axs[0, 0].get_gridspec()
@@ -87,8 +84,8 @@ def compute():
             ax.remove()
         h_axis = fig.add_subplot(gs[0, :])
 
-        h_axis.set_xlabel("Index k")
-        h_axis.set_ylabel("h[k]")
+        h_axis.set_xlabel("Index $k$")
+        h_axis.set_ylabel("$h[k]$")
         h_axis.set_title("Impulse Response")
         h_axis.set_ylim(-1.1, 1.1)
         h_axis.set_xlim(-1.1, 6.1)
@@ -114,7 +111,6 @@ def compute():
         y_axis.set_title("Output (Magnitude)")
         y_axis.axis("off")
 
-        fig.tight_layout(h_pad=3, pad=3)
         png = fig_to_base64(fig)
 
         return jsonify({"image": png})
