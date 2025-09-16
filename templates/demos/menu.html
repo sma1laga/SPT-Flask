@@ -19,9 +19,9 @@
     <h2>{{ lecture }}</h2>
     <div class="menu-container">
       {% for section, demo_list in sections.items() %}
-        <div class="card">
-          <h3>{{ section }}</h3>
-          {% if demo_list %}
+        {% if demo_list %}
+          <div class="card">
+            <h3>{{ section }}</h3>
             <ul>
               {% for d in demo_list %}
                 <li>
@@ -29,10 +29,8 @@
                 </li>
               {% endfor %}
             </ul>
-          {% else %}
-            <p>No demos available yet.</p>
-          {% endif %}
-        </div>
+          </div>
+        {% endif %}
       {% endfor %}
     </div>
   </div>

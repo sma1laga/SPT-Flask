@@ -3,7 +3,7 @@
 
 DEMOS = {
     "Signals and Systems I": {
-        "Course": [
+        "Lecture": [
             {
                 "slug": "exponential",
                 "title": "Complex Exponential Function",
@@ -50,7 +50,7 @@ DEMOS = {
         "Tutorial": [],
     },
     "Signals and Systems II": {
-        "Course": [
+        "Lecture": [
             {
                 "slug": "kapitel2",
                 "title": "Chapter 2",
@@ -106,27 +106,27 @@ DEMOS = {
                 "slug": "dtft_dft",
                 "title": "DTFT & DFT",
                 "title_desc": "Discrete Cosine",
-                "desc": "Vergleich: DTFT‑Impulse und DFT einer Länge‑M‑Ausschnitts des Cosinus.",
+                "desc": "Vergleich: DTFT-Impulse und DFT einer Länge-M-Ausschnitts des Cosinus.",
                 "endpoint": "dtft_dft.page",
             },
             {
                 "slug": "z_trafo",
                 "title": "DTFT & z-Transform",
-                "title_desc": "Damped cosine",
-                "desc": "x[k]=a^k·cos(ω₀ k)·u[k]; Zeitfolge, DTFT und PN‑Diagramm (z).",
+                "title_desc": "Damped Cosine",
+                "desc": "x[k]=a^k·cos(ω₀ k)·u[k]; Zeitfolge, DTFT und PN-Diagramm (z).",
                 "endpoint": "demos_z_trafo.page",
             },
             {
                 "slug": "iir",
                 "title": "IIR Echo",
-                "title_desc": "y[k] = x[k] + a·y[k−K]",
+                "title_desc": "\(y[k] = x[k] + a·y[k-K]\)",
                 "desc": "Convolution view via impulse response h plus inline audio for x and y.",
                 "endpoint": "demos_iir.page",
             },
             {
                 "slug": "filter",
                 "title": "Filter Demo",
-                "title_desc": "Magnitude, Phase, Pole–Zero, Impulse",
+                "title_desc": "Filter Analysis",
                 "desc": "Apply IIR/FIR to audio; interactive plots + audio preview.",
                 "endpoint": "demos_filter.page",
             },
