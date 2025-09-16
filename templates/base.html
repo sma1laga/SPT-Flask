@@ -142,56 +142,61 @@
       border-radius: 12px;
       font-weight: 500;
       letter-spacing: 0.01em;
-      transition: color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+      border-left: 3px solid transparent;
+      transition: color 0.3s ease, border-color 0.3s ease;
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link::before {
       content: "";
       position: absolute;
-      inset: 0;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(0, 122, 204, 0.12), rgba(0, 170, 255, 0.06));
+      inset: 3px 6px;
+      border-radius: 9px;
+      background: rgba(0, 122, 204, 0.08);
       opacity: 0;
-      transform: scale(0.98);
-      transition: opacity 0.3s ease, transform 0.3s ease;
+      transition: opacity 0.3s ease;
+
       z-index: -1;
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link::after {
       content: "";
       position: absolute;
-      left: 12px;
+      left: 18px;
       top: 50%;
-      transform: translateY(-50%);
       width: 6px;
-      height: 55%;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #00b4ff, #007acc);
-      box-shadow: 0 0 12px rgba(0, 122, 204, 0.35);
+      height: 6px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 122, 204, 0.45);
+      background-color: transparent;
+      transform: translate(-50%, -50%) scale(0.6);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+      z-index: 1;
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover {
       color: #005a99;
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover::before {
       opacity: 1;
-      transform: scale(1);
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover::after {
-      opacity: 0.5;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(0.85);
+      border-color: #007acc;
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
       color: #004b80;
       font-weight: 600;
-      transform: translateX(4px);
-      box-shadow: 0 12px 28px rgba(0, 122, 204, 0.18);
+      border-left-color: #007acc;
+
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link.active::before {
       opacity: 1;
-      transform: scale(1);
-      background: linear-gradient(135deg, rgba(0, 122, 204, 0.2), rgba(0, 170, 255, 0.12));
+
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link.active::after {
       opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+      border-color: #007acc;
+      background-color: #007acc;
     }
     /* Mobile sidebar toggle button */
     .sidebar-toggle {
