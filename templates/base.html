@@ -132,16 +132,66 @@
       border-bottom: 1px solid var(--border-color, #ccd0d5);
       padding-bottom: 5px;
     }
-    .modern-sidebar ul.sidebar-menu li a {
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link {
+      position: relative;
+      z-index: 0;
       display: block;
-      padding: 5px 10px;
+      padding: 10px 16px 10px 28px;
       color: var(--primary-color, #007acc);
       text-decoration: none;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
+      border-radius: 12px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      transition: color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .modern-sidebar ul.sidebar-menu li a:hover {
-      background-color: #f0f8ff;
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0, 122, 204, 0.12), rgba(0, 170, 255, 0.06));
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: -1;
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 55%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #00b4ff, #007acc);
+      box-shadow: 0 0 12px rgba(0, 122, 204, 0.35);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover {
+      color: #005a99;
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover::before {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover::after {
+      opacity: 0.5;
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
+      color: #004b80;
+      font-weight: 600;
+      transform: translateX(4px);
+      box-shadow: 0 12px 28px rgba(0, 122, 204, 0.18);
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link.active::before {
+      opacity: 1;
+      transform: scale(1);
+      background: linear-gradient(135deg, rgba(0, 122, 204, 0.2), rgba(0, 170, 255, 0.12));
+    }
+    .modern-sidebar ul.sidebar-menu li a.sidebar-link.active::after {
+      opacity: 1;
     }
     /* Mobile sidebar toggle button */
     .sidebar-toggle {
@@ -243,8 +293,14 @@
                   {% if demo_list %}
                     <li class="section-title">{{ section }}</li>
                     {% for d in demo_list %}
-                      <li><a href="{{ url_for(d.endpoint) }}">{{ d.title }}</a></li>
-                    {% endfor %}
+                      {% set link_url = url_for(d.endpoint) %}
+                      <li>
+                        <a href="{{ link_url }}"
+                           class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
+                          {{ d.title }}
+                        </a>
+                      </li>
+                      {% endfor %}
                   {% endif %}
                 {% endfor %}
               </ul>
@@ -256,8 +312,14 @@
                   {% if demo_list %}
                     <li class="section-title">{{ section }}</li>
                     {% for d in demo_list %}
-                      <li><a href="{{ url_for(d.endpoint) }}">{{ d.title }}</a></li>
-                    {% endfor %}
+                      {% set link_url = url_for(d.endpoint) %}
+                      <li>
+                        <a href="{{ link_url }}"
+                           class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
+                          {{ d.title }}
+                        </a>
+                      </li>
+                      {% endfor %}
                   {% endif %}
                 {% endfor %}
               </ul>
@@ -279,15 +341,30 @@
             <div id="menu-continuous" style="display: {% if not is_discrete %}block{% else %}none{% endif %};">
               <ul class="sidebar-menu">
                 <li class="section-title">Plotting</li>
-                <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
+                <li>
+                  <a href="{{ url_for('plot_function.plot_function') }}"
+                     class="sidebar-link{% if request.endpoint == 'plot_function.plot_function' %} active{% endif %}">
+                    Plot Function
+                  </a>
+                </li>
                 <!-- TODO under revision -->
                 <!-- <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform</a></li> -->
                 <!-- TODO under revision -->
                  <!-- <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot</a></li> -->
                 
                 <li class="section-title">Convolution</li>
-                <li><a href="{{ url_for('convolution.convolution') }}">Convolution Calc</a></li>
-                <li><a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}">Dynamic Convolution</a></li>
+                <li>
+                  <a href="{{ url_for('convolution.convolution') }}"
+                     class="sidebar-link{% if request.endpoint == 'convolution.convolution' %} active{% endif %}">
+                    Convolution Calc
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}"
+                     class="sidebar-link{% if request.endpoint == 'dynamic_convolution.dynamic_convolution' %} active{% endif %}">
+                    Dynamic Convolution
+                  </a>
+                </li>
                 <!-- TODO re/im handling, -t in calculation, allow input without np. -->
                 <!-- <li><a href="{{ url_for('autocorrelation.autocorrelation') }}">Autocorrelation</a></li> -->
                 
@@ -314,13 +391,23 @@
                 <!-- <li><a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a></li> -->
 
                 <li class="section-title">Training</li>
-                <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Training</a></li>
+                <li>
+                  <a href="{{ url_for('training_convolution.training_convolution') }}"
+                     class="sidebar-link{% if request.endpoint == 'training_convolution.training_convolution' %} active{% endif %}">
+                    Convolution Training
+                  </a>
+                </li>
                 <!-- TODO under revision -->
                 <!-- <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li> -->
                 <!-- <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li> -->
 
                 <li class="section-title">Other Tools</li>
-                <li><a href="{{ url_for('inverse_laplace.inverse_laplace') }}">Inverse Laplace Transform</a></li>
+                <li>
+                  <a href="{{ url_for('inverse_laplace.inverse_laplace') }}"
+                     class="sidebar-link{% if request.endpoint == 'inverse_laplace.inverse_laplace' %} active{% endif %}">
+                    Inverse Laplace Transform
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -328,19 +415,54 @@
             <div id="menu-discrete" style="display: {% if is_discrete %}block{% else %}none{% endif %};">
               <ul class="sidebar-menu">
                 <li class="section-title">Plotting &amp; Transforms</li>
-                <li><a href="{{ url_for('discrete_plot_functions.plot_functions') }}">Plot Functions</a></li>
-                <li><a href="{{ url_for('discrete_fourier.show_dft') }}">DFT</a></li>
-                <li><a href="{{ url_for('transform_intuition.transform_intuition') }}">Transform Intuition</a></li>
+                <li>
+                  <a href="{{ url_for('discrete_plot_functions.plot_functions') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_plot_functions.plot_functions' %} active{% endif %}">
+                    Plot Functions
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('discrete_fourier.show_dft') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_fourier.show_dft' %} active{% endif %}">
+                    DFT
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('transform_intuition.transform_intuition') }}"
+                     class="sidebar-link{% if request.endpoint == 'transform_intuition.transform_intuition' %} active{% endif %}">
+                    Transform Intuition
+                  </a>
+                </li>
 
                 <li class="section-title">Convolution</li>
-                <li><a href="{{ url_for('discrete_convolution.discrete_convolution') }}">Convolution Calculator</a></li>
-                <li><a href="{{ url_for('discrete_dynamic_convolution.index') }}">Dynamic Convolution</a></li>
-                <li><a href="{{ url_for('discrete_autocorrelation.discrete_autocorrelation') }}">Autocorrelation</a></li>
+                <li>
+                  <a href="{{ url_for('discrete_convolution.discrete_convolution') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_convolution.discrete_convolution' %} active{% endif %}">
+                    Convolution Calculator
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('discrete_dynamic_convolution.index') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_dynamic_convolution.index' %} active{% endif %}">
+                    Dynamic Convolution
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('discrete_autocorrelation.discrete_autocorrelation') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_autocorrelation.discrete_autocorrelation' %} active{% endif %}">
+                    Autocorrelation
+                  </a>
+                </li>
                 <!-- TODO -->
                 <!-- <li class="section-title">Process Chain</li> -->
                 <!-- <li><a href="{{ url_for('discrete_direct_plot.discrete_direct_plot') }}">Direct-Form Visualiser</a></li> -->
                 <li class="section-title">Other Tools</li>
-                <li><a href="{{ url_for('inverse_z.inverse_z') }}">Inverse z-Transform</a></li>
+                <li>
+                  <a href="{{ url_for('inverse_z.inverse_z') }}"
+                     class="sidebar-link{% if request.endpoint == 'inverse_z.inverse_z' %} active{% endif %}">
+                    Inverse z-Transform
+                  </a>
+                </li>
               </ul>
             </div>
           {% endif %}
