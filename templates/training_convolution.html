@@ -167,32 +167,44 @@
     const overlay = document.getElementById('plotOverlay');
     overlay.style.display = 'none';
   }
+
+  const AXES_BOUNDS = [
+    { x0: 0.125, y0: 0.39875, width: 0.3369565217, height: 0.1925 },
+    { x0: 0.5630434783, y0: 0.39875, width: 0.3369565217, height: 0.1925 },
+    { x0: 0.125, y0: 0.11, width: 0.3369565217, height: 0.1925 },
+    { x0: 0.5630434783, y0: 0.11, width: 0.3369565217, height: 0.1925 }
+  ];
+
   function layoutOverlayBoxes() {
     const img = document.getElementById('conv_plot_image');
     const overlay = document.getElementById('plotOverlay');
     if (!img || img.style.display === 'none') return;
 
-    // Overlay hover
-    overlay.style.display = 'block';
 
     const w = img.clientWidth;
     const h = img.clientHeight;
     if (!w || !h) return;
 
-    // 3x2 Grid
-    const colW = w / 2;
-    const rowH = h / 3;
+    overlay.style.display = 'block';
 
-    const pad = Math.round(Math.min(colW, rowH) * 0.04);
+
+    const padX = 0.01;  // relative to figure width
+    const padY = 0.02;  // relative to figure height
 
     const hits = document.querySelectorAll('.plot-hit');
     hits.forEach((hit, i) => {
-      const gridRow = 1 + Math.floor(i / 2); // 1..2
-      const gridCol = i % 2;                 // 0..1
-      const left = gridCol * colW + pad;
-      const top  = gridRow * rowH + pad;
-      const width = colW - 2*pad;
-      const height = rowH - 2*pad;
+      const bounds = AXES_BOUNDS[i];
+      if (!bounds) return;
+
+      const leftNorm = Math.max(0, bounds.x0 - padX);
+      const rightNorm = Math.min(1, bounds.x0 + bounds.width + padX);
+      const topNorm = Math.max(0, 1 - (bounds.y0 + bounds.height) - padY);
+      const bottomNorm = Math.min(1, 1 - bounds.y0 + padY);
+
+      const width = Math.max(0, rightNorm - leftNorm) * w;
+      const height = Math.max(0, bottomNorm - topNorm) * h;
+      const left = leftNorm * w;
+      const top = topNorm * h;
 
       hit.style.left = left + 'px';
       hit.style.top = top + 'px';
@@ -414,6 +426,7 @@ refreshStreakUI();
       transition: box-shadow 0.12s ease, border-color 0.12s ease;
       pointer-events: auto; /* wichtig für Klicks */
       cursor: pointer;
+      box-sizing: border-box;
     }
 
     /* Subtiler Hover-Ring */
