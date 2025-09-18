@@ -1,38 +1,466 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  .course-section {
-    margin-top: 40px;
+  :root {
+    --demo-eyebrow-color: #0b5ebd;
+    --demo-hero-bg: linear-gradient(130deg, rgba(0, 122, 204, 0.16), rgba(80, 56, 255, 0.16));
+    --demo-hero-border: rgba(0, 0, 0, 0.05);
+    --demo-hero-card-bg: rgba(255, 255, 255, 0.92);
+    --demo-hero-card-border: rgba(0, 0, 0, 0.04);
+    --demo-hero-card-shadow: 0 10px 24px rgba(15, 35, 95, 0.12);
+    --demo-hero-heading: #0e1a2b;
+    --demo-hero-text: #3a3f4b;
+    --demo-hero-card-text: rgba(10, 31, 68, 0.72);
+    --demo-hero-icon-color: #0b5ebd;
+    --demo-lecture-pill-bg: rgba(0, 122, 204, 0.14);
+    --demo-lecture-pill-text: #005a99;
+    --demo-heading-color: #0e1a2b;
+    --demo-description-color: #465063;
+    --demo-section-title: #202c45;
+    --demo-section-count: rgba(32, 44, 69, 0.7);
+    --demo-card-bg: linear-gradient(145deg, #fcfdff 0%, #eef2ff 100%);
+    --demo-card-border: rgba(0, 0, 0, 0.06);
+    --demo-card-shadow: 0 12px 30px rgba(15, 35, 95, 0.08);
+    --demo-card-shadow-hover: 0 18px 38px rgba(15, 35, 95, 0.14);
+    --demo-card-overlay: radial-gradient(circle, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 45%, rgba(9, 35, 85, 0.18) 100%);
+    --demo-card-heading: #15223a;
+    --demo-card-body: rgba(21, 34, 58, 0.78);
+    --demo-card-subtitle: rgba(21, 34, 58, 0.58);
+    --demo-icon-bg: rgba(255, 255, 255, 0.75);
+    --demo-icon-color: #0b3d78;
+    --demo-icon-shadow: inset 0 0 0 1px rgba(11, 61, 120, 0.15);
+    --demo-button-bg: rgba(0, 122, 204, 0.12);
+    --demo-button-color: #005a99;
+    --demo-button-hover-bg: rgba(0, 122, 204, 0.22);
+    --demo-button-hover-color: #00406e;
   }
-  .card h3 {
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    font-size: 1.5em;
+
+  body.dark-mode {
+    --demo-eyebrow-color: #8dc8ff;
+    --demo-hero-bg: linear-gradient(130deg, rgba(37, 86, 140, 0.46), rgba(91, 61, 255, 0.44));
+    --demo-hero-border: rgba(148, 173, 215, 0.18);
+    --demo-hero-card-bg: rgba(16, 23, 38, 0.9);
+    --demo-hero-card-border: rgba(148, 173, 215, 0.24);
+    --demo-hero-card-shadow: 0 14px 30px rgba(6, 12, 28, 0.55);
+    --demo-hero-heading: #f1f5ff;
+    --demo-hero-text: #cfd8e6;
+    --demo-hero-card-text: #b7c4e5;
+    --demo-hero-icon-color: #8dc8ff;
+    --demo-lecture-pill-bg: rgba(64, 139, 255, 0.2);
+    --demo-lecture-pill-text: #d9e8ff;
+    --demo-heading-color: #f1f5ff;
+    --demo-description-color: #aab6d5;
+    --demo-section-title: #e0e7ff;
+    --demo-section-count: rgba(206, 213, 243, 0.75);
+    --demo-card-bg: linear-gradient(145deg, rgba(22, 26, 38, 0.96) 0%, rgba(14, 16, 24, 0.92) 100%);
+    --demo-card-border: rgba(148, 173, 215, 0.16);
+    --demo-card-shadow: 0 10px 32px rgba(8, 12, 32, 0.55);
+    --demo-card-shadow-hover: 0 16px 40px rgba(10, 16, 40, 0.65);
+    --demo-card-overlay: radial-gradient(circle, rgba(122, 155, 255, 0.12) 0%, rgba(122, 155, 255, 0.08) 48%, rgba(0, 0, 0, 0) 100%);
+    --demo-card-heading: #f6f9ff;
+    --demo-card-body: #c2cff1;
+    --demo-card-subtitle: rgba(198, 209, 247, 0.76);
+    --demo-icon-bg: rgba(77, 120, 202, 0.18);
+    --demo-icon-color: #d8e5ff;
+    --demo-icon-shadow: inset 0 0 0 1px rgba(154, 181, 245, 0.3);
+    --demo-button-bg: rgba(93, 171, 255, 0.2);
+    --demo-button-color: #e4f1ff;
+    --demo-button-hover-bg: rgba(93, 171, 255, 0.32);
+    --demo-button-hover-color: #ffffff;
+  }
+
+  .demo-hero {
+    background: var(--demo-hero-bg);
+    border: 1px solid var(--demo-hero-border);
+    border-radius: 18px;
+    padding: 26px 32px;
+    margin-bottom: 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: center;
+  }
+
+  .hero-intro {
+    display: grid;
+    gap: 12px;
+    max-width: 640px;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--demo-eyebrow-color);
+  }
+
+  .hero-eyebrow i {
+    font-size: 0.9rem;
+  }
+
+  .demo-hero h1 {
+    font-size: clamp(2rem, 4vw, 2.6rem);
+    margin: 0;
+    font-weight: 700;
+    color: var(--demo-hero-heading);
+  }
+
+  .demo-hero p {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: var(--demo-hero-text);
+  }
+
+  .demo-hero .hero-card {
+    background: var(--demo-hero-card-bg);
+    border-radius: 16px;
+    padding: 20px 22px;
+    box-shadow: var(--demo-hero-card-shadow);
+    border: 1px solid var(--demo-hero-card-border);
+    display: grid;
+    gap: 14px;
+  }
+
+  .demo-hero .hero-card h2 {
+    margin: 0;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--demo-eyebrow-color);
+  }
+
+  .demo-hero .hero-card p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--demo-hero-card-text);
+  }
+
+  .hero-guidelines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 12px;
+  }
+
+  .hero-guidelines li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 0.92rem;
+    color: var(--demo-hero-card-text);
+  }
+
+  .hero-guidelines i {
+    color: var(--demo-hero-icon-color);
+    font-size: 1rem;
+    margin-top: 2px;
+  }
+
+  .lecture-block {
+    margin-bottom: 56px;
+  }
+
+  .lecture-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .lecture-pill {
+    background: var(--demo-lecture-pill-bg);
+    color: var(--demo-lecture-pill-text);
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+  }
+
+  .lecture-heading h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 3vw, 2.3rem);
+    color: var(--demo-heading-color);
+  }
+
+  .lecture-description {
+    margin: 0 0 28px;
+    max-width: 720px;
+    color: var(--demo-description-color);
+    line-height: 1.6;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 28px 0 18px;
+  }
+
+  .section-header h3 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: var(--demo-section-title);
+  }
+
+  .section-count {
+    font-size: 0.9rem;
+    color: var(--demo-section-count);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
+  }
+
+  .demo-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: var(--demo-card-bg);
+    border-radius: 18px;
+    padding: 24px;
+    border: 1px solid var(--demo-card-border);
+    box-shadow: var(--demo-card-shadow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  .demo-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    height: 5px;
+    border-radius: inherit;
+    background: var(--accent-gradient, linear-gradient(90deg, #007acc, #00aaff));
+  }
+
+  .demo-card::after {
+    content: "";
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    right: -40px;
+    top: -50px;
+    background: var(--demo-card-overlay);
+    opacity: 0.8;
+    transform: rotate(18deg);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .demo-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .demo-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--demo-card-shadow-hover);
+  }
+
+  .demo-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    color: var(--accent-color, var(--demo-icon-color));
+    background: var(--demo-icon-bg);
+    box-shadow: var(--demo-icon-shadow);
+    font-size: 1.4rem;
+  }
+
+  .demo-body h4 {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+    color: var(--demo-card-heading);
+  }
+
+  .demo-body p {
+    margin: 0;
+    color: var(--demo-card-body);
+    line-height: 1.6;
+    font-size: 0.97rem;
+  }
+
+  .demo-body h4 strong {
+    color: var(--accent-color, #0b3d78);
+  }
+
+  .demo-body .demo-subtitle {
+    color: var(--demo-card-subtitle);
+    font-size: 0.94rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .demo-button {
+    margin-top: auto;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: var(--demo-button-bg);
+    color: var(--demo-button-color);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .demo-button:hover {
+    background: var(--demo-button-hover-bg);
+    color: var(--demo-button-hover-color);
+  }
+
+  .demo-card.accent-sky {
+    --accent-gradient: linear-gradient(90deg, #4facfe, #00f2fe);
+    --accent-color: #056fa4;
+  }
+
+  .demo-card.accent-grape {
+    --accent-gradient: linear-gradient(90deg, #a18cd1, #fbc2eb);
+    --accent-color: #6b3fa0;
+  }
+
+  .demo-card.accent-sun {
+    --accent-gradient: linear-gradient(90deg, #f6d365, #fda085);
+    --accent-color: #c35a13;
+  }
+
+  .demo-card.accent-lagoon {
+    --accent-gradient: linear-gradient(90deg, #5ee7df, #b490ca);
+    --accent-color: #3d698b;
+  }
+
+  body.dark-mode .demo-card.accent-sky {
+    --accent-gradient: linear-gradient(90deg, rgba(95, 182, 255, 0.85), rgba(120, 231, 255, 0.9));
+    --accent-color: #9fd7ff;
+  }
+
+  body.dark-mode .demo-card.accent-grape {
+    --accent-gradient: linear-gradient(90deg, rgba(161, 140, 209, 0.75), rgba(251, 194, 235, 0.82));
+    --accent-color: #d9b9ff;
+  }
+
+  body.dark-mode .demo-card.accent-sun {
+    --accent-gradient: linear-gradient(90deg, rgba(246, 211, 101, 0.7), rgba(253, 160, 133, 0.78));
+    --accent-color: #ffd3a1;
+  }
+
+  body.dark-mode .demo-card.accent-lagoon {
+    --accent-gradient: linear-gradient(90deg, rgba(94, 231, 223, 0.72), rgba(180, 144, 202, 0.78));
+    --accent-color: #b7d9ff;
+  }
+
+  @media (max-width: 960px) {
+    .demo-hero {
+      grid-template-columns: 1fr;
+      text-align: left;
+      padding: 22px;
+    }
+
+    .demo-hero .hero-card {
+      justify-self: stretch;
+      max-width: none;
+    }
+
+    .lecture-heading {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .demo-icon {
+      margin: 0 auto;
+    }
+
+    .demo-button {
+      align-self: center;
+    }
   }
 </style>
 
-<h1>Demos</h1>
-<p>Interactive demos for the lectures Signals and Systems I & II. These demos were created specifically for the courses at FAU, but they can be helpful to students everywhere.</p>
+<div class="demo-hero">
+  <div class="hero-intro">
+    <span class="hero-eyebrow"><i class="fa-solid fa-bolt"></i> Interactive demo library</span>
+    <h1>Discover the interactive Signal Processing demos</h1>
+    <p>Browse curated explorations for Signals and Systems I &amp; II. Jump into a lecture to connect formulas and
+      visual intuition in a few clicks</p>
+  </div>
+  <div class="hero-card">
+    <h2>Quick tips</h2>
+    <p>Choose a lecture section below and launch any module for a focused workspace with built-in guidance.</p>
+    <ul class="hero-guidelines">
+      <li><i class="fa-solid fa-sliders"></i> Tune parameters live to see how waveforms and spectra respond.</li>
+      <li><i class="fa-solid fa-chart-line"></i> Compare plots instantly without leaving the page.</li>
+      <li><i class="fa-solid fa-graduation-cap"></i> Follow the lecture-friendly floow to get the deepest intuition.</li>
+    </ul>
+  </div>
+</div>
 
 {% for lecture, sections in demos.items() %}
-  <div class="course-section">
-    <h2>{{ lecture }}</h2>
-    <div class="menu-container">
-      {% for section, demo_list in sections.items() %}
-        {% if demo_list %}
-          <div class="card">
-            <h3>{{ section }}</h3>
-            <ul>
-              {% for d in demo_list %}
-                <li>
-                  <a href="{{ url_for(d.endpoint) }}">{{ d.title }}:</a> {{ d.title_desc }}
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
-      {% endfor %}
-    </div>
-  </div>
+   <section class="lecture-block" id="{{ lecture | replace(' ', '-') | lower }}">
+    <header class="lecture-heading">
+      <span class="lecture-pill">Lecture</span>
+      <h2>{{ lecture }}</h2>
+    </header>
+    <p class="lecture-description">Dive into interactive exercises that reinforce the core ideas of {{ lecture }}. Choose a
+      section to explore the tools tailored to that topic.</p>
+
+    {% for section, demo_list in sections.items() %}
+      {% if demo_list %}
+        <div class="section-header">
+          <h3>{{ section }}</h3>
+          <span class="section-count">{{ demo_list | length }} demos</span>
+        </div>
+        <div class="module-grid">
+          {% set swap_titles = lecture == 'Signals and Systems II' and section == 'Lecture' %}
+          {% for d in demo_list %}
+            <article class="demo-card {{ loop.cycle('accent-sky', 'accent-grape', 'accent-sun', 'accent-lagoon') }}">
+              <div class="demo-icon"><i class="fa-solid fa-wave-square"></i></div>
+              <div class="demo-body">
+                <h4>
+                  {% if swap_titles %}
+                    <strong>{{ d.title_desc }}</strong>
+                  {% else %}
+                    {{ d.title }}
+                  {% endif %}
+                </h4>
+                <p{% if swap_titles %} class="demo-subtitle"{% endif %}>
+                  {% if swap_titles %}
+                    {{ d.title }}
+                  {% else %}
+                    {{ d.title_desc }}
+                  {% endif %}
+                </p>
+              </div>
+              <a class="demo-button" href="{{ url_for(d.endpoint) }}">Launch demo <i class="fa-solid fa-arrow-right"></i></a>
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </section>
 {% endfor %}
 {% endblock %}
