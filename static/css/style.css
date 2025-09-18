@@ -335,22 +335,32 @@ body.colorblind-mode a {
   
   /* Sidebar */
   body.dark-mode .modern-sidebar {
-    background-color: #1f1f1f;
-    border-color: #333;
+    background: linear-gradient(160deg, rgba(22, 29, 41, 0.96) 0%, rgba(16, 22, 33, 0.96) 100%);
+    border-color: rgba(130, 170, 255, 0.18);
     color: #f5f5f5;
+    box-shadow: 0 14px 36px rgba(2, 6, 16, 0.6);
+
   }
   body.dark-mode .modern-sidebar h3 {
-    color: #82aaff; /* Accent color */
+    color: #a7c9ff; /* Accent color */
+    letter-spacing: 0.12em;
   }
   body.dark-mode .modern-sidebar ul.sidebar-menu > li.section-title {
-    color: #f5f5f5;
-    border-color: #333;
+    color: rgba(226, 239, 255, 0.75);
+    border: none;
+  }
+  body.dark-mode .modern-sidebar ul.sidebar-menu > li.section-title::after {
+    background: linear-gradient(90deg, rgba(130, 170, 255, 0.4), transparent);
   }
   body.dark-mode .modern-sidebar ul.sidebar-menu li a {
-    color: #82aaff;
+    color: #8fb5ff;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 1px rgba(130, 170, 255, 0.35);
   }
   body.dark-mode .modern-sidebar ul.sidebar-menu li a:hover {
-    background-color: #2a2a2a;
+    color: #b9d1ff;
+    background-color: #2a2f3b;
   }
   
   /* Hero Section */
