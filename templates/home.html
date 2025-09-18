@@ -1,120 +1,370 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  /* Adjust hero spacing to bring content closer to the top */
   .hero {
-    margin: 20px 0;       /* Reduced overall margin */
-    padding: 20px 20px;   /* Reduced padding for a leaner look */
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    background: radial-gradient(circle at top left, rgba(0, 180, 255, 0.65), rgba(0, 60, 130, 0.9));
+    color: #ffffff;
+    margin: 40px auto 60px auto;
+    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 4rem);
+    max-width: 1150px;
+    box-shadow: 0 25px 60px rgba(0, 40, 90, 0.35);
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 55%),
+                radial-gradient(circle at 80% 30%, rgba(0, 255, 163, 0.2), transparent 50%),
+                linear-gradient(135deg, rgba(0, 0, 0, 0.25), transparent 65%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+  .hero-content {
+    position: relative;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+  }
+  .hero-tag {
+    align-self: center;
+    font-size: 0.85rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 999px;
+    padding: 0.55rem 1.5rem;
+    font-weight: 600;
   }
   .hero h1 {
-    font-size: 2.8em;
-    margin-bottom: 10px;  /* Slightly reduce spacing below the main header */
+    font-size: clamp(2.6rem, 5vw, 3.8rem);
+    font-weight: 600;
+    margin: 0;
   }
   .hero p {
-    font-size: 1.2em;
-    margin: 0;            /* Remove any additional paragraph margin */
+    font-size: clamp(1.05rem, 2.8vw, 1.2rem);
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
   }
-  
-  /* Maintain existing responsive tweaks for mobile devices */
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.8rem;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .cta-btn.primary {
+    background: linear-gradient(135deg, #00d4ff, #0077ff);
+    color: #ffffff;
+    box-shadow: 0 12px 30px rgba(0, 102, 255, 0.35);
+  }
+  .cta-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(0, 102, 255, 0.45);
+  }
+  .cta-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .cta-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-3px);
+  }
+
+  .menu-section {
+    max-width: 1150px;
+    margin: 0 auto 70px auto;
+    padding: 0 20px;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .section-header h2 {
+    font-size: clamp(2rem, 3.5vw, 2.4rem);
+    margin-bottom: 8px;
+    color: var(--primary-color);
+  }
+  .section-header p {
+    margin: 0;
+    color: var(--subtext-color);
+    font-size: 1rem;
+  }
+
+  .card {
+    position: relative;
+    overflow: hidden;
+  }
+  .card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 119, 255, 0.06), transparent 65%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .card:hover::after {
+    opacity: 1;
+  }
+  .card-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    background: rgba(0, 123, 255, 0.08);
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    margin-bottom: 16px;
+  }
+  .card h3 {
+    font-size: 1.55rem;
+    margin: 0 0 12px 0;
+  }
+  .card-description {
+    margin-bottom: 18px;
+    color: var(--subtext-color);
+    line-height: 1.6;
+  }
+  .link-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .link-list li a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .link-list li a::after {
+    content: "\f178";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.8rem;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .link-list li a:hover {
+    color: #005ea8;
+    transform: translateX(4px);
+  }
+  .link-list li a:hover::after {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  .discrete-card {
+    border: 1px solid rgba(0, 119, 255, 0.22);
+    background: linear-gradient(145deg, rgba(0, 119, 255, 0.08), rgba(0, 200, 255, 0.05));
+  }
+  .discrete-card .card-label {
+    background: rgba(0, 119, 255, 0.15);
+    color: #0054c2;
+  }
+
+  .signal-highlights {
+    max-width: 1150px;
+    margin: 0 auto 90px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 20px;
+  }
+  .highlight-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.04));
+    border-radius: 18px;
+    padding: 26px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+  }
+  .highlight-card h4 {
+    margin: 0 0 10px;
+    font-size: 1.25rem;
+  }
+  .highlight-card p {
+    margin: 0;
+    color: var(--subtext-color);
+    line-height: 1.6;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      margin: 30px 16px 50px;
+      border-radius: 22px;
+    }
+  }
+
   @media (max-width: 600px) {
     .hero {
-      padding: 15px 10px;
-      margin: 15px 0;
+      padding: 2.4rem 1.4rem;
     }
-    .hero h1 {
-      font-size: 2rem;
+    .hero-tag {
+      letter-spacing: 0.25em;
+      font-size: 0.75rem;
     }
-    .hero p {
-      font-size: 1rem;
+    .hero-actions {
+      flex-direction: column;
     }
-    .menu-container {
-      grid-template-columns: 1fr;
-      gap: 15px;
-      padding: 0 10px;
-    }
-    .card {
-      padding: 15px;
-      font-size: 0.9rem;
-    }
-    .card h2 {
-      font-size: 1.4rem;
-    }
-    .card ul {
-      font-size: 0.9rem;
+    .cta-btn {
+      width: 100%;
+      justify-content: center;
     }
   }
 </style>
 
-<div class="hero">
-  <h1>Signal Processing Toolkit</h1>
-  <p>Explore advanced tools, filters, and training modules to process and analyze your signals.</p>
-</div>
+<section class="hero">
+  <div class="hero-content">
+    <span class="hero-tag">Signal Processing Toolkit</span>
+    <h1>Design, analyse and bring your signals to life.</h1>
+    <p>
+      Launch precision tools, interactive demos, and guided training flows that help you move
+      from concept to insight with clarity and confidence.
+    </p>
+    <div class="hero-actions">
+      <a class="cta-btn primary" href="{{ url_for('plot_function.plot_function') }}">
+        Start exploring tools
+      </a>
+      <a class="cta-btn secondary" href="{{ url_for('discrete_plot_functions.plot_functions') }}">
+        Explore discrete modules
+      </a>
+    </div>
+  </div>
+</section>
 
-<div class="menu-container">
-  <!-- Plotting Category Card -->
-  <div class="card">
-    <h2>Plotting</h2>
-    <ul>
-      <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
-      <!-- <li><a href="{{ url_for('fourier.fourier') }}">Fourier Transform Calculator</a></li> -->
-       <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot</a></li>
-      <li><a href="{{ url_for('convolution.convolution') }}">Convolution</a></li>
-    </ul>
+<section class="menu-section">
+  <div class="section-header">
+    <h2>Featured Workflows</h2>
+    <p>Select a toolkit to dive into visual analysis, design, or guided learning.</p>
   </div>
 
-  <!-- System-level Modeling & Control -->
-<!-- <div class="card">
-  <h2>System Modeling & Control</h2>
-  <ul>
-    <li><a href="{{ url_for('process_chain.show_chain') }}">
-        Process Chain Plot</a></li>
-    <li><a href="{{ url_for('block_diagram.diagram_page') }}">
-        Block-Diagram Editor</a></li>
-    <li><a href="{{ url_for('direct_plot.direct_plot') }}">
-        Direct-Form Visualiser</a></li>
-  </ul>
-</div> -->
-  
-  <!-- Filter Design Category Card -->
-  <!-- <div class="card">
-    <h2>Filter Design</h2>
-    <ul>
-      <li><a href="{{ url_for('filter_design.filter_design') }}">Custom Filter Design</a></li>
-      <li><a href="{{ url_for('speech_filter_input.speech_filter_input') }}">Speech Filter Input</a></li>
-      <li><a href="{{ url_for('advanced_noise_reduction.advanced_noise_reduction') }}">Noise Reduction Module</a></li>
-    </ul>
-  </div> -->
-  <!-- Modulation Category Card -->
-  <!-- <div class="card">
-    <h2>Modulation</h2>
-    <ul>
-      <li><a href="{{ url_for('modulation.modulation') }}">Analog Modulation</a></li>
-      <li><a href="{{ url_for('digital_modulation.digital_modulation') }}">Digital Modulation</a></li>
-    </ul>
-  </div> -->
-  
-  <!-- Theory & Documentation Category Card -->
-  <div class="card">
-    <h2>Theory & Documentation</h2>
-    <ul>
-      <!-- TODO under revision -->
-      <!-- <li><a href="{{ url_for('function_definitions.function_definitions') }}">Function Definitions</a></li> -->
-      <!-- <li><a href="{{ url_for('transform_table.transform_table') }}">Transform Tables</a></li> -->
-      <!-- TODO under revision -->
-      <!-- <li><a href="{{ url_for('theory.theory') }}">Core Theory</a></li> -->
-      <li><a href="{{ url_for('demos_menu.index') }}">Demos</a></li>
-    </ul>
+  <div class="menu-container">
+    <div class="card">
+      <span class="card-label"><i class="fa-solid fa-wave-square"></i> Plot &amp; Inspect</span>
+      <h3>Visualise your signals</h3>
+      <p class="card-description">
+        Generate fast visual insight using curated utilities for classical signal operations.
+      </p>
+      <ul class="link-list">
+        <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
+        <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot Designer</a></li>
+        <li><a href="{{ url_for('convolution.convolution') }}">Interactive Convolution</a></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-label"><i class="fa-solid fa-graduation-cap"></i> Learn &amp; Practice</span>
+      <h3>Training lab</h3>
+      <p class="card-description">
+        Build intuition with progressive exercises designed for quick skill reinforcement.
+      </p>
+      <ul class="link-list">
+        <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Trainer</a></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <span class="card-label"><i class="fa-solid fa-lightbulb"></i> Discover &amp; Share</span>
+      <h3>Theory &amp; demos</h3>
+      <p class="card-description">
+        Explore guided demonstrations and references that contextualise each concept.
+      </p>
+      <ul class="link-list">
+        <li><a href="{{ url_for('demos_menu.index') }}">Interactive Demos</a></li>
+      </ul>
+    </div>
   </div>
-  
-  <!-- Training Modules Category Card -->
-  <div class="card">
-    <h2>Training</h2>
-    <ul>
-      <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution</a></li>
-      <!-- TODO under revision -->
-      <!-- <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier</a></li> -->
-      <!-- <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain</a></li> -->
-    </ul>
+</section>
+
+
+<section class="menu-section">
+  <div class="section-header">
+    <span class="hero-tag" style="background: rgba(0, 119, 255, 0.12); color: var(--primary-color); border-color: rgba(0, 119, 255, 0.25);">Discrete Focus</span>
+    <h2>Explore discrete modules</h2>
+    <p>Dive deep into sampling, transforms, and sequence analysis with purpose-built modules.</p>
   </div>
-</div>
+
+  <div class="module-grid">
+    <div class="card discrete-card">
+      <span class="card-label"><i class="fa-solid fa-chart-line"></i> Frequency intuition</span>
+      <h3>Discrete Fourier Explorer</h3>
+      <p class="card-description">
+        Move between DFT, DTFT, and Z-domain views to understand spectra from every angle.
+      </p>
+      <ul class="link-list">
+        <li><a href="{{ url_for('discrete_fourier.show_dft') }}">Launch the DFT explorer</a></li>
+      </ul>
+    </div>
+
+    <div class="card discrete-card">
+      <span class="card-label"><i class="fa-solid fa-arrows-spin"></i> Sequence design</span>
+      <h3>Convolution Studio</h3>
+      <p class="card-description">
+        Compose, align, and blend discrete signals while visualising every intermediate step.
+      </p>
+      <ul class="link-list">
+        <li><a href="{{ url_for('discrete_convolution.discrete_convolution') }}">Open discrete convolution</a></li>
+      </ul>
+    </div>
+
+    <div class="card discrete-card">
+      <span class="card-label"><i class="fa-solid fa-burst"></i> Pattern insight</span>
+      <h3>Autocorrelation Lab</h3>
+      <p class="card-description">
+        Detect periodicity and correlation strength with guided overlays and exportable results.
+      </p>
+      <ul class="link-list">
+        <li><a href="{{ url_for('discrete_autocorrelation.discrete_autocorrelation') }}">Analyse autocorrelation</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="signal-highlights">
+  <div class="highlight-card">
+    <h4>Precision visuals</h4>
+    <p>Create publication-ready plots and overlays with responsive, high-resolution charting defaults.</p>
+  </div>
+  <div class="highlight-card">
+    <h4>Modular workflow</h4>
+    <p>Switch seamlessly between continuous and discrete perspectives without losing context.</p>
+  </div>
+  <div class="highlight-card">
+    <h4>Built for teaching</h4>
+    <p>Use guided modules and demos to support lectures, labs, and self-directed learning.</p>
+  </div>
+</section>
 {% endblock %}
