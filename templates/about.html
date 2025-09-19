@@ -44,7 +44,7 @@
   </section>
 
   <section class="team">
-    <h2>Team & acknowledgements</h2>
+    <h2><span class="title-pill">Team & acknowledgements</span></h2>
     <ul>
       <li><strong>Tarik Smailagić</strong> – initiator, backend engineer and creator of the DSP engine.</li>
       <li><strong>Paul Wawerek‑López & Simon Deniffel</strong> – UX feedback, tutorial materials and module reviews.</li>
@@ -70,23 +70,151 @@
 
 <style>
 .container { max-width: 900px; margin: 0 auto; }
+.container section { margin-bottom: 2.5rem; }
+.intro,
+.vision {
+  position: relative;
+  padding: 2.25rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(0, 122, 204, 0.08), rgba(0, 196, 255, 0.05));
+  box-shadow: 0 10px 26px rgba(15, 76, 129, 0.07);
+  overflow: hidden;
+}
+.intro::after,
+.vision::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 62%);
+  pointer-events: none;
+}
 .feature-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
 .feature-item {
+  position: relative;
   flex: 1 1 280px;
   background: var(--card-background);
   color: var(--text-color);
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,.05);
+  padding: 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(15, 76, 129, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(0, 122, 204, 0.1);
 }
-body.dark-mode .feature-item {
-  box-shadow: 0 2px 5px rgba(0,0,0,.4);
+.feature-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(160deg, rgba(0, 122, 204, 0.1), rgba(0, 196, 255, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
+.feature-item:hover::before {
+  opacity: 1;
+}
+.feature-item > * {
+  position: relative;
+  z-index: 1;
+}
+.feature-item h3 { color: var(--primary-color); }
 .note { margin-top: 1rem; font-style: italic; }
+.team {
+  position: relative;
+  padding: 2rem 2.25rem 2rem 2.75rem;
+  border-radius: 18px;
+  background: var(--card-background);
+  border: 1px solid rgba(0, 122, 204, 0.12);
+  box-shadow: 0 8px 20px rgba(15, 76, 129, 0.08);
+  overflow: hidden;
+}
+.team::before {
+  content: "";
+  position: absolute;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  left: 1.6rem;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-gradient-end, #00aaff));
+  opacity: 0.35;
+  pointer-events: none;
+}
+.team > * {
+  position: relative;
+  z-index: 1;
+}
+.team ul {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  padding-left: 1.2rem;
+}
+.team li {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+.team li:last-child { margin-bottom: 0; }
+.team li::marker { color: var(--primary-gradient-end, #00aaff); }
+.team strong { color: var(--primary-color); }
+.title-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(0, 122, 204, 0.12);
+  border: 1px solid rgba(0, 122, 204, 0.22);
+  color: var(--primary-color);
+  font-weight: 600;
+  box-shadow: none;
+}
+section h2 {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.4rem;
+}
+section h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 52px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-gradient-end, #00aaff));
+  opacity: 0.55;
+}
 .btn { background: var(--primary-color); color: #fff; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; }
 .btn:hover { background: var(--primary-gradient-end); }
 .github-button {
   margin-top: 1rem;   /* pushes the button a bit lower */
+}
+.contact {
+  padding-bottom: 0.5rem;
+}
+body.dark-mode .intro,
+body.dark-mode .vision {
+  background: linear-gradient(135deg, rgba(0, 122, 204, 0.2), rgba(0, 196, 255, 0.12));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+}
+body.dark-mode .feature-item {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(0, 170, 255, 0.16);
+}
+body.dark-mode .feature-item::before {
+  background: linear-gradient(160deg, rgba(0, 170, 255, 0.2), rgba(0, 196, 255, 0));
+}
+body.dark-mode .team {
+  background: rgba(35, 35, 35, 0.96);
+  border-color: rgba(0, 170, 255, 0.2);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45);
+}
+body.dark-mode .team::before {
+  background: linear-gradient(180deg, rgba(0, 170, 255, 0.55), rgba(0, 196, 255, 0.22));
+}
+body.dark-mode .title-pill {
+  background: rgba(0, 170, 255, 0.18);
+  border-color: rgba(0, 170, 255, 0.32);
+  color: #e8f4ff;
 }
 </style>
 {% endblock %}
