@@ -9,6 +9,13 @@
     --subtext-color: #555;
     --border-color: #ccd0d5;
     --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --header-bg: rgba(34, 82, 156, 0.88);
+    --header-highlight: linear-gradient(120deg, rgba(96, 165, 250, 0.36), rgba(129, 199, 255, 0.14));
+    --header-border: rgba(191, 219, 254, 0.38);
+    --header-text: #e8f1ff;
+    --header-subtext: rgba(232, 241, 255, 0.75);
+    --header-pill-hover: rgba(148, 197, 255, 0.26);
+    --header-pill-active: linear-gradient(135deg, rgba(59, 130, 246, 0.88), rgba(96, 165, 250, 0.74));
   }
 
 /* Colorblind Mode Variables */
@@ -51,23 +58,150 @@ body.colorblind-mode a {
   
   /* Header */
   .header {
-    background: linear-gradient(45deg, var(--primary-gradient-start), var(--primary-gradient-end));
-    color: #fff;
-    padding: 20px;
-    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 12px 28px;
+    background: var(--header-bg);
+    color: var(--header-text);
+    border-bottom: 1px solid var(--header-border);
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--header-highlight);
+    opacity: 0.95;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .header .header-container {
+    position: relative;
+    z-index: 1;
+    width: min(1200px, 100%);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 22px;
   }
-  .header a {
-    text-decoration: none;
-    color: #fff;
+
+  .header .logo a {
     display: inline-flex;
     align-items: center;
+    gap: 12px;
+    color: var(--header-text);
+    text-decoration: none;
+    transition: transform 0.3s ease;
   }
-  .header img {
-    height: 50px;
-    margin-right: 15px;
+
+  .header .logo a:hover {
+    transform: translateY(-1px);
+  }
+
+  .header .logo img {
+    height: 48px;
+    width: 48px;
+    filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.35));
+  }
+
+  .header .logo span {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--header-text);
+    text-transform: none;
+  }
+
+  .header .main-nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+  }
+
+  .header .main-nav ul li {
+    display: flex;
+    align-items: center;
+  }
+
+  .header .main-nav ul li a,
+  .header .main-nav ul li button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1.05rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--header-text);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .header .main-nav ul li button {
+    cursor: pointer;
+    background: rgba(148, 163, 184, 0.1);
+  }
+
+  .header .main-nav ul li a:hover,
+  .header .main-nav ul li button:hover {
+    background: var(--header-pill-hover);
+    border-color: rgba(148, 163, 184, 0.45);
+    color: #ffffff;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .header .main-nav ul li a.is-active {
+    background: var(--header-pill-active);
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 16px 30px rgba(14, 116, 144, 0.35);
+  }
+
+  .header .main-nav ul li a:focus-visible,
+  .header .main-nav ul li button:focus-visible {
+    outline: 3px solid rgba(125, 211, 252, 0.75);
+    outline-offset: 3px;
+  }
+
+  .header .main-nav ul li.toggle-container {
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: var(--header-subtext);
+    gap: 0.75rem;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .header .main-nav ul li.toggle-container:hover {
+    background: rgba(148, 163, 184, 0.18);
+    border-color: rgba(125, 211, 252, 0.42);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.26);
+  }
+
+  .header .main-nav ul li.toggle-container .toggle-label {
+    margin: 0;
+    color: inherit;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .header .main-nav ul li.toggle-container .switch {
+    transform: scale(0.9);
   }
   
   /* Content Wrapper (Sidebar + Main) */
@@ -314,6 +448,13 @@ body.colorblind-mode a {
       --subtext-color: #bbbbbb;
       --border-color: #333;
       --card-background: #232323;
+      --header-bg: rgba(18, 57, 128, 0.9);
+      --header-highlight: linear-gradient(120deg, rgba(79, 135, 232, 0.4), rgba(59, 130, 246, 0.22));
+      --header-border: rgba(96, 165, 250, 0.38);
+      --header-text: #f1f6ff;
+      --header-subtext: rgba(236, 244, 255, 0.76);
+      --header-pill-hover: rgba(96, 165, 250, 0.28);
+      --header-pill-active: linear-gradient(135deg, rgba(59, 130, 246, 0.94), rgba(37, 99, 235, 0.78));
     }
   
   /* Outer Wrapper */
@@ -322,15 +463,24 @@ body.colorblind-mode a {
     box-shadow: none;          /* Remove the white shadow effect */
   }
   
-  /* Header */
-  body.dark-mode .header {
-    background: linear-gradient(45deg, #1f1f1f, #292929);
-    color: #f5f5f5;
+  body.dark-mode .header .logo span {
+    color: var(--header-text);
   }
-  body.dark-mode .header .logo span,
   body.dark-mode .header .main-nav ul li a,
   body.dark-mode .header .main-nav ul li button {
-    color: #f5f5f5;
+    border-color: rgba(59, 130, 246, 0.42);
+    background: rgba(37, 99, 235, 0.2);
+    color: var(--header-text);
+  }
+
+  body.dark-mode .header .main-nav ul li.toggle-container {
+    background: rgba(37, 99, 235, 0.18);
+    border-color: rgba(96, 165, 250, 0.45);
+  }
+
+  body.dark-mode .header .main-nav ul li.toggle-container:hover {
+    background: rgba(59, 130, 246, 0.28);
+    border-color: rgba(148, 197, 255, 0.62);
   }
   
   /* Sidebar */
@@ -519,7 +669,7 @@ body.dark-mode .theory-section .formula {
 }
 .toggle-label {
   margin-right: 6px;
-  color: #fff;
+  color: var(--header-text);
   font-weight: 500;
 }
 .switch {
