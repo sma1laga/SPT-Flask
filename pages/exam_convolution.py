@@ -319,22 +319,18 @@ def generate_problem_plot(problem, highlight_index=None):
 
     # bottom 4 subplots
     for i in range(4):
-        if highlight_index is not None: # highlight logic if highlight_index != None
-            if i == highlight_index: # option picked by user
-                if i == c_idx: # correct
-                    color = "green"
-                    lw = 3.0
-                else: # incorrect
-                    color = "red"
-                    lw = 3.0
-            elif i == c_idx: # user did not pick correct option
-                color = "red"
-                lw = 2
-            else: # user did not pick incorrect option
+        if highlight_index is not None:  # highlight logic for results page
+            if i == c_idx:
                 color = "green"
+                lw = 3.0
+            elif i == highlight_index:
+                color = "red"
+                lw = 3.0
+            else:
+                color = "black"
                 lw = 2
-        else: # appearance during exam
-            color="black"
+        else:  # appearance during exam
+            color = "black"
             lw = 2
         
         row, col = 1 + i // 2, i % 2
