@@ -30,6 +30,12 @@ def noise_reduction():
 def about():
     return render_template('about.html')  # Create about.html template
 
+
+@info_bp.route('/hall-of-fame')
+def hall_of_fame():
+    """community members who contributed"""
+    return render_template('hall_of_fame.html')
+
 @info_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':

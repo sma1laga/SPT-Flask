@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hof-container">
+  <section class="hof-hero">
+    <h1>Hall of Fame – Contributors</h1>
+    <p>
+      The Signal Processing Toolkit thrives because passionate people share their ideas, code and feedback with the
+      community. Every pull request, bug report and design tweak makes the platform more welcoming for learners around
+      the world. Thank you for helping us keep this open-source project vibrant and accessible.
+    </p>
+    <p>
+      We love celebrating everyone who invests their time and creativity into the toolkit. Whether you fixed a typo,
+      shipped a new feature, improved accessibility or guided others through reviews—your support matters. Contribute,
+      join the conversation and claim your spot below.
+    </p>
+  </section>
+
+  <section class="hof-list">
+    <div class="hof-list-header">
+      <h2>Contributors</h2>
+      <p>We are preparing this space for our community. Contribute to the project to see your name here!</p>
+    </div>
+
+    <div class="contributors-grid">
+      <article class="contributor-card placeholder">
+        <div class="card-body">
+          <span class="badge">Your Name</span>
+          <h3>Be the first to be featured</h3>
+          <p>
+            Help shape the Signal Processing Toolkit by opening an issue, proposing improvements or submitting a
+            pull request. Once your contribution lands, we will highlight you right here.
+          </p>
+        </div>
+      </article>
+      <article class="contributor-card placeholder">
+        <div class="card-body">
+          <span class="badge">Team Effort</span>
+          <h3>Collaborate &amp; contribute</h3>
+          <p>
+            Team up with fellow learners, mentor newcomers and share learning resources. Community led contributions are essential for this open source project.
+          </p>
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
+
+<style>
+.hof-container {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+.hof-hero {
+  position: relative;
+  padding: 2.75rem 2.5rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(59, 130, 246, 0.08));
+  box-shadow: 0 16px 38px rgba(30, 64, 175, 0.18);
+  overflow: hidden;
+  color: var(--text-color);
+}
+
+.hof-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.32), transparent 65%);
+  pointer-events: none;
+}
+
+.hof-hero h1 {
+  margin-bottom: 1.3rem;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  color: var(--primary-color);
+}
+
+.hof-hero p {
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.hof-list {
+  margin-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+.hof-list-header h2 {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  font-size: 1.75rem;
+  position: relative;
+  color: var(--primary-color);
+}
+
+.hof-list-header h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.45rem;
+  width: 56px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary-color), rgba(96, 165, 250, 0.85));
+}
+
+.hof-list-header p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-color);
+}
+
+.contributors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.contributor-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 0.4rem;
+  background: var(--card-background);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.contributor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(30, 64, 175, 0.18);
+}
+
+.contributor-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.contributor-card:hover::before {
+  opacity: 1;
+}
+
+.card-body {
+  position: relative;
+  z-index: 1;
+  padding: 1.8rem 1.6rem;
+  color: var(--text-color);
+}
+
+.card-body h3 {
+  margin: 0.8rem 0 0.6rem;
+  font-size: 1.25rem;
+  color: var(--primary-color);
+}
+
+.card-body p {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+body.dark-mode .hof-hero {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.26), rgba(30, 64, 175, 0.32));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .contributor-card {
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
+  border-color: rgba(125, 211, 252, 0.28);
+}
+
+body.dark-mode .contributor-card::before {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), transparent 60%);
+}
+
+@media (max-width: 640px) {
+  .hof-container {
+    padding: 2rem 1rem 2.6rem;
+  }
+
+  .hof-hero {
+    padding: 2.2rem 1.8rem;
+  }
+}
+</style>
+{% endblock %}

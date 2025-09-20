@@ -3,7 +3,10 @@
 <div class="container">
 
   <section class="intro">
-    <h1>About the Signal Processing Toolkit</h1>
+    <div class="intro-header">
+      <h1>About the Signal Processing Toolkit</h1>
+      <a class="btn hall-of-fame-link" href="{{ url_for('info.hall_of_fame') }}">Hall of Fame</a>
+    </div>
     <p>The <strong>Signal Processing Toolkit (SPT)</strong> is an interactive platform hosted by the Lehrstuhl für Multimediale Signalverarbeitung (LMS) at FAU. It combines classic and modern DSP concepts into a licence‑free educational service where students and professionals can experiment with signals, systems and transforms in real time.</p>
   </section>
 
@@ -87,6 +90,24 @@
   inset: 0;
   background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 62%);
   pointer-events: none;
+}
+.intro-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.intro-header h1 {
+  margin: 0;
+}
+.intro-header .hall-of-fame-link {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.65rem 1.15rem;
+  box-shadow: 0 10px 20px rgba(0, 122, 204, 0.16);
+}
+.intro-header .hall-of-fame-link:hover {
+  box-shadow: 0 12px 22px rgba(0, 196, 255, 0.28);
 }
 .feature-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
 .feature-item {
