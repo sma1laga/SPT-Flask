@@ -69,3 +69,23 @@ def privacy():
 @info_bp.route('/terms')
 def terms():
     return render_template('terms_of_service.html')
+
+
+@info_bp.route('/news')
+def news():
+    releases = [
+        # Default template with: version / codename / date / whats the acctual update (highlights)
+        # @Paul - noch nicht wichtig, erst nach launch dann...
+        { 
+            "version": "1.1.7vUI",
+            "codename": "UI Refresh",
+            "date": "September 20, 2025",
+            "highlights": [
+                "Refined dashboard styling for better readabilitz.",
+                "Introduced the dedicated news page for release notes.",
+                "Improved footer accessibility links."
+            ],
+        },
+
+    ]
+    return render_template('news.html', releases=releases)
