@@ -196,30 +196,6 @@
     color: #0054c2;
   }
 
-  .signal-highlights {
-    max-width: 1150px;
-    margin: 0 auto 90px auto;
-    padding: 0 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-    gap: 20px;
-  }
-  .highlight-card {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.04));
-    border-radius: 18px;
-    padding: 26px;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--box-shadow);
-  }
-  .highlight-card h4 {
-    margin: 0 0 10px;
-    font-size: 1.25rem;
-  }
-  .highlight-card p {
-    margin: 0;
-    color: var(--subtext-color);
-    line-height: 1.6;
-  }
 
   @media (max-width: 900px) {
     .hero {
@@ -353,18 +329,4 @@
   </div>
 </section>
 
-<section class="signal-highlights">
-  <div class="highlight-card">
-    <h4>Precision visuals</h4>
-    <p>Create publication-ready plots and overlays with responsive, high-resolution charting defaults.</p>
-  </div>
-  <div class="highlight-card">
-    <h4>Modular workflow</h4>
-    <p>Switch seamlessly between continuous and discrete perspectives without losing context.</p>
-  </div>
-  <div class="highlight-card">
-    <h4>Built for teaching</h4>
-    <p>Use guided modules and demos to support lectures, labs, and self-directed learning.</p>
-  </div>
-</section>
 {% endblock %}
