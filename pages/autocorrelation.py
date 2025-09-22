@@ -11,9 +11,6 @@ def autocorrelation():
     return render_template("autocorrelation.html")
 
 
-def _reverse_t(expr: str) -> str:
-    """Return the expression with every standalone `t` replaced by `-t`."""
-    return re.sub(r"\bt\b", "(-t)", expr)
 
 def _replace_exp(expr: str, func: str) -> str:
     """Replace exp_iwt with the provided real function name."""
@@ -21,41 +18,38 @@ def _replace_exp(expr: str, func: str) -> str:
 
 
 def compute_autocorrelation(func_str: str):
-    """Compute continuous autocorrelation with conjugate symmetry handling.
-
-    Evaluates real and imaginary components separately, mirrors the result to
-    enforce symmetry around the origin and returns both parts for plotting.
     """
-    f_re = _replace_exp(func_str, "np.cos")
-    f_im = _replace_exp(func_str, "np.sin")
+    Compute autocorrelation phi_xx(τ). If the input uses exp_iwt(...), split into
+    cos/sin for Re/Im. Otherwise treat the input as purely real and set Im = 0
+    Timereversal is numeric (3rd arg=True in compute_convolution).
+    """
+    uses_exp = re.search(r"exp_iwt\s*\(", func_str) is not None
+    f_re = _replace_exp(func_str, "np.cos") if uses_exp else func_str
+    f_im = _replace_exp(func_str, "np.sin") if uses_exp else "0"
 
-    rr = compute_convolution(f_re, _reverse_t(f_re))
-    if isinstance(rr, dict) and rr.get("error"):
-        return rr
-    ii = compute_convolution(f_im, _reverse_t(f_im))
-    if isinstance(ii, dict) and ii.get("error"):
-        return ii
-    ri = compute_convolution(f_re, _reverse_t(f_im))
-    if isinstance(ri, dict) and ri.get("error"):
-        return ri
-    ir = compute_convolution(f_im, _reverse_t(f_re))
-    if isinstance(ir, dict) and ir.get("error"):
-        return ir
+    rr = compute_convolution(f_re, f_re, True)
+    if isinstance(rr, dict) and rr.get("error"): return rr
+    ii = compute_convolution(f_im, f_im, True)
+    if isinstance(ii, dict) and ii.get("error"): return ii
+    ri = compute_convolution(f_re, f_im, True)
+    if isinstance(ri, dict) and ri.get("error"): return ri
+    ir = compute_convolution(f_im, f_re, True)
+    if isinstance(ir, dict) and ir.get("error"): return ir
 
     re_part = np.array(rr["y_conv"]) + np.array(ii["y_conv"])
     im_part = np.array(ir["y_conv"]) - np.array(ri["y_conv"])
 
-    n = len(re_part)
-    re_part = 0.5*(re_part + re_part[::-1])
-    im_part = 0.5*(im_part - im_part[::-1])
-
-    tau = np.array(rr["t_conv"]) - rr["t_conv"][n//2]
+    t1 = np.asarray(rr["t1"])
+    dt = t1[1] - t1[0]
+    n  = len(rr["y_conv"])
+    mid = (n - 1) / 2
+    tau = dt * (np.arange(n) - mid)
 
     return {
         "t": rr["t1"],
-        "y_re": rr["y1"],
-        "y_im": ir["y1"],
+        "y_re": rr["y1"],   # samples of Re{x(t)}
+        "y_im": ir["y1"],   # samples of Im{x(t} (zeros if uses_exp is False)
         "tau": tau.tolist(),
         "r_re": re_part.tolist(),
-        "r_im": im_part.tolist()
+        "r_im": im_part.tolist(),
     }

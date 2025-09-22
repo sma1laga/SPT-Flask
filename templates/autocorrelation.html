@@ -91,33 +91,22 @@
         console.error(data.error);
         return;
       }
+
       const lc = { margin:{ t:30 } };
 
       Plotly.newPlot("plotSignal", [
-        {
-          x: data.t, y: data.y_re,
-          mode: "lines", name: "Re{x(t)}",
-          line: { width:2, color: "#1f77b4" }
-        },
-        {
-          x: data.t, y: data.y_im,
-          mode: "lines", name: "Im{x(t)}",
-          line: { width:2, color: "#d62728", dash: "dot" }
-        }
+        { x: data.t,   y: data.y_re, mode: "lines", name: "Re{x(t)}",
+          line: { width:2, color: "#1f77b4" } },
+        { x: data.t,   y: data.y_im, mode: "lines", name: "Im{x(t)}",
+          line: { width:2, color: "#d62728", dash: "dot" } }
       ], { ...lc, xaxis:{ title:{text:"t"} }, yaxis:{ title:{text:"x(t)"} } });
 
       Plotly.newPlot("plotAuto", [
-        {
-          x: data.tau, y: data.r_re,
-          mode: "lines", name: "Re{φₓₓ(τ)}",
-          line: { width:2, color: "#2ca02c" }
-        },
-        {
-          x: data.tau, y: data.r_im,
-          mode: "lines", name: "Im{φₓₓ(τ)}",
-          line: { width:2, color: "#ff7f0e", dash: "dot" }
-        }
-      ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φₓₓ(τ)"} } });
+      { x: data.tau, y: data.r_re, mode: "lines", name: "Re{φₓₓ(τ)}",
+        line: { width:2, color: "#2ca02c" } },
+      { x: data.tau, y: data.r_im, mode: "lines", name: "Im{φₓₓ(τ)}",
+        line: { width:2, color: "#ff7f0e", dash: "dot" } }
+    ], { ...lc, xaxis:{ title:{text:"τ"} }, yaxis:{ title:{text:"φₓₓ(τ)"} } });
     }
 
     document.getElementById("computeBtn").addEventListener("click", updatePlots);
