@@ -7,7 +7,7 @@
     padding: 1.5rem;
     margin-top: 2rem;
     border-radius: 0.5rem;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
   
   .fft-theory h3 {
@@ -84,7 +84,7 @@
   input[type="number"]:focus {
     outline: none;
     border-color: #4F46E5;
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
   }
   
   /* Compute button */
