@@ -47,7 +47,8 @@
       box-shadow: 0 5px 14px rgba(15, 23, 42, 0.2);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      overflow: hidden;
+      overflow: visible;
+      isolation: isolate;
     }
 
     .header::before {
@@ -57,7 +58,7 @@
       background: var(--header-highlight);
       opacity: 0.95;
       pointer-events: none;
-      z-index: 0;
+      z-index: -1;
     }
     .header .header-container {
       position: relative;
@@ -92,6 +93,9 @@
       letter-spacing: 0.02em;
       color: var(--header-text);
       text-transform: none;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
     }
     .header .main-nav ul {
       list-style: none;
@@ -149,30 +153,79 @@
     }
 
     .header .main-nav ul li.toggle-container {
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      background: rgba(148, 163, 184, 0.1);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      color: var(--header-subtext);
-      gap: 0.75rem;
-      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      display: flex;
+      align-items: center;
     }
 
-    .header .main-nav ul li.toggle-container:hover {
+    .header .main-nav ul li.toggle-container .toggle-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--header-text);
+      cursor: pointer;
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .header .main-nav ul li.toggle-container .toggle-button:hover {
       background: rgba(148, 163, 184, 0.18);
       border-color: rgba(125, 211, 252, 0.42);
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .header .main-nav ul li.toggle-container.is-active .toggle-button {
+      background: rgba(148, 197, 255, 0.22);
+      border-color: rgba(148, 197, 255, 0.6);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+
+    .header .main-nav ul li.toggle-container .toggle-button input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
 
     .header .main-nav ul li.toggle-container .toggle-label {
       margin: 0;
-      color: inherit;
       font-weight: 600;
       letter-spacing: 0.01em;
     }
 
+    .header .main-nav ul li.toggle-container .toggle-status {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--header-text);
+      min-width: 2.4rem;
+      text-align: center;
+      transition: color 0.25s ease;
+    }
+
+    .header .main-nav ul li.toggle-container .toggle-status[data-state="on"] {
+      color: #bae6fd;
+    }
+
     .header .main-nav ul li.toggle-container .switch {
-      transform: scale(0.9);
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+      flex-shrink: 0;
+      transform: scale(0.95);
+      transform-origin: center;
+    }
+
+    .header .main-nav ul li.toggle-container .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
 
     body.dark-mode {
@@ -191,15 +244,24 @@
       background: rgba(37, 99, 235, 0.2);
     }
 
-    body.dark-mode .header .main-nav ul li.toggle-container {
+    body.dark-mode .header .main-nav ul li.toggle-container .toggle-button {
       background: rgba(37, 99, 235, 0.18);
       border-color: rgba(96, 165, 250, 0.45);
     }
 
-    body.dark-mode .header .main-nav ul li.toggle-container:hover {
+    body.dark-mode .header .main-nav ul li.toggle-container .toggle-button:hover {
       background: rgba(59, 130, 246, 0.28);
       border-color: rgba(148, 197, 255, 0.62);
     }
+    body.dark-mode .header .main-nav ul li.toggle-container.is-active .toggle-button {
+      background: rgba(59, 130, 246, 0.34);
+      border-color: rgba(148, 197, 255, 0.68);
+    }
+
+    body.dark-mode .header .main-nav ul li.toggle-container .toggle-status[data-state="on"] {
+      color: #7dd3fc;
+    }
+
 
     @media (max-width: 1100px) {
       .header {
@@ -497,10 +559,13 @@
             <li><a href="{{ url_for('info.contact') }}" class="nav-link{% if request.endpoint == 'info.contact' %} is-active{% endif %}">Report</a></li>
             <li><button id="dark-mode-toggle" type="button">Dark Mode</button></li>
             <li class="toggle-container">
-              <span class="toggle-label">Colorblind</span>
-              <label class="switch">
-                <input type="checkbox" id="colorblind-mode-toggle">
-                <span class="slider round"></span>
+              <label class="toggle-button">
+                <span class="toggle-label">Colorblind</span>
+                <span class="toggle-status" id="colorblind-mode-status" data-off="Off" data-on="On" data-state="off">Off</span>
+                <span class="switch">
+                  <input type="checkbox" id="colorblind-mode-toggle">
+                  <span class="slider round"></span>
+                </span>
               </label>
             </li>
           </ul>

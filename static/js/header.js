@@ -23,15 +23,34 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   if (colorblindToggle) {
+    const colorblindStatus = document.getElementById("colorblind-mode-status");
+    const toggleContainer = colorblindToggle.closest(".toggle-container");
+
+    const updateColorblindUI = (isEnabled) => {
+      document.body.classList.toggle("colorblind-mode", isEnabled);
+
+      if (colorblindStatus) {
+        const onLabel = colorblindStatus.dataset.on || "On";
+        const offLabel = colorblindStatus.dataset.off || "Off";
+        colorblindStatus.textContent = isEnabled ? onLabel : offLabel;
+        colorblindStatus.dataset.state = isEnabled ? "on" : "off";
+      }
+
+      if (toggleContainer) {
+        toggleContainer.classList.toggle("is-active", isEnabled);
+      }
+    };
+
     colorblindToggle.addEventListener("change", function() {
-      document.body.classList.toggle("colorblind-mode", colorblindToggle.checked);
-      localStorage.setItem("colorblindMode", colorblindToggle.checked ? "true" : "false");
+      const isEnabled = colorblindToggle.checked;
+      updateColorblindUI(isEnabled);
+      localStorage.setItem("colorblindMode", isEnabled ? "true" : "false");
     });
 
     if (localStorage.getItem("colorblindMode") === "true") {
-      document.body.classList.add("colorblind-mode");
       colorblindToggle.checked = true;
     }
+    updateColorblindUI(colorblindToggle.checked);
   }
 
   // Sidebar toggle for mobile
