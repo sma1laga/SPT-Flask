@@ -81,8 +81,10 @@
     radial-gradient(circle at 88% 12%, rgba(255, 161, 22, 0.45), transparent 60%),
     linear-gradient(135deg, rgba(24, 28, 44, 0.95), rgba(14, 18, 30, 0.94));
   border: 1px solid rgba(253, 230, 138, 0.4);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.4);
   overflow: hidden;
+  margin-bottom: 3rem;
+
 }
 
 .hero-glow {
@@ -232,6 +234,7 @@
 
 .contributor-card {
   position: relative;
+  display: flex;
   border-radius: 20px;
   padding: 1px;
   background: linear-gradient(135deg, rgba(250, 204, 21, 0.35), rgba(217, 119, 6, 0.15)) border-box;
@@ -262,6 +265,9 @@
 .card-body {
   position: relative;
   z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   padding: 1.95rem 1.7rem;
   background: rgba(11, 15, 26, 0.92);
   border-radius: 19px;
@@ -295,7 +301,7 @@
   text-transform: uppercase;
 }
 .placeholder .card-body {
-  background: rgba(15, 23, 42, 0.84);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.92) 45%, rgba(11, 15, 26, 0.95) 100%);
   color: rgba(226, 232, 240, 0.9);
 }
 
