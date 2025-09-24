@@ -1,35 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  .hero {
-    position: relative;
-    overflow: hidden;
-    border-radius: 28px;
-    background: radial-gradient(circle at top left, rgba(0, 180, 255, 0.65), rgba(0, 60, 130, 0.9));
-    color: #ffffff;
-    margin: 40px auto 60px auto;
-    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 4rem);
+  .page-header {
+
     max-width: 1150px;
-    box-shadow: 0 12px 28px rgba(0, 40, 90, 0.3);
-  }
-  .hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 55%),
-                radial-gradient(circle at 80% 30%, rgba(0, 255, 163, 0.2), transparent 50%),
-                linear-gradient(135deg, rgba(0, 0, 0, 0.25), transparent 65%);
-    mix-blend-mode: screen;
-    pointer-events: none;
-  }
-  .hero-content {
-    position: relative;
-    max-width: 720px;
-    margin: 0 auto;
+    margin: 60px auto 30px auto;
+    padding: 0 20px;
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: 1.4rem;
+  }
+  .page-header h1 {
+    font-size: clamp(2.8rem, 5vw, 3.8rem);
+    margin-bottom: 16px;
+    color: var(--primary-color);
+  }
+  .page-header hr {
+    width: 90px;
+    height: 4px;
+    border: none;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #00d4ff, #0077ff);
   }
   .hero-tag {
     align-self: center;
@@ -41,51 +31,6 @@
     border-radius: 999px;
     padding: 0.55rem 1.5rem;
     font-weight: 600;
-  }
-  .hero h1 {
-    font-size: clamp(2.6rem, 5vw, 3.8rem);
-    font-weight: 600;
-    margin: 0;
-  }
-  .hero p {
-    font-size: clamp(1.05rem, 2.8vw, 1.2rem);
-    margin: 0;
-    color: rgba(255, 255, 255, 0.85);
-    line-height: 1.6;
-  }
-  .hero-actions {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  .cta-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.85rem 1.8rem;
-    border-radius: 999px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
-  }
-  .cta-btn.primary {
-    background: linear-gradient(135deg, #00d4ff, #0077ff);
-    color: #ffffff;
-    box-shadow: 0 6px 18px rgba(0, 102, 255, 0.35);
-  }
-  .cta-btn.primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0, 102, 255, 0.45);
-  }
-  .cta-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-  }
-  .cta-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.18);
-    transform: translateY(-3px);
   }
 
   .menu-section {
@@ -197,48 +142,19 @@
   }
 
 
-  @media (max-width: 900px) {
-    .hero {
-      margin: 30px 16px 50px;
-      border-radius: 22px;
-    }
-  }
-
   @media (max-width: 600px) {
-    .hero {
-      padding: 2.4rem 1.4rem;
-    }
+
     .hero-tag {
       letter-spacing: 0.25em;
       font-size: 0.75rem;
     }
-    .hero-actions {
-      flex-direction: column;
-    }
-    .cta-btn {
-      width: 100%;
-      justify-content: center;
-    }
+
   }
 </style>
 
-<section class="hero">
-  <div class="hero-content">
-    <span class="hero-tag">Signal Processing Toolkit</span>
-    <h1>Design, analyse and bring your signals to life</h1>
-    <p>
-      Launch precision tools, interactive demos, and guided training flows that help you move
-      from concept to insight with clarity and confidence.
-    </p>
-    <div class="hero-actions">
-      <a class="cta-btn primary" href="{{ url_for('plot_function.plot_function') }}">
-        Start exploring tools
-      </a>
-      <a class="cta-btn secondary" href="{{ url_for('discrete_plot_functions.plot_functions') }}">
-        Explore discrete modules
-      </a>
-    </div>
-  </div>
+<section class="page-header">
+  <h1>Signal Processing Toolkit</h1>
+  <hr />
 </section>
 
 <section class="menu-section">
