@@ -557,7 +557,8 @@ body.colorblind-mode a {
   }
   body.dark-mode .modern-sidebar ul.sidebar-menu li a:hover {
     color: #b9d1ff;
-    background-color: #2a2f3b;
+    background-color: rgba(96, 168, 255, 0.16);
+    border-left-color: rgba(96, 168, 255, 0.38);
   }
   
   /* Hero Section */

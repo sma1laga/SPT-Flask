@@ -410,9 +410,11 @@
     }
     .modern-sidebar ul.sidebar-menu > li.section-title::after {
       content: "";
-      flex-grow: 1;
+      display: block;
+      flex: 1 1 auto;
       height: 1px;
-      background: linear-gradient(90deg, rgba(0, 122, 204, 0.25), transparent);
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0, 122, 204, 0.28), transparent);
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link {
       position: relative;
@@ -432,9 +434,9 @@
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover {
       color: #0f4c81;
-      border-left-color: rgba(10, 132, 208, 0.45);
-      background-color: rgba(10, 132, 208, 0.08);
-      box-shadow: 0 6px 14px rgba(15, 76, 129, 0.08);
+      border-left-color: rgba(62, 161, 238, 0.42);
+      background-color: rgba(120, 198, 255, 0.18);
+      box-shadow: 0 6px 14px rgba(15, 76, 129, 0.06);
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
       color: #06345a;
@@ -654,7 +656,7 @@
                 <!-- <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li> -->
                 <!-- <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li> -->
 
-                <li class="section-title">Other Tools</li>
+                <li class="section-title">Transforms</li>
                 <li>
                   <a href="{{ url_for('inverse_laplace.inverse_laplace') }}"
                      class="sidebar-link{% if request.endpoint == 'inverse_laplace.inverse_laplace' %} active{% endif %}">
@@ -667,25 +669,14 @@
             <!-- Discrete menu -->
             <div id="menu-discrete" style="display: {% if is_discrete %}block{% else %}none{% endif %};">
               <ul class="sidebar-menu">
-                <li class="section-title">Plotting &amp; Transforms</li>
+                <li class="section-title">Plotting</li>
                 <li>
                   <a href="{{ url_for('discrete_plot_functions.plot_functions') }}"
                      class="sidebar-link{% if request.endpoint == 'discrete_plot_functions.plot_functions' %} active{% endif %}">
                     Plot Functions
                   </a>
                 </li>
-                <li>
-                  <a href="{{ url_for('discrete_fourier.show_dft') }}"
-                     class="sidebar-link{% if request.endpoint == 'discrete_fourier.show_dft' %} active{% endif %}">
-                    DFT
-                  </a>
-                </li>
-                <li>
-                  <a href="{{ url_for('transform_intuition.transform_intuition') }}"
-                     class="sidebar-link{% if request.endpoint == 'transform_intuition.transform_intuition' %} active{% endif %}">
-                    Transform Intuition
-                  </a>
-                </li>
+
 
                 <li class="section-title">Convolution</li>
                 <li>
@@ -709,7 +700,19 @@
                 <!-- TODO -->
                 <!-- <li class="section-title">Process Chain</li> -->
                 <!-- <li><a href="{{ url_for('discrete_direct_plot.discrete_direct_plot') }}">Direct-Form Visualiser</a></li> -->
-                <li class="section-title">Other Tools</li>
+                <li class="section-title">Transforms</li>
+                <li>
+                  <a href="{{ url_for('discrete_fourier.show_dft') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_fourier.show_dft' %} active{% endif %}">
+                    DFT
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('transform_intuition.transform_intuition') }}"
+                     class="sidebar-link{% if request.endpoint == 'transform_intuition.transform_intuition' %} active{% endif %}">
+                    Transform Intuition
+                  </a>
+                </li>
                 <li>
                   <a href="{{ url_for('inverse_z.inverse_z') }}"
                      class="sidebar-link{% if request.endpoint == 'inverse_z.inverse_z' %} active{% endif %}">
