@@ -111,9 +111,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    color: var(--primary-color);
+    color: #0054c2;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     transition: transform 0.2s ease, color 0.2s ease;
   }
   .link-list li a::after {
@@ -126,7 +126,7 @@
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
   .link-list li a:hover {
-    color: #005ea8;
+    color: #003f94;
     transform: translateX(4px);
   }
   .link-list li a:hover::after {
@@ -178,9 +178,7 @@
     <div class="card">
       <span class="card-label"><i class="fa-solid fa-wave-square"></i> Plot &amp; Inspect</span>
       <h3>Visualise your signals</h3>
-      <p class="card-description">
-        Generate fast visual insight using curated utilities for classical signal operations
-      </p>
+
       <ul class="link-list">
         <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
         <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot Designer</a></li>
@@ -191,9 +189,7 @@
     <div class="card">
       <span class="card-label"><i class="fa-solid fa-graduation-cap"></i> Learn &amp; Practice</span>
       <h3>Training lab</h3>
-      <p class="card-description">
-        Build intuition with progressive exercises designed for quick skill reinforcement
-      </p>
+
       <ul class="link-list">
         <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Trainer</a></li>
       </ul>
@@ -202,9 +198,7 @@
     <div class="card">
       <span class="card-label"><i class="fa-solid fa-lightbulb"></i> Discover &amp; Share</span>
       <h3>Theory &amp; demos</h3>
-      <p class="card-description">
-        Explore guided demonstrations and references that contextualise each concept
-      </p>
+
       <ul class="link-list">
         <li><a href="{{ url_for('demos_menu.index') }}">Interactive Demos</a></li>
       </ul>
