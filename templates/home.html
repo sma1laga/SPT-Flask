@@ -1,43 +1,68 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  .page-header {
-
+  .hero {
+    position: relative;
     max-width: 1150px;
-    margin: 60px auto 30px auto;
-    padding: 0 20px;
-    text-align: center;
+    margin: 70px auto 60px auto;
+    padding: clamp(2.5rem, 5vw, 4rem);
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(0, 119, 255, 0.08), rgba(0, 194, 255, 0.04));
+    border: 1px solid rgba(0, 119, 255, 0.18);
+    overflow: hidden;
   }
-  .page-header h1 {
-    font-size: clamp(2.8rem, 5vw, 3.8rem);
-    margin-bottom: 16px;
-    color: var(--primary-color);
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(0, 194, 255, 0.25), transparent 55%);
+    opacity: 0.7;
+    pointer-events: none;
   }
-  .page-header p {
-    max-width: 700px;
-    margin: 16px auto 0 auto;
-    color: var(--subtext-color);
-    font-size: 1.05rem;
-    line-height: 1.6;
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.2rem);
   }
-  .page-header hr {
-    width: 90px;
-    height: 4px;
-    border: none;
-    margin: 0 auto;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #00d4ff, #0077ff);
-  }
-  .hero-tag {
-    align-self: center;
+  .hero-eyebrow {
     font-size: 0.85rem;
-    letter-spacing: 0.35em;
+    letter-spacing: 0.32em;
     text-transform: uppercase;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 999px;
-    padding: 0.55rem 1.5rem;
     font-weight: 600;
+    color: rgba(0, 40, 94, 0.8);
+  }
+  .hero h1 {
+    font-size: clamp(2.7rem, 5vw, 3.9rem);
+    color: var(--primary-color);
+    margin: 0;
+    line-height: 1.1;
+  }
+  .hero p {
+    max-width: 640px;
+    color: var(--subtext-color);
+    font-size: 1.08rem;
+    line-height: 1.7;
+    margin: 0;
+  }
+  .hero-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.92rem;
+    color: rgba(0, 52, 118, 0.88);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 119, 255, 0.2);
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+
   }
 
   .menu-section {
@@ -147,25 +172,54 @@
     background: rgba(0, 119, 255, 0.15);
     color: #0054c2;
   }
-
-
-  @media (max-width: 600px) {
-
-    .hero-tag {
-      letter-spacing: 0.25em;
-      font-size: 0.75rem;
+  @media (max-width: 720px) {
+    .hero {
+      margin: 50px 20px 50px 20px;
+      padding: 2.4rem;
     }
-
+    .hero-content {
+      text-align: left;
+      gap: 1.6rem;
+    }
+    .hero-eyebrow {
+      letter-spacing: 0.24em;
+      justify-self: start;
+    }
+    .hero-highlights {
+      gap: 0.6rem;
+    }
+    .hero-chip {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  @media (max-width: 500px) {
+    .hero {
+      padding: 2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.1rem, 8vw, 2.6rem);
+    }
+    .hero p {
+      font-size: 1rem;
+    }
   }
 </style>
 
-<section class="page-header">
-  <h1>Signal Processing Toolkit</h1>
-  <hr />
-  <p>
-    Navigate interactive labs that bring continuous and discrete signal and system
-    theory to life through visual exploration.
-  </p>
+<section class="hero">
+  <div class="hero-content">
+    <span class="hero-eyebrow">Signal Processing Toolkit</span>
+    <h1>Interactive labs for modern signal intuition</h1>
+    <p>
+      Navigate continuous and discrete time explorations with guided visuals, responsive
+      tools, and resources designed for quick experimentation or in-depth study.
+    </p>
+    <div class="hero-highlights">
+      <span class="hero-chip"><i class="fa-solid fa-wave-square"></i> Continuous analysis</span>
+      <span class="hero-chip"><i class="fa-solid fa-border-all"></i> Discrete insights</span>
+      <span class="hero-chip"><i class="fa-solid fa-graduation-cap"></i> Learning modules</span>
+    </div>
+  </div>
 </section>
 
 <section class="menu-section">
