@@ -3,69 +3,66 @@
 <style>
   :root {
     --demo-eyebrow-color: #0b5ebd;
-    --demo-hero-bg: linear-gradient(130deg, rgba(0, 122, 204, 0.16), rgba(80, 56, 255, 0.16));
-    --demo-hero-border: rgba(0, 0, 0, 0.05);
-    --demo-hero-card-bg: rgba(255, 255, 255, 0.92);
-    --demo-hero-card-border: rgba(0, 0, 0, 0.04);
-    --demo-hero-card-shadow: 0 5px 14px rgba(15, 35, 95, 0.12);
+    --demo-hero-bg: #f6f8fb;
+    --demo-hero-border: rgba(11, 94, 189, 0.12);
+    --demo-hero-card-bg: #ffffff;
+    --demo-hero-card-border: rgba(13, 53, 109, 0.1);
+    --demo-hero-card-shadow: 0 10px 26px rgba(15, 35, 95, 0.08);
     --demo-hero-heading: #0e1a2b;
     --demo-hero-text: #3a3f4b;
     --demo-hero-card-text: rgba(10, 31, 68, 0.72);
     --demo-hero-icon-color: #0b5ebd;
-    --demo-lecture-pill-bg: rgba(0, 122, 204, 0.14);
-    --demo-lecture-pill-text: #005a99;
+    --demo-lecture-pill-bg: rgba(11, 94, 189, 0.12);
+    --demo-lecture-pill-text: #0b5ebd;
     --demo-heading-color: #0e1a2b;
     --demo-description-color: #465063;
     --demo-section-title: #202c45;
     --demo-section-count: rgba(32, 44, 69, 0.7);
-    --demo-card-bg: linear-gradient(145deg, #fcfdff 0%, #eef2ff 100%);
-    --demo-card-border: rgba(0, 0, 0, 0.06);
-    --demo-card-shadow: 0 6px 18px rgba(15, 35, 95, 0.08);
-    --demo-card-shadow-hover: 0 8px 24px rgba(15, 35, 95, 0.14);
-    --demo-card-overlay: radial-gradient(circle, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 45%, rgba(9, 35, 85, 0.18) 100%);
+    --demo-card-bg: #ffffff;
+    --demo-card-border: rgba(13, 53, 109, 0.1);
+    --demo-card-shadow: 0 12px 26px rgba(15, 35, 95, 0.06);
+    --demo-card-shadow-hover: 0 16px 32px rgba(15, 35, 95, 0.09);
     --demo-card-heading: #15223a;
     --demo-card-body: rgba(21, 34, 58, 0.78);
     --demo-card-subtitle: rgba(21, 34, 58, 0.58);
-    --demo-icon-bg: rgba(255, 255, 255, 0.75);
+    --demo-icon-bg: rgba(11, 94, 189, 0.08);
     --demo-icon-color: #0b3d78;
-    --demo-icon-shadow: inset 0 0 0 1px rgba(11, 61, 120, 0.15);
-    --demo-button-bg: rgba(0, 122, 204, 0.12);
-    --demo-button-color: #005a99;
-    --demo-button-hover-bg: rgba(0, 122, 204, 0.22);
-    --demo-button-hover-color: #00406e;
+    --demo-button-bg: rgba(11, 94, 189, 0.12);
+    --demo-button-color: #0b5ebd;
+    --demo-button-hover-bg: rgba(11, 94, 189, 0.2);
+    --demo-button-hover-color: #073b75;
   }
 
   body.dark-mode {
     --demo-eyebrow-color: #8dc8ff;
-    --demo-hero-bg: linear-gradient(130deg, rgba(37, 86, 140, 0.46), rgba(91, 61, 255, 0.44));
-    --demo-hero-border: rgba(148, 173, 215, 0.18);
-    --demo-hero-card-bg: rgba(16, 23, 38, 0.9);
+    --demo-hero-bg: rgba(16, 26, 46, 0.9);
+    --demo-hero-border: rgba(148, 173, 215, 0.24);
+    --demo-hero-card-bg: rgba(20, 28, 45, 0.95);
     --demo-hero-card-border: rgba(148, 173, 215, 0.24);
-    --demo-hero-card-shadow: 0 7px 20px rgba(6, 12, 28, 0.5);
+    --demo-hero-card-shadow: 0 14px 34px rgba(6, 12, 28, 0.48);
     --demo-hero-heading: #f1f5ff;
     --demo-hero-text: #cfd8e6;
     --demo-hero-card-text: #b7c4e5;
     --demo-hero-icon-color: #8dc8ff;
-    --demo-lecture-pill-bg: rgba(64, 139, 255, 0.2);
+    --demo-lecture-pill-bg: rgba(64, 139, 255, 0.22);
     --demo-lecture-pill-text: #d9e8ff;
     --demo-heading-color: #f1f5ff;
     --demo-description-color: #aab6d5;
     --demo-section-title: #e0e7ff;
     --demo-section-count: rgba(206, 213, 243, 0.75);
-    --demo-card-bg: linear-gradient(145deg, rgba(22, 26, 38, 0.96) 0%, rgba(14, 16, 24, 0.92) 100%);
-    --demo-card-border: rgba(148, 173, 215, 0.16);
-    --demo-card-shadow: 0 6px 20px rgba(8, 12, 32, 0.5);
-    --demo-card-shadow-hover: 0 8px 26px rgba(10, 16, 40, 0.58);
-    --demo-card-overlay: radial-gradient(circle, rgba(122, 155, 255, 0.12) 0%, rgba(122, 155, 255, 0.08) 48%, rgba(0, 0, 0, 0) 100%);
+    --demo-card-bg: rgba(18, 24, 39, 0.95);
+    --demo-card-border: rgba(148, 173, 215, 0.18);
+    --demo-card-shadow: 0 12px 32px rgba(8, 12, 32, 0.54);
+    --demo-card-shadow-hover: 0 18px 40px rgba(10, 16, 40, 0.6);
     --demo-card-heading: #f6f9ff;
     --demo-card-body: #c2cff1;
     --demo-card-subtitle: rgba(198, 209, 247, 0.76);
-    --demo-icon-bg: rgba(77, 120, 202, 0.18);
+    --demo-icon-bg: rgba(77, 120, 202, 0.22);
     --demo-icon-color: #d8e5ff;
-    --demo-icon-shadow: inset 0 0 0 1px rgba(154, 181, 245, 0.3);
-    --demo-button-bg: rgba(93, 171, 255, 0.2);
+    --demo-button-bg: rgba(93, 171, 255, 0.28);
+
     --demo-button-color: #e4f1ff;
-    --demo-button-hover-bg: rgba(93, 171, 255, 0.32);
+    --demo-button-hover-bg: rgba(93, 171, 255, 0.38);
     --demo-button-hover-color: #ffffff;
   }
 
@@ -79,6 +76,8 @@
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
     gap: 24px;
     align-items: center;
+    box-shadow: 0 14px 36px rgba(12, 38, 92, 0.12);
+
   }
 
   .hero-intro {
@@ -225,63 +224,33 @@
   }
 
   .demo-card {
-    position: relative;
     display: flex;
     flex-direction: column;
     gap: 18px;
     background: var(--demo-card-bg);
-    border-radius: 18px;
+    border-radius: 16px;
     padding: 24px;
     border: 1px solid var(--demo-card-border);
     box-shadow: var(--demo-card-shadow);
     transition: transform 0.25s ease, box-shadow 0.25s ease;
-    overflow: hidden;
-    z-index: 0;
-  }
 
-  .demo-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    height: 5px;
-    border-radius: inherit;
-    background: var(--accent-gradient, linear-gradient(90deg, #007acc, #00aaff));
-  }
-
-  .demo-card::after {
-    content: "";
-    position: absolute;
-    width: 160px;
-    height: 160px;
-    right: -40px;
-    top: -50px;
-    background: var(--demo-card-overlay);
-    opacity: 0.8;
-    transform: rotate(18deg);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .demo-card > * {
-    position: relative;
-    z-index: 1;
   }
 
   .demo-card:hover {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
     box-shadow: var(--demo-card-shadow-hover);
   }
 
   .demo-icon {
     width: 52px;
     height: 52px;
-    border-radius: 14px;
+    border-radius: 12px;
     display: grid;
     place-items: center;
-    color: var(--accent-color, var(--demo-icon-color));
+    color: var(--demo-icon-color);
     background: var(--demo-icon-bg);
-    box-shadow: var(--demo-icon-shadow);
-    font-size: 1.4rem;
+    font-size: 1.3rem;
+
   }
 
   .demo-body h4 {
@@ -328,44 +297,12 @@
     color: var(--demo-button-hover-color);
   }
 
-  .demo-card.accent-sky {
-    --accent-gradient: linear-gradient(90deg, #4facfe, #00f2fe);
-    --accent-color: #056fa4;
-  }
-
-  .demo-card.accent-grape {
-    --accent-gradient: linear-gradient(90deg, #a18cd1, #fbc2eb);
-    --accent-color: #6b3fa0;
-  }
-
-  .demo-card.accent-sun {
-    --accent-gradient: linear-gradient(90deg, #f6d365, #fda085);
-    --accent-color: #c35a13;
-  }
-
+  .demo-card.accent-sky,
+  .demo-card.accent-grape,
+  .demo-card.accent-sun,
   .demo-card.accent-lagoon {
-    --accent-gradient: linear-gradient(90deg, #5ee7df, #b490ca);
-    --accent-color: #3d698b;
-  }
+    border-color: var(--demo-card-border);
 
-  body.dark-mode .demo-card.accent-sky {
-    --accent-gradient: linear-gradient(90deg, rgba(95, 182, 255, 0.85), rgba(120, 231, 255, 0.9));
-    --accent-color: #9fd7ff;
-  }
-
-  body.dark-mode .demo-card.accent-grape {
-    --accent-gradient: linear-gradient(90deg, rgba(161, 140, 209, 0.75), rgba(251, 194, 235, 0.82));
-    --accent-color: #d9b9ff;
-  }
-
-  body.dark-mode .demo-card.accent-sun {
-    --accent-gradient: linear-gradient(90deg, rgba(246, 211, 101, 0.7), rgba(253, 160, 133, 0.78));
-    --accent-color: #ffd3a1;
-  }
-
-  body.dark-mode .demo-card.accent-lagoon {
-    --accent-gradient: linear-gradient(90deg, rgba(94, 231, 223, 0.72), rgba(180, 144, 202, 0.78));
-    --accent-color: #b7d9ff;
   }
 
   @media (max-width: 960px) {
@@ -404,17 +341,17 @@
 <div class="demo-hero">
   <div class="hero-intro">
     <span class="hero-eyebrow"><i class="fa-solid fa-bolt"></i> Interactive demo library</span>
-    <h1>Discover the interactive Signal Processing demos</h1>
-    <p>Browse curated explorations for Signals and Systems I &amp; II. Jump into a lecture to connect formulas and
-      visual intuition in a few clicks</p>
+    <h1>Signal Processing demos at a glance</h1>
+    <p>Explore concise, guided simulations from Signals and Systems I &amp; II. Pick a lecture and launch the module you
+      need in seconds.</p>
   </div>
   <div class="hero-card">
     <h2>Quick tips</h2>
-    <p>Choose a lecture section below and launch any module for a focused workspace with built-in guidance.</p>
+    <p>Select a lecture below to open a focused workspace tailored to that topic.</p>
     <ul class="hero-guidelines">
-      <li><i class="fa-solid fa-sliders"></i> Tune parameters live to see how waveforms and spectra respond.</li>
-      <li><i class="fa-solid fa-chart-line"></i> Compare plots instantly without leaving the page.</li>
-      <li><i class="fa-solid fa-graduation-cap"></i> Follow the lecture-friendly floow to get the deepest intuition.</li>
+      <li><i class="fa-solid fa-sliders"></i> Adjust parameters and watch the response update instantly.</li>
+      <li><i class="fa-solid fa-chart-line"></i> Keep plots and controls together for quick comparisons.</li>
+      <li><i class="fa-solid fa-graduation-cap"></i> Follow the lecture-friendly flow for fast intuition.</li>
     </ul>
   </div>
 </div>
@@ -425,8 +362,6 @@
       <span class="lecture-pill">Lecture</span>
       <h2>{{ lecture }}</h2>
     </header>
-    <p class="lecture-description">Dive into interactive exercises that reinforce the core ideas of {{ lecture }}. Choose a
-      section to explore the tools tailored to that topic.</p>
 
     {% for section, demo_list in sections.items() %}
       {% if demo_list %}
