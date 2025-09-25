@@ -65,7 +65,26 @@
     --demo-button-hover-bg: rgba(93, 171, 255, 0.38);
     --demo-button-hover-color: #ffffff;
   }
+  body.dark-mode .lecture-block.discrete-track .demo-card {
+    background: linear-gradient(160deg, rgba(32, 64, 130, 0.6), rgba(14, 28, 64, 0.78));
+    border-color: rgba(120, 170, 255, 0.36);
+    box-shadow: 0 18px 40px rgba(8, 12, 32, 0.58);
+  }
 
+  body.dark-mode .lecture-block.discrete-track .demo-icon {
+    background: rgba(93, 171, 255, 0.26);
+    color: #deecff;
+  }
+
+  body.dark-mode .lecture-block.discrete-track .demo-button {
+    background: rgba(93, 171, 255, 0.32);
+    color: #e7f1ff;
+  }
+
+  body.dark-mode .lecture-block.discrete-track .demo-button:hover {
+    background: rgba(93, 171, 255, 0.45);
+    color: #ffffff;
+  }
   .demo-hero {
     background: var(--demo-hero-bg);
     border: 1px solid var(--demo-hero-border);
@@ -304,7 +323,26 @@
     border-color: var(--demo-card-border);
 
   }
+  .lecture-block.discrete-track .demo-card {
+    background: linear-gradient(150deg, rgba(0, 119, 255, 0.09), rgba(0, 200, 255, 0.06));
+    border-color: rgba(0, 119, 255, 0.22);
+    box-shadow: 0 14px 32px rgba(12, 38, 92, 0.1);
+  }
 
+  .lecture-block.discrete-track .demo-icon {
+    background: rgba(0, 119, 255, 0.12);
+    color: #0a4aa0;
+  }
+
+  .lecture-block.discrete-track .demo-button {
+    background: rgba(0, 119, 255, 0.18);
+    color: #0a4aa0;
+  }
+
+  .lecture-block.discrete-track .demo-button:hover {
+    background: rgba(0, 119, 255, 0.28);
+    color: #063579;
+  }
   @media (max-width: 960px) {
     .demo-hero {
       grid-template-columns: 1fr;
@@ -343,8 +381,9 @@
     <span class="hero-eyebrow"><i class="fa-solid fa-bolt"></i> Interactive demo library</span>
     <h1>Signal Processing demos at a glance</h1>
     <p>Explore concise, guided simulations from Signals and Systems I &amp; II. Pick a lecture and launch the module you
-      need in seconds.</p>
-  </div>
+      need in seconds. These demos are created and used at FAU for lectures and tutorials, yet they're ready to support
+      anyone curious about the topics.</p>
+    </div>
   <div class="hero-card">
     <h2>Quick tips</h2>
     <p>Select a lecture below to open a focused workspace tailored to that topic.</p>
@@ -357,7 +396,7 @@
 </div>
 
 {% for lecture, sections in demos.items() %}
-   <section class="lecture-block" id="{{ lecture | replace(' ', '-') | lower }}">
+  <section class="lecture-block {% if lecture == 'Signals and Systems II' %}discrete-track{% endif %}" id="{{ lecture | replace(' ', '-') | lower }}">
     <header class="lecture-heading">
       <span class="lecture-pill">Lecture</span>
       <h2>{{ lecture }}</h2>
