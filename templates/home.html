@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
+  .main-content {
+    padding: 10px 20px 20px 20px !important;
+  }
   .hero {
     position: relative;
     max-width: 1150px;
-    margin: 70px auto 60px auto;
+    margin: 0 auto 60px auto;
     padding: clamp(2.5rem, 5vw, 4rem);
     border-radius: 28px;
     background: linear-gradient(135deg, rgba(0, 119, 255, 0.08), rgba(0, 194, 255, 0.04));
@@ -23,7 +26,7 @@
     position: relative;
     z-index: 1;
     display: grid;
-    gap: clamp(1.5rem, 3vw, 2.2rem);^
+    gap: clamp(1.5rem, 3vw, 2.2rem);
     text-align: center;
     justify-items: center;
   }
@@ -177,7 +180,7 @@
   }
   @media (max-width: 720px) {
     .hero {
-      margin: 50px 20px 50px 20px;
+      margin: 30px 20px 50px 20px;
       padding: 2.4rem;
     }
     .hero-content {
