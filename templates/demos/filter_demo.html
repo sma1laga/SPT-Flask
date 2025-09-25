@@ -1,15 +1,14 @@
 
 {% extends "base.html" %}
 {% block content %}
-<h1>Filter Demo (Audio) – Magnitude, Phase, Pole–Zero, Impulse</h1>
-<p>This demo applies an IIR/FIR filter with coefficients \(a,b\) to an audio signal
-and shows (1) the input signal, (2) the filtered signal, and (3) one selected plot:
-magnitude response, phase response, pole–zero plot (z‑plane), or impulse response.</p>
+<h1>Filter Demo</h1>
+<p>This demo shows exemplary IIR/FIR filters from the exercises based on different input signals&nbsp;(audio and images).
+Each filter can be analyzed by plotting its impulse response, pole-zero plot&nbsp;(z-plane), magnitude response, and phase response.</p>
 
 <div class="demo">
 
 <div class="row">
-  <div class="card">
+  <div class="card" style="margin-top:12px">
     <div class="kv">
       <div><strong>Input \(x[k]\)</strong></div>
       <div>
@@ -20,7 +19,7 @@ magnitude response, phase response, pole–zero plot (z‑plane), or impulse res
         </select>
       </div>
 
-      <div><strong>Examples (coefficients)</strong></div>
+      <div><strong>Filter Coefficients</strong></div>
       <div>
         <select id="ex">
           {% for name in ex_options %}
@@ -32,7 +31,7 @@ magnitude response, phase response, pole–zero plot (z‑plane), or impulse res
       <div><strong>Plot</strong></div>
       <div>
         {% for p in plots %}
-          <label class="hstack"><input type="radio" name="plot" value="{{p}}" {% if p==defaults.plot %}checked{% endif %}> {{p}}</label>
+          <label class="hstack"><input type="radio" name="plot" value="{{p}}" {% if p==defaults.plot %}checked{% endif %}>{{p}}</label>
         {% endfor %}
       </div>
     </div>
@@ -41,7 +40,7 @@ magnitude response, phase response, pole–zero plot (z‑plane), or impulse res
       <button id="run">Recompute</button>
     </div>
   </div>
-
+ <!-- TODO show H(z) in tex -->
   <div class="card">
     <img id="plot" alt="plot">
   </div>
