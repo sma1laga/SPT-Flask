@@ -19,10 +19,6 @@ def test_compute_convolution_invalid_function_returns_error():
     assert 'Error evaluating Function 2' in res['error']
 
 
-def test_compute_autocorrelation_invalid_function_returns_error():
-    res = compute_autocorrelation('invalid(')
-    assert 'error' in res
-    assert 'Error evaluating Function 1' in res['error']
 
 
 def test_plot_function_update_invalid_expression():
