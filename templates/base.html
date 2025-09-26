@@ -33,6 +33,27 @@
       --header-pill-hover: rgba(148, 197, 255, 0.26);
       --header-pill-active: linear-gradient(135deg, rgba(59, 130, 246, 0.88), rgba(96, 165, 250, 0.74));
     }
+    body {
+      position: relative;
+      padding: clamp(12px, 3vw, 20px);
+    }
+
+    body.nav-open {
+      overflow: hidden;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .header {
       position: sticky;
       top: 0;
@@ -221,6 +242,86 @@
       width: 0;
       height: 0;
     }
+    .nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--header-text);
+      cursor: pointer;
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .nav-toggle:hover,
+    .nav-toggle:focus-visible {
+      background: var(--header-pill-hover);
+      border-color: rgba(148, 163, 184, 0.45);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .nav-toggle .nav-toggle-icon {
+      position: relative;
+      width: 22px;
+      height: 2px;
+      background: var(--header-text);
+      border-radius: 999px;
+      transition: background 0.3s ease;
+    }
+
+    .nav-toggle .nav-toggle-icon::before,
+    .nav-toggle .nav-toggle-icon::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 22px;
+      height: 2px;
+      background: var(--header-text);
+      border-radius: 999px;
+      transition: transform 0.3s ease, top 0.3s ease, opacity 0.3s ease;
+    }
+
+    .nav-toggle .nav-toggle-icon::before {
+      top: -6px;
+    }
+
+    .nav-toggle .nav-toggle-icon::after {
+      top: 6px;
+    }
+
+    .nav-toggle[aria-expanded="true"] .nav-toggle-icon {
+      background: transparent;
+    }
+
+    .nav-toggle[aria-expanded="true"] .nav-toggle-icon::before {
+      top: 0;
+      transform: rotate(45deg);
+    }
+
+    .nav-toggle[aria-expanded="true"] .nav-toggle-icon::after {
+      top: 0;
+      transform: rotate(-45deg);
+    }
+
+    .nav-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      z-index: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .nav-backdrop.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
     body.dark-mode {
       --header-bg: rgba(18, 57, 128, 0.9);
@@ -267,17 +368,48 @@
       .header {
         padding: 14px 20px;
       }
+      .nav-toggle {
+        display: inline-flex;
+      }
       .header .header-container {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 18px;
+        align-items: center;
+      }
+      .header .main-nav {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 16px;
+        width: min(320px, calc(100vw - 32px));
+        background: rgba(17, 53, 112, 0.96);
+        border-radius: 20px;
+        padding: 18px 16px;
+        box-shadow: 0 24px 45px rgba(15, 23, 42, 0.35);
+        transform-origin: top right;
+        transform: scale(0.9);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        z-index: 1001;
+      }
+      .header .main-nav.is-open {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
       }
       .header .main-nav ul {
-        flex-wrap: wrap;
-        justify-content: center;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
       }
       .header .main-nav ul li {
-        justify-content: center;
+        width: 100%;
+        justify-content: stretch;
+      }
+      .header .main-nav ul li a,
+      .header .main-nav ul li button {
+        width: 100%;
+      }
+      body.dark-mode .header .main-nav {
+        background: rgba(12, 32, 68, 0.96);
       }
     }
 
@@ -299,25 +431,15 @@
       .header {
         padding: 16px;
       }
-      .header .main-nav ul {
-        width: 100%;
-      }
+
     }
 
     @media (max-width: 640px) {
-      .header .main-nav ul {
-        flex-direction: column;
-        gap: 0.65rem;
+      .outer-wrapper {
+        border-radius: 12px;
       }
-      .header .main-nav ul li {
-        width: 100%;
-      }
-      .header .main-nav ul li a,
-      .header .main-nav ul li button {
-        width: 100%;
-      }
-      .header .main-nav ul li.toggle-container {
-        justify-content: center;
+      .main-content {
+        padding: 16px;
       }
     }
 
@@ -485,15 +607,14 @@
       .sidebar-toggle {
         display: block;
       }
-      .header .header-container {
-        flex-direction: column;
+      .main-content {
+        padding: 20px;
       }
-      .header .main-nav ul {
-        flex-direction: column;
-        align-items: center;
-      }
-      .header .main-nav ul li {
-        margin: 10px 0 0 0;
+      table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
     }
   </style>
@@ -509,8 +630,12 @@
             <span>Signal Processing Toolkit</span>
           </a>
         </div>
-        <nav class="main-nav">
-          <ul>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="nav-toggle-icon" aria-hidden="true"></span>
+        </button>
+        <nav class="main-nav" id="primary-navigation" aria-label="Primary">
+          <ul class="nav-list">
             <li><a href="{{ url_for('home') }}" class="nav-link{% if request.endpoint == 'home' %} is-active{% endif %}">Home</a></li>
             <li><a href="{{ url_for('info.about') }}" class="nav-link{% if request.endpoint == 'info.about' %} is-active{% endif %}">About</a></li>
             <li><a href="{{ url_for('info.contact') }}" class="nav-link{% if request.endpoint == 'info.contact' %} is-active{% endif %}">Report</a></li>
@@ -527,6 +652,7 @@
           </ul>
         </nav>
       </div>
+      <div class="nav-backdrop" aria-hidden="true"></div>
     </div>
 
     <!-- SIDEBAR + CONTENT -->
