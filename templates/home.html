@@ -1,91 +1,103 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
+  .main-content {
+    padding: 10px 20px 20px 20px !important;
+  }
   .hero {
     position: relative;
-    overflow: hidden;
-    border-radius: 28px;
-    background: radial-gradient(circle at top left, rgba(0, 180, 255, 0.65), rgba(0, 60, 130, 0.9));
-    color: #ffffff;
-    margin: 40px auto 60px auto;
-    padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 5vw, 4rem);
     max-width: 1150px;
-    box-shadow: 0 25px 60px rgba(0, 40, 90, 0.35);
+    margin: 0 auto 60px auto;
+    padding: clamp(2.5rem, 5vw, 4rem);
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(0, 119, 255, 0.08), rgba(0, 194, 255, 0.04));
+    border: 1px solid rgba(0, 119, 255, 0.18);
+    overflow: hidden;
   }
-  .hero::after {
+  .hero::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 55%),
-                radial-gradient(circle at 80% 30%, rgba(0, 255, 163, 0.2), transparent 50%),
-                linear-gradient(135deg, rgba(0, 0, 0, 0.25), transparent 65%);
-    mix-blend-mode: screen;
+    background: radial-gradient(circle at top right, rgba(0, 194, 255, 0.25), transparent 55%);
+    opacity: 0.7;
     pointer-events: none;
   }
   .hero-content {
     position: relative;
-    max-width: 720px;
-    margin: 0 auto;
+    z-index: 1;
+    display: grid;
+    gap: clamp(1.5rem, 3vw, 2.2rem);
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: 1.4rem;
+    justify-items: center;
   }
-  .hero-tag {
-    align-self: center;
-    font-size: 0.85rem;
-    letter-spacing: 0.35em;
+  .hero-eyebrow {
+    font-size: clamp(1.2rem, 2.6vw, 1.6rem);
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 999px;
-    padding: 0.55rem 1.5rem;
-    font-weight: 600;
+    font-weight: 700;
+    color: rgba(0, 40, 94, 0.9);
   }
   .hero h1 {
-    font-size: clamp(2.6rem, 5vw, 3.8rem);
-    font-weight: 600;
+    font-size: clamp(2.7rem, 5vw, 3.9rem);
+    color: var(--primary-color);
     margin: 0;
+    line-height: 1.1;
   }
   .hero p {
-    font-size: clamp(1.05rem, 2.8vw, 1.2rem);
-    margin: 0;
-    color: rgba(255, 255, 255, 0.85);
-    line-height: 1.6;
+    max-width: 640px;
+    color: var(--subtext-color);
+    font-size: 1.08rem;
+    line-height: 1.7;
+    margin: 0 auto;
   }
-  .hero-actions {
+  .hero-highlights {
     display: flex;
-    justify-content: center;
-    gap: 1rem;
     flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
   }
-  .cta-btn {
+  .hero-chip {
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.85rem 1.8rem;
+    gap: 0.35rem;
+    font-size: 0.92rem;
+    color: rgba(0, 52, 118, 0.88);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 119, 255, 0.2);
     border-radius: 999px;
+    padding: 0.45rem 1rem;
     font-weight: 600;
-    text-decoration: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    backdrop-filter: blur(6px);
+
   }
-  .cta-btn.primary {
-    background: linear-gradient(135deg, #00d4ff, #0077ff);
-    color: #ffffff;
-    box-shadow: 0 12px 30px rgba(0, 102, 255, 0.35);
+  body.dark-mode .hero {
+    background: linear-gradient(135deg, rgba(12, 32, 68, 0.88), rgba(17, 66, 112, 0.65));
+    border-color: rgba(96, 165, 250, 0.45);
+    box-shadow: 0 20px 45px rgba(8, 20, 38, 0.55);
   }
-  .cta-btn.primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 18px 40px rgba(0, 102, 255, 0.45);
+
+  body.dark-mode .hero::before {
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.45), transparent 60%);
+    opacity: 0.85;
   }
-  .cta-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+
+  body.dark-mode .hero-eyebrow {
+    color: rgba(196, 224, 255, 0.92);
   }
-  .cta-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.18);
-    transform: translateY(-3px);
+
+  body.dark-mode .hero h1 {
+    color: #e6f0ff;
+  }
+
+  body.dark-mode .hero p {
+    color: #c9daf5;
+  }
+
+  body.dark-mode .hero-chip {
+    color: #e4edff;
+    background: rgba(37, 99, 235, 0.2);
+    border-color: rgba(96, 165, 250, 0.5);
+    box-shadow: inset 0 0 0 1px rgba(14, 116, 224, 0.18);
   }
 
   .menu-section {
@@ -159,9 +171,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    color: var(--primary-color);
+    color: #0054c2;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     transition: transform 0.2s ease, color 0.2s ease;
   }
   .link-list li a::after {
@@ -174,7 +186,7 @@
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
   .link-list li a:hover {
-    color: #005ea8;
+    color: #003f94;
     transform: translateX(4px);
   }
   .link-list li a:hover::after {
@@ -195,65 +207,70 @@
     background: rgba(0, 119, 255, 0.15);
     color: #0054c2;
   }
-
-
-  @media (max-width: 900px) {
+  @media (max-width: 720px) {
     .hero {
-      margin: 30px 16px 50px;
-      border-radius: 22px;
+      margin: 30px 20px 50px 20px;
+      padding: 2.4rem;
     }
-  }
-
-  @media (max-width: 600px) {
-    .hero {
-      padding: 2.4rem 1.4rem;
+    .hero-content {
+      text-align: left;
+      gap: 1.6rem;
+      justify-items: start;
     }
-    .hero-tag {
-      letter-spacing: 0.25em;
-      font-size: 0.75rem;
+    .hero-eyebrow {
+      letter-spacing: 0.24em;
+      justify-self: start;
     }
-    .hero-actions {
-      flex-direction: column;
+    .hero-highlights {
+      gap: 0.6rem;
     }
-    .cta-btn {
+    .hero-chip {
       width: 100%;
       justify-content: center;
+    }
+  }
+  @media (max-width: 500px) {
+    .hero {
+      padding: 2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.1rem, 8vw, 2.6rem);
+    }
+    .hero p {
+      font-size: 1rem;
     }
   }
 </style>
 
 <section class="hero">
   <div class="hero-content">
-    <span class="hero-tag">Signal Processing Toolkit</span>
-    <h1>Design, analyse and bring your signals to life</h1>
+    <span class="hero-eyebrow">Signal Processing Toolkit</span>
+    <h1>Interactive labs for modern signal intuition</h1>
     <p>
-      Launch precision tools, interactive demos, and guided training flows that help you move
-      from concept to insight with clarity and confidence.
+      Navigate continuous and discrete time explorations with guided visuals, responsive
+      tools, and resources designed for quick experimentation or in-depth study.
     </p>
-    <div class="hero-actions">
-      <a class="cta-btn primary" href="{{ url_for('plot_function.plot_function') }}">
-        Start exploring tools
-      </a>
-      <a class="cta-btn secondary" href="{{ url_for('discrete_plot_functions.plot_functions') }}">
-        Explore discrete modules
-      </a>
+    <div class="hero-highlights">
+      <span class="hero-chip"><i class="fa-solid fa-wave-square"></i> Continuous analysis</span>
+      <span class="hero-chip"><i class="fa-solid fa-border-all"></i> Discrete insights</span>
+      <span class="hero-chip"><i class="fa-solid fa-graduation-cap"></i> Learning modules</span>
+      <span class="hero-chip"><i class="fa-solid fa-arrows-rotate"></i> Transforms</span>
+      <span class="hero-chip"><i class="fa-solid fa-flask"></i> Demos</span>
     </div>
   </div>
 </section>
 
 <section class="menu-section">
   <div class="section-header">
-    <h2>Featured Workflows</h2>
-    <p>Select a toolkit to dive into visual analysis, design, or guided learning.</p>
+    <h2>Continuous modules</h2>
+    <p>Jump into visual analysis, design, and guided learning for continuous-time signals.</p>
   </div>
 
   <div class="menu-container">
     <div class="card">
       <span class="card-label"><i class="fa-solid fa-wave-square"></i> Plot &amp; Inspect</span>
       <h3>Visualise your signals</h3>
-      <p class="card-description">
-        Generate fast visual insight using curated utilities for classical signal operations
-      </p>
+
       <ul class="link-list">
         <li><a href="{{ url_for('plot_function.plot_function') }}">Plot Function</a></li>
         <li><a href="{{ url_for('bode_plot.bode_plot') }}">Bode Plot Designer</a></li>
@@ -264,9 +281,7 @@
     <div class="card">
       <span class="card-label"><i class="fa-solid fa-graduation-cap"></i> Learn &amp; Practice</span>
       <h3>Training lab</h3>
-      <p class="card-description">
-        Build intuition with progressive exercises designed for quick skill reinforcement
-      </p>
+
       <ul class="link-list">
         <li><a href="{{ url_for('training_convolution.training_convolution') }}">Convolution Trainer</a></li>
       </ul>
@@ -275,9 +290,7 @@
     <div class="card">
       <span class="card-label"><i class="fa-solid fa-lightbulb"></i> Discover &amp; Share</span>
       <h3>Theory &amp; demos</h3>
-      <p class="card-description">
-        Explore guided demonstrations and references that contextualise each concept
-      </p>
+
       <ul class="link-list">
         <li><a href="{{ url_for('demos_menu.index') }}">Interactive Demos</a></li>
       </ul>
@@ -288,7 +301,6 @@
 
 <section class="menu-section">
   <div class="section-header">
-    <span class="hero-tag" style="background: rgba(0, 119, 255, 0.12); color: var(--primary-color); border-color: rgba(0, 119, 255, 0.25);">Discrete Focus</span>
     <h2>Explore discrete modules</h2>
     <p>Dive deep into sampling, transforms, and sequence analysis with purpose-built modules.</p>
   </div>

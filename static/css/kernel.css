@@ -7,7 +7,7 @@ body  { margin: 0 4vw 4vw; background: #fafbff; color: #222; }
 
 .canvas-wrap    { display: flex; gap: 2.5rem; flex-wrap: wrap; }
 .card           { background: #fff; padding: 1rem; border-radius: 1rem;
-                  box-shadow: 0 2px 6px rgba(0,0,0,.06); }
+                  box-shadow: 0 1px 4px rgba(0,0,0,.06); }
 canvas          { border-radius: .5rem; image-rendering: pixelated;
                   border: 1px solid #ccd; }
 
@@ -45,7 +45,7 @@ input[type=range]{ accent-color: #2563eb; }
 .theory-headline   { font-size: 1.5rem; margin-bottom: 1.4rem; }
 
 .theory-card       { background:#fff; padding:1.3rem 1.5rem; border-radius:1rem;
-                     box-shadow:0 3px 8px rgba(0,0,0,.06); margin-bottom:1.4rem; }
+                     box-shadow:0 2px 6px rgba(0,0,0,.06); margin-bottom:1.4rem; }
 .theory-card h4    { margin-top:0; font-size:1.1rem; }
 
 .sym               { font-family: "Latin Modern Math", Cambria, serif; }
@@ -71,7 +71,7 @@ input[type=range]{ accent-color: #2563eb; }
     --accent-2: #6366f1;
     --card-bg:  #ffffff;
     --radius:   1rem;
-    --shadow:   0 4px 12px rgba(0,0,0,0.05);
+    --shadow:   0 2px 8px rgba(0,0,0,0.05);
     --transition: all 0.2s ease;
   }
   
@@ -124,7 +124,7 @@ input[type=range]{ accent-color: #2563eb; }
   }
   .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
   
   .canvas-wrap {
@@ -174,7 +174,7 @@ input[type=range]{ accent-color: #2563eb; }
   }
   .kernel-cell:hover {
     transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 5px rgba(0,0,0,0.1);
   }
   
   /* ─── HEATMAP CANVAS ──────────────────────────────────── */

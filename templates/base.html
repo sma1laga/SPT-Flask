@@ -33,6 +33,27 @@
       --header-pill-hover: rgba(148, 197, 255, 0.26);
       --header-pill-active: linear-gradient(135deg, rgba(59, 130, 246, 0.88), rgba(96, 165, 250, 0.74));
     }
+    body {
+      position: relative;
+      padding: clamp(12px, 3vw, 20px);
+    }
+
+    body.nav-open {
+      overflow: hidden;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .header {
       position: sticky;
       top: 0;
@@ -44,10 +65,11 @@
       background: var(--header-bg);
       color: var(--header-text);
       border-bottom: 1px solid var(--header-border);
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+      box-shadow: 0 5px 14px rgba(15, 23, 42, 0.2);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      overflow: hidden;
+      overflow: visible;
+      isolation: isolate;
     }
 
     .header::before {
@@ -57,7 +79,7 @@
       background: var(--header-highlight);
       opacity: 0.95;
       pointer-events: none;
-      z-index: 0;
+      z-index: -1;
     }
     .header .header-container {
       position: relative;
@@ -68,6 +90,11 @@
       justify-content: space-between;
       gap: 22px;
     }
+    .header .logo {
+      display: flex;
+      align-items: center;
+    }
+
     .header .logo a {
       display: inline-flex;
       align-items: center;
@@ -83,7 +110,7 @@
     .header .logo img {
       height: 48px;
       width: 48px;
-      filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.35));
+      filter: drop-shadow(0 3px 8px rgba(15, 23, 42, 0.25));
     }
 
     .header .logo span {
@@ -92,6 +119,9 @@
       letter-spacing: 0.02em;
       color: var(--header-text);
       text-transform: none;
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
     }
     .header .main-nav ul {
       list-style: none;
@@ -131,7 +161,7 @@
       background: var(--header-pill-hover);
       border-color: rgba(148, 163, 184, 0.45);
       color: #ffffff;
-      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.3);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
       transform: translateY(-1px);
     }
 
@@ -139,7 +169,7 @@
       background: var(--header-pill-active);
       border-color: transparent;
       color: #ffffff;
-      box-shadow: 0 16px 30px rgba(14, 116, 144, 0.35);
+      box-shadow: 0 5px 15px rgba(14, 116, 144, 0.24);
     }
 
     .header .main-nav ul li a:focus-visible,
@@ -149,30 +179,148 @@
     }
 
     .header .main-nav ul li.toggle-container {
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      background: rgba(148, 163, 184, 0.1);
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      color: var(--header-subtext);
-      gap: 0.75rem;
-      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      display: flex;
+      align-items: center;
     }
 
-    .header .main-nav ul li.toggle-container:hover {
+    .header .main-nav ul li.toggle-container .toggle-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 1.05rem;
+      margin: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--header-text);
+      cursor: pointer;
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .header .main-nav ul li.toggle-container .toggle-button:hover {
       background: rgba(148, 163, 184, 0.18);
       border-color: rgba(125, 211, 252, 0.42);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.26);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .header .main-nav ul li.toggle-container.is-active .toggle-button {
+      background: rgba(148, 197, 255, 0.22);
+      border-color: rgba(148, 197, 255, 0.6);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+
+    .header .main-nav ul li.toggle-container .toggle-button input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
     }
 
     .header .main-nav ul li.toggle-container .toggle-label {
       margin: 0;
-      color: inherit;
       font-weight: 600;
       letter-spacing: 0.01em;
+      line-height: 1;
+
     }
 
     .header .main-nav ul li.toggle-container .switch {
-      transform: scale(0.9);
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 16px;
+      flex-shrink: 0;
+
+    }
+
+    .header .main-nav ul li.toggle-container .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--header-text);
+      cursor: pointer;
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+
+    .nav-toggle:hover,
+    .nav-toggle:focus-visible {
+      background: var(--header-pill-hover);
+      border-color: rgba(148, 163, 184, 0.45);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .nav-toggle .nav-toggle-icon {
+      position: relative;
+      width: 22px;
+      height: 2px;
+      background: var(--header-text);
+      border-radius: 999px;
+      transition: background 0.3s ease;
+    }
+
+    .nav-toggle .nav-toggle-icon::before,
+    .nav-toggle .nav-toggle-icon::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 22px;
+      height: 2px;
+      background: var(--header-text);
+      border-radius: 999px;
+      transition: transform 0.3s ease, top 0.3s ease, opacity 0.3s ease;
+    }
+
+    .nav-toggle .nav-toggle-icon::before {
+      top: -6px;
+    }
+
+    .nav-toggle .nav-toggle-icon::after {
+      top: 6px;
+    }
+
+    .nav-toggle[aria-expanded="true"] .nav-toggle-icon {
+      background: transparent;
+    }
+
+    .nav-toggle[aria-expanded="true"] .nav-toggle-icon::before {
+      top: 0;
+      transform: rotate(45deg);
+    }
+
+    .nav-toggle[aria-expanded="true"] .nav-toggle-icon::after {
+      top: 0;
+      transform: rotate(-45deg);
+    }
+
+    .nav-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      z-index: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .nav-backdrop.is-visible {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     body.dark-mode {
@@ -191,15 +339,21 @@
       background: rgba(37, 99, 235, 0.2);
     }
 
-    body.dark-mode .header .main-nav ul li.toggle-container {
+    body.dark-mode .header .main-nav ul li.toggle-container .toggle-button {
       background: rgba(37, 99, 235, 0.18);
       border-color: rgba(96, 165, 250, 0.45);
     }
 
-    body.dark-mode .header .main-nav ul li.toggle-container:hover {
+    body.dark-mode .header .main-nav ul li.toggle-container .toggle-button:hover {
       background: rgba(59, 130, 246, 0.28);
       border-color: rgba(148, 197, 255, 0.62);
     }
+    body.dark-mode .header .main-nav ul li.toggle-container.is-active .toggle-button {
+      background: rgba(59, 130, 246, 0.34);
+      border-color: rgba(148, 197, 255, 0.68);
+    }
+
+
 
     @media (max-width: 1100px) {
       .header {
@@ -214,17 +368,48 @@
       .header {
         padding: 14px 20px;
       }
+      .nav-toggle {
+        display: inline-flex;
+      }
       .header .header-container {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 18px;
+        align-items: center;
+      }
+      .header .main-nav {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 16px;
+        width: min(320px, calc(100vw - 32px));
+        background: rgba(17, 53, 112, 0.96);
+        border-radius: 20px;
+        padding: 18px 16px;
+        box-shadow: 0 24px 45px rgba(15, 23, 42, 0.35);
+        transform-origin: top right;
+        transform: scale(0.9);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        z-index: 1001;
+      }
+      .header .main-nav.is-open {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
       }
       .header .main-nav ul {
-        flex-wrap: wrap;
-        justify-content: center;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
       }
       .header .main-nav ul li {
-        justify-content: center;
+        width: 100%;
+        justify-content: stretch;
+      }
+      .header .main-nav ul li a,
+      .header .main-nav ul li button {
+        width: 100%;
+      }
+      body.dark-mode .header .main-nav {
+        background: rgba(12, 32, 68, 0.96);
       }
     }
 
@@ -246,25 +431,15 @@
       .header {
         padding: 16px;
       }
-      .header .main-nav ul {
-        width: 100%;
-      }
+
     }
 
     @media (max-width: 640px) {
-      .header .main-nav ul {
-        flex-direction: column;
-        gap: 0.65rem;
+      .outer-wrapper {
+        border-radius: 12px;
       }
-      .header .main-nav ul li {
-        width: 100%;
-      }
-      .header .main-nav ul li a,
-      .header .main-nav ul li button {
-        width: 100%;
-      }
-      .header .main-nav ul li.toggle-container {
-        justify-content: center;
+      .main-content {
+        padding: 16px;
       }
     }
 
@@ -285,6 +460,11 @@
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
+    .toggle-tabs button:hover {
+      background: #e6f2ff;
+      color: #0056b3;
+      transform: none;
+    }
     .toggle-tabs button:not(:last-child) {
       border-right: none;            /* no double border */
     }
@@ -303,9 +483,9 @@
       border: 1px solid rgba(15, 76, 129, 0.12);
       padding: 26px 24px;
       border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(15, 76, 129, 0.08);
+      box-shadow: 0 5px 18px rgba(15, 76, 129, 0.08);
       margin: 10px;
-      transition: box-shadow 0.35s ease;
+      transition: box-shadow 0.35s ease, transform 0.35s ease;
       backdrop-filter: blur(4px);
     }
     .modern-sidebar::before {
@@ -313,13 +493,14 @@
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      background: radial-gradient(circle at top left, rgba(0, 122, 204, 0.16), transparent 65%);
+      background: linear-gradient(160deg, rgba(10, 132, 208, 0.12), rgba(255, 255, 255, 0));
       opacity: 0;
       transition: opacity 0.35s ease;
       pointer-events: none;
     }
     .modern-sidebar:hover {
-      box-shadow: 0 16px 36px rgba(15, 76, 129, 0.12);
+      box-shadow: 0 5px 18px rgba(15, 76, 129, 0.08);
+      transform: none;
     }
     .modern-sidebar:hover::before {
       opacity: 1;
@@ -351,13 +532,14 @@
     }
     .modern-sidebar ul.sidebar-menu > li.section-title::after {
       content: "";
-      flex-grow: 1;
+      display: block;
+      flex: 1 1 auto;
       height: 1px;
-      background: linear-gradient(90deg, rgba(0, 122, 204, 0.25), transparent);
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(0, 122, 204, 0.28), transparent);
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link {
       position: relative;
-      z-index: 0;
       display: block;
       padding: 11px 18px 11px 32px;
       color: #0f4c81;
@@ -368,64 +550,23 @@
       letter-spacing: 0.02em;
       line-height: 1.35;
       border-left: 3px solid transparent;
-      transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+      transition: color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
       text-shadow: 0 0 1px rgba(15, 76, 129, 0.18);
-      transform: translateX(0);
-    }
-    .modern-sidebar ul.sidebar-menu li a.sidebar-link::before {
-      content: "";
-      position: absolute;
-      inset: 3px 6px;
-      border-radius: 10px;
-      background: linear-gradient(120deg, rgba(0, 122, 204, 0.16), rgba(0, 122, 204, 0.04));
-      opacity: 0;
-      transition: opacity 0.3s ease;
 
-      z-index: -1;
-    }
-    .modern-sidebar ul.sidebar-menu li a.sidebar-link::after {
-      content: "";
-      position: absolute;
-      left: 18px;
-      top: 50%;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      border: 2px solid rgba(0, 122, 204, 0.45);
-      background-color: transparent;
-      transform: translate(-50%, -50%) scale(0.6);
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
-      z-index: 1;
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover {
-      color: #0a3a62;
-      transform: translateX(4px);
-    }
-    .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover::before {
-      opacity: 1;
-    }
-    .modern-sidebar ul.sidebar-menu li a.sidebar-link:hover::after {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(0.85);
-      border-color: #007acc;
+      color: #0f4c81;
+      border-left-color: rgba(62, 161, 238, 0.42);
+      background-color: rgba(120, 198, 255, 0.18);
+      box-shadow: 0 6px 14px rgba(15, 76, 129, 0.06);
     }
     .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
       color: #06345a;
       font-weight: 700;
-      border-left-color: #0a84d0;
+      border-left-color: #0b6cbf;
       text-shadow: 0 0 1px rgba(10, 132, 208, 0.25);
-
-    }
-    .modern-sidebar ul.sidebar-menu li a.sidebar-link.active::before {
-      opacity: 1;
-
-    }
-    .modern-sidebar ul.sidebar-menu li a.sidebar-link.active::after {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-      border-color: #0a84d0;
-      background-color: #0a84d0;
+      background-color: rgba(10, 132, 208, 0.22);
+      box-shadow: 0 8px 18px rgba(10, 132, 208, 0.18);
     }
     /* Mobile sidebar toggle button */
     .sidebar-toggle {
@@ -466,15 +607,14 @@
       .sidebar-toggle {
         display: block;
       }
-      .header .header-container {
-        flex-direction: column;
+      .main-content {
+        padding: 20px;
       }
-      .header .main-nav ul {
-        flex-direction: column;
-        align-items: center;
-      }
-      .header .main-nav ul li {
-        margin: 10px 0 0 0;
+      table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
     }
   </style>
@@ -490,22 +630,29 @@
             <span>Signal Processing Toolkit</span>
           </a>
         </div>
-        <nav class="main-nav">
-          <ul>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="nav-toggle-icon" aria-hidden="true"></span>
+        </button>
+        <nav class="main-nav" id="primary-navigation" aria-label="Primary">
+          <ul class="nav-list">
             <li><a href="{{ url_for('home') }}" class="nav-link{% if request.endpoint == 'home' %} is-active{% endif %}">Home</a></li>
             <li><a href="{{ url_for('info.about') }}" class="nav-link{% if request.endpoint == 'info.about' %} is-active{% endif %}">About</a></li>
             <li><a href="{{ url_for('info.contact') }}" class="nav-link{% if request.endpoint == 'info.contact' %} is-active{% endif %}">Report</a></li>
             <li><button id="dark-mode-toggle" type="button">Dark Mode</button></li>
             <li class="toggle-container">
-              <span class="toggle-label">Colorblind</span>
-              <label class="switch">
-                <input type="checkbox" id="colorblind-mode-toggle">
-                <span class="slider round"></span>
+              <label class="toggle-button">
+                <span class="toggle-label">Colorblind</span>
+                <span class="switch">
+                  <input type="checkbox" id="colorblind-mode-toggle">
+                  <span class="slider round"></span>
+                </span>
               </label>
             </li>
           </ul>
         </nav>
       </div>
+      <div class="nav-backdrop" aria-hidden="true"></div>
     </div>
 
     <!-- SIDEBAR + CONTENT -->
@@ -635,7 +782,7 @@
                 <!-- <li><a href="{{ url_for('training_processing_chain.training_processing_chain') }}">Process Chain Training</a></li> -->
                 <!-- <li><a href="{{ url_for('training_fourier.training_fourier') }}">Fourier Training</a></li> -->
 
-                <li class="section-title">Other Tools</li>
+                <li class="section-title">Transforms</li>
                 <li>
                   <a href="{{ url_for('inverse_laplace.inverse_laplace') }}"
                      class="sidebar-link{% if request.endpoint == 'inverse_laplace.inverse_laplace' %} active{% endif %}">
@@ -648,25 +795,14 @@
             <!-- Discrete menu -->
             <div id="menu-discrete" style="display: {% if is_discrete %}block{% else %}none{% endif %};">
               <ul class="sidebar-menu">
-                <li class="section-title">Plotting &amp; Transforms</li>
+                <li class="section-title">Plotting</li>
                 <li>
                   <a href="{{ url_for('discrete_plot_functions.plot_functions') }}"
                      class="sidebar-link{% if request.endpoint == 'discrete_plot_functions.plot_functions' %} active{% endif %}">
                     Plot Functions
                   </a>
                 </li>
-                <li>
-                  <a href="{{ url_for('discrete_fourier.show_dft') }}"
-                     class="sidebar-link{% if request.endpoint == 'discrete_fourier.show_dft' %} active{% endif %}">
-                    DFT
-                  </a>
-                </li>
-                <li>
-                  <a href="{{ url_for('transform_intuition.transform_intuition') }}"
-                     class="sidebar-link{% if request.endpoint == 'transform_intuition.transform_intuition' %} active{% endif %}">
-                    Transform Intuition
-                  </a>
-                </li>
+
 
                 <li class="section-title">Convolution</li>
                 <li>
@@ -690,7 +826,19 @@
                 <!-- TODO -->
                 <!-- <li class="section-title">Process Chain</li> -->
                 <!-- <li><a href="{{ url_for('discrete_direct_plot.discrete_direct_plot') }}">Direct-Form Visualiser</a></li> -->
-                <li class="section-title">Other Tools</li>
+                <li class="section-title">Transforms</li>
+                <li>
+                  <a href="{{ url_for('discrete_fourier.show_dft') }}"
+                     class="sidebar-link{% if request.endpoint == 'discrete_fourier.show_dft' %} active{% endif %}">
+                    DFT
+                  </a>
+                </li>
+                <li>
+                  <a href="{{ url_for('transform_intuition.transform_intuition') }}"
+                     class="sidebar-link{% if request.endpoint == 'transform_intuition.transform_intuition' %} active{% endif %}">
+                    Transform Intuition
+                  </a>
+                </li>
                 <li>
                   <a href="{{ url_for('inverse_z.inverse_z') }}"
                      class="sidebar-link{% if request.endpoint == 'inverse_z.inverse_z' %} active{% endif %}">
@@ -721,7 +869,7 @@
         © 2025 Signal Processing Toolkit. All rights reserved.<br>
         For inquiries, please email:
         <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a><br>
-        Version 1.1.7vUI (21.09.2025)
+        Version 1.1.7vUI (27.09.2025)
       </p>
       <div class="legal-links">
         <a href="{{ url_for('info.impressum') }}">Impressum</a> |

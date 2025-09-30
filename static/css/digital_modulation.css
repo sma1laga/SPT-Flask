@@ -7,7 +7,7 @@
     background: #fcfcfc;
     border-left: 6px solid #ff8c00;
     border-radius: 0.75rem;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
     transition: background 0.3s;
   }
   
