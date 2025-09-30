@@ -3,8 +3,10 @@
 {% block content %}
 <h1>Exponential Function (L2-13 to L2-16)</h1>
 <p>
-This interactive page visualizes \(x(t) = |\hat X|\,\mathrm e^{\sigma t}\,\mathrm e^{j(\omega t + \varphi)}\).
-Use the controls to adjust magnitude \(|\hat X|\), phase \(\varphi\), frequency \(\omega\), real part \(\sigma\), and the time cursor.
+This demo describes the complex exponential function as described on pages L2-13 to L2-16 in the script.
+The complex time function is described by \(x(t)=\hat{X}\cdot \mathrm e^{st}\) with the complex frequency \(s=\sigma+\mathrm j\omega\).
+The amplitude \(|\hat{X}|\), the angular frequency \(\omega\), the damping \(\sigma\) and a phase shift \(\varphi\) can be set.
+The following applies: \(\hat{X} = |\hat{X}|\cdot \mathrm e^{\mathrm j\cdot\varphi}\)
 </p>
 
 <style>
@@ -13,26 +15,26 @@ Use the controls to adjust magnitude \(|\hat X|\), phase \(\varphi\), frequency 
   img{max-width:100%}
   .kv{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center}
   .hstack{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  input[type=range]{width:100%}
+  input[type=range]{width:80%}
 </style>
 
 <div class="row">
-  <div class="card">
+  <div class="card" style="margin-top:12px">
     <div class="kv">
       <div><strong>Magnitude \(|\hat X|\)</strong></div>
-      <div><input id="magnitude" type="range" min="0" max="2" step="0.25" value="{{ defaults.magnitude }}"><span id="magnitude_val">{{ defaults.magnitude }}</span></div>
+      <div><input id="magnitude" type="range" min="0" max="2" step="0.1" value="{{ defaults.magnitude }}"> <span id="magnitude_val">{{ defaults.magnitude }}</span></div>
 
       <div><strong>Phase \(\varphi\) [rad]</strong></div>
-      <div><input id="phase" type="range" min="{{ -pi/2 }}" max="{{ pi/2 }}" step="0.05" value="{{ defaults.phase }}"><span id="phase_val">{{ defaults.phase }}</span></div>
+      <div><input id="phase" type="range" min="{{ -pi/2 }}" max="{{ pi/2 }}" step="{{ pi/8 }}" value="{{ defaults.phase }}"> <span id="phase_val">{{ defaults.phase }}</span></div>
+      
+      <div><strong>Real part \(\sigma\)</strong></div>
+      <div><input id="sigma" type="range" min="-0.5" max="0.5" step="0.1" value="{{ defaults.sigma }}"> <span id="sigma_val">{{ defaults.sigma }}</span></div>
 
       <div><strong>Frequency \(\omega\)</strong></div>
-      <div><input id="omega" type="range" min="-10" max="10" step="0.5" value="{{ defaults.omega }}"><span id="omega_val">{{ defaults.omega }}</span></div>
+      <div><input id="omega" type="range" min="-10" max="10" step="1" value="{{ defaults.omega }}"> <span id="omega_val">{{ defaults.omega }}</span></div>
 
-      <div><strong>Real part \(\sigma\)</strong></div>
-      <div><input id="sigma" type="range" min="-0.5" max="0.5" step="0.05" value="{{ defaults.sigma }}"><span id="sigma_val">{{ defaults.sigma }}</span></div>
-
-      <div><strong>Time cursor \(t\)</strong></div>
-      <div><input id="time" type="range" min="0" max="{{ t_max }}" step="0.05" value="{{ defaults.time }}"><span id="time_val">{{ defaults.time }}</span></div>
+      <div><strong>Time \(t\)</strong></div>
+      <div><input id="time" type="range" min="0" max="{{ t_max }}" step="0.25" value="{{ defaults.time }}"> <span id="time_val">{{ defaults.time }}</span></div>
 
       <div><strong>Mode</strong></div>
       <div class="hstack">
@@ -69,7 +71,7 @@ Use the controls to adjust magnitude \(|\hat X|\), phase \(\varphi\), frequency 
   }
   function syncLabels(){
     $("magnitude_val").textContent = $("magnitude").value;
-    $("phase_val").textContent = $("phase").value;
+    $("phase_val").textContent = Math.round(parseFloat($("phase").value)*100)/100;
     $("omega_val").textContent = $("omega").value;
     $("sigma_val").textContent = $("sigma").value;
     $("time_val").textContent = $("time").value;
@@ -98,7 +100,7 @@ Use the controls to adjust magnitude \(|\hat X|\), phase \(\varphi\), frequency 
 
   ["magnitude","phase","omega","sigma","time"].forEach(id => {
     $(id).addEventListener("input", () => syncLabels());
-    $(id).addEventListener("change", () => recompute());
+    $(id).addEventListener("input", () => recompute());
   });
   document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", () => recompute()));
   $("run").addEventListener("click", () => recompute());

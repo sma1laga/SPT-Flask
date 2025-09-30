@@ -18,16 +18,16 @@ demos_exponential_bp = Blueprint(
 )
 
 RC_PARAMS = {
-    "savefig.bbox": "tight",
-    "axes.titlesize": 16,
-    "axes.labelsize": 14,
-    "font.size": 12,
+    "axes.labelsize": 16,
+    "font.size": 14,
+    "mathtext.fontset": "cm",
 }
 
 # Fixed time axis 
 T_MAX = 2.5 * np.pi
 N_SAMPLES = 1000
 TIME = np.linspace(0.0, T_MAX, N_SAMPLES)
+VAL_LIM = 10.0   # y-axis limit for all plots except phase
 
 # Defaults matching notebook
 DEFAULTS = dict(
@@ -71,9 +71,8 @@ def compute():
 
         t, x = _compute_curve(magnitude, phase, omega, sigma, t_cursor, mode)
 
-        # Figure layout: 3D spiral + Re/Im + abs(x| + phase)
         with plt.rc_context(RC_PARAMS):
-            fig = plt.figure(figsize=(11, 6), layout="tight")
+            fig = plt.figure(figsize=(11, 6), layout="constrained")
             gs_main = GridSpec(1, 12, figure=fig)
             gs_3d   = GridSpecFromSubplotSpec(1, 1, subplot_spec=gs_main[0:5])
             gs_reim = GridSpecFromSubplotSpec(2, 1, subplot_spec=gs_main[6:9])
@@ -89,46 +88,46 @@ def compute():
             ax3d.set_xlabel(r"$t$")
             ax3d.set_xlim(0, T_MAX)
             ax3d.set_ylabel(r"$\mathrm{Re}\{x(t)\}$")
-            ax3d.set_ylim(-10, 10)
+            ax3d.set_ylim(-VAL_LIM, VAL_LIM)
             ax3d.set_zlabel(r"$\mathrm{Im}\{x(t)\}$")
-            ax3d.set_zlim(-10, 10)
+            ax3d.set_zlim(-VAL_LIM, VAL_LIM)
             ax3d.plot(t, x.real, x.imag, color="blue")
-            if mode == "Until t":
+            if mode == "Until t" and np.abs(x[-1].real) <= VAL_LIM and np.abs(x[-1].imag) <= VAL_LIM:
                 ax3d.plot([t[-1]], [x[-1].real], [x[-1].imag], "o", color="black")
-                ax3d.text(t[-1]+0.3, x[-1].real, x[-1].imag, r"$t$", fontsize=12)
+                ax3d.text(t[-1]+0.3, x[-1].real, x[-1].imag, r"$t$")
 
             # Real (red)
             ax_re.plot(t, x.real, color="red")
             ax_re.set_xlabel(r"$t$", labelpad=-2)
             ax_re.set_xlim(0, T_MAX)
             ax_re.set_ylabel(r"$\mathrm{Re}\{x(t)\}$", labelpad=-4)
-            ax_re.set_ylim(-10, 10)
+            ax_re.set_ylim(-VAL_LIM, VAL_LIM)
             ax_re.grid(True)
-            if mode == "Until t":
+            if mode == "Until t" and np.abs(x[-1].real) <= VAL_LIM:
                 ax_re.plot([t[-1]], [x[-1].real], "o", color="black")
-                ax_re.text(t[-1]+0.3, x[-1].real, r"$t$", fontsize=12)
+                ax_re.text(t[-1]+0.3, x[-1].real, r"$t$")
 
             # Imag (green)
             ax_im.plot(t, x.imag, color="green")
             ax_im.set_xlabel(r"$t$", labelpad=-2)
             ax_im.set_xlim(0, T_MAX)
             ax_im.set_ylabel(r"$\mathrm{Im}\{x(t)\}$", labelpad=-4)
-            ax_im.set_ylim(-10, 10)
+            ax_im.set_ylim(-VAL_LIM, VAL_LIM)
             ax_im.grid(True)
-            if mode == "Until t":
+            if mode == "Until t" and np.abs(x[-1].imag) <= VAL_LIM:
                 ax_im.plot([t[-1]], [x[-1].imag], "o", color="black")
-                ax_im.text(t[-1]+0.3, x[-1].imag, r"$t$", fontsize=12)
+                ax_im.text(t[-1]+0.3, x[-1].imag, r"$t$")
 
             # Magnitude (purple)
             ax_ma.plot(t, np.abs(x), color="purple")
             ax_ma.set_xlabel(r"$t$", labelpad=-2)
             ax_ma.set_xlim(0, T_MAX)
             ax_ma.set_ylabel(r"$|x(t)|$", labelpad=-4)
-            ax_ma.set_ylim(0, 10)
+            ax_ma.set_ylim(0, VAL_LIM)
             ax_ma.grid(True)
-            if mode == "Until t":
+            if mode == "Until t" and np.abs(x[-1]) <= VAL_LIM:
                 ax_ma.plot([t[-1]], [abs(x[-1])], "o", color="black")
-                ax_ma.text(t[-1]+0.3, abs(x[-1]), r"$t$", fontsize=12)
+                ax_ma.text(t[-1]+0.3, abs(x[-1]), r"$t$")
 
             # Phase (orange)
             ph = np.zeros_like(t) if magnitude == 0.0 else np.angle(x)
@@ -144,7 +143,7 @@ def compute():
             ax_ph.grid(True)
             if mode == "Until t":
                 ax_ph.plot([t[-1]], [ph[-1]], "o", color="black")
-                ax_ph.text(t[-1]+0.3, ph[-1], r"$t$", fontsize=12)
+                ax_ph.text(t[-1]+0.3, ph[-1], r"$t$")
 
             png = fig_to_base64(fig)
 
