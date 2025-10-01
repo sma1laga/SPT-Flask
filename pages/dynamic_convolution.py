@@ -4,7 +4,8 @@ from flask import Blueprint, render_template, request, jsonify
 from functools import partial
 import numpy as np
 from scipy.signal import convolve
-from utils.math_utils import rect, tri, step, cos, sin, delta, exp_iwt, inv_t, si
+from utils.math_utils import rect, tri, step, cos, sin, delta, exp_iwt, inv_t, si, delta_train
+
 
 dynamic_convolution_bp = Blueprint("dynamic_convolution", __name__)
 
@@ -17,6 +18,7 @@ def dynamic_convolution():
         ("step(t)\u22c5sin(\u03c0t)", "step(t)*sin(t)"),
         ("step(t)\u22c5cos(\u03c0t)", "step(t)*cos(t)"),
         ("delta(t)", "delta(t)"),
+        ("delta train", "delta_train(t)"),
         ("step(t)\u22c5exp(t)", "step(t)*exp(t)"),
         ("inv_t(t)", "inv_t(t)"),
         ("si(\u03c0t)", "si(t)")
@@ -46,7 +48,7 @@ def dynamic_data():
         "t": t_calc, "np": np,
         "rect": rect, "tri": tri, "step": step,
         "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi),
-        "delta": delta, "exp_iwt": exp_iwt,
+        "delta": delta, "delta_train": delta_train, "exp_iwt": exp_iwt,
         "inv_t": inv_t, "si": si, "exp": np.exp
     }
 
@@ -93,8 +95,9 @@ def dynamic_data():
     y2_disp = np.interp(t, t_calc, y2)
     
     def _scale_delta(expr, arr):
-        """Normalize delta(t) for display while leaving calculations unchanged."""
-        if expr.strip() == "delta(t)":
+        """Normalize delta-like signals for display while leaving calculations unchanged."""
+        expr = expr.strip()
+        if expr in {"delta(t)", "delta_train(t)"}:
             max_val = float(np.max(np.abs(arr)))
             if max_val != 0:
                 return arr / max_val

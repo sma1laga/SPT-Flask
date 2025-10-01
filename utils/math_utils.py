@@ -29,7 +29,31 @@ def delta(t):
     """Approximate Dirac delta via narrow Gaussian."""
     eps = 1e-3
     return np.exp(-t**2 / eps) / np.sqrt(np.pi * eps)
+def delta_train(t, spacing: float = 1.0, count: int = 6):
+    """Finite train of equally spaced deltas
 
+    Args:
+        t (np.ndarray): Time samples where the train is evaluated
+        spacing (float): Separation between2 deltas
+        count (int): Number of deltas in the train (clipped to >=1).
+
+    Returns:
+        np.ndarray: Sum of ``count`` shifted delta approximations whose
+            individual peaks match :func:`delta`.
+    """
+
+    count = int(max(1, count))
+    spacing = float(spacing)
+
+    # Center the train around 0 so it fits well in the plotting window.
+    offsets = (np.arange(count) - (count - 1) / 2.0) * spacing
+
+    # Reuse the same narrow Gaussian shape as ``delta`` for each impulse.
+    eps = 1e-3
+    t = np.asarray(t)
+    diff = t[..., None] - offsets
+    train = np.exp(-diff**2 / eps) / np.sqrt(np.pi * eps)
+    return train.sum(axis=-1)
 def exp_iwt(t, omega_0=1.0):
     return np.exp(1j * omega_0 * t)
 
