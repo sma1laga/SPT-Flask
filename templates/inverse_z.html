@@ -1,89 +1,111 @@
 {% extends "base.html" %}
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/inverse_z.css') }}">
+{% endblock %}
 {% block content %}
-<div class="page-header" style="text-align:center;margin-bottom:20px;">
-  <h1 style="font-size:2.2em;">Inverse z-Transform</h1>
-  <p style="color:var(--subtext-color);">Enter a discrete system function \(H(z)\) to obtain the corresponding impulse response \(h[k]\).<br>
-    The expression \(az^2+bz+c\) can be expressed as either <code>[a, b, c]</code> or <code>az^2+bz+c</code>.</p>
-</div>
-
-<form method="POST" style="max-width:500px;margin:0 auto;">
-  <label for="numerator">Numerator:</label>
-  <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
-  <label for="denominator" style="margin-top:10px;">Denominator:</label>
-
-  <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
-
-  <label>Signal type:</label>
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="radio" name="roc_type" id="roc_gt" value="causal" {% if roc_type == 'causal' %}checked{% endif %}>
-    <label class="form-check-label" for="roc_gt">causal (|z| &gt; R)</label>
+<div class="inverse-z-container">
+  <div class="page-header text-center mb-5">
+    <h1 class="text-2xl font-semibold" style="text-align:center;">Inverse z-Transform</h1>
+    <p class="text-gray-600" style="text-align:center;">Enter a discrete system function \(H(z)\) to obtain the corresponding impulse response \(h[k]\).<br>
+      The expression \(az^2+bz+c\) can be expressed as either <code>[a, b, c]</code> or <code>az^2+bz+c</code>.</p>
   </div>
-  <div class="form-check form-check-inline">
-    <input class="form-check-input" type="radio" name="roc_type" id="roc_lt" value="anticausal" {% if roc_type == 'anticausal' %}checked{% endif %}>
-    <label class="form-check-label" for="roc_lt">anticausal (|z| &lt; R)</label>
-  </div>
-  <button type="submit" style="margin-top:10px;">Compute</button>
 
-</form>
-{% if error %}
-  <p style="color:red; text-align:center;">{{ error }}</p>
-{% endif %}
+    <form method="POST">
+    <fieldset>
+      <legend class="font-medium mb-2">System Function \(H(z)\)</legend>
+      <label for="numerator">Numerator
+        <input type="text" id="numerator" name="numerator" value="{{ default_num }}" placeholder="[1, 0]" title="Polynomial coefficients or expression in z" required>
+      </label>
+      <label for="denominator" style="margin-top:1rem;">Denominator
+        <input type="text" id="denominator" name="denominator" value="{{ default_den }}" placeholder="[1]" title="Polynomial coefficients or expression in z" required>
+      </label>
+      <div class="examples" style="font-size:1.2rem;">
+        <button type="button" class="example-btn" data-num="[1]" data-den="[1, -0.5]">\(\frac{1}{1-0.5z^{-1}}\)</button>
+        <button type="button" class="example-btn" data-num="[1, 0]" data-den="[1, -1.5, 0.5]">\(\frac{1+0\,z^{-1}}{1-1.5z^{-1}+0.5z^{-2}}\)</button>
+        <button type="button" class="example-btn" data-num="[1, -0.5]" data-den="[1, -0.2]">\(\frac{1-0.5z^{-1}}{1-0.2z^{-1}}\)</button>
+      </div>
+    </fieldset>
 
-{% if sf_latex %}
-  <div style="text-align:center;margin-top:25px;">
-    <h2>System Function</h2>
-    {% if sf_parts_latex %}
-      <p>$$ \begin{align}
-      H(z) &= {{ sf_latex|safe }}\\
-      &= {{ sf_parts_latex|safe }}
-      \end{align}
+    <fieldset class="radio-group">
+      <legend class="font-medium mb-2">Output Type</legend>
+      <label><input type="radio" name="roc_type" value="causal" {% if roc_type == 'causal' %}checked{% endif %}> causal (|z| &gt; R)</label>
+      <label><input type="radio" name="roc_type" value="anticausal" {% if roc_type == 'anticausal' %}checked{% endif %}> anticausal (|z| &lt; R)</label>
+    </fieldset>
+
+    <button type="submit" class="compute-btn">Compute</button>
+    {% if error %}
+      <div class="text-red-600 mt-2">{{ error }}</div>
+    {% endif %}
+  </form>
+
+
+  {% if sf_latex %}
+    <div style="text-align:center;">
+      <h2>System Function</h2>
+      <p>$$
+        {% if sf_parts_latex %}
+          \begin{align}
+          H(z) &= {{ sf_latex|safe }}\\
+          &= {{ sf_parts_latex|safe }}
+          \end{align}
+        {% else %}
+          H(z) = {{ sf_latex|safe }}
+        {% endif %}
       $$</p>
-    {% else %}
-      <p>$$ H(z) = {{ sf_latex|safe }} $$</p>
-    {% endif %}
+      {% if roc_latex %}
+        <p style="margin-top:1rem;">$$ \mathrm{ROC}:\ {{ roc_latex|safe }} $$</p>
+      {% endif %}
+    </div>
+  {% endif %}
 
-    {% if roc_latex %}
-      <p style="text-align:center;margin-top:25px;">
-        $$ \mathrm{ROC}:\ {{ roc_latex|safe }} $$
-      </p>
-    {% endif %}
-  </div>
-{% endif %}
+  {% if hk_latex %}
+    <div class="result">
+      <h2>Impulse Response</h2>
+      <p>$$ h[k] = {{ hk_latex|safe }} $$</p>
+      {% if seq %}
+        <p style="margin-top:1rem;">Sample values: $$ {{ seq|safe }} $$</p>
+      {% endif %}
+    </div>
+  {% endif %}
 
-{% if hk_latex %}
-  <div style="text-align:center;margin-top:25px;">
-    <p>$$ h[k] = {{ hk_latex|safe }} $$</p>
-  </div>
-{% endif %}
-{% if seq_data %}
-
-  <div style="text-align:center;margin-top:20px;">
-    <h3>{{ seq_title|safe }}</h3>
-    <div id="hk_plot" style="max-width:600px;height:300px;margin:0 auto;"></div>
-  </div>
-  <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
-  <script>
-    const d = {{ seq_data|tojson }};
-    const stem = (x, y, color) => ({
-      x: [].concat(...x.map(xi => [xi, xi, xi])),
-      y: [].concat(...y.map(yi => [0, yi, null])),
-      mode: "lines",
-      line: {color: color, width: 2},
-      showlegend: false,
+  {% if seq_data %}
+    <div class="result">
+      <h3>{{ seq_title|safe }}</h3>
+      <div id="hk_plot"></div>
+    </div>
+    <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+    <script>
+      const data = {{ seq_data|tojson }};
+      const stem = (x, y, color) => ({
+        x: [].concat(...x.map(xi => [xi, xi, xi])),
+        y: [].concat(...y.map(yi => [0, yi, null])),
+        mode: "lines",
+        line: {color: color, width: 2},
+        showlegend: false,
+      });
+      const traces = [
+        stem(data.k, data.re, "#1f77b4"),
+        {x: data.k, y: data.re, mode: "markers", name: "Re{h[k]}", marker: {color: "#1f77b4"}}
+      ];
+      if (data.im.some(v => Math.abs(v) > 1e-12)) {
+        traces.push(stem(data.k, data.im, "#d62728"));
+        traces.push({x: data.k, y: data.im, mode: "markers", name: "Im{h[k]}", marker: {color: "#d62728"}});
+      }
+      Plotly.newPlot('hk_plot', traces, {
+        margin: {t: 30},
+        xaxis: {title: {text: 'k'}},
+        yaxis: {title: {text: 'h[k]'}},
+      }, {responsive: true});
+    </script>
+  {% endif %}
+</div>
+<script>
+  document.querySelectorAll('.example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('numerator').value = btn.dataset.num;
+      document.getElementById('denominator').value = btn.dataset.den;
     });
-    const traces = [
-      stem(d.k, d.re, "#1f77b4"),
-      {x: d.k, y: d.re, mode: "markers", name: "Re{h[k]}", marker: {color: "#1f77b4"}}
-    ];
-    if (d.im.some(v => Math.abs(v) > 1e-12)) {
-      traces.push(stem(d.k, d.im, "#d62728"));
-      traces.push({x: d.k, y: d.im, mode: "markers", name: "Im{h[k]}", marker: {color: "#d62728"}});
-    }
-    Plotly.newPlot('hk_plot', traces, {
-      margin: {t: 30},
-      xaxis: {title: {text: 'k'}},
-      yaxis: {title: {text: 'h[k]'}},
-    });
-  </script>
-{% endif %}
+  });
+</script>
 {% endblock %}
