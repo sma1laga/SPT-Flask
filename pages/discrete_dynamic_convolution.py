@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify
 from functools import partial
 import numpy as np
 from utils.math_utils import (
-    rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
+    rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si, delta_train_n
 )
 # Blueprint for Discrete Dynamic Convolution
 # Implements extended-domain convolution to avoid edge truncation
@@ -24,6 +24,7 @@ def index():
         ("step[k]\u22c5cos[\u03c0/4\u22c5k]", "step(k)*cos(np.pi/4*k)"),
         ("sign[k]", "sign(k)"),
         ("delta[k]", "delta(k)"),
+        ("delta train", "delta_train(k)"),
         ("inv_k[k]", "inv_k(k)"),
         ("si[\u03c0/2\u22c5k]", "si(k/2)"),
         ("step[k]\u22c50.5^k", "step(k)*0.5**k"),
@@ -47,7 +48,7 @@ def data():
         "k": k, "n": k, "np": np,
         "rect_4": partial(rect_N, N=4), "tri_3": partial(tri_N, N=3), "step": step,
         "cos": cos, "sin": sin,
-        "sign": sign, "delta": delta_n, "exp": np.exp,
+        "sign": sign, "delta": delta_n, "delta_train": delta_train_n, "exp": np.exp,
         "inv_k": inv_t, "si": si,
     }
 

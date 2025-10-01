@@ -71,6 +71,36 @@ def delta_n(n):
     """Kronecker delta: 1 when n==0 else 0."""
     return np.where(np.isclose(n.round(8), 0.0), 1.0, 0.0)
 
+# example
+def delta_train_n(n, spacing: int = 3, count: int = 5) -> np.ndarray:
+    """Finite delta train centred around the origin
+    Parameters
+    ----------
+    n:
+        Discrete time samples where the train is evaluated
+    spacing:
+        Separation between adjacent impulses.  Values are rounded to the
+        nearest integer to keep impulses aligned with the integer grid.
+    count:
+        Number of impulses to include in the train - the value is clipped to
+        at least 1 so that the function always returns a non-empty train. Can be changed as you wish..
+
+    """
+
+    n = np.asarray(n)
+    count = int(max(1, count))
+    spacing = int(max(1, round(spacing)))
+
+    # centre the train around the origin so that it behaves nicely within the
+    # fixed plotting window used by the discrete dynamic convolution modul
+    offsets = (np.arange(count) - (count - 1) / 2.0) * spacing
+    offsets = np.rint(offsets).astype(int)
+
+    train = np.zeros_like(n, dtype=float)
+    for shift in offsets:
+        train += delta_n(n - shift)
+
+    return train
 # ------------------------------------------------------------------
 # Discrete-time helpers
 # ------------------------------------------------------------------
