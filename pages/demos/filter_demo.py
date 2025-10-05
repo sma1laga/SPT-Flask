@@ -283,18 +283,16 @@ def compute():
 
         # plotting
         with plt.rc_context(RC_PARAMS):
-            # figure: 3x2 grid (top: x and y; middle: H(z); bottom: selected plot)
+            # figure: 3x2 grid (top: x and y; middle: selected plot; bottom: H(z))
             fig = plt.figure(figsize=(10, 7), layout="constrained")
-            gs = GridSpec(3, 2, height_ratios=[1, 0.25, 2], figure=fig)
+            gs = GridSpec(3, 2, height_ratios=[1.0, 2.2, 0.5], figure=fig)
             x_ax = fig.add_subplot(gs[0, 0])
             y_ax = fig.add_subplot(gs[0, 1])
-            hz_pad_ax = fig.add_subplot(gs[1, 0])
-            hz_ax = fig.add_subplot(gs[1, 1])
-            plot_ax = fig.add_subplot(gs[2, :])
+            plot_ax = fig.add_subplot(gs[1, :])
+            hz_ax = fig.add_subplot(gs[2, :])
 
-            hz_pad_ax.axis("off")
             hz_ax.axis("off")
-            hz_ax.set_title("Transfer Function", fontsize=12, pad=8)
+            hz_ax.set_title("Transfer Function", fontsize=12, pad=6)
             hz_ax.text(
                 0.5,
                 0.5,
