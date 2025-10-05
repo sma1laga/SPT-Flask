@@ -78,6 +78,52 @@ EXS = {
 
 PLOTS = ["Magnitude Response [dB]", "Phase Response [deg]", "Pole-Zero Plot", "Impulse Response"]
 
+def _format_coeff(value: float) -> str:
+    """Return a compact string representation for a coefficient."""
+    if np.isclose(value, 0.0):
+        return "0"
+    if np.isclose(value, round(value)):
+        return str(int(round(value)))
+    return f"{value:.3g}"
+
+
+def _poly_to_tex(coeffs: np.ndarray) -> str:
+    """Create a TeX expression for a polynomial in z^{-1}."""
+    terms = []
+    for k, coeff in enumerate(coeffs):
+        if np.isclose(coeff, 0.0):
+            continue
+
+        sign = "-" if coeff < 0 else "+"
+        coeff_abs = abs(coeff)
+        power = "" if k == 0 else f"z^{{-{k}}}"
+
+        if np.isclose(coeff_abs, 1.0) and power:
+            coeff_str = ""
+        else:
+            coeff_str = _format_coeff(coeff_abs)
+
+        term_body = f"{coeff_str}{power}" if coeff_str else power
+        terms.append((sign, term_body.strip()))
+
+    if not terms:
+        return "0"
+
+    first_sign, first_term = terms[0]
+    expression = first_term if first_sign == "+" else f"-{first_term}"
+
+    for sign, term in terms[1:]:
+        expression += f" {sign} {term}"
+
+    return expression
+
+
+def transfer_function_tex(a: np.ndarray, b: np.ndarray) -> str:
+    """Return a TeX string for H(z) with the provided coefficients."""
+    num = _poly_to_tex(np.asarray(b, dtype=float))
+    den = _poly_to_tex(np.asarray(a, dtype=float))
+    return rf"H(z) = \frac{{{num}}}{{{den}}}"
+
 # ------------ helpers -------------
 def _image_path(filename: str) -> str:
     static_root = current_app.static_folder  # .../static
@@ -233,16 +279,30 @@ def compute():
         else:
             raise ValueError(f"Unknown input item: {x_type}")
 
+        hz_tex = transfer_function_tex(a, b)
 
         # plotting
         with plt.rc_context(RC_PARAMS):
-            # figure: 2x2 grid (top: x and y; bottom: selected plot)
-            fig = plt.figure(figsize=(10, 6), layout="constrained")
-            gs = GridSpec(2, 2, height_ratios=[1,2], figure=fig)
+            # figure: 3x2 grid (top: x and y; middle: H(z); bottom: selected plot)
+            fig = plt.figure(figsize=(10, 7), layout="constrained")
+            gs = GridSpec(3, 2, height_ratios=[1, 0.25, 2], figure=fig)
             x_ax = fig.add_subplot(gs[0, 0])
             y_ax = fig.add_subplot(gs[0, 1])
-            plot_ax = fig.add_subplot(gs[1, :])
+            hz_pad_ax = fig.add_subplot(gs[1, 0])
+            hz_ax = fig.add_subplot(gs[1, 1])
+            plot_ax = fig.add_subplot(gs[2, :])
 
+            hz_pad_ax.axis("off")
+            hz_ax.axis("off")
+            hz_ax.set_title("Transfer Function", fontsize=12, pad=8)
+            hz_ax.text(
+                0.5,
+                0.5,
+                rf"${hz_tex}$",
+                ha="center",
+                va="center",
+                fontsize=16,
+            )
             if not is_image:
                 # ---- audio: time series ----
                 x_ax.set_title("Input Signal")
