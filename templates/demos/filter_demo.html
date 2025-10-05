@@ -13,11 +13,19 @@ Each filter can be analyzed by plotting its impulse response, pole-zero plot&nbs
       <div><strong>Input \(x[k]\)</strong></div>
       <div>
         <select id="x_type">
-          {% for name in audio_options %}
-            <option value="{{name}}" {% if name==defaults.x_type %}selected{% endif %}>{{name}}</option>
-          {% endfor %}
+          <optgroup label="Audio">
+            {% for name in audio_options %}
+              <option value="{{name}}" {% if name==defaults.x_type %}selected{% endif %}>{{name}}</option>
+            {% endfor %}
+          </optgroup>
+          <optgroup label="Images">
+            {% for name in image_options %}
+              <option value="{{name}}">{{name}}</option>
+            {% endfor %}
+          </optgroup>
         </select>
       </div>
+
 
       <div><strong>Filter Coefficients</strong></div>
       <div>

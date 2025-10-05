@@ -36,6 +36,11 @@ AUDIO_MAP = { # TODO images
     "Armstrong":          "neil_armstrong_mono32.wav",
     "Snare":              "drum_mono32.wav",
 }
+IMAGE_MAP = {
+    "Jack Sparrow":       "jack.png",
+    "Monalisa":  "mona_lisa.png",
+    "Trumpets":   "trumpets.png",
+}
 
 # EXACT coefficient sets from the notebook (German labels)
 EXS = {
@@ -74,6 +79,33 @@ EXS = {
 PLOTS = ["Magnitude Response [dB]", "Phase Response [deg]", "Pole-Zero Plot", "Impulse Response"]
 
 # ------------ helpers -------------
+def _image_path(filename: str) -> str:
+    static_root = current_app.static_folder  # .../static
+    return os.path.join(static_root, "demos", "images", filename)
+
+def _load_image(name: str):
+    fname = IMAGE_MAP.get(name)
+    if not fname:
+        raise ValueError(f"Unknown image item: {name}")
+    path = _image_path(fname)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Image file not found: {path}")
+    # read as float in [0,1]; convert to grayscale 
+    img = plt.imread(path).astype(np.float64)
+    if img.ndim == 3:
+        # drop alpha if present
+        img = img[..., :3]
+        # luminance
+        img = 0.299 * img[..., 0] + 0.587 * img[..., 1] + 0.114 * img[..., 2]
+    # ensure finite
+    img = np.nan_to_num(img, nan=0.0, posinf=1.0, neginf=0.0)
+    # normalize to [0,1] if necesarry @paul
+    mn, mx = img.min(), img.max()
+    if mx > mn:
+        img = (img - mn) / (mx - mn)
+    else:
+        img = np.zeros_like(img)
+    return img
 
 def _audio_path(filename: str) -> str:
     static_root = current_app.static_folder  # .../static
@@ -146,6 +178,7 @@ def page():
     return render_template(
         "demos/filter_demo.html",
         audio_options=list(AUDIO_MAP.keys()),
+        image_options=list(IMAGE_MAP.keys()),
         ex_options=list(EXS.keys()),
         plots=PLOTS,
         defaults=defaults,
@@ -165,15 +198,41 @@ def compute():
             raise ValueError(f"Unknown coefficient set: {ex}")
         a = coeffs["a"]
         b = coeffs["b"]
-        # load audio and filter
-        fs, x = _load_audio(x_type)
-        y = lfilter(b, a, x)
-        # get max/min non-inf value
-        ymask = np.isfinite(y)
-        ymax = np.max(y[ymask])
-        ymin = np.min(y[ymask])
-        # set nans to zero, +-inf to max/min non-inf values
-        y = np.nan_to_num(y, nan=0, posinf=ymax, neginf=ymin)
+        # load input and filter (audio: 1-D; image: 2-D)
+        is_image = False
+        fs = None
+
+        if x_type in AUDIO_MAP:
+            fs, x = _load_audio(x_type)          # 1-D signal
+            # IIR filtering
+            y = lfilter(b, a, x)
+            # sanitize for plotting/audio
+            ymask = np.isfinite(y)
+            ymax = np.max(y[ymask])
+            ymin = np.min(y[ymask])
+            y = np.nan_to_num(y, nan=0, posinf=ymax, neginf=ymin)
+
+        elif x_type in IMAGE_MAP:
+            is_image = True
+            x = _load_image(x_type)              # 2-D sig array in [0,1]
+            # separable IIR: filter along columns, then rows
+            # keeps demo  fastas it needs to be
+            y = lfilter(b, a, x, axis=1)
+            y = lfilter(b, a, y, axis=0)
+            # sanitize and normalize for display
+            y = np.nan_to_num(y)
+            ymask = np.isfinite(y)
+            if np.any(ymask):
+                y_min, y_max = float(np.min(y[ymask])), float(np.max(y[ymask]))
+            else:
+                y_min, y_max = 0.0, 1.0
+            if y_max > y_min:
+                y_disp = (y - y_min) / (y_max - y_min)
+            else:
+                y_disp = np.zeros_like(y)
+        else:
+            raise ValueError(f"Unknown input item: {x_type}")
+
 
         # plotting
         with plt.rc_context(RC_PARAMS):
@@ -184,31 +243,43 @@ def compute():
             y_ax = fig.add_subplot(gs[0, 1])
             plot_ax = fig.add_subplot(gs[1, :])
 
-            # Input plot
-            x_ax.set_title("Input Signal")
-            x_ax.set_aspect('auto')
-            x_ax.margins(x=0)
-            x_ax.grid(True)
-            x_ax.set_xlabel(r"Index $k$ $[\times 10^3]$")
-            x_ax.set_ylabel("$x[k]$")
-            # keep the notebook's normalization range
-            x_ax.set_ylim(-1.1, 1.1)
-            x_ax.plot(np.arange(len(x))/1e3, x, linewidth=0.5)
+            if not is_image:
+                # ---- audio: time series ----
+                x_ax.set_title("Input Signal")
+                x_ax.set_aspect('auto')
+                x_ax.margins(x=0)
+                x_ax.grid(True)
+                x_ax.set_xlabel(r"Index $k$ $[\times 10^3]$")
+                x_ax.set_ylabel("$x[k]$")
+                x_ax.set_ylim(-1.1, 1.1)
+                x_ax.plot(np.arange(len(x))/1e3, x, linewidth=0.5)
 
-            # Output plot
-            y_ax.set_title("Filtered Signal")
-            y_ax.set_aspect('auto')
-            y_ax.margins(x=0)
-            y_ax.grid(True)
-            y_ax.set_xlabel(r"Index $k$ $[\times 10^3]$")
-            y_ax.set_ylabel("$y[k]$")
-            y_ax.plot(np.arange(len(y))/1e3, y, linewidth=0.5)
-            if ex != "Task 4.2":
-                ylim = y_ax.get_ylim()
-                ylim_abs = max(abs(ylim[0]), abs(ylim[1]))
-                y_ax.set_ylim(-ylim_abs, ylim_abs)
-            else: # unstable system
-                y_ax.set_ylim(ymin, ymax) # png saving may fail without this line
+                y_ax.set_title("Filtered Signal")
+                y_ax.set_aspect('auto')
+                y_ax.margins(x=0)
+                y_ax.grid(True)
+                y_ax.set_xlabel(r"Index $k$ $[\times 10^3]$")
+                y_ax.set_ylabel("$y[k]$")
+                y_ax.plot(np.arange(len(y))/1e3, y, linewidth=0.5)
+                if ex != "Task 4.2":
+                    ylim = y_ax.get_ylim()
+                    ylim_abs = max(abs(ylim[0]), abs(ylim[1]))
+                    y_ax.set_ylim(-ylim_abs, ylim_abs)
+                else: 
+                    y_ax.set_ylim(ymin, ymax)
+            else:
+                # ---- Image: show grayscale images ----
+                x_ax.set_title("Input Image")
+                x_ax.imshow(x, cmap="gray", vmin=0, vmax=1, aspect="auto")
+                x_ax.axis("off")
+
+                y_ax.set_title("Filtered Image")
+                # use normalizedd display version
+                y_disp_local = y_disp if 'y_disp' in locals() else y
+                y_disp_local = np.clip(y_disp_local, 0.0, 1.0)
+                y_ax.imshow(y_disp_local, cmap="gray", vmin=0, vmax=1, aspect="auto")
+                y_ax.axis("off")
+
 
             # Main plot by selection
             plot_ax.grid(True)
@@ -282,16 +353,20 @@ def compute():
 
             png = fig_to_base64(fig)
 
-        # audio players
-        x_audio = wav_data_url(x.astype(np.float32), fs)
-        y_norm = y / (np.max(np.abs(y)) + 1e-9)  # avoid clipping
-        y_audio = wav_data_url(y_norm.astype(np.float32), fs)
+        if not is_image:
+            x_audio = wav_data_url(x.astype(np.float32), fs)
+            y_norm = y / (np.max(np.abs(y)) + 1e-9)  
+            y_audio = wav_data_url(y_norm.astype(np.float32), fs)
+        else:
+            x_audio = ""
+            y_audio = ""
 
         return jsonify({
             "image": png,
             "x_audio": x_audio,
             "y_audio": y_audio,
         })
+
 
     except Exception as e:
         import traceback
