@@ -11,7 +11,8 @@ from flask import Blueprint, render_template, request
 import io, base64, ast
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.patches import Circle, Rectangle, FancyArrowPatch
+from matplotlib.path import Path
 import sympy as sp
 from sympy.parsing.sympy_parser import (
     parse_expr, standard_transformations,
@@ -107,15 +108,31 @@ def _dot(ax, xy):
     ax.add_patch(Circle(xy, 0.04, color="k", zorder=3))
 
 
-def _arrow(ax, src, dst):
+def _arrow(ax, src, dst, **arrow_kwargs):
+    props = dict(arrowstyle="->", lw=1.2, shrinkA=1, shrinkB=1)
+    props.update(arrow_kwargs)
     ax.annotate(
         "",
         xy=dst,
         xytext=src,
-        arrowprops=dict(arrowstyle="->", lw=1.2, shrinkA=1, shrinkB=1),
+        arrowprops=props,
         zorder=1,
 
     )
+def _arrow_path(ax, points, **arrow_kwargs):
+    """Draw a polyline arrow that hugs right-hand loops neatly."""
+    if len(points) < 2:
+        raise ValueError("Need at least two points for an arrow path")
+
+    props = dict(arrowstyle="->", lw=1.2)
+    props.update(arrow_kwargs)
+
+    path = Path(points, [Path.MOVETO] + [Path.LINETO] * (len(points) - 1))
+    patch = FancyArrowPatch(path=path, **props)
+    patch.set_zorder(1)
+    ax.add_patch(patch)
+    return patch
+
 
 
 def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
@@ -202,7 +219,8 @@ def _draw_df2(ax, b: np.ndarray, a: np.ndarray):
 
 def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
     """Direct‑Form I (order ≤2), zero‑tap skipping, no overlaps, clean 1/a0."""
-    X_L, X_X, X_S, X_A, X_ONE, X_Y = 0.0, 1.8, 3.4, 4.9, 6.1, 7.4
+    X_L, X_X, X_S = 0.0, 1.8, 3.4
+    X_COEF, X_INT, X_ONE, X_Y = 4.8, 5.9, 7.1, 8.4
     Y0, DY = 2.0, 1.2
     r = 0.17
 
@@ -263,10 +281,10 @@ def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
             _arrow(ax, (X_S - 1.0 + 0.3, y_t), (X_S - r, y_t))
 
     # ── FEEDBACK (y‑chain): −a1→Σ1, −a2→Σ2 (never into Σ0)
-    _arrow(ax, (X_S + r, Y0), (X_A, Y0))  # tap Σ0 into y‑chain
-    _dot(ax, (X_A, Y0))
-    y_int = [(X_A, Y0 - 0.5*DY), (X_A, Y0 - 1.5*DY)]
-    y_state = [(X_A, Y0 - DY), (X_A, Y0 - 2*DY)]
+    _arrow(ax, (X_S + r, Y0), (X_INT, Y0))  # tap Σ0 into y‑chain
+    _dot(ax, (X_INT, Y0))
+    y_int = [(X_INT, Y0 - 0.5*DY), (X_INT, Y0 - 1.5*DY)]
+    y_state = [(X_INT, Y0 - DY), (X_INT, Y0 - 2*DY)]
     for i, (bx, by) in enumerate(y_int):
         _box(ax, (bx, by), text=r"$\int$")
         _dot(ax, y_state[i])
@@ -276,9 +294,16 @@ def _draw_df1(ax, b: np.ndarray, a: np.ndarray):
     for idx in (1, 2):
         if idx < len(a) and _nz(a[idx]):
             y_t = Y0 - idx*DY
-            _box(ax, (X_ONE - 0.8, y_t), text=rf"${_neg_fmt(a[idx])}$")
-            _arrow(ax, y_state[idx-1], (X_ONE - 0.8 - 0.3, y_t))  # state → gain
-            _arrow(ax, (X_ONE - 0.8 + 0.3, y_t), (X_S - r, y_t))  # gain → Σ(level)
+            _box(ax, (X_COEF, y_t), text=rf"${_neg_fmt(a[idx])}$")
+            _arrow_path(
+                ax,
+                [
+                    y_state[idx-1],
+                    (X_INT - 0.35, y_t),
+                    (X_COEF + 0.3, y_t),
+                ],
+            )
+            _arrow(ax, (X_COEF - 0.3, y_t), (X_S + r, y_t))
 
     # canvas
     ax.set_xlim(-0.8, X_Y + 1.2)
