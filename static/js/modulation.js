@@ -1,138 +1,232 @@
-// update slider label & replot
-function updateSliderValue(id) {
-    const el = document.getElementById(id);
-    document.getElementById(id + '_val').innerText = el.value;
-    plotMod();
-    plotDemod();
+// static/js/modulation.js
+window.MOD_URLS = window.MOD_URLS || {
+  presets: '/modulation/api/presets',
+  modulate: '/modulation/api/modulate',
+  demod: '/modulation/api/demodulate'
+};
+
+function $(id){ return document.getElementById(id); }
+function setLabel(id){ const el=$(id), lab=$(id+'_val'); if(el&&lab) lab.innerText = el.value; }
+
+async function fetchJSON(url, params) {
+  const q = new URLSearchParams(params).toString();
+  const res = await fetch(url + '?' + q);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function updateModControls() {
+  const type = $('mod_type').value;
+  ['am_controls','fm_controls','pulse_controls'].forEach(i=>{
+    const e = $(i); if (e) e.style.display = 'none';
+  });
+
+  if (type === 'AM') $('am_controls').style.display = '';
+  else if (type === 'FM' || type === 'PM') {
+    $('fm_controls').style.display = '';
+    $('fm_header').innerText = `${type} Modulation`;
+    $('beta_label').innerText = (type==='FM') ? 'β (mod index):' : 'Phase index m:';
+  } else {
+    $('pulse_controls').style.display = '';
+    $('pulse_header').innerText = `${type} Modulation`;
+    $('pcm_levels_group').style.display = (type==='PCM') ? '' : 'none';
   }
-  
-  function updateModControls() {
-    const type = document.getElementById('mod_type').value;
-    // hide all three
-    ['am_controls','fm_controls','pulse_controls'].forEach(i=>{
-      document.getElementById(i).style.display = 'none';
-    });
-  
-    if (type === 'AM') {
-      document.getElementById('am_controls').style.display = '';
-    }
-    else if (type === 'FM' || type === 'PM') {
-      document.getElementById('fm_controls').style.display = '';
-      document.getElementById('fm_header').innerText = `${type} Modulation`;
-      document.getElementById('beta_label').innerText =
-        type==='FM' ? 'Beta (Hz dev):' : 'Phase Index:';
-    }
-    else {
-      // PAM, PWM, PPM, PCM
-      document.getElementById('pulse_controls').style.display = '';
-      document.getElementById('pulse_header').innerText = `${type} Modulation`;
-      document.getElementById('pcm_levels_group').style.display =
-        type==='PCM' ? '' : 'none';
-    }
-  
-    // sync current slider labels
-    ['am_fc','am_fm','am_m','fm_fc','fm_fm','fm_beta',
-     'pm_prf','pm_fm','pm_levels']
-      .forEach(id => {
-        if (document.getElementById(id))
-          document.getElementById(id + '_val').innerText =
-            document.getElementById(id).value;
-      });
+
+  [
+    'am_fc','am_fm','am_m',
+    'fm_fc','fm_fm','fm_beta',
+    'pm_prf','pm_fm','pm_levels',
+    'fs','t_end','snr_db'
+  ].forEach(setLabel);
+}
+
+function renderFacts(info){
+  if (!info) return;
+  const parts = [];
+  if (info.type==='AM'){
+    parts.push(`m = ${(+info.m).toFixed(2)}` + (info.overmod ? ' (overmod ⚠️)' : ''));
+    parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
+  } else if (info.type==='FM'){
+    parts.push(`β = ${(+info.beta).toFixed(2)}, fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
+    parts.push(`Carson BW ≈ ${info.carson_bw_hz.toFixed(1)} Hz`);
+  } else if (info.type==='PM'){
+    parts.push(`phase index m = ${(+info.phase_index).toFixed(2)}`);
+    parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
+  } else if (['PAM','PWM','PPM','PCM'].includes(info.type)){
+    parts.push(`prf = ${info.prf} Hz`); if (info.fm) parts.push(`fm = ${info.fm} Hz`);
+    if (info.levels) parts.push(`${info.levels} levels`);
   }
-  
-  async function fetchJSON(url, params) {
-    const q = new URLSearchParams(params).toString();
-    const res = await fetch(url + '?' + q);
-    return res.json();
+  if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
+  $('facts').innerText = parts.join('  •  ');
+}
+
+async function plotMod() {
+  const type = $('mod_type').value;
+
+  const params = {
+    type,
+    fs: +$('fs').value,
+    t_end: +$('t_end').value,
+    snr_db: $('snr_toggle').checked ? +$('snr_db').value : Infinity
+  };
+
+  if (type === 'AM') {
+    params.fc = +$('am_fc').value;
+    params.fm = +$('am_fm').value;
+    params.m  = +$('am_m').value;
+  } else if (type==='FM' || type==='PM') {
+    params.fc   = +$('fm_fc').value;
+    params.fm   = +$('fm_fm').value;
+    params.beta = +$('fm_beta').value;
+    if (type==='PM'){ params.m = params.beta; delete params.beta; }
+  } else {
+    params.prf = +$('pm_prf').value;
+    params.fm  = +$('pm_fm').value;
+    if (type==='PCM') params.levels = +$('pm_levels').value;
   }
-  
-  async function plotMod() {
-    const type = document.getElementById('mod_type').value;
-    let params = { type };
-  
-    if (type === 'AM') {
-      params.fc = +document.getElementById('am_fc').value;
-      params.fm = +document.getElementById('am_fm').value;
-      params.m  = +document.getElementById('am_m').value;
-    }
-    else if (type==='FM' || type==='PM') {
-      params.fc   = +document.getElementById('fm_fc').value;
-      params.fm   = +document.getElementById('fm_fm').value;
-      params.beta = +document.getElementById('fm_beta').value;
-    }
-    else {
-      // pulse
-      params.prf = +document.getElementById('pm_prf').value;
-      params.fm  = +document.getElementById('pm_fm').value;
-      if (type==='PCM')
-        params.levels = +document.getElementById('pm_levels').value;
-    }
-  
-    const data   = await fetchJSON('/modulation/api/modulate', params);
-    let traces;
-  
-    if (['AM','FM','PM'].includes(type)) {
-      traces = [
-        { x: data.t, y: data.message,   name: 'Message' },
-        ...(data.carrier.length
-          ? [{ x: data.t, y: data.carrier, name: 'Carrier' }]
-          : []),
-        { x: data.t, y: data.modulated, name: `${type} Signal` }
-      ];
-    } else {
-      traces = [
-        { x: data.t, y: data.message,   name: 'Message' },
-        { x: data.t, y: data.modulated, name: `${type} Signal` }
-      ];
-    }
-  
-    Plotly.newPlot('mod_plot', traces, {
-      margin: { t: 30 },
-      title: `${type} Modulation`
-    });
-  }
-  
-  async function plotDemod() {
-    const type = document.getElementById('demod_type').value;
-    let params = { type };
-  
-    if (type === 'AM') {
-      params.fc = +document.getElementById('am_fc').value;
-      params.fm = +document.getElementById('am_fm').value;
-      params.m  = +document.getElementById('am_m').value;
-    }
-    else if (type==='FM' || type==='PM') {
-      params.fc   = +document.getElementById('fm_fc').value;
-      params.fm   = +document.getElementById('fm_fm').value;
-      params.beta = +document.getElementById('fm_beta').value;
-    }
-    else {
-      // pulse
-      params.prf = +document.getElementById('pm_prf').value;
-      params.fm  = +document.getElementById('pm_fm').value;
-      if (type==='PCM')
-        params.levels = +document.getElementById('pm_levels').value;
-    }
-  
-    const data = await fetchJSON('/modulation/api/demodulate', params);
-    const tDem = data.t.length === data.demodulated.length
-                 ? data.t
-                 : data.t.slice(1);
-  
-    Plotly.newPlot('demod_plot', [
-      { x: data.t,   y: data.modulated,   name: 'Received Signal' },
-      { x: tDem,     y: data.demodulated, name: 'Demodulated'    }
+
+  const data = await fetchJSON(MOD_URLS.modulate, params);
+
+  const traces = [
+    { x: data.t, y: data.message,   name: 'Message' },
+    ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
+    { x: data.t, y: data.modulated, name: `${type} Signal` }
+  ];
+
+  Plotly.newPlot('mod_plot', traces, {
+    margin: { t: 30 },
+    title: `${type} — Modulation`,
+    legend: { orientation: 'h' }
+  }, {responsive: true});
+
+  if ($('show_spectrum').checked) {
+    Plotly.newPlot('spec_plot', [
+      { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (modulated)' }
     ], {
       margin: { t: 30 },
-      title: `${type} Demodulation`
-    });
+      title: 'Spectrum (Hann + rFFT)',
+      xaxis: { title: 'Frequency [Hz]' },
+      yaxis: { title: 'Power [dB]' }
+    }, {responsive: true});
+  } else {
+    Plotly.purge('spec_plot');
+    $('spec_plot').innerHTML = '<div class="muted">Spectrum hidden</div>';
   }
-  
-  // on‐load wiring
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('demod_type').addEventListener('change', plotDemod);
+
+  renderFacts(data.info);
+}
+
+async function plotDemod() {
+  const type = $('demod_type').value;
+
+  const params = {
+    type,
+    fs: +$('fs').value,
+    t_end: +$('t_end').value
+  };
+
+  if (type === 'AM') {
+    params.fc = +$('am_fc').value; params.fm = +$('am_fm').value; params.m = +$('am_m').value;
+  } else if (type==='FM' || type==='PM') {
+    params.fc = +$('fm_fc').value; params.fm = +$('fm_fm').value;
+    if (type==='FM') params.beta = +$('fm_beta').value; else params.m = +$('fm_beta').value;
+  } else {
+    params.prf = +$('pm_prf').value; params.fm = +$('pm_fm').value;
+    if (type==='PCM') params.levels = +$('pm_levels').value;
+  }
+
+  const data = await fetchJSON(MOD_URLS.demod, params);
+  const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
+
+  Plotly.newPlot('demod_plot', [
+    { x: data.t,   y: data.modulated,   name: 'Received' },
+    { x: tDem,     y: data.demodulated, name: 'Demodulated' }
+  ], {
+    margin: { t: 30 },
+    title: `${type} — Demodulation`,
+    legend: { orientation: 'h' }
+  }, {responsive: true});
+
+  if ($('show_spectrum').checked) {
+    Plotly.newPlot('spec_demod_plot', [
+      { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (demodulated)' }
+    ], {
+      margin: { t: 30 },
+      title: 'Demod Spectrum',
+      xaxis: { title: 'Frequency [Hz]' },
+      yaxis: { title: 'Power [dB]' }
+    }, {responsive: true});
+  } else {
+    Plotly.purge('spec_demod_plot');
+    $('spec_demod_plot').innerHTML = '';
+  }
+}
+
+async function loadPresets(){
+  try {
+    const list = await fetchJSON(MOD_URLS.presets, {});
+    const sel = $('preset');
+    sel.innerHTML = '<option value="">— choose preset —</option>';
+    list.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      sel.appendChild(opt);
+    });
+  } catch(e) {/* ok */}
+}
+
+async function applyPreset(){
+  const p = $('preset').value;
+  if (!p) return;
+  const data = await fetchJSON(MOD_URLS.modulate, { preset: p });
+  if (data.info){
+    const I = data.info;
+    $('mod_type').value = I.type;
+    $('demod_type').value = I.type;
+    if (I.fs)   $('fs').value = I.fs;
+    if (I.duration_s) $('t_end').value = I.duration_s;
+    if (I.fc)   { $('am_fc').value = I.fc; $('fm_fc').value = I.fc; }
+    if (I.fm)   { $('am_fm').value = I.fm; $('fm_fm').value = I.fm; $('pm_fm').value = I.fm; }
+    if (I.m!=null)    $('am_m').value = I.m;
+    if (I.phase_index!=null) $('fm_beta').value = I.phase_index;
+    if (I.beta!=null) $('fm_beta').value = I.beta;
+    if (I.prf)  $('pm_prf').value = I.prf;
+    if (I.levels) $('pm_levels').value = I.levels;
     updateModControls();
-    plotMod();
-    plotDemod();
+  }
+  plotMod(); plotDemod();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('mod_type').addEventListener('change', ()=>{ updateModControls(); plotMod(); });
+  $('demod_type').addEventListener('change', plotDemod);
+
+  [
+    'am_fc','am_fm','am_m',
+    'fm_fc','fm_fm','fm_beta',
+    'pm_prf','pm_fm','pm_levels',
+    'fs','t_end','snr_db'
+  ].forEach(id=>{
+    const el = $(id); if (el) {
+      el.addEventListener('input', ()=>{ setLabel(id); plotMod(); plotDemod(); });
+    }
   });
-  
+
+  $('snr_toggle').addEventListener('change', ()=>{ plotMod(); });
+  $('show_spectrum').addEventListener('change', ()=>{ plotMod(); plotDemod(); });
+
+  loadPresets();
+  $('preset').addEventListener('change', applyPreset);
+
+  updateModControls();
+  plotMod();
+  plotDemod();
+
+  // ensure reflow in tight layouts
+  window.addEventListener('resize', () => {
+    Plotly.Plots.resize('mod_plot');
+    Plotly.Plots.resize('demod_plot');
+    Plotly.Plots.resize('spec_plot');
+    Plotly.Plots.resize('spec_demod_plot');
+  });
+});
