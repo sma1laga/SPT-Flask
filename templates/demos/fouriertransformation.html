@@ -4,18 +4,23 @@
 <p>This interactive page draws the continuous-time signal \(x(t)\) and its Fourier transform \(X(j\omega)\): magnitude \(|X(j\omega)|\) and phase \(\phi(j\omega)\). Choose the signal, displacement, time-scale (width), and amplitude.</p>
 
 <style>
-  /* Compact, single-row controls that wrap gracefully on small screens */
+  .page-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 32px;
+  }
+
+  /* Compact controls that keep label/input pairs aligned */
   .toolbar {
     display: grid;
-    grid-template-columns: repeat(8, minmax(90px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 16px;
     align-items: end;
   }
-  @media (max-width: 1100px) {
-    .toolbar { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
-  }
-  @media (max-width: 700px) {
-    .toolbar { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+
+  .toolbar > div {
+    display: flex;
+    flex-direction: column;
   }
 
   .card {
@@ -32,7 +37,7 @@
     transform: none;
     box-shadow: 0 1px 5px rgba(0,0,0,.05);
   }
-  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
+  label { font-weight: 600; display: inline-block; margin-bottom: 6px; }
   select, input[type=number] {
     width: 100%;
     padding: 7px 8px;
@@ -49,51 +54,53 @@
   #plot { width: 100%; height: auto; display: block; }
 </style>
 
-<div class="card">
-  <div class="toolbar">
-    <div>
-      <label for="x_type">x(t)</label>
-      <select id="x_type">
-        <option value="rect" {% if defaults.x_type=='rect' %}selected{% endif %}>rectangle</option>
-        <option value="triangle" {% if defaults.x_type=='triangle' %}selected{% endif %}>triangle</option>
-        <option value="si" {% if defaults.x_type=='si' %}selected{% endif %}>si</option>
-        <option value="si squared" {% if defaults.x_type=='si squared' %}selected{% endif %}>si²</option>
-      </select>
-    </div>
+<div class="page-wrap">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <label for="x_type">x(t)</label>
+        <select id="x_type">
+          <option value="rect" {% if defaults.x_type=='rect' %}selected{% endif %}>rectangle</option>
+          <option value="triangle" {% if defaults.x_type=='triangle' %}selected{% endif %}>triangle</option>
+          <option value="si" {% if defaults.x_type=='si' %}selected{% endif %}>si</option>
+          <option value="si squared" {% if defaults.x_type=='si squared' %}selected{% endif %}>si²</option>
+        </select>
+      </div>
 
-    <div>
-      <label for="x_displacement">Displacement t₀</label>
-      <input id="x_displacement" type="number"
-             step="{{ defaults.step_displacement }}"
-             min="{{ defaults.min_displacement }}" max="{{ defaults.max_displacement }}"
-             value="{{ defaults.x_displacement }}">
-    </div>
+      <div>
+        <label for="x_displacement">Displacement t₀</label>
+        <input id="x_displacement" type="number"
+               step="{{ defaults.step_displacement }}"
+               min="{{ defaults.min_displacement }}" max="{{ defaults.max_displacement }}"
+               value="{{ defaults.x_displacement }}">
+      </div>
 
-    <div>
-      <label for="x_width">Time-scale / width</label>
-      <input id="x_width" type="number"
-             step="{{ defaults.step_width }}"
-             min="{{ defaults.min_width }}" max="{{ defaults.max_width }}"
-             value="{{ defaults.x_width }}">
-    </div>
+      <div>
+        <label for="x_width">Time-scale / width</label>
+        <input id="x_width" type="number"
+               step="{{ defaults.step_width }}"
+               min="{{ defaults.min_width }}" max="{{ defaults.max_width }}"
+               value="{{ defaults.x_width }}">
+      </div>
 
-    <div>
-      <label for="x_height">Amplitude</label>
-      <input id="x_height" type="number"
-             step="{{ defaults.step_height }}"
-             min="{{ defaults.min_height }}" max="{{ defaults.max_height }}"
-             value="{{ defaults.x_height }}">
-    </div>
+      <div>
+        <label for="x_height">Amplitude</label>
+        <input id="x_height" type="number"
+               step="{{ defaults.step_height }}"
+               min="{{ defaults.min_height }}" max="{{ defaults.max_height }}"
+               value="{{ defaults.x_height }}">
+      </div>
 
-    <div class="actions">
-      <button id="run">Update</button>
-      <button id="reset" type="button">Reset</button>
+      <div class="actions">
+        <button id="run">Update</button>
+        <button id="reset" type="button">Reset</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <img id="plot" alt="Fourier transform plots">
+  <div class="card">
+    <img id="plot" alt="Fourier transform plots">
+  </div>
 </div>
 
 <script>
