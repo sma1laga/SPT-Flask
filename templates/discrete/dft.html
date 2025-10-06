@@ -62,6 +62,11 @@
     <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
     <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
+  <!-- ACTION BUTTONS --------------------------------------------- -->
+  <div style="display:flex;gap:10px;justify-content:center;margin-bottom:26px;">
+    <button id="computeBtn" type="button" class="action-btn green">Compute</button>
+    <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
+  </div>
 
   <!-- 3 SHIFTERS -------------------------------------------------- -->
   <fieldset class="transform-box" style="margin-bottom:24px;">
@@ -80,11 +85,6 @@
     </div>
   </fieldset>
 
-  <!-- ACTION BUTTONS --------------------------------------------- -->
-  <div style="margin-bottom:26px;">
-    <button id="computeBtn" type="button" class="action-btn green">Compute</button>
-    <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
-  </div>
 </form>
 
 <!-- PLOTLY PANELS ------------------------------------------------ -->

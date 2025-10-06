@@ -90,11 +90,18 @@
       </optgroup>
     </select>
   </div>
+  <!-- ACTION BUTTONS --------------------------------------------- -->
+  <div style="margin-top:24px;margin-bottom:28px;">
+    <button id="computeBtn" type="button" class="action-btn green">Compute</button>
+    <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
+  </div>
 
   <!-- TWO GROUPS OF SLIDERS -------------------------------------- -->
   <div class="transform-wrapper">
     <!-- f₁ controls -->
     <fieldset class="transform-box">
+      <button type="button" class="reset-transform" data-group="1"
+              title="Reset f₁ controls" aria-label="Reset f₁ controls">↺</button>
       <legend style="color:#1f77b4;">\(f_1\)</legend>
       <div class="slider-row"><label>Shift</label><input id="shift1" type="range" min="-20" max="20" step="0.1" value="0"><span></span></div>
       <div class="slider-row"><label>Amplitude</label><input id="amp1"   type="range" min="0.1" max="5"  step="0.1" value="1"><span></span></div>
@@ -103,6 +110,8 @@
 
     <!-- f₂ controls -->
     <fieldset class="transform-box">
+      <button type="button" class="reset-transform" data-group="2"
+              title="Reset f₂ controls" aria-label="Reset f₂ controls">↺</button>
       <legend style="color:#ff7f0e;">\(f_2\)</legend>
       <div class="slider-row"><label>Shift</label><input id="shift2" type="range" min="-10" max="10" step="0.1" value="0"><span></span></div>
       <div class="slider-row"><label>Amplitude</label><input id="amp2"   type="range" min="0.1" max="5"  step="0.1" value="1"><span></span></div>
@@ -110,11 +119,6 @@
     </fieldset>
   </div>
 
-  <!-- ACTION BUTTONS --------------------------------------------- -->
-  <div style="margin-top:24px;margin-bottom:28px;">
-    <button id="computeBtn" type="button" class="action-btn green">Compute</button>
-    <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
-  </div>
 </form>
 
 <!-- PLOT ---------------------------------------------------------- -->
@@ -172,9 +176,24 @@
   sliderIds.forEach(id=>{
     const slider = document.getElementById(id);
     const label  = slider.nextElementSibling; // <span>
+    slider.dataset.default = slider.value;
     label.textContent = parseFloat(slider.value).toFixed(1);
     slider.addEventListener("input", ()=>{
       label.textContent = parseFloat(slider.value).toFixed(1);
+      updatePlots();
+    });
+  });
+  document.querySelectorAll('.reset-transform').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const group = btn.dataset.group;
+      ['shift','amp','width'].forEach(prefix=>{
+        const id = `${prefix}${group}`;
+        const slider = document.getElementById(id);
+        if(!slider) return;
+        const defaultVal = slider.dataset.default ?? slider.getAttribute('value') ?? ((prefix === 'amp' || prefix === 'width') ? '1' : '0');
+        slider.value = defaultVal;
+        slider.nextElementSibling.textContent = parseFloat(defaultVal).toFixed(1);
+      });
       updatePlots();
     });
   });
@@ -262,8 +281,15 @@
   }
   .transform-box{
     border:1px solid #d9dee3;border-radius:8px;padding:16px 22px;min-width:260px;
-    background:#f8fafc;
+    background:#f8fafc;position:relative;
   }
+  .reset-transform{
+    position:absolute;top:-5px;right:22px;width:22px;height:22px;border:none;
+    border-radius:50%;background:#2563eb;color:#fff;font-size:12px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    opacity:0.75;transition:opacity .15s,background-color .15s;
+  }
+  .reset-transform:hover{opacity:1;background:#1d4ed8;}
   .slider-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
   .slider-row label{width:90px;text-align:right;font-weight:600;}
   .slider-row span{
@@ -287,6 +313,11 @@
     background:#1f1f1f;
     border-color:#444;
   }
+  body.dark-mode .reset-transform{
+    background:#3b82f6;
+    color:#e8edff;
+  }
+  body.dark-mode .reset-transform:hover{background:#2563eb;}
   body.dark-mode .slider-row span{
     background:#333;
     border-color:#555;
