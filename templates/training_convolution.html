@@ -17,6 +17,10 @@
     <button id="generateBtn" class="action-btn">Generate Problem</button>
   </div>
 
+  <p style="text-align: center; color: var(--subtext-color); margin-top: -10px; margin-bottom: 30px;">
+    Tip: You can select \(y_1(t)\)–\(y_4(t)\) with the <strong>1</strong>–<strong>4</strong> keys and load the next plot with the <strong>spacebar</strong>.
+  </p>
+
 <!-- Plot Container -->
 <div class="plot-container" style="text-align: center; margin-bottom: 20px;">
   <div id="plotWrap" class="plot-wrap" style="position:relative; display:inline-block;">
@@ -109,6 +113,33 @@
   });
 
   document.getElementById('nextBtn').addEventListener('click', onNextProblemClick);
+
+  // Keyboard controls
+  let lastSpaceActivation = 0;
+  document.addEventListener('keydown', (event) => {
+    const tag = (event.target && event.target.tagName) ? event.target.tagName.toUpperCase() : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    if (event.key >= '1' && event.key <= '4') {
+      event.preventDefault();
+      const idx = parseInt(event.key, 10) - 1;
+      checkAnswer(idx);
+      return;
+    }
+
+    if (event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      const now = Date.now();
+      // safety feature for double space in 1 sec
+      if (now - lastSpaceActivation < 1000) return;
+      lastSpaceActivation = now;
+
+      const nextBtn = document.getElementById('nextBtn');
+      if (nextBtn && nextBtn.style.display !== 'none') {
+        onNextProblemClick();
+      }
+    }
+  });
 
   // Destroy cache when difficulty changes (user did something else)
   document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
