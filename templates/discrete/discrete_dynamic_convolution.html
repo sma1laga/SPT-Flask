@@ -34,6 +34,17 @@
 
 <div style="max-width: 650px; margin: auto;">
   <canvas id="topChart" height="200" style="width:100%; border:1px solid #ccc; border-radius:4px;"></canvas>
+  <div id="inline-slider-wrapper" style="display:flex; justify-content:center; align-items:center; margin:0.35em 0;">
+    <input
+      type="range"
+      id="tauSliderInline"
+      min="-10"
+      max="10"
+      step="1"
+      value="0"
+      style="width:65%; max-width:350px; height:4px;"
+    >
+  </div>
   <canvas id="bottomChart" height="150" style="width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></canvas>
 </div>
 
@@ -45,6 +56,14 @@ let kExt = [], y1DataExt = [], y2DataExt = [];
 let topChart, bottomChart;
 function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
 
+const tauSlider       = document.getElementById('tauSlider');
+const tauSliderInline = document.getElementById('tauSliderInline');
+
+function syncTau(value, origin){
+  if(origin !== tauSlider)       tauSlider.value = value;
+  if(origin !== tauSliderInline) tauSliderInline.value = value;
+  updatePlots();
+}
 
 function initCharts(){
   if(topChart) topChart.destroy();
@@ -102,7 +121,7 @@ function fetchData(){
 }
 
 function updatePlots(){
-  const τ = parseInt(document.getElementById('tauSlider').value);
+  const τ = parseInt(tauSlider.value);
   document.getElementById('tauValue').textContent = τ;
 
   // Shifted h[k] lookup using extended domain to avoid edge truncation
@@ -127,7 +146,8 @@ function updatePlots(){
 window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('func1').onchange = fetchData;
   document.getElementById('func2').onchange = fetchData;
-  document.getElementById('tauSlider').oninput = updatePlots;
+  tauSlider.oninput       = (e) => syncTau(e.target.value, tauSlider);
+  tauSliderInline.oninput = (e) => syncTau(e.target.value, tauSliderInline);
   initCharts();
 });
 </script>
