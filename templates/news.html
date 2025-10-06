@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container" style="padding: 20px; max-width: 900px; margin: auto;">
-  <header style="margin-bottom: 2.5rem; text-align: center;">
-    <h1 style="margin-bottom: 0.5rem;">Release News</h1>
-    <p style="color: #4b5563;">Stay informed about the latest updates to the Signal Processing Toolkit.</p>
+<div class="news-page">
+  <header class="news-header">
+    <h1>Release News</h1>
+    <p>Stay informed about the latest updates to the Signal Processing Toolkit.</p>
   </header>
 
-  <section aria-label="Release timeline">
+  <section aria-label="Release timeline" class="news-timeline">
     {% for release in releases %}
-      <article style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; background: #ffffff; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);">
-        <header style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem; align-items: baseline; margin-bottom: 1rem;">
+      <article class="news-card">
+        <header class="news-card__header">
           <div>
-            <h2 style="margin: 0; font-size: 1.5rem;">Version {{ release.version }}</h2>
+            <h2>Version {{ release.version }}</h2>
             {% if release.codename %}
-              <p style="margin: 0; color: #6b7280; font-weight: 500;">Codename: {{ release.codename }}</p>
+              <p class="news-card__codename">Codename: {{ release.codename }}</p>
             {% endif %}
           </div>
-          <time datetime="{{ release.date }}" style="color: #2563eb; font-weight: 600;">{{ release.date }}</time>
+          <time datetime="{{ release.date }}">{{ release.date }}</time>
         </header>
-        <ul style="margin: 0; padding-left: 1.25rem; color: #1f2937;">
+        <ul>
           {% for highlight in release.highlights %}
-            <li style="margin-bottom: 0.5rem;">{{ highlight }}</li>
+            <li>{{ highlight }}</li>
           {% endfor %}
         </ul>
       </article>
