@@ -201,7 +201,7 @@
     })();
   </script>
 
-  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+  <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modulation.js') }}"></script>
   <script src="{{ url_for('static', filename='js/digital_modulation.js') }}"></script>
 {% endblock %}
