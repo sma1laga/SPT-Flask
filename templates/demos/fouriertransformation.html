@@ -18,7 +18,7 @@
     align-items: end;
   }
 
-  .toolbar > div {
+  .toolbar > div:not(.actions) {
     display: flex;
     flex-direction: column;
   }
@@ -45,7 +45,12 @@
     border-radius: 8px;
     background: var(--control-bg, #fff);
   }
-  .actions { display:flex; gap:8px; }
+  .toolbar > .actions {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: stretch;
+  }
   .actions button {
     white-space: nowrap;
     flex: 1;
