@@ -499,12 +499,12 @@ body.colorblind-mode a {
 /* Base Dark Mode Overrides */
 /* ------------------------ */
   body.dark-mode {
-      background-color: #121212;
+      background-color: #1a1f27;
       color: #f5f5f5;
       --text-color: #f5f5f5;
-      --subtext-color: #bbbbbb;
-      --border-color: #333;
-      --card-background: #232323;
+      --subtext-color: #c2c9d1;
+      --border-color: #3a4250;
+      --card-background: #262d37;
       --header-bg: rgba(18, 57, 128, 0.9);
       --header-highlight: linear-gradient(120deg, rgba(79, 135, 232, 0.4), rgba(59, 130, 246, 0.22));
       --header-border: rgba(96, 165, 250, 0.38);
@@ -516,7 +516,7 @@ body.colorblind-mode a {
   
   /* Outer Wrapper */
   body.dark-mode .outer-wrapper {
-    background-color: #181818; /* Match your dark background */
+    background-color: #202633; /* Slightly lighter to reduce contrast fatigue */
     box-shadow: none;          /* Remove the white shadow effect */
   }
   
@@ -549,7 +549,7 @@ body.colorblind-mode a {
   
   /* Sidebar */
   body.dark-mode .modern-sidebar {
-    background: linear-gradient(160deg, rgba(22, 29, 41, 0.96) 0%, rgba(16, 22, 33, 0.96) 100%);
+    background: linear-gradient(160deg, rgba(28, 36, 52, 0.94) 0%, rgba(20, 27, 39, 0.94) 100%);
     border-color: rgba(130, 170, 255, 0.18);
     color: #f5f5f5;
     box-shadow: 0 5px 14px rgba(2, 6, 16, 0.4);
@@ -574,38 +574,38 @@ body.colorblind-mode a {
   }
   body.dark-mode .modern-sidebar ul.sidebar-menu li a:hover {
     color: #b9d1ff;
-    background-color: rgba(96, 168, 255, 0.16);
-    border-left-color: rgba(96, 168, 255, 0.38);
+    background-color: rgba(96, 168, 255, 0.2);
+    border-left-color: rgba(96, 168, 255, 0.42);
   }
   body.dark-mode .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
-    color: #e2efff;
-    border-left-color: #6ea8ff;
-    background-color: rgba(110, 168, 255, 0.28);
-    box-shadow: 0 10px 24px rgba(16, 74, 168, 0.32);
-    text-shadow: 0 0 2px rgba(110, 168, 255, 0.45);
-  } 
+    color: #e8f2ff;
+    border-left-color: #76afff;
+    background-color: rgba(110, 168, 255, 0.32);
+    box-shadow: 0 10px 24px rgba(16, 74, 168, 0.3);
+    text-shadow: 0 0 2px rgba(110, 168, 255, 0.42);
+  }
   /* Hero Section */
   body.dark-mode .hero {
-    background-color: #1f1f1f;
+    background-color: #242b36;
     color: #f5f5f5;
   }
   
   /* Cards on the Home Page (or anywhere else) */
   body.dark-mode .card {
-    background-color: #232323;  /* Dark gray for cards */
-    border: 1px solid #444;     /* Subtle border to separate from background */
+    background-color: #2a313d;  /* Slightly lighter gray for cards */
+    border: 1px solid #465066;     /* Subtle border to separate from background */
     color: #f5f5f5;
   }
   body.dark-mode .card a {
     color: #82aaff;             /* Consistent link color */
   }
   body.dark-mode .card a:hover {
-    background-color: #2a2a2a;
+    background-color: #323a48;
   }
   
   /* Footer */
   body.dark-mode .footer {
-    background-color: #1f1f1f;
+    background-color: #242b36;
     color: #f5f5f5;
   }
   
