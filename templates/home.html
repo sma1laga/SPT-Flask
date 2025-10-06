@@ -288,7 +288,7 @@
     </div>
 
     <div class="card">
-      <span class="card-label"><i class="fa-solid fa-lightbulb"></i> Discover &amp; Share</span>
+      <span class="card-label"><i class="fa-solid fa-lightbulb"></i> Interactive Demos</span>
       <h3>Theory &amp; demos</h3>
 
       <ul class="link-list">
@@ -302,40 +302,35 @@
 <section class="menu-section">
   <div class="section-header">
     <h2>Explore discrete modules</h2>
-    <p>Dive deep into sampling, transforms, and sequence analysis with purpose-built modules.</p>
+    <p>Dive into sampling, transforms, and sequence analysis with purpose-built modules.</p>
   </div>
 
   <div class="module-grid">
     <div class="card discrete-card">
-      <span class="card-label"><i class="fa-solid fa-chart-line"></i> Frequency intuition</span>
-      <h3>Discrete Fourier Explorer</h3>
-      <p class="card-description">
-        Move between DFT, DTFT, and Z-domain views to understand spectra from every angle.
-      </p>
+      <span class="card-label"><i class="fa-solid fa-chart-line"></i> Plot and Transform</span>
+      <h3>Plots and Transforms</h3>
       <ul class="link-list">
+        <li><a href="{{ url_for('discrete_plot_functions.plot_functions') }}">Discrete function plotter</a></li>
+        <li><a href="{{ url_for('transform_intuition.transform_intuition') }}">Transform intuition</a></li>
         <li><a href="{{ url_for('discrete_fourier.show_dft') }}">Launch the DFT explorer</a></li>
       </ul>
     </div>
 
     <div class="card discrete-card">
       <span class="card-label"><i class="fa-solid fa-arrows-spin"></i> Sequence design</span>
-      <h3>Convolution Studio</h3>
-      <p class="card-description">
-        Compose, align, and blend discrete signals while visualising every intermediate step.
-      </p>
+      <h3>Convolution</h3>
       <ul class="link-list">
-        <li><a href="{{ url_for('discrete_convolution.discrete_convolution') }}">Open discrete convolution</a></li>
+        <li><a href="{{ url_for('discrete_convolution.discrete_convolution') }}">Discrete convolution</a></li>
+        <li><a href="{{ url_for('discrete_dynamic_convolution.index') }}">Dynamic convolution</a></li>
       </ul>
     </div>
 
     <div class="card discrete-card">
       <span class="card-label"><i class="fa-solid fa-burst"></i> Pattern insight</span>
       <h3>Autocorrelation Lab</h3>
-      <p class="card-description">
-        Detect periodicity and correlation strength with guided overlays and exportable results.
-      </p>
+
       <ul class="link-list">
-        <li><a href="{{ url_for('discrete_autocorrelation.discrete_autocorrelation') }}">Analyse autocorrelation</a></li>
+        <li><a href="{{ url_for('discrete_autocorrelation.discrete_autocorrelation') }}">Autocorrelation</a></li>
       </ul>
     </div>
   </div>
