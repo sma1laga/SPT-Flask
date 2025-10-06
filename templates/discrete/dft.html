@@ -70,6 +70,8 @@
 
   <!-- 3 SHIFTERS -------------------------------------------------- -->
   <fieldset class="transform-box" style="margin-bottom:24px;">
+    <button type="button" class="reset-transform" data-group=""
+            title="Reset transform controls" aria-label="Reset transform controls">↺</button>
     <legend style="font-weight:600;">Transform Controls</legend>
     <div class="slider-row">
       <label>Shift (←/→)</label>
@@ -112,8 +114,23 @@ function insertOperand(op){
 ["shift","amp","width"].forEach(id=>{
   const s   = document.getElementById(id);
   const val = s.nextElementSibling;
+  s.dataset.default = s.value;
   val.textContent = parseFloat(s.value).toFixed(1);
   s.addEventListener("input", ()=>{ val.textContent = parseFloat(s.value).toFixed(1); updatePlots(); });
+});
+document.querySelectorAll('.reset-transform').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const group = btn.dataset.group || '';
+    ['shift','amp','width'].forEach(prefix=>{
+      const id = `${prefix}${group}`;
+      const slider = document.getElementById(id);
+      if(!slider) return;
+      const defaultVal = slider.dataset.default ?? slider.getAttribute('value') ?? ((prefix === 'amp' || prefix === 'width') ? '1' : '0');
+      slider.value = defaultVal;
+      slider.nextElementSibling.textContent = parseFloat(slider.value).toFixed(1);
+    });
+    updatePlots();
+  });
 });
 
 /* helpers ------------------------------------------------------- */
@@ -221,7 +238,17 @@ document.addEventListener("DOMContentLoaded", updatePlots);
     cursor:pointer;display:inline-block;text-decoration:none;
   }  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
   .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
-  fieldset{ border:1px solid #d9dee3;border-radius:8px;padding:14px 20px;background:#f8fafc; }
+  .transform-box{
+    border:1px solid #d9dee3;border-radius:8px;padding:16px 22px;background:#f8fafc;
+    position:relative;max-width:420px;margin:0 auto;
+  }
+  .reset-transform{
+    position:absolute;top:-5px;right:22px;width:22px;height:22px;border:none;
+    border-radius:50%;background:#2563eb;color:#fff;font-size:12px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    opacity:0.75;transition:opacity .15s,background-color .15s;
+  }
+  .reset-transform:hover{opacity:1;background:#1d4ed8;}
   .slider-row{ display:flex;align-items:center;gap:10px;margin-top:8px; }
   .slider-row label{ width:100px;text-align:right;font-weight:600; }
   .slider-row span{ width:46px;text-align:center;border:1px solid #ccd0d5;border-radius:4px;background:#fff; }
@@ -239,6 +266,11 @@ document.addEventListener("DOMContentLoaded", updatePlots);
     background:#1f1f1f;
     border-color:#444;
   }
+  body.dark-mode .reset-transform{
+    background:#3b82f6;
+    color:#e8edff;
+  }
+  body.dark-mode .reset-transform:hover{background:#2563eb;}
   body.dark-mode .slider-row span{
     background:#333;
     border-color:#555;

@@ -69,7 +69,10 @@
   <!-- TWO SHIFTER GROUPS ----------------------------------------- -->
   <div class="transform-wrapper">
     <!-- f1 -->
-    <fieldset class="transform-box"><legend style="color:#1f77b4;">\(f_1\)</legend>
+    <fieldset class="transform-box">
+      <button type="button" class="reset-transform" data-group="1"
+              title="Reset f₁ controls" aria-label="Reset f₁ controls">↺</button>
+      <legend style="color:#1f77b4;">\(f_1\)</legend>
       {% for name in ['shift','amp','width'] %}
         <div class="slider-row">
           <label>{{ name|capitalize }}</label>
@@ -83,7 +86,10 @@
     </fieldset>
 
     <!-- f2 -->
-    <fieldset class="transform-box"><legend style="color:#ff7f0e;">\(f_2\)</legend>
+    <fieldset class="transform-box">
+      <button type="button" class="reset-transform" data-group="2"
+              title="Reset f₂ controls" aria-label="Reset f₂ controls">↺</button>
+      <legend style="color:#ff7f0e;">\(f_2\)</legend>
       {% for name in ['shift','amp','width'] %}
         <div class="slider-row">
           <label>{{ name|capitalize }}</label>
@@ -126,8 +132,23 @@
   sliderIds.forEach(id=>{
     const s = document.getElementById(id);
     const span = s.nextElementSibling;
+    s.dataset.default = s.value;
     span.textContent = parseFloat(s.value).toFixed(1);
     s.addEventListener("input", ()=>{ span.textContent = parseFloat(s.value).toFixed(1); updatePlots(); });
+  });
+  document.querySelectorAll('.reset-transform').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const group = btn.dataset.group || '';
+      ['shift','amp','width'].forEach(prefix=>{
+        const id = `${prefix}${group}`;
+        const slider = document.getElementById(id);
+        if(!slider) return;
+        const defaultVal = slider.dataset.default ?? slider.getAttribute('value') ?? ((prefix === 'amp' || prefix === 'width') ? '1' : '0');
+        slider.value = defaultVal;
+        slider.nextElementSibling.textContent = parseFloat(slider.value).toFixed(1);
+      });
+      updatePlots();
+    });
   });
 
 
@@ -207,7 +228,20 @@
   .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
   .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
 
-  fieldset{ border:1px solid #d9dee3;border-radius:8px;padding:14px 20px;background:#f8fafc; }
+  .transform-wrapper{
+    display:flex;flex-wrap:wrap;gap:18px;justify-content:center;
+  }
+  .transform-box{
+    border:1px solid #d9dee3;border-radius:8px;padding:16px 22px;min-width:260px;
+    background:#f8fafc;position:relative;
+  }
+  .reset-transform{
+    position:absolute;top:-5px;right:22px;width:22px;height:22px;border:none;
+    border-radius:50%;background:#2563eb;color:#fff;font-size:12px;line-height:1;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    opacity:0.75;transition:opacity .15s,background-color .15s;
+  }
+  .reset-transform:hover{opacity:1;background:#1d4ed8;}
   .slider-row{ display:flex;align-items:center;gap:10px;margin-top:8px; }
   .slider-row label{ width:80px;text-align:right;font-weight:600; }
   .slider-row span{ width:46px;text-align:center;border:1px solid #ccd0d5;border-radius:4px;background:#fff; }
@@ -221,10 +255,15 @@
     color:#f5f5f5;
     border-color:#555;
   }
-  body.dark-mode fieldset{
+  body.dark-mode .transform-box{
     background:#1f1f1f;
     border-color:#444;
   }
+  body.dark-mode .reset-transform{
+    background:#3b82f6;
+    color:#e8edff;
+  }
+  body.dark-mode .reset-transform:hover{background:#2563eb;}
   body.dark-mode .slider-row span{
     background:#333;
     border-color:#555;
