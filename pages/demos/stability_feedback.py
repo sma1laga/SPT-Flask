@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from utils.img import fig_to_base64
 
 RC_PARAMS = {
-    "savefig.bbox": "tight",
+    # "savefig.bbox": "tight",
     "axes.titlesize": 24,
     "axes.labelsize": 22,
     "font.size": 20,
@@ -55,7 +55,7 @@ def _draw_axes(ax):
     ax.set_xticks(XTICKS_MAJOR); ax.set_yticks(YTICKS_MAJOR)
     ax.set_xticks(XTICKS_MINOR, minor=True); ax.set_yticks(YTICKS_MINOR, minor=True)
     ax.grid(True, which="major", linewidth=1.0, alpha=0.55)
-    ax.grid(True, which="minor", linewidth=0.4, alpha=0.25)
+    # ax.grid(True, which="minor", linewidth=0.4, alpha=0.25)
     ax.set_xlabel(r"Re$\{s\}$"); ax.set_ylabel(r"Im$\{s\}$")
 
 def _fig_to_svg_data_url(fig) -> str:
@@ -74,7 +74,10 @@ def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
     p_H = a
     p_Q = a - K*b
     with plt.rc_context(RC_PARAMS):
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20.0, 8.5), layout="constrained")
+        # was: figsize=(20.0, 8.5), layout="constrained"
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16.0, 6.5), constrained_layout=False)
+        fig.subplots_adjust(left=0.06, right=0.99, bottom=0.08, top=0.90, wspace=0.28)
+
         ax1.set_title(r"$H(s)=\dfrac{b}{s-a}$")
         ax1.set_facecolor(_bg_for_stability(p_H))
         _draw_axes(ax1)
@@ -89,6 +92,7 @@ def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
 
         img = _fig_to_svg_data_url(fig)
     return img
+
 
 # cache for defaults
 try:

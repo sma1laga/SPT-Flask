@@ -56,10 +56,11 @@
 </div>
 
 <div class="plots">
-  <img id="plot" alt="Pole diagrams of H(s) and Q(s)">
+  <img id="plot" alt="Pole diagrams of H(s) and Q(s)" decoding="async" loading="eager">
 </div>
 
 <script>
+  const DEFAULTS = {{ defaults | tojson }};
   const $ = (id) => document.getElementById(id);
 
   let inFlight = null;
@@ -108,6 +109,11 @@
   });
 
   window.addEventListener("load", send);
+  
+  $("reset").addEventListener("click", () => {
+    ["a","b","K"].forEach(id => { $(id).value = DEFAULTS[id]; });
+    send();
+  });
 </script>
 
 {% endblock %}
