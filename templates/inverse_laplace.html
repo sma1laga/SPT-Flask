@@ -41,7 +41,10 @@
       <label><input type="radio" name="response_type" value="step"> Step response</label>
     </fieldset>
 
-    <button type="submit" class="compute-btn">Compute</button>
+    <div class="button-group">
+      <button type="submit" class="compute-btn">Compute</button>
+      <button type="button" class="clear-btn" id="clear-btn">Clear</button>
+    </div>
     {% if error %}
       <div class="text-red-600 mt-2">{{ error }}</div>
     {% endif %}
@@ -79,5 +82,17 @@
       document.getElementById('denominator').value = den;
     });
   });
+
+  const clearBtn = document.getElementById('clear-btn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      document.getElementById('numerator').value = '';
+      document.getElementById('denominator').value = '';
+      const impulseRadio = document.querySelector('input[name="response_type"][value="impulse"]');
+      if (impulseRadio) {
+        impulseRadio.checked = true;
+      }
+    });
+  }
 </script>
 {% endblock %}

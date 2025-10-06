@@ -45,17 +45,31 @@
   gap: 1rem;
   justify-content: center;
 }
-.inverse-laplace-container .compute-btn {
+.inverse-laplace-container .button-group {
   margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.inverse-laplace-container .compute-btn,
+.inverse-laplace-container .clear-btn {
   padding: 6px 16px;
-  background: var(--primary-color, #007acc);
-  color: #fff;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  color: #fff;
+}
+.inverse-laplace-container .compute-btn {
+  background: var(--primary-color, #007acc);
 }
 .inverse-laplace-container .compute-btn:hover {
   background: #005fa3;
+}
+.inverse-laplace-container .clear-btn {
+  background: #3399ff;
+}
+.inverse-laplace-container .clear-btn:hover {
+  background: #267fcc;
 }
 .result {
   text-align: center;
