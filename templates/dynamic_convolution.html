@@ -40,6 +40,17 @@
   <!-- Plots -->
   <div id="dynamic-plot-wrapper" style="max-width: 650px; margin: auto;">
     <canvas id="topChart" height="150" style="width: 100%; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
+    <div id="inline-slider-wrapper" style="display: flex; justify-content: center; align-items: center; margin: 0.35em 0;">
+      <input
+        type="range"
+        id="tauSliderInline"
+        min="-3.5"
+        max="3.5"
+        step="0.1"
+        value="0"
+        style="width: 65%; max-width: 350px; height: 4px;"
+      >
+    </div>
     <canvas id="bottomChart" height="150" style="width: 100%; margin-top: 1em; display: block; border: 1px solid #ccd0d5; border-radius: 4px;"></canvas>
   </div>
 
@@ -129,9 +140,19 @@
       bottomChart.update();
     }
 
-    document.getElementById("func1").onchange   = fetchData;
-    document.getElementById("func2").onchange   = fetchData;
-    document.getElementById("tauSlider").oninput = updatePlots;
+    const tauSlider        = document.getElementById("tauSlider");
+    const tauSliderInline  = document.getElementById("tauSliderInline");
+
+    function syncTau(value, origin){
+      if(origin !== tauSlider)       tauSlider.value = value;
+      if(origin !== tauSliderInline) tauSliderInline.value = value;
+      updatePlots();
+    }
+
+    document.getElementById("func1").onchange = fetchData;
+    document.getElementById("func2").onchange = fetchData;
+    tauSlider.oninput       = (e) => syncTau(e.target.value, tauSlider);
+    tauSliderInline.oninput = (e) => syncTau(e.target.value, tauSliderInline);
 
     initCharts();
   </script>
