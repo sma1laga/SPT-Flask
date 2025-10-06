@@ -76,8 +76,7 @@ def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
     with plt.rc_context(RC_PARAMS):
         # was: figsize=(20.0, 8.5), layout="constrained"
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16.0, 6.5), constrained_layout=False)
-        fig.subplots_adjust(left=0.06, right=0.99, bottom=0.08, top=0.90, wspace=0.28)
-
+        fig.subplots_adjust(left=0.07, right=0.99, bottom=0.16, top=0.92, wspace=0.28)
         ax1.set_title(r"$H(s)=\dfrac{b}{s-a}$")
         ax1.set_facecolor(_bg_for_stability(p_H))
         _draw_axes(ax1)
