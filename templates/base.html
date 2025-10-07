@@ -626,7 +626,7 @@
     }
   </style>
 </head>
-<body>
+<body{% if is_sisy2|default(false) %} class="sisy2-page"{% endif %}>
   <div class="outer-wrapper">
     <!-- HEADER -->
     <div class="header">

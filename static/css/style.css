@@ -462,7 +462,16 @@ body.colorblind-mode a {
     transform: translateY(-5px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   }
-  
+ 
+  /* Disable hover pop-out for SiSy II demo pages */
+  body.sisy2-page .card {
+    transition: none;
+  }
+
+  body.sisy2-page .card:hover {
+    transform: none;
+    box-shadow: var(--sisy2-card-shadow, var(--box-shadow));
+  } 
   /* Hero Section */
   .hero {
     text-align: center;
