@@ -2,24 +2,44 @@
 document.addEventListener("DOMContentLoaded", function() {
   const darkModeToggle = document.getElementById("dark-mode-toggle");
   const colorblindToggle = document.getElementById("colorblind-mode-toggle");
+  const cookieMaxAge = 60 * 60 * 24 * 365; // one year
+
+  const getCookie = (name) => {
+    const cookieString = `; ${document.cookie}`;
+    const parts = cookieString.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop().split(";").shift();
+    }
+    return null;
+  };
+
+  const applyDarkModePreference = (isEnabled) => {
+    document.body.classList.toggle("dark-mode", isEnabled);
+    localStorage.setItem("darkMode", isEnabled ? "true" : "false");
+    document.cookie = `darkMode=${isEnabled ? "true" : "false"}; path=/; max-age=${cookieMaxAge}; SameSite=Lax`;
+    if (darkModeToggle) {
+      darkModeToggle.textContent = isEnabled ? "Light Mode" : "Dark Mode";
+    }
+  };
+
+  let isDarkMode = document.body.classList.contains("dark-mode");
+  const storedPreference = localStorage.getItem("darkMode");
+  if (storedPreference !== null) {
+    isDarkMode = storedPreference === "true";
+  } else {
+    const cookiePreference = getCookie("darkMode");
+    if (cookiePreference !== null) {
+      isDarkMode = cookiePreference === "true";
+    }
+  }
+
+  applyDarkModePreference(isDarkMode);
   if (darkModeToggle) {
     darkModeToggle.addEventListener("click", function() {
-      document.body.classList.toggle("dark-mode");
-      // Save the preference in local storage
-      if (document.body.classList.contains("dark-mode")) {
-        localStorage.setItem("darkMode", "true");
-        darkModeToggle.textContent = "Light Mode";
-      } else {
-        localStorage.setItem("darkMode", "false");
-        darkModeToggle.textContent = "Dark Mode";
-      }
+      applyDarkModePreference(!document.body.classList.contains("dark-mode"));
+
     });
-  
-    // On page load, check local storage for dark mode preference
-    if (localStorage.getItem("darkMode") === "true") {
-      document.body.classList.add("dark-mode");
-      darkModeToggle.textContent = "Light Mode";
-    }
+
   }
 
   if (colorblindToggle) {

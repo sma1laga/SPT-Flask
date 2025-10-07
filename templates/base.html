@@ -626,7 +626,14 @@
     }
   </style>
 </head>
-<body{% if is_sisy2|default(false) %} class="sisy2-page"{% endif %}>
+{% set body_classes = [] %}
+{% if is_sisy2|default(false) %}
+  {% set _ = body_classes.append('sisy2-page') %}
+{% endif %}
+{% if request.cookies.get('darkMode') == 'true' %}
+  {% set _ = body_classes.append('dark-mode') %}
+{% endif %}
+<body{% if body_classes %} class="{{ body_classes | join(' ') }}"{% endif %}>
   <div class="outer-wrapper">
     <!-- HEADER -->
     <div class="header">
