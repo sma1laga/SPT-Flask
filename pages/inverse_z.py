@@ -52,16 +52,10 @@ def inverse_z():
             n = 10
             k_eval = np.arange(n) if roc_type == "causal" else np.arange(-n+1, 1)
             if roc_type == "causal":
-                seq_title = f"First {n} samples (k = 0, ..., {n-1})"
+                seq_title = f"First {n} samples"
             else:
-                seq_title = f"Last {n} samples (k = {-n+1}, ..., 0)"
+                seq_title = f"Last {n} samples"
             seq_raw = eval_expression(hk, k_eval, k)
-            seq = r"\left[" \
-                + ", ".join([ltx_printer.doprint(s) for s in seq_raw]) \
-                + r"\right]"
-            if len(seq) > 100:
-                # print seq in latex vector format
-                seq = seq.replace(r"\left[", r"\begin{bmatrix}").replace(r"\right]", r"\end{bmatrix}").replace(r", ", r" \\ ")
             seq_data = {
                 "k": k_eval.tolist(),
                 "re": [float(sp.N(sp.re(s))) for s in seq_raw],
@@ -80,7 +74,6 @@ def inverse_z():
         sf_latex=sf_ltx,
         sf_parts_latex=sf_parts_ltx,
         hk_latex=hk_ltx,
-        seq=seq,
         seq_title=seq_title,
         seq_data=seq_data,
         roc_type=roc_type,
