@@ -30,6 +30,22 @@ def delta(t):
     eps = 1e-3
     return np.exp(-t**2 / eps) / np.sqrt(np.pi * eps)
 
+def delta_train(t, spacing: float = 1.0, count: int = 17) -> np.ndarray:
+    """Finite train of equally spaced deltas: ∑ δ(t - k*spacing) for k=-((count-1)//2) ... count//2
+    Args:
+        t (np.ndarray): Time samples where the train is evaluated
+        spacing (float): Time spacing between deltas
+        count (int): Number of deltas (odd number recommended, at least 1).
+    Returns:
+        np.ndarray: Sum of ``count`` shifted delta approximations.
+    """
+    count = int(max(1, count))
+
+    offsets = (np.arange(count) - (count-1)//2) * spacing
+    t = np.asarray(t)
+    train = delta(t[..., None] - offsets)
+    return train.sum(axis=-1)
+
 def exp_iwt(t, omega_0=1.0):
     return np.exp(1j * omega_0 * t)
 
@@ -47,6 +63,25 @@ def delta_n(n):
     """Kronecker delta: 1 when n==0 else 0."""
     return np.where(np.isclose(n.round(8), 0.0), 1.0, 0.0)
 
+# example
+def delta_train_n(k, spacing: int = 6, count: int = 9) -> np.ndarray:
+    """Finite delta train centred around the origin
+    Args:
+        k (np.ndarray): Discrete time samples where the train is evaluated
+        spacing (int): Separation between adjacent impulses.  Values are rounded to the nearest integer to keep impulses aligned with the integer grid.
+        count (int): Number of impulses to include in the train (min. 1).
+    Returns:
+        np.ndarray: Sum of `count` shifted Kronecker deltas.
+    """
+    k = np.asarray(k)
+    count = int(max(1, count))
+    spacing = int(max(1, round(spacing)))
+
+    offsets = (np.arange(count) - (count - 1)//2) * spacing
+    train = np.zeros_like(k, dtype=float)
+    for shift in offsets:
+        train += delta_n(k - shift)
+    return train
 # ------------------------------------------------------------------
 # Discrete-time helpers
 # ------------------------------------------------------------------
