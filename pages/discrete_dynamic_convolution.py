@@ -24,7 +24,7 @@ def index():
         ("step[k]\u22c5cos[\u03c0/4\u22c5k]", "step(k)*cos(np.pi/4*k)"),
         ("sign[k]", "sign(k)"),
         ("delta[k]", "delta(k)"),
-        ("delta train", "delta_train(k)"),
+        ("step[k]\u22c5delta_train_6[k]", "step(k)*delta_train(k)"),
         ("inv_k[k]", "inv_k(k)"),
         ("si[\u03c0/2\u22c5k]", "si(k/2)"),
         ("step[k]\u22c50.5^k", "step(k)*0.5**k"),

@@ -29,31 +29,23 @@ def delta(t):
     """Approximate Dirac delta via narrow Gaussian."""
     eps = 1e-3
     return np.exp(-t**2 / eps) / np.sqrt(np.pi * eps)
-def delta_train(t, spacing: float = 1.0, count: int = 6):
-    """Finite train of equally spaced deltas
 
+def delta_train(t, spacing: float = 1.0, count: int = 17) -> np.ndarray:
+    """Finite train of equally spaced deltas: ∑ δ(t - k*spacing) for k=-((count-1)//2) ... count//2
     Args:
         t (np.ndarray): Time samples where the train is evaluated
-        spacing (float): Separation between2 deltas
-        count (int): Number of deltas in the train (clipped to >=1).
-
+        spacing (float): Time spacing between deltas
+        count (int): Number of deltas (odd number recommended, at least 1).
     Returns:
-        np.ndarray: Sum of ``count`` shifted delta approximations whose
-            individual peaks match :func:`delta`.
+        np.ndarray: Sum of ``count`` shifted delta approximations.
     """
-
     count = int(max(1, count))
-    spacing = float(spacing)
 
-    # Center the train around 0 so it fits well in the plotting window.
-    offsets = (np.arange(count) - (count - 1) / 2.0) * spacing
-
-    # Reuse the same narrow Gaussian shape as ``delta`` for each impulse.
-    eps = 1e-3
+    offsets = (np.arange(count) - (count-1)//2) * spacing
     t = np.asarray(t)
-    diff = t[..., None] - offsets
-    train = np.exp(-diff**2 / eps) / np.sqrt(np.pi * eps)
+    train = delta(t[..., None] - offsets)
     return train.sum(axis=-1)
+
 def exp_iwt(t, omega_0=1.0):
     return np.exp(1j * omega_0 * t)
 
@@ -72,34 +64,23 @@ def delta_n(n):
     return np.where(np.isclose(n.round(8), 0.0), 1.0, 0.0)
 
 # example
-def delta_train_n(n, spacing: int = 3, count: int = 5) -> np.ndarray:
+def delta_train_n(k, spacing: int = 6, count: int = 9) -> np.ndarray:
     """Finite delta train centred around the origin
-    Parameters
-    ----------
-    n:
-        Discrete time samples where the train is evaluated
-    spacing:
-        Separation between adjacent impulses.  Values are rounded to the
-        nearest integer to keep impulses aligned with the integer grid.
-    count:
-        Number of impulses to include in the train - the value is clipped to
-        at least 1 so that the function always returns a non-empty train. Can be changed as you wish..
-
+    Args:
+        k (np.ndarray): Discrete time samples where the train is evaluated
+        spacing (int): Separation between adjacent impulses.  Values are rounded to the nearest integer to keep impulses aligned with the integer grid.
+        count (int): Number of impulses to include in the train (min. 1).
+    Returns:
+        np.ndarray: Sum of `count` shifted Kronecker deltas.
     """
-
-    n = np.asarray(n)
+    k = np.asarray(k)
     count = int(max(1, count))
     spacing = int(max(1, round(spacing)))
 
-    # centre the train around the origin so that it behaves nicely within the
-    # fixed plotting window used by the discrete dynamic convolution modul
-    offsets = (np.arange(count) - (count - 1) / 2.0) * spacing
-    offsets = np.rint(offsets).astype(int)
-
-    train = np.zeros_like(n, dtype=float)
+    offsets = (np.arange(count) - (count - 1)//2) * spacing
+    train = np.zeros_like(k, dtype=float)
     for shift in offsets:
-        train += delta_n(n - shift)
-
+        train += delta_n(k - shift)
     return train
 # ------------------------------------------------------------------
 # Discrete-time helpers

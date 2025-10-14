@@ -18,7 +18,7 @@ def dynamic_convolution():
         ("step(t)\u22c5sin(\u03c0t)", "step(t)*sin(t)"),
         ("step(t)\u22c5cos(\u03c0t)", "step(t)*cos(t)"),
         ("delta(t)", "delta(t)"),
-        ("delta train", "delta_train(t)"),
+        ("step(t)\u22c5delta_train(t)", "step(t+0.1)*delta_train(t)"), # shift +0.1 to avoid half delta at t=0
         ("step(t)\u22c5exp(t)", "step(t)*exp(t)"),
         ("inv_t(t)", "inv_t(t)"),
         ("si(\u03c0t)", "si(t)")
@@ -97,7 +97,7 @@ def dynamic_data():
     def _scale_delta(expr, arr):
         """Normalize delta-like signals for display while leaving calculations unchanged."""
         expr = expr.strip()
-        if expr in {"delta(t)", "delta_train(t)"}:
+        if "delta" in expr:
             max_val = float(np.max(np.abs(arr)))
             if max_val != 0:
                 return arr / max_val
