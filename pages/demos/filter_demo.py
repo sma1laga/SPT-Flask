@@ -283,24 +283,13 @@ def compute():
 
         # plotting
         with plt.rc_context(RC_PARAMS):
-            # figure: 3x2 grid (top: x and y; middle: selected plot; bottom: H(z))
-            fig = plt.figure(figsize=(10, 7), layout="constrained")
-            gs = GridSpec(3, 2, height_ratios=[1.0, 2.2, 0.5], figure=fig)
+            # figure: 2x2 grid (top: x and y; bottom: selected plot)
+            fig = plt.figure(figsize=(10, 6.5), layout="constrained")
+            gs = GridSpec(2, 2, height_ratios=[1.0, 2.2], figure=fig)
             x_ax = fig.add_subplot(gs[0, 0])
             y_ax = fig.add_subplot(gs[0, 1])
             plot_ax = fig.add_subplot(gs[1, :])
-            hz_ax = fig.add_subplot(gs[2, :])
 
-            hz_ax.axis("off")
-            hz_ax.set_title("Transfer Function", fontsize=12, pad=6)
-            hz_ax.text(
-                0.5,
-                0.5,
-                rf"${hz_tex}$",
-                ha="center",
-                va="center",
-                fontsize=16,
-            )
             if not is_image:
                 # ---- audio: time series ----
                 x_ax.set_title("Input Signal")
@@ -328,14 +317,14 @@ def compute():
             else:
                 # ---- Image: show grayscale images ----
                 x_ax.set_title("Input Image")
-                x_ax.imshow(x, cmap="gray", vmin=0, vmax=1, aspect="auto")
+                x_ax.imshow(x, cmap="gray", vmin=0, vmax=1, aspect="equal")
                 x_ax.axis("off")
 
                 y_ax.set_title("Filtered Image")
                 # use normalizedd display version
                 y_disp_local = y_disp if 'y_disp' in locals() else y
                 y_disp_local = np.clip(y_disp_local, 0.0, 1.0)
-                y_ax.imshow(y_disp_local, cmap="gray", vmin=0, vmax=1, aspect="auto")
+                y_ax.imshow(y_disp_local, cmap="gray", vmin=0, vmax=1, aspect="equal")
                 y_ax.axis("off")
 
 
@@ -423,6 +412,7 @@ def compute():
             "image": png,
             "x_audio": x_audio,
             "y_audio": y_audio,
+            "hz_tex": hz_tex,
         })
 
 

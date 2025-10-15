@@ -651,8 +651,8 @@
         <nav class="main-nav" id="primary-navigation" aria-label="Primary">
           <ul class="nav-list">
             <li><a href="{{ url_for('home') }}" class="nav-link{% if request.endpoint == 'home' %} is-active{% endif %}">Home</a></li>
+            <li><a href="{{ url_for('demos_menu.index') }}" class="nav-link{% if request.path.startswith('/demos') %} is-active{% endif %}">Demos</a></li>
             <li><a href="{{ url_for('info.about') }}" class="nav-link{% if request.endpoint == 'info.about' %} is-active{% endif %}">About</a></li>
-            <li><a href="{{ url_for('info.contact') }}" class="nav-link{% if request.endpoint == 'info.contact' %} is-active{% endif %}">Report</a></li>
             <li><button id="dark-mode-toggle" type="button">Dark Mode</button></li>
             <li class="toggle-container">
               <label class="toggle-button">
@@ -880,6 +880,7 @@
         <a href="{{ url_for('info.impressum') }}">Impressum</a> |
         <a href="{{ url_for('info.privacy') }}">Privacy Policy</a> |
         <a href="{{ url_for('info.terms') }}">Terms of Service</a> |
+        <a href="{{ url_for('info.contact') }}">Report</a> |
         <a href="{{ url_for('info.news') }}">News</a>
       </div>
     </footer>

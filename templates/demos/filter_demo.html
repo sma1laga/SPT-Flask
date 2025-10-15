@@ -5,6 +5,23 @@
 <p>This demo shows exemplary IIR/FIR filters from the exercises based on different input signals&nbsp;(audio and images).
 Each filter can be analyzed by plotting its impulse response, pole-zero plot&nbsp;(z-plane), magnitude response, and phase response.</p>
 
+<style>
+  #hz_card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    text-align: center;
+  }
+  #hz_card .hz-tex {
+    font-size: 1.1rem;
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+
 <div class="demo">
 
 <div class="row">
@@ -48,7 +65,10 @@ Each filter can be analyzed by plotting its impulse response, pole-zero plot&nbs
       <button id="run">Recompute</button>
     </div>
   </div>
- <!-- TODO show H(z) in tex -->
+  <div class="card" id="hz_card">
+    <div><strong>Transfer Function</strong></div>
+    <div id="hz_tex" class="hz-tex">Loading…</div>
+  </div>
   <div class="card">
     <img id="plot" alt="plot">
   </div>
@@ -99,6 +119,16 @@ Each filter can be analyzed by plotting its impulse response, pole-zero plot&nbs
       $("plot").src = data.image;
       $("x_audio").src = data.x_audio || "";
       $("y_audio").src = data.y_audio || "";
+      const hzEl = $("hz_tex");
+      if (hzEl){
+        hzEl.textContent = "";
+        if (data.hz_tex){
+          hzEl.innerHTML = `\\(${data.hz_tex}\\)`;
+          if (window.MathJax?.typesetPromise){
+            MathJax.typesetPromise([hzEl]);
+          }
+        }
+      }
     }catch(e){
       console.error(e);
       alert(e);
