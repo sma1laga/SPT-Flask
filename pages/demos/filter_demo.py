@@ -284,8 +284,15 @@ def compute():
         # plotting
         with plt.rc_context(RC_PARAMS):
             # figure: 2x2 grid (top: x and y; bottom: selected plot)
-            fig = plt.figure(figsize=(10, 6.5), layout="constrained")
-            gs = GridSpec(2, 2, height_ratios=[1.0, 2.2], figure=fig)
+            if is_image:
+                fig_size = (11.5, 7.5)
+                height_ratios = [1.45, 2.05]
+            else:
+                fig_size = (10.0, 6.5)
+                height_ratios = [1.0, 2.2]
+
+            fig = plt.figure(figsize=fig_size, layout="constrained")
+            gs = GridSpec(2, 2, height_ratios=height_ratios, figure=fig)
             x_ax = fig.add_subplot(gs[0, 0])
             y_ax = fig.add_subplot(gs[0, 1])
             plot_ax = fig.add_subplot(gs[1, :])
