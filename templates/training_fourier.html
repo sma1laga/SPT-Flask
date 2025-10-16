@@ -1,134 +1,534 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-header" style="text-align:center;margin-bottom:30px;">
-  <h1>Fourier Transform Training</h1>
-  <p>Practice switching between time and frequency domains.</p>
-</div>
-
-<div class="controls" style="max-width:700px;margin:0 auto 20px;display:flex;flex-wrap:wrap;justify-content:center;gap:20px;">
-  <div class="radio-group">
-    <label class="radio-label"><input type="radio" name="direction" value="TIME_TO_FREQ" checked> Time → Frequency</label>
-    <label class="radio-label"><input type="radio" name="direction" value="FREQ_TO_TIME"> Frequency → Time</label>
+  <!-- Page Header -->
+  <div class="page-header" style="margin-bottom: 30px; text-align: center;">
+    <h1 style="font-size: 2.5em; margin-bottom: 10px;">Fourier Transform Training</h1>
+    <p style="font-size: 1.1em; color: var(--subtext-color); max-width: 700px; margin: 0 auto;">
+      Master the connection between time- and frequency-domain representations. Generate a challenge, inspect the plots,
+      and select the correct transform pair.
+    </p>
   </div>
-  <div class="radio-group">
-    <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
-    <label class="radio-label"><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
-    <label class="radio-label"><input type="radio" name="difficulty" value="HARD"> Hard</label>
-  </div>
+  <!-- Controls -->
+  <div class="controls" style="max-width: 820px; margin: 0 auto 30px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 24px; text-align: center;">
+    <div class="radio-group" aria-label="Transform direction">
+      <label class="radio-label"><input type="radio" name="direction" value="TIME_TO_FREQ" checked> Time → Frequency</label>
+      <label class="radio-label"><input type="radio" name="direction" value="FREQ_TO_TIME"> Frequency → Time</label>
+    </div>
+    <div class="radio-group" aria-label="Difficulty">
+      <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
+      <label class="radio-label"><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
+      <label class="radio-label"><input type="radio" name="difficulty" value="HARD"> Hard</label>
+    </div>
     <button id="generateBtn" class="action-btn">Generate Problem</button>
-</div>
+  </div>
 
-<div class="plot-container" style="text-align:center;margin-bottom:20px;">
-  <img id="fourier_plot_image" src="" alt="Fourier Plot" style="display:none;max-width:100%;border:1px solid #ccd0d5;border-radius:4px;">
-</div>
+  <p style="text-align: center; color: var(--subtext-color); margin-top: -10px; margin-bottom: 30px;">
+    Tip: Use the <strong>1</strong>–<strong>4</strong> keys to select \(\mathcal{O}_1\)–\(\mathcal{O}_4\) and the
+    <strong>spacebar</strong> to jump to the next problem.
+  </p>
 
-<div class="options" style="max-width:700px;margin:0 auto 20px;" id="options">
-  <button class="option-btn action-btn" data-index="0">Option 1</button>
-  <button class="option-btn action-btn" data-index="1">Option 2</button>
-  <button class="option-btn action-btn" data-index="2">Option 3</button>
-  <button class="option-btn action-btn" data-index="3">Option 4</button>
-</div>
+  <!-- Plot Container -->
+  <div class="plot-container" style="text-align: center; margin-bottom: 20px;">
+    <div id="plotWrap" class="plot-wrap" style="position:relative; display:inline-block;">
+      <img id="fourier_plot_image" src="" alt="Fourier Training Plot"
+           style="display:none; max-width:100%; border:1px solid #ccd0d5; border-radius:4px;">
+      <div id="plotOverlay" class="plot-overlay" style="display:none;">
+        <div class="plot-hit" data-index="0" title="Select \(\mathcal{O}_1\)"></div>
+        <div class="plot-hit" data-index="1" title="Select \(\mathcal{O}_2\)"></div>
+        <div class="plot-hit" data-index="2" title="Select \(\mathcal{O}_3\)"></div>
+        <div class="plot-hit" data-index="3" title="Select \(\mathcal{O}_4\)"></div>
+      </div>
+    </div>
+  </div>
 
-<div id="feedback" class="feedback" style="text-align:center;font-size:1.1em;min-height:1.4em;"></div>
-<div id="explanation" style="display:none;margin-top:15px;text-align:center;">
-  <p id="latexSignal"></p>
-  <p id="latexTransform"></p>
-  <p id="property"></p>
-  <button id="nextBtn" class="action-btn">Next Question</button>
-</div>
+  <!-- Answer Options -->
+  <div class="options" style="max-width: 820px; margin: 0 auto 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
+    <button class="option-btn action-btn" data-index="0">\(\mathcal{O}_1\)</button>
+    <button class="option-btn action-btn" data-index="1">\(\mathcal{O}_2\)</button>
+    <button class="option-btn action-btn" data-index="2">\(\mathcal{O}_3\)</button>
+    <button class="option-btn action-btn" data-index="3">\(\mathcal{O}_4\)</button>
+    <button id="nextBtn" class="action-btn" style="display:none;">Next Problem</button>
+  </div>
 
-<script>
-let correctIndex = null;
-let latexSignal = "";
-let latexTransform = "";
-let propMsg = "";
+  <!-- Feedback -->
+  <div id="feedback" class="feedback" style="text-align: center; font-size: 1.1em; color: var(--text-color); min-height: 1.2em;"></div>
 
-function getDifficulty(){
-  return Array.from(document.getElementsByName('difficulty')).find(r=>r.checked).value;
-}
-function getDirection(){
-  return Array.from(document.getElementsByName('direction')).find(r=>r.checked).value;
-}
+  <!-- Streak Panel -->
+  <div id="streakPanel" class="streak-panel" style="max-width:820px;margin:0 auto 12px;display:flex;justify-content:center;gap:12px;align-items:center;">
+    <div>Streak: <strong id="streakCur">0</strong></div>
+    <div style="opacity:.8;">Best: <strong id="streakBest">0</strong></div>
+    <button id="streakReset" class="action-btn" style="padding:6px 10px;background:#555;">Reset</button>
+  </div>
 
-document.getElementById('generateBtn').addEventListener('click', generateProblem);
-document.getElementById('nextBtn').addEventListener('click', generateProblem);
-document.querySelectorAll('.option-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const idx=parseInt(btn.getAttribute('data-index'));
-    checkAnswer(idx);
-  });
-});
+  <!-- Explanation Card -->
+  <div id="explanationCard" class="explanation-card" style="display:none; max-width:820px; margin: 20px auto 0; padding: 18px 22px; border:1px solid #d8dce3; border-radius:8px; background: var(--surface-color, #f8f9fb); color: var(--text-color);">
+    <h2 style="margin-top:0; font-size:1.4em;">Solution Insight</h2>
+    <p id="latexSignal" style="margin-bottom:10px;"></p>
+    <p id="latexTransform" style="margin-bottom:10px;"></p>
+    <p id="property" style="margin-bottom:0; font-style: italic;"></p>
+  </div>
 
+  <!-- Exam Link -->
+  <p style="text-align: center; margin-top: 30px;">
+    Ready for a full challenge? <a href="{{ url_for('exam_fourier.start_exam') }}" class="link-btn">Take the Fourier Exam</a>
+  </p>
 
-function generateProblem(){
-  fetch("{{ url_for('training_fourier.generate_problem') }}",{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({difficulty:getDifficulty(),direction:getDirection()})
-  }).then(r=>r.json()).then(data=>{
-    if(data.error){
-      document.getElementById('feedback').innerText='Error: '+data.error;
-      alert(data.error);
+  <script>
+  // --- State ---
+  let correctIndex = null;
+  let latexSignal = '';
+  let latexTransform = '';
+  let propMsg = '';
+
+  let currentProblemDifficulty = null;
+  let currentProblemDirection = null;
+  let currentProblemSignature = null;
+
+  let cachedProblem = null;
+  let cachedSignature = null;
+  let prefetchCtrl = null;
+  let prefetchInFlight = false;
+  let answeredThisRound = false;
+
+  let bootCachedProblem = null;
+  let bootSignature = 'MEDIUM|TIME_TO_FREQ';
+  let bootCtrl = null;
+  let bootInFlight = false;
+
+  // --- Helpers ---
+  function getDifficulty() {
+    const checked = document.querySelector('input[name="difficulty"]:checked');
+    return checked ? checked.value : null;
+  }
+
+  function getDirection() {
+    const checked = document.querySelector('input[name="direction"]:checked');
+    return checked ? checked.value : null;
+  }
+
+  function signatureFor(diff, dir) {
+    return `${diff}|${dir}`;
+  }
+
+  function req(url, payload, signal) {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal
+    }).then(r => r.json());
+  }
+
+  function renderProblemFromData(data, diffTag = null, dirTag = null) {
+    if (data.error) {
+      showFeedback('Error: ' + data.error);
       return;
     }
-    const img=document.getElementById('fourier_plot_image');
-    img.src='data:image/png;base64,'+data.plot_data;
-    img.style.display='block';
-    correctIndex=data.correctIndex;
-    latexSignal=data.latex_time;
-    latexTransform=data.latex_freq;
-    propMsg=data.property_msg;
-    document.getElementById('feedback').innerText='Pick the correct option!';
-    document.getElementById('explanation').style.display='none';
-    document.querySelectorAll('.option-btn').forEach(b=>{
-      b.classList.remove('correct','incorrect');
-      b.disabled=false;
+
+    currentProblemDifficulty = diffTag || getDifficulty();
+    currentProblemDirection = dirTag || getDirection();
+    currentProblemSignature = signatureFor(currentProblemDifficulty, currentProblemDirection);
+
+    latexSignal = data.latex_time || '';
+    latexTransform = data.latex_freq || '';
+    propMsg = data.property_msg || '';
+
+    const img = document.getElementById('fourier_plot_image');
+    img.src = 'data:image/png;base64,' + data.plot_data;
+    img.style.display = 'block';
+
+    correctIndex = data.correctIndex;
+
+    const optBtns = document.querySelectorAll('.option-btn');
+    optBtns.forEach(b => {
+      b.classList.remove('correct', 'incorrect');
+      b.disabled = false;
     });
-    }).catch(e=>{
-    document.getElementById('feedback').innerText='Error generating problem.';
-    console.error(e);
-  });
-}
-function checkAnswer(selected){
-  if(correctIndex===null){
-    document.getElementById('feedback').innerText='Please generate a problem first!';
-    return;
+
+    document.getElementById('nextBtn').style.display = 'inline-block';
+    showFeedback('Problem generated. Select the correct transform option.');
+    hideExplanation();
+    resetOverlayUI();
+    answeredThisRound = false;
   }
-  fetch("{{ url_for('training_fourier.check_answer') }}",{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({selectedIndex:selected,correctIndex})
-  }).then(r=>r.json()).then(data=>{
-    document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
-    const buttons=document.querySelectorAll('.option-btn');
-    buttons[correctIndex].classList.add('correct');
-    if(selected!==correctIndex){
-      buttons[selected].classList.add('incorrect');
+
+  function hidePlot() {
+    const img = document.getElementById('fourier_plot_image');
+    img.style.display = 'none';
+    img.removeAttribute('src');
+    const overlay = document.getElementById('plotOverlay');
+    overlay.style.display = 'none';
+    correctIndex = null;
+  }
+
+  const AXES_BOUNDS = [
+    { x0: 0.125, y0: 0.39875, width: 0.3369565217, height: 0.1925 },
+    { x0: 0.5630434783, y0: 0.39875, width: 0.3369565217, height: 0.1925 },
+    { x0: 0.125, y0: 0.11, width: 0.3369565217, height: 0.1925 },
+    { x0: 0.5630434783, y0: 0.11, width: 0.3369565217, height: 0.1925 }
+  ];
+
+  function layoutOverlayBoxes() {
+    const img = document.getElementById('fourier_plot_image');
+    const overlay = document.getElementById('plotOverlay');
+    if (!img || img.style.display === 'none') return;
+
+    const w = img.clientWidth;
+    const h = img.clientHeight;
+    if (!w || !h) return;
+
+    overlay.style.display = 'block';
+
+    const padX = 0.01;
+    const padY = 0.02;
+
+    const hits = document.querySelectorAll('.plot-hit');
+    hits.forEach((hit, i) => {
+      const bounds = AXES_BOUNDS[i];
+      if (!bounds) return;
+
+      const leftNorm = Math.max(0, bounds.x0 - padX);
+      const rightNorm = Math.min(1, bounds.x0 + bounds.width + padX);
+      const topNorm = Math.max(0, 1 - (bounds.y0 + bounds.height) - padY);
+      const bottomNorm = Math.min(1, 1 - bounds.y0 + padY);
+
+      const width = Math.max(0, rightNorm - leftNorm) * w;
+      const height = Math.max(0, bottomNorm - topNorm) * h;
+      const left = leftNorm * w;
+      const top = topNorm * h;
+
+      hit.style.left = left + 'px';
+      hit.style.top = top + 'px';
+      hit.style.width = width + 'px';
+      hit.style.height = height + 'px';
+    });
+  }
+
+  function resetOverlayUI() {
+    const overlay = document.getElementById('plotOverlay');
+    overlay.style.display = 'block';
+    document.querySelectorAll('.plot-hit').forEach(h => {
+      h.classList.remove('correct', 'incorrect');
+      h.style.pointerEvents = 'auto';
+    });
+    layoutOverlayBoxes();
+  }
+
+  function hideExplanation() {
+    const card = document.getElementById('explanationCard');
+    card.style.display = 'none';
+    document.getElementById('latexSignal').innerHTML = '';
+    document.getElementById('latexTransform').innerHTML = '';
+    document.getElementById('property').textContent = '';
+  }
+
+  function showExplanation() {
+    const card = document.getElementById('explanationCard');
+    document.getElementById('latexSignal').innerHTML = latexSignal ? `$$${latexSignal}$$` : '';
+    document.getElementById('latexTransform').innerHTML = latexTransform ? `$$${latexTransform}$$` : '';
+    document.getElementById('property').textContent = propMsg || '';
+    card.style.display = 'block';
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise();
+    }
+  }
+
+  // --- Event wiring ---
+  document.getElementById('generateBtn').addEventListener('click', () => {
+    const diff = getDifficulty();
+    const dir = getDirection();
+    const sig = signatureFor(diff, dir);
+
+    if (bootCachedProblem && bootSignature === sig) {
+      if (bootCtrl) { try { bootCtrl.abort(); } catch (_) {} ; bootCtrl = null; }
+      destroyPrefetch();
+      const boot = bootCachedProblem;
+      bootCachedProblem = null;
+      renderProblemFromData(boot, boot._difficulty, boot._direction);
+      return;
+    }
+
+    destroyPrefetch();
+    generateProblem();
+  });
+
+  document.querySelectorAll('.plot-hit').forEach(hit => {
+    hit.addEventListener('click', () => checkAnswer(parseInt(hit.dataset.index)));
+  });
+
+  document.querySelectorAll('.option-btn').forEach(btn => {
+    btn.addEventListener('click', () => checkAnswer(parseInt(btn.getAttribute('data-index'))));
+  });
+
+  document.getElementById('fourier_plot_image').addEventListener('load', layoutOverlayBoxes);
+  window.addEventListener('resize', () => {
+    const img = document.getElementById('fourier_plot_image');
+    if (img.style.display !== 'none') layoutOverlayBoxes();
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', onNextProblemClick);
+
+  let lastSpaceActivation = 0;
+  document.addEventListener('keydown', (event) => {
+    const tag = (event.target && event.target.tagName) ? event.target.tagName.toUpperCase() : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    if (event.key >= '1' && event.key <= '4') {
+      event.preventDefault();
+      const idx = parseInt(event.key, 10) - 1;
+      checkAnswer(idx);
+      return;
+    }
+
+    if (event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      const now = Date.now();
+      if (now - lastSpaceActivation < 1000) return;
+      lastSpaceActivation = now;
+
+      const nextBtn = document.getElementById('nextBtn');
+      if (nextBtn && nextBtn.style.display !== 'none') {
+        onNextProblemClick();
+      }
+    }
+  });
+
+  document.querySelectorAll('input[name="difficulty"], input[name="direction"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      refreshStreakUI();
+      destroyPrefetch();
+      hidePlot();
+      hideExplanation();
+      document.getElementById('nextBtn').style.display = 'none';
+      showFeedback('Settings changed. Generate a problem.');
+    });
+  });
+  // --- Main flows ---
+  function generateProblem() {
+    const diff = getDifficulty();
+    const dir = getDirection();
+    if (!diff || !dir) return showFeedback('Please choose a direction and difficulty first.');
+
+    req("{{ url_for('training_fourier.generate_problem') }}", { difficulty: diff, direction: dir })
+      .then(data => {
+        data._difficulty = diff;
+        data._direction = dir;
+        data._signature = signatureFor(diff, dir);
+        renderProblemFromData(data, diff, dir);
+      })
+      .catch(() => showFeedback('Error generating problem.'));
+  }
+
+  function onNextProblemClick() {
+    const diff = getDifficulty();
+    const dir = getDirection();
+    const sig = signatureFor(diff, dir);
+
+    if (cachedProblem && cachedSignature === sig) {
+      const warm = cachedProblem;
+      cachedProblem = null;
+      renderProblemFromData(warm, warm._difficulty, warm._direction);
+      prefetchNextProblem();
+    } else {
+      generateProblem();
 
     }
-    document.getElementById('feedback').innerText=data.feedback;
-    document.getElementById('latexSignal').innerHTML='$$'+latexSignal+'$$';
-    document.getElementById('latexTransform').innerHTML='$$'+latexTransform+'$$';
-    document.getElementById('property').innerText=propMsg;
-    document.getElementById('explanation').style.display='block';
-    MathJax.typesetPromise();
-  }).catch(e=>{
-    document.getElementById('feedback').innerText='Error checking answer.';
-    console.error(e);
-  });
-}
-</script>
+  }
 
-<style>
-.options{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px;justify-items:center;}
-.radio-group{display:flex;gap:15px;}
-.radio-label input{margin-right:6px;}
-.action-btn{padding:10px 20px;background-color:#007acc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:1em;transition:background-color .2s;text-decoration:none;}
-.action-btn:hover{background-color:#005fa3;}
-.option-btn.correct{background-color:#28a745;}
-.option-btn.incorrect{background-color:#c0392b;}
-.feedback{min-height:1.4em;margin-top:10px;}
-.link-btn{color:#007acc;text-decoration:none;font-weight:bold;}
-.link-btn:hover{text-decoration:underline;}
-</style>
+  function checkAnswer(selected) {
+    if (correctIndex === null) return showFeedback('Please generate a problem first!');
+
+    req("{{ url_for('training_fourier.check_answer') }}", {
+      selectedIndex: selected,
+      correctIndex: correctIndex
+    })
+    .then(data => {
+      const buttons = document.querySelectorAll('.option-btn');
+      buttons.forEach(b => b.disabled = true);
+      buttons[correctIndex].classList.add('correct');
+
+      const hits = document.querySelectorAll('.plot-hit');
+      hits.forEach(h => h.style.pointerEvents = 'none');
+      hits[correctIndex].classList.add('correct');
+      if (selected !== correctIndex) {
+        hits[selected].classList.add('incorrect');
+        buttons[selected].classList.add('incorrect');
+      }
+
+      showFeedback(data.feedback || '');
+      const isCorrect = (selected === correctIndex);
+      bumpStreak(isCorrect);
+      showExplanation();
+
+      if (!answeredThisRound) {
+        answeredThisRound = true;
+        prefetchNextProblem();
+      }
+    })
+    .catch(() => showFeedback('Error checking answer.'));
+  }
+
+  // --- Prefetch pipeline ---
+  function prefetchNextProblem() {
+    const diff = getDifficulty();
+    const dir = getDirection();
+    const sig = signatureFor(diff, dir);
+
+    if (prefetchInFlight) return;
+    if (cachedProblem && cachedSignature === sig) return;
+
+    destroyPrefetch(false);
+
+    prefetchCtrl = new AbortController();
+    prefetchInFlight = true;
+    cachedProblem = null;
+    cachedSignature = sig;
+
+    req("{{ url_for('training_fourier.generate_problem') }}", { difficulty: diff, direction: dir }, prefetchCtrl.signal)
+      .then(data => {
+        if (getDifficulty() === diff && getDirection() === dir) {
+          data._difficulty = diff;
+          data._direction = dir;
+          data._signature = sig;
+          cachedProblem = data;
+          cachedSignature = sig;
+        }
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => { prefetchInFlight = false; });
+  }
+
+  function prefetchBootMedium() {
+    if (bootInFlight || bootCachedProblem) return;
+    bootCtrl = new AbortController();
+    bootInFlight = true;
+    req("{{ url_for('training_fourier.generate_problem') }}", { difficulty: 'MEDIUM', direction: 'TIME_TO_FREQ' }, bootCtrl.signal)
+      .then(data => {
+        data._difficulty = 'MEDIUM';
+        data._direction = 'TIME_TO_FREQ';
+        data._signature = 'MEDIUM|TIME_TO_FREQ';
+        bootCachedProblem = data;
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => { bootInFlight = false; });
+  }
+
+  function destroyPrefetch(abort = true) {
+    if (abort && prefetchCtrl) {
+      try { prefetchCtrl.abort(); } catch (_) {}
+    }
+    prefetchCtrl = null;
+    prefetchInFlight = false;
+    cachedProblem = null;
+    cachedSignature = null;
+  }
+
+  function showFeedback(msg) {
+    document.getElementById('feedback').innerText = msg;
+  }
+
+  // --- Streak handling ---
+  function streakKey(signature) { return `fourier:streak:${signature}`; }
+  function bestKey(signature) { return `fourier:best:${signature}`; }
+  function readInt(k) { const v = localStorage.getItem(k); return v ? parseInt(v, 10) : 0; }
+  function writeInt(k, v) { localStorage.setItem(k, String(v)); }
+
+  function getStreak(signature) { return readInt(streakKey(signature)); }
+  function setStreak(signature, v) { writeInt(streakKey(signature), v); }
+  function getBest(signature) { return readInt(bestKey(signature)); }
+  function setBest(signature, v) { writeInt(bestKey(signature), v); }
+
+  function refreshStreakUI() {
+    const diff = getDifficulty();
+    const dir = getDirection();
+    if (!diff || !dir) return;
+    const sig = signatureFor(diff, dir);
+    document.getElementById('streakCur').textContent = getStreak(sig);
+    document.getElementById('streakBest').textContent = getBest(sig);
+  }
+
+  function bumpStreak(isCorrect) {
+    const sig = currentProblemSignature || signatureFor(getDifficulty(), getDirection());
+    if (!sig) return;
+    if (isCorrect) {
+      const cur = getStreak(sig) + 1;
+      setStreak(sig, cur);
+      if (cur > getBest(sig)) setBest(sig, cur);
+      flashStreak();
+    } else {
+      setStreak(sig, 0);
+    }
+    refreshStreakUI();
+  }
+
+  function flashStreak() {
+    const el = document.getElementById('streakPanel');
+    el.style.transition = 'transform 0.2s ease';
+    el.style.transform = 'scale(1.05)';
+    setTimeout(() => { el.style.transform = 'scale(1)'; }, 200);
+  }
+
+  document.getElementById('streakReset').addEventListener('click', () => {
+    const diff = getDifficulty();
+    const dir = getDirection();
+    if (!diff || !dir) return;
+    const sig = signatureFor(diff, dir);
+    setStreak(sig, 0);
+    refreshStreakUI();
+  });
+
+  prefetchBootMedium();
+  refreshStreakUI();
+  </script>
+
+  <style>
+    .radio-group { display: flex; gap: 15px; }
+    .radio-label { font-size: 1em; }
+    .radio-label input { margin-right: 6px; }
+    .action-btn {
+      padding: 10px 20px;
+      background-color: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.2s ease;
+      text-decoration: none;
+    }
+    .action-btn:hover { background-color: #005fa3; }
+    #nextBtn { background-color: #3CB371; }
+    #nextBtn:hover { background-color: #2E8B57; }
+    .option-btn.correct { background-color: #28a745; }
+    .option-btn.incorrect { background-color: #c0392b; }
+    .feedback { min-height: 1.4em; margin-top: 10px; }
+    .link-btn {
+      color: #007acc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .link-btn:hover { text-decoration: underline; }
+    .plot-wrap { position: relative; display: inline-block; }
+    .plot-overlay { position: absolute; inset: 0; pointer-events: none; }
+    .plot-hit {
+      position: absolute;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      box-shadow: 0 0 0 0 rgba(0,0,0,0);
+      transition: box-shadow 0.12s ease, border-color 0.12s ease;
+      pointer-events: auto;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .plot-hit:hover { box-shadow: 0 0 0 2px rgba(0,122,204,0.28); }
+    .plot-hit.correct {
+      border-color: #28a745;
+      box-shadow: 0 0 0 2px rgba(40,167,69,0.5);
+    }
+    .plot-hit.incorrect {
+      border-color: #c0392b;
+      box-shadow: 0 0 0 2px rgba(192,57,43,0.5);
+    }
+    .explanation-card p { line-height: 1.5; }
+  </style>
 {% endblock %}
