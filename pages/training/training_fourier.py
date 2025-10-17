@@ -11,6 +11,7 @@ Fourier-Training
 from dataclasses import dataclass
 from typing import Callable, Dict, Any, List, Tuple
 from flask import Blueprint, render_template, request, jsonify
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import io, base64, random, traceback, inspect, math
 import numpy as np
 
@@ -114,7 +115,7 @@ def make_signal_pool(w0: float) -> Dict[str, Signal]:
         "tri":   Signal("tri",   tri,   F_tri,   r"\mathrm{tri}(t)",          r"\mathrm{sinc}^2(\omega/2\pi)"),
         "sinc":  Signal("sinc",  sinc,  F_sinc,  r"\mathrm{sinc}(t)",         r"\mathbf{1}_{|\omega|\le \pi}"),
         "sinc2": Signal("sinc^2",sinc2, F_sinc2, r"\mathrm{sinc}^2(t)",       r"\max\{1-|{\omega}|/2\pi,0\}"),
-        "inv_t": Signal("1/t",   inv_t, F_inv_t, r"1/t",                      r"-j\pi\,\mathrm{sgn}(\omega)"),
+        "inv_t": Signal("1/t", inv_t, F_inv_t, r"\operatorname{pv}\{1/t\}", r"-j\pi\,\mathrm{sgn}(\omega)"),
         "sign":  Signal("sign",  sign,  F_sign,  r"\mathrm{sgn}(t)",          r"-\frac{2j}{\omega}"),
         "exp":   Signal("exp",   cexp,  F_cexp,  fr"e^{{j{w0}t}}",            fr"2\pi\delta(\omega-{w0})"),
         "cos":   Signal("cos",   cos_fn,F_cos,   fr"\cos({w0}t)",             fr"\pi[\delta(\omega\!-\!{w0})+\delta(\omega\!+\!{w0})]"),
@@ -166,10 +167,62 @@ def _format_phase_axis(ax: matplotlib.axes.Axes, omega: np.ndarray):
     ax.axhline(math.pi, color="k", ls="--", lw=0.7, alpha=0.4)
     ax.axhline(0, color="k", ls="--", lw=0.7, alpha=0.35)
     ax.axhline(-math.pi, color="k", ls="--", lw=0.7, alpha=0.4)
+    # y-ticks like in the exam sheets
+    ax.set_yticks([-math.pi, 0, math.pi])
+    ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
     xt = np.array([-2*math.pi, -math.pi, 0, math.pi, 2*math.pi])
     ax.set_xticks(xt)
     ax.set_xticklabels([r"$-2$", r"$-1$", r"$0$", r"$1$", r"$2$"])
     ax.set_xlabel(r"$\omega/\pi \rightarrow$", fontsize=10)
+
+def _plot_time_pretty(ax: matplotlib.axes.Axes, t: np.ndarray, y: np.ndarray, *,
+                      color="k", lw=2.2, dashed: bool=False,
+                      singular: bool=False, draw_inset: bool=True) -> None:
+    """
+    Pretty-prints time signals, with a special branch for singular signals like 1/t:
+    - break the curve at t=0
+    - clip the visible range to a robust percentile
+    - draw a thin vertical line at t=0 to indicate an asymptote
+    - add a small inset zoom around t=0
+    - still has a problem?
+    """
+    ls = "--" if dashed else "-"
+    if not singular:
+        ax.plot(t, y, color=color, lw=lw, ls=ls)
+        return
+
+    # leave a small gap around t=0
+    gap = 0.03
+    y_plot = y.copy().astype(float)
+    y_plot[np.abs(t) < gap] = np.nan
+
+    # robust main y-limits (95th percentile)
+    finite = np.isfinite(y_plot)
+    clip = float(max(1.0, np.percentile(np.abs(y_plot[finite]), 95))) if np.any(finite) else 5.0
+    y_plot = np.clip(y_plot, -clip, clip)
+
+    ax.plot(t, y_plot, color=color, lw=lw, ls=ls)
+    ax.axvline(0, color="k", lw=0.8, alpha=0.7)
+
+    # zoom near zero
+    if draw_inset:
+        try:
+            axins = inset_axes(ax, width="32%", height="45%", loc="upper right", borderpad=0.8)
+            w = 0.5
+            idx = (t >= -w) & (t <= w)
+            t_loc = t[idx]; y_loc = y[idx].astype(float)
+            y_loc[np.abs(t_loc) < gap] = np.nan
+            finite2 = np.isfinite(y_loc)
+            clip2 = float(max(clip, np.percentile(np.abs(y_loc[finite2]), 98))) if np.any(finite2) else clip*2
+            y_loc = np.clip(y_loc, -clip2, clip2)
+            axins.plot(t_loc, y_loc, color=color, lw=lw*0.9, ls=ls)
+            axins.axvline(0, color="k", lw=0.7, alpha=0.8)
+            axins.set_xlim(-w, w); axins.set_ylim(-clip2, clip2)
+            axins.set_xticks([]); axins.set_yticks([])
+            axins.set_title("zoom", fontsize=9)
+        except Exception:
+            pass
+
 
 def _plot_spec(ax_mag, ax_ph, omega, X, color="k", heavy=False):
     if np.count_nonzero(X) <= 10:  # deltas → stem
@@ -376,7 +429,7 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
         if direction == "TIME_TO_FREQ":
             # show given y(t) only
             ax_mag_g.axis("off"); ax_ph_g.axis("off")
-            ax_t_g.plot(t, true_time.real, color="k", lw=2.2)
+            _plot_time_pretty(ax_t_g, t, true_time.real, color="k", lw=2.2, singular=(sig.name=="inv_t"))
             _format_time_axis(ax_t_g, t)
             ax_t_g.set_title(r"given $y(t)$", fontsize=11)
         else:
@@ -400,8 +453,8 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
                 _format_mag_axis(ax_mag, omega)
                 _format_phase_axis(ax_ph, omega)
 
-                ax_t.plot(t, true_time.real, color="0.5", lw=1.2, ls="--", alpha=0.8)
-                _format_time_axis(ax_t, t)
+                _plot_time_pretty(ax_t, t, true_time.real, color="0.5", lw=1.2, dashed=True, singular=(sig.name=="inv_t"))
+                ax_t.lines[-1].set_alpha(0.8)  # keep your alpha                _format_time_axis(ax_t, t)
                 ax_t.set_title(fr"$\mathcal{{O}}_{i+1}$", fontsize=11)
 
                 # union of magnitude/phase axes is the clickable target
@@ -413,7 +466,7 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
                 _format_mag_axis(ax_mag, omega)
                 _format_phase_axis(ax_ph, omega)
 
-                ax_t.plot(t, shuffled[i].real, color=_GREEN, lw=2.3)
+                _plot_time_pretty(ax_t, t, shuffled[i].real, color=_GREEN, lw=2.3, singular=(sig.name=="inv_t"))
                 _format_time_axis(ax_t, t)
                 ax_t.set_title(fr"$\mathcal{{O}}_{i+1}$", fontsize=11)
 
