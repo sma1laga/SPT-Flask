@@ -66,12 +66,11 @@
   let currentProblemDifficulty = null, currentProblemDirection = null, currentProblemSignature = null;
 
   let cachedProblem = null, cachedSignature = null, prefetchCtrl = null, prefetchInFlight = false;
+  let prefetchTargetSignature = null;
+  let prefetchPromise = null;
+  let pendingWarmRequest = null;
   let answeredThisRound = false;
 
-  let bootCachedProblem = null;
-  let bootSignature = 'MEDIUM|TIME_TO_FREQ';
-  let bootCtrl = null;
-  let bootInFlight = false;
 
   function getDifficulty(){ const x=document.querySelector('input[name="difficulty"]:checked'); return x?x.value:null; }
   function getDirection(){ const x=document.querySelector('input[name="direction"]:checked'); return x?x.value:null; }
@@ -160,10 +159,29 @@
   }
 
   document.getElementById('generateBtn').addEventListener('click', ()=>{
-    const diff=getDifficulty(), dir=getDirection(), sig=signatureFor(diff,dir);
-    if (bootCachedProblem && bootSignature===sig){ if(bootCtrl){try{bootCtrl.abort();}catch{}; bootCtrl=null;} destroyPrefetch();
-      const boot=bootCachedProblem; bootCachedProblem=null; renderProblemFromData(boot, boot._difficulty, boot._direction); return; }
-    destroyPrefetch(); generateProblem();
+    const diff=getDifficulty(), dir=getDirection();
+    if(!diff||!dir) return showFeedback('Please choose a direction and difficulty first.');
+    const sig=signatureFor(diff,dir);
+    const warmed=consumeCachedProblem(sig);
+    if(warmed){ renderProblemFromData(warmed, warmed._difficulty, warmed._direction); return; }
+    if(prefetchPromise && prefetchTargetSignature===sig){
+      const waitPromise=prefetchPromise; pendingWarmRequest={sig, diff, dir, from:'generate'};
+      waitPromise.then(()=>{
+        if(!pendingWarmRequest || pendingWarmRequest.sig!==sig) return;
+        pendingWarmRequest=null;
+        const warmAgain=consumeCachedProblem(sig);
+        if(warmAgain){ renderProblemFromData(warmAgain, warmAgain._difficulty, warmAgain._direction); }
+        else { destroyPrefetch(false); generateProblem(); }
+      }).catch(()=>{
+        if(!pendingWarmRequest || pendingWarmRequest.sig!==sig) return;
+        pendingWarmRequest=null;
+        destroyPrefetch(false); generateProblem();
+      });
+      showFeedback('Preparing problem…');
+      return;
+    }
+    destroyPrefetch();
+    generateProblem();
   });
 
   document.querySelectorAll('.option-btn').forEach(btn => btn.addEventListener('click', ()=>checkAnswer(parseInt(btn.getAttribute('data-index')))));
@@ -185,8 +203,16 @@
   });
 
   document.querySelectorAll('input[name="difficulty"], input[name="direction"]').forEach(radio => {
-    radio.addEventListener('change', ()=>{ refreshStreakUI(); destroyPrefetch(); hidePlot(); hideExplanation();
-      document.getElementById('nextBtn').style.display='none'; showFeedback('Settings changed. Generate a problem.'); });
+    radio.addEventListener('change', ()=>{
+      refreshStreakUI();
+      destroyPrefetch();
+      hidePlot();
+      hideExplanation();
+      document.getElementById('nextBtn').style.display='none';
+      showFeedback('Settings changed. Generating a warm-up problem…');
+      const diff=getDifficulty(), dir=getDirection();
+      schedulePrefetchFor(diff, dir);
+    });
   });
 
   // --- flows ---
@@ -198,9 +224,28 @@
      .catch(()=>showFeedback('Error generating problem.'));
   }
   function onNextProblemClick(){
-    const diff=getDifficulty(), dir=getDirection(), sig=signatureFor(diff,dir);
-    if (cachedProblem && cachedSignature===sig){ const warm=cachedProblem; cachedProblem=null; renderProblemFromData(warm, warm._difficulty, warm._direction); prefetchNextProblem(); }
-    else { generateProblem(); }
+    const diff=getDifficulty(), dir=getDirection();
+    const sig=signatureFor(diff,dir);
+    const warmed=consumeCachedProblem(sig);
+    if(warmed){ renderProblemFromData(warmed, warmed._difficulty, warmed._direction); prefetchNextProblem(); return; }
+    if(prefetchPromise && prefetchTargetSignature===sig){
+      const waitPromise=prefetchPromise; pendingWarmRequest={sig, diff, dir, from:'next'};
+      waitPromise.then(()=>{
+        if(!pendingWarmRequest || pendingWarmRequest.sig!==sig) return;
+        pendingWarmRequest=null;
+        const warmAgain=consumeCachedProblem(sig);
+        if(warmAgain){ renderProblemFromData(warmAgain, warmAgain._difficulty, warmAgain._direction); prefetchNextProblem(); }
+        else { destroyPrefetch(false); generateProblem(); }
+      }).catch(()=>{
+        if(!pendingWarmRequest || pendingWarmRequest.sig!==sig) return;
+        pendingWarmRequest=null;
+        destroyPrefetch(false); generateProblem();
+      });
+      showFeedback('Preparing next problem…');
+      return;
+    }
+    destroyPrefetch();
+    generateProblem();
   }
   function checkAnswer(selected){
     if (correctIndex===null) return showFeedback('Generate a problem first!');
@@ -221,22 +266,61 @@
 
   // --- Prefetch ---
   function prefetchNextProblem(){
-    const diff=getDifficulty(), dir=getDirection(), sig=signatureFor(diff,dir);
-    if(prefetchInFlight) return; if(cachedProblem && cachedSignature===sig) return;
-    destroyPrefetch(false); prefetchCtrl=new AbortController(); prefetchInFlight=true; cachedProblem=null; cachedSignature=sig;
-    req("{{ url_for('training_fourier.generate_problem') }}", {difficulty:diff, direction:dir}, prefetchCtrl.signal)
-     .then(data=>{ if(getDifficulty()===diff && getDirection()===dir){ data._difficulty=diff; data._direction=dir; data._signature=sig; cachedProblem=data; cachedSignature=sig; }})
-     .catch(()=>{})
-     .finally(()=>{ prefetchInFlight=false; });
+    const diff=getDifficulty(), dir=getDirection();
+    schedulePrefetchFor(diff, dir);
   }
-  function prefetchBootMedium(){
-    if(bootInFlight || bootCachedProblem) return; bootCtrl=new AbortController(); bootInFlight=true;
-    req("{{ url_for('training_fourier.generate_problem') }}", {difficulty:'MEDIUM', direction:'TIME_TO_FREQ'}, bootCtrl.signal)
-     .then(data=>{ data._difficulty='MEDIUM'; data._direction='TIME_TO_FREQ'; data._signature='MEDIUM|TIME_TO_FREQ'; bootCachedProblem=data; })
-     .catch(()=>{})
-     .finally(()=>{ bootInFlight=false; });
+  function schedulePrefetchFor(diff, dir){
+    if(!diff||!dir) return;
+    const sig=signatureFor(diff, dir);
+    if(cachedProblem && cachedSignature===sig) return;
+    if(prefetchInFlight){
+      if(prefetchTargetSignature===sig) return;
+      if(prefetchCtrl){ try{prefetchCtrl.abort();}catch(_){}}
+    }
+    cachedProblem=null; cachedSignature=null;
+    prefetchCtrl=new AbortController();
+    prefetchInFlight=true;
+    prefetchTargetSignature=sig;
+    const promise=req("{{ url_for('training_fourier.generate_problem') }}", {difficulty:diff, direction:dir}, prefetchCtrl.signal)
+      .then(data=>{
+        if(!data) return;
+        data._difficulty=diff; data._direction=dir; data._signature=sig;
+        if(signatureFor(getDifficulty(), getDirection())===sig){
+          cachedProblem=data; cachedSignature=sig;
+        } else {
+          cachedProblem=null; cachedSignature=null;
+        }
+      })
+      .catch(()=>{})
+      .finally(()=>{
+        if(prefetchTargetSignature===sig){
+          prefetchInFlight=false;
+          prefetchCtrl=null;
+          prefetchTargetSignature=null;
+          prefetchPromise=null;
+        }
+      });
+    prefetchPromise=promise;
   }
-  function destroyPrefetch(abort=true){ if(abort && prefetchCtrl){ try{prefetchCtrl.abort();}catch(_){}} prefetchCtrl=null; prefetchInFlight=false; cachedProblem=null; cachedSignature=null; }
+  function consumeCachedProblem(sig){
+    if(cachedProblem && cachedSignature===sig){
+      const warmed=cachedProblem;
+      cachedProblem=null;
+      cachedSignature=null;
+      return warmed;
+    }
+    return null;
+  }
+  function destroyPrefetch(abort=true){
+    if(abort && prefetchCtrl){ try{prefetchCtrl.abort();}catch(_){}}
+    prefetchCtrl=null;
+    prefetchInFlight=false;
+    prefetchTargetSignature=null;
+    prefetchPromise=null;
+    pendingWarmRequest=null;
+    cachedProblem=null;
+    cachedSignature=null;
+  }
 
   // --- streak ---
   function streakKey(s){return `fourier:streak:${s}`;} function bestKey(s){return `fourier:best:${s}`;}
@@ -248,8 +332,9 @@
   function flashStreak(){ const el=document.getElementById('streakPanel'); el.style.transition='transform .2s ease'; el.style.transform='scale(1.05)'; setTimeout(()=>{ el.style.transform='scale(1)'; }, 200); }
   document.getElementById('streakReset').addEventListener('click', ()=>{ const d=getDifficulty(), g=getDirection(); if(!d||!g) return; const s=signatureFor(d,g); setStreak(s,0); refreshStreakUI(); });
 
-  prefetchBootMedium(); refreshStreakUI();
-  </script>
+  schedulePrefetchFor(getDifficulty(), getDirection());
+  refreshStreakUI();
+</script>
 
   <style>
     .radio-group { display: flex; gap: 15px; }
