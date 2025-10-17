@@ -200,6 +200,17 @@ def _rect_union(a: Tuple[float,float,float,float],
     x1 = max(a[0]+a[2], b[0]+b[2]); y1 = max(a[1]+a[3], b[1]+b[3])
     return (x0, y0, x1-x0, y1-y0)
 
+def _pad_hit_box(bounds: Tuple[float, float, float, float],
+                 *, grow_height: float = 0.035,
+                 shift_down: float = 0.012) -> Tuple[float, float, float, float]:
+    """Pad a figure-normalized rectangle, extending height and nudging downward."""
+    x0, y0, w, h = bounds
+    new_y0 = max(0.0, y0 - shift_down)
+    # Preserve the original top edge while growing height by ``grow_height``.
+    delta_y = y0 - new_y0
+    new_h = min(1.0 - new_y0, h + grow_height + delta_y)
+    return (x0, new_y0, w, new_h)
+
 # ---------- Blueprint ----------
 
 training_fourier_bp = Blueprint("training_fourier", __name__)
@@ -377,7 +388,7 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
             ax_ph_g.set_title(r"given $\varphi(j\omega)$", fontsize=11)
 
         # rows 1..4: answer options in GREEN
-        hit_boxes: List[Tuple[float,float,float,float]] = []
+        hit_box_axes: List[Tuple[matplotlib.axes.Axes, ...]] = []
         for i in range(4):
             ax_mag = fig.add_subplot(gs[1 + i, 0])
             ax_ph  = fig.add_subplot(gs[1 + i, 1])
@@ -393,10 +404,8 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
                 _format_time_axis(ax_t, t)
                 ax_t.set_title(fr"$\mathcal{{O}}_{i+1}$", fontsize=11)
 
-                # hit box: union of mag+phase axes
-                r1 = ax_mag.get_position().bounds
-                r2 = ax_ph.get_position().bounds
-                hit_boxes.append(_rect_union(r1, r2))
+                # union of magnitude/phase axes is the clickable target
+                hit_box_axes.append((ax_mag, ax_ph))
 
             else:  # FREQ_TO_TIME
                 # faint gray reference of given spectrum on left
@@ -408,8 +417,20 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
                 _format_time_axis(ax_t, t)
                 ax_t.set_title(fr"$\mathcal{{O}}_{i+1}$", fontsize=11)
 
-                # hit box: just the time axis area (rightmost col)
-                hit_boxes.append(ax_t.get_position().bounds)
+                # time axis alone is the clickable area
+                hit_box_axes.append((ax_t,))
+
+        # ensure constrained layout updates before measuring axis bounds
+        fig.canvas.draw()
+
+        hit_boxes: List[Tuple[float, float, float, float]] = []
+        for axes_tuple in hit_box_axes:
+            if direction == "TIME_TO_FREQ":
+                r1 = axes_tuple[0].get_position().bounds
+                r2 = axes_tuple[1].get_position().bounds
+                hit_boxes.append(_pad_hit_box(_rect_union(r1, r2)))
+            else:
+                hit_boxes.append(axes_tuple[0].get_position().bounds)
 
         # encode
         buf = io.BytesIO()
