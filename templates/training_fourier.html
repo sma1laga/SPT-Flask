@@ -69,7 +69,7 @@
   let prefetchTargetSignature = null;
   let prefetchPromise = null;
   let pendingWarmRequest = null;
-  let answeredThisRound = false;
+  let prefetchQueuedForCurrentRound = false;
 
 
   function getDifficulty(){ const x=document.querySelector('input[name="difficulty"]:checked'); return x?x.value:null; }
@@ -77,6 +77,42 @@
   function signatureFor(d,dir){ return `${d}|${dir}`; }
 
   function req(url, payload, signal){ return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal}).then(r=>r.json()); }
+ 
+  function ensureImagePrimed(data){
+    if(!data) return Promise.resolve();
+    if(data._imagePromise) return data._imagePromise;
+    const src = 'data:image/png;base64,' + data.plot_data;
+    const preloadImg = new Image();
+    const promise = new Promise((resolve) => {
+      const finalize = () => resolve(preloadImg);
+      preloadImg.onload = () => {
+        if (typeof preloadImg.decode === 'function') {
+          preloadImg.decode().catch(()=>{}).finally(finalize);
+        } else {
+          finalize();
+        }
+      };
+      preloadImg.onerror = finalize;
+    });
+    preloadImg.src = src;
+    data._image = preloadImg;
+    data._imagePromise = promise;
+    return promise;
+  }
+
+  function applyImageToDom(data){
+    const img = document.getElementById('fourier_plot_image');
+    const src = data._image ? data._image.src : 'data:image/png;base64,' + data.plot_data;
+    if (img.getAttribute('src') !== src) {
+      img.src = src;
+    }
+    img.style.display = 'block';
+    if (typeof img.decode === 'function') {
+      img.decode().catch(()=>{}).then(()=>layoutOverlayBoxes());
+    } else if (img.complete) {
+      setTimeout(layoutOverlayBoxes, 0);
+    }
+  }
 
   function renderProblemFromData(data, diffTag=null, dirTag=null){
     if (data.error){ showFeedback('Error: '+data.error); return; }
@@ -86,15 +122,16 @@
 
     latexSignal = data.latex_time || ''; latexTransform = data.latex_freq || ''; propMsg = data.property_msg || '';
 
-    const img = document.getElementById('fourier_plot_image');
-    img.src = 'data:image/png;base64,' + data.plot_data;
-    img.style.display = 'block';
+    const overlay = document.getElementById('plotOverlay');
+    overlay.innerHTML = '';
+
+    ensureImagePrimed(data).catch(()=>{}).finally(()=>{
+      applyImageToDom(data);
+    });
 
     correctIndex = data.correctIndex;
     currentHitBoxes = data.hit_boxes || [];
 
-    const overlay = document.getElementById('plotOverlay');
-    overlay.innerHTML = ''; // rebuilt hits
     for (let i=0;i<4;i++){
       const h = document.createElement('div');
       h.className = 'plot-hit';
@@ -109,7 +146,7 @@
     showFeedback('Problem generated. Pick the correct row.');
     hideExplanation();
     resetOverlayUI();
-    answeredThisRound = false;
+    prefetchQueuedForCurrentRound = false;
   }
 
   function hidePlot(){
@@ -220,7 +257,10 @@
     const diff=getDifficulty(), dir=getDirection();
     if(!diff||!dir) return showFeedback('Please choose a direction and difficulty first.');
     req("{{ url_for('training_fourier.generate_problem') }}", {difficulty:diff, direction:dir})
-     .then(data=>{ data._difficulty=diff; data._direction=dir; data._signature=signatureFor(diff,dir); renderProblemFromData(data, diff, dir); })
+     .then(data=>{
+       data._difficulty=diff; data._direction=dir; data._signature=signatureFor(diff,dir);
+       renderProblemFromData(data, diff, dir);
+     })
      .catch(()=>showFeedback('Error generating problem.'));
   }
   function onNextProblemClick(){
@@ -247,8 +287,15 @@
     destroyPrefetch();
     generateProblem();
   }
+  function maybeQueueNextPrefetch(){
+    if(prefetchQueuedForCurrentRound) return;
+    prefetchQueuedForCurrentRound = true;
+    prefetchNextProblem();
+  }
+
   function checkAnswer(selected){
     if (correctIndex===null) return showFeedback('Generate a problem first!');
+    maybeQueueNextPrefetch();
     req("{{ url_for('training_fourier.check_answer') }}", {selectedIndex: selected, correctIndex: correctIndex})
     .then(data=>{
       document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
@@ -259,7 +306,6 @@
         const btnSel=document.querySelector(`.option-btn[data-index="${selected}"]`); if(btnSel) btnSel.classList.add('incorrect'); }
       const btnCor=document.querySelector(`.option-btn[data-index="${correctIndex}"]`); if(btnCor) btnCor.classList.add('correct');
       showFeedback(data.feedback||''); const ok=(selected===correctIndex); bumpStreak(ok); showExplanation();
-      if(!answeredThisRound){ answeredThisRound=true; prefetchNextProblem(); }
     })
     .catch(()=>showFeedback('Error checking answer.'));
   }
@@ -285,11 +331,13 @@
       .then(data=>{
         if(!data) return;
         data._difficulty=diff; data._direction=dir; data._signature=sig;
-        if(signatureFor(getDifficulty(), getDirection())===sig){
-          cachedProblem=data; cachedSignature=sig;
-        } else {
-          cachedProblem=null; cachedSignature=null;
-        }
+        return ensureImagePrimed(data).catch(()=>{}).then(()=>{
+          if(signatureFor(getDifficulty(), getDirection())===sig){
+            cachedProblem=data; cachedSignature=sig;
+          } else {
+            cachedProblem=null; cachedSignature=null;
+          }
+        });
       })
       .catch(()=>{})
       .finally(()=>{
@@ -320,6 +368,7 @@
     pendingWarmRequest=null;
     cachedProblem=null;
     cachedSignature=null;
+    prefetchQueuedForCurrentRound=false;
   }
 
   // --- streak ---
