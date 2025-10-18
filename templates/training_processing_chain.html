@@ -80,13 +80,11 @@ function renderProblem() {
   const inputPlot = document.getElementById('input_plot');
   const summaryBox = document.getElementById('diagramSummary');
   const summaryList = document.getElementById('diagramSummaryList');
+  const mathElements = [];
   if (currentProblem.inputExpressionLatex) {
     inputExpr.innerHTML = 'Input spectrum: \\(' + currentProblem.inputExpressionLatex + '\\)';
-    if (window.MathJax && MathJax.typesetPromise) {
-      MathJax.typesetPromise([inputExpr]);
-    } else if (window.MathJax && MathJax.typeset) {
-      MathJax.typeset([inputExpr]);
-    }
+    mathElements.push(inputExpr);
+
   } else if (currentProblem.inputExpression) {
     inputExpr.textContent = 'Input spectrum: ' + currentProblem.inputExpression;
   } else {
@@ -109,18 +107,23 @@ function renderProblem() {
   if (ops.length) {
     ops.forEach(op => {
       const li = document.createElement('li');
-      const strong = document.createElement('strong');
-      strong.textContent = op.letter + ':';
-      li.appendChild(strong);
-      const signalSpan = document.createElement('span');
-      signalSpan.textContent = ' ' + (op.signal || '');
-      li.appendChild(signalSpan);
-      li.appendChild(document.createTextNode(' after '));
-      const nameEm = document.createElement('em');
-      nameEm.textContent = op.name || '';
-      li.appendChild(nameEm);
-      if (op.parameter) {
-        li.appendChild(document.createTextNode(' (' + op.parameter + ')'));
+      if (op.summaryLatex) {
+        li.innerHTML = '\\(' + op.summaryLatex + '\\)';
+        mathElements.push(li);
+      } else {
+        const strong = document.createElement('strong');
+        strong.textContent = op.letter + ':';
+        li.appendChild(strong);
+        const signalSpan = document.createElement('span');
+        signalSpan.textContent = ' ' + (op.signal || '');
+        li.appendChild(signalSpan);
+        li.appendChild(document.createTextNode(' after '));
+        const nameEm = document.createElement('em');
+        nameEm.textContent = op.name || '';
+        li.appendChild(nameEm);
+        if (op.parameter) {
+          li.appendChild(document.createTextNode(' (' + op.parameter + ')'));
+        }
       }
       summaryList.appendChild(li);
     });
@@ -138,7 +141,12 @@ function renderProblem() {
     // heading
     const h = document.createElement('h3');
     const signalName = letterObj.signalLabel || letterObj.letter;
-    h.textContent = 'Signal ' + signalName;
+    if (letterObj.signalLabelLatex) {
+      h.innerHTML = 'Signal \\(' + letterObj.signalLabelLatex + '\\)';
+      mathElements.push(h);
+    } else {
+      h.textContent = 'Signal ' + signalName;
+    }
     section.appendChild(h);
     // image options
     const imgRow = document.createElement('div');
@@ -164,6 +172,14 @@ function renderProblem() {
     section.appendChild(imgRow);
     container.appendChild(section);
   });
+
+  if (mathElements.length && window.MathJax) {
+    if (MathJax.typesetPromise) {
+      MathJax.typesetPromise(mathElements).catch(() => {});
+    } else if (MathJax.typeset) {
+      MathJax.typeset(mathElements);
+    }
+  }
 }
 
 function onOptionClick(evt) {

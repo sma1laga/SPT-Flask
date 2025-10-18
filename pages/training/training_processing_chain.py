@@ -181,7 +181,8 @@ def _create_easy_problem() -> Dict[str, object]:
     # Compute the correct spectra step by step and generate distractors
     letter_results: List[Dict[str, object]] = []
     signal_labels = ["a(t)", "b(t)", "c(t)"]
-    freq_titles = ["A(jω)", "B(jω)", "C(jω)"]
+    signal_labels_latex = ["a(t)", "b(t)", "c(t)"]
+    freq_titles = [r"$A(j\omega)$", r"$B(j\omega)$", r"$C(j\omega)$"]
     prev_sig = x_sig.copy()
     for i, op_name in enumerate(op_sequence):
         # Apply correct operation
@@ -228,6 +229,7 @@ def _create_easy_problem() -> Dict[str, object]:
             {
                 "letter": chr(ord("A") + i),
                 "signalLabel": signal_labels[i],
+                "signalLabelLatex": signal_labels_latex[i],
                 "images": encoded_imgs,
                 "correctIndex": correct_index,
             }
@@ -239,17 +241,29 @@ def _create_easy_problem() -> Dict[str, object]:
     for idx, op_name in enumerate(op_sequence):
         letter = chr(ord("A") + idx)
         signal_name = f"{chr(ord('a') + idx)}(t)"
+        signal_latex = signal_labels_latex[idx]
+        name_latex = _operation_name_latex(op_name)
+        param_latex = _operation_parameter_label_latex(op_name, params[op_name])
+        summary_latex = (
+            rf"\mathbf{{{letter}}}:\; {signal_latex}\; \text{{after}}\; {name_latex}"
+        )
+        if param_latex:
+            summary_latex += rf"\;({param_latex})"
         diagram_ops.append(
             {
                 "letter": letter,
                 "signal": signal_name,
                 "name": op_name,
                 "parameter": _operation_parameter_label(op_name, params[op_name]),
+                "signalLatex": signal_latex,
+                "nameLatex": name_latex,
+                "parameterLatex": param_latex,
+                "summaryLatex": summary_latex,
             }
         )
 
     diagram_img = _draw_diagram(op_sequence, params)
-    input_plot = _plot_spectrum(w, x_sig, title="X(jω)")
+    input_plot = _plot_spectrum(w, x_sig, title=r"$X(j\omega)$")
 
 
     return {
@@ -279,6 +293,8 @@ def _random_multiplication_param(exclude: str | None = None) -> str:
     """
     Choose a random multiplication parameter string.  Optionally exclude
     ``exclude`` from the draw to avoid returning the same value twice.
+
+    @Paul here highly adaptable, thought this makes sense? Adapt if needed..
 
     Supported formats (drawn uniformly):
       * ``constant:K`` with K ∈ {±0.5, ±1, ±1.5, ±2}
@@ -492,7 +508,7 @@ def _plot_spectrum(w: np.ndarray, sig: np.ndarray, title: str) -> str:
     ax.plot(w, np.real(sig), label="Re", color="tab:blue", lw=1.5)
     if np.any(np.abs(np.imag(sig)) > 1e-10):
         ax.plot(w, np.imag(sig), linestyle="dotted", label="Im", color="tab:orange", lw=1.5)
-    ax.set_xlabel("Frequency ω")
+    ax.set_xlabel(r"Frequency $\omega$")
     ax.set_title(title)
     ax.axhline(0, color="gray", lw=0.5)
     ax.axvline(0, color="gray", lw=0.5)
@@ -750,6 +766,28 @@ def _operation_parameter_label(op_name: str, param: str | None) -> str | None:
         return _describe_filter_param(param)
     return None
 
+def _operation_name_latex(op_name: str) -> str:
+    """Return a LaTeX representation for an operation name."""
+
+    if op_name == "Multiplication":
+        return r"\text{Multiplication}"
+    if op_name == "Hilbert":
+        return r"\mathcal{H}"
+    if op_name == "Filter":
+        return r"\text{Filter}"
+    return rf"\text{{{op_name}}}"
+
+
+def _operation_parameter_label_latex(op_name: str, param: str | None) -> str | None:
+    """Return a LaTeX representation for an operation parameter."""
+
+    if op_name == "Multiplication":
+        return _describe_multiplication_param_latex(param)
+    if op_name == "Filter":
+        return _describe_filter_param_latex(param)
+    return None
+
+
 
 def _describe_multiplication_param(param: str | None) -> str | None:
     """Return a display string for the multiplication parameter."""
@@ -805,6 +843,66 @@ def _describe_multiplication_param(param: str | None) -> str | None:
 
     return raw
 
+def _describe_multiplication_param_latex(param: str | None) -> str | None:
+    """Return a LaTeX display string for the multiplication parameter."""
+
+    if not param:
+        return None
+
+    raw = param.strip()
+    lower = raw.lower()
+
+    if lower.startswith("constant:"):
+        value = _format_number(raw.split(":", 1)[1])
+        return _format_number_latex(value)
+
+    if lower.startswith("imaginary"):
+        parts = raw.split(":", 1)
+        if len(parts) == 2:
+            coeff = _format_number(parts[1])
+            coeff_fmt = _format_number_latex(coeff)
+            if coeff_fmt == "1":
+                return "j"
+            return rf"{coeff_fmt}\,j"
+        return "j"
+
+    if lower.startswith("linear:"):
+        value = _format_number(raw.split(":", 1)[1])
+        value_fmt = _format_number_latex(value)
+        if value_fmt == "1":
+            return r"\omega"
+        return rf"{value_fmt}\,\omega"
+
+    if lower.startswith("sin:") or lower.startswith("cos:"):
+        func = r"\sin" if lower.startswith("sin:") else r"\cos"
+        _, rest = raw.split(":", 1)
+        tokens = [t.strip() for t in rest.split(",")]
+        amp = _format_number(tokens[0]) if tokens and tokens[0] else "1"
+        freq = _format_number(tokens[1]) if len(tokens) > 1 else "1"
+        amp_fmt = _format_number_latex(amp)
+        freq_fmt = _format_number_latex(freq)
+        amp_prefix = "" if amp_fmt == "1" else rf"{amp_fmt}\,"
+        return rf"{amp_prefix}{func}({freq_fmt}\,t)"
+
+    if lower.startswith("exponential:"):
+        _, rest = raw.split(":", 1)
+        parts = [p.strip() for p in rest.split(",") if p.strip()]
+        if len(parts) == 3:
+            coeff, sign, freq = parts
+        elif len(parts) == 2:
+            coeff, sign, freq = "1", parts[0], parts[1]
+        else:
+            coeff, sign, freq = "1", "+", "1"
+        sign_symbol = "+" if sign.startswith("+") else "-"
+        coeff_fmt = _format_number_latex(_format_number(coeff))
+        freq_fmt = _format_number_latex(_format_number(freq))
+        coeff_prefix = "" if coeff_fmt == "1" else rf"{coeff_fmt}\,"
+        return rf"{coeff_prefix}e^{{{sign_symbol} j {freq_fmt}\,t}}"
+
+    safe_raw = raw.replace("\\", r"\textbackslash ")
+    return rf"\text{{{safe_raw}}}"
+
+
 
 def _describe_filter_param(param: str | None) -> str | None:
     """Return a readable filter description."""
@@ -836,6 +934,40 @@ def _describe_filter_param(param: str | None) -> str | None:
     return raw
 
 
+def _describe_filter_param_latex(param: str | None) -> str | None:
+    """Return a LaTeX string describing a filter parameter."""
+
+    if not param:
+        return None
+
+    raw = param.strip()
+    lower = raw.lower()
+
+    if lower.startswith("lowpass:"):
+        value = _format_number(raw.split(":", 1)[1])
+        value_fmt = _format_number_latex(value)
+        return rf"\text{{lowpass}}\; (\omega_c = {value_fmt})"
+
+    if lower.startswith("highpass:"):
+        value = _format_number(raw.split(":", 1)[1])
+        value_fmt = _format_number_latex(value)
+        return rf"\text{{highpass}}\; (\omega_c = {value_fmt})"
+
+    if lower.startswith("bandpass:"):
+        _, rest = raw.split(":", 1)
+        try:
+            lo, hi = [part.strip() for part in rest.split(",", 1)]
+        except ValueError:
+            lo, hi = rest, ""
+        lo_fmt = _format_number_latex(_format_number(lo))
+        hi_fmt = _format_number_latex(_format_number(hi)) if hi else ""
+        if hi_fmt:
+            return rf"\text{{bandpass}}\; ({lo_fmt} \leq |\omega| \leq {hi_fmt})"
+        return rf"\text{{bandpass}}\; (|\omega| \geq {lo_fmt})"
+
+    safe_raw = raw.replace("\\", r"\textbackslash ")
+    return rf"\text{{{safe_raw}}}"
+
 def _format_number(value: str) -> str:
     """Format a numeric string without unnecessary decimal places."""
 
@@ -846,3 +978,11 @@ def _format_number(value: str) -> str:
     if abs(num - round(num)) < 1e-9:
         return str(int(round(num)))
     return f"{num:g}"
+
+
+def _format_number_latex(value: str) -> str:
+    """Return a LaTeX-safe version of a formatted numeric string."""
+
+    # ``_format_number`` already normalises decimal places, so we only need to
+    # ensure surrounding whitespace is removed.
+    return _format_number(value)
