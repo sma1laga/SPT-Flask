@@ -80,7 +80,14 @@ function renderProblem() {
   const inputPlot = document.getElementById('input_plot');
   const summaryBox = document.getElementById('diagramSummary');
   const summaryList = document.getElementById('diagramSummaryList');
-  if (currentProblem.inputExpression) {
+  if (currentProblem.inputExpressionLatex) {
+    inputExpr.innerHTML = 'Input spectrum: \\(' + currentProblem.inputExpressionLatex + '\\)';
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise([inputExpr]);
+    } else if (window.MathJax && MathJax.typeset) {
+      MathJax.typeset([inputExpr]);
+    }
+  } else if (currentProblem.inputExpression) {
     inputExpr.textContent = 'Input spectrum: ' + currentProblem.inputExpression;
   } else {
     inputExpr.textContent = '';

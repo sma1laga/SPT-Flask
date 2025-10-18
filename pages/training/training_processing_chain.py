@@ -39,6 +39,7 @@ import matplotlib
 # Use a non‑interactive backend so that plots work without a display
 matplotlib.use("Agg")  # noqa: E402
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 
 # Define a blueprint for the processing chain training.  Do not specify a URL
@@ -147,6 +148,13 @@ def _create_easy_problem() -> Dict[str, object]:
         base = _tri_spectrum(w, width)
     x_sig = amp * base
     input_expr = f"{amp}*{input_shape}(w/{width})"
+    amp_fmt = format(amp, "g")
+    width_fmt = format(width, "g")
+    operator_name = "rect" if input_shape == "rect" else "tri"
+    latex_shape = (
+        rf"\operatorname{{{operator_name}}}\left(\frac{{\omega}}{{{width_fmt}}}\right)"
+    )
+    input_expr_latex = f"{amp_fmt} \\cdot {latex_shape}"
 
     # 2) Choose operations and layout
     # Define three layouts: sequences of operation names; letters always refer
@@ -252,6 +260,7 @@ def _create_easy_problem() -> Dict[str, object]:
         # convert tuple to list for JSON serialisation
         "operations": list(op_sequence),
         "letters": letter_results,
+        "inputExpressionLatex": input_expr_latex,
     }
 
 
@@ -488,7 +497,12 @@ def _plot_spectrum(w: np.ndarray, sig: np.ndarray, title: str) -> str:
     ylim = max(y_abs_max * 1.2, 0.5)
     ax.set_xlim(-5, 5)
     ax.set_ylim(-ylim, ylim)
-    ax.grid(True, which="both", ls=":", lw=0.5)
+    ax.xaxis.set_major_locator(MultipleLocator(1.0))
+    ax.xaxis.set_minor_locator(MultipleLocator(0.5))
+    ax.yaxis.set_major_locator(MultipleLocator(1.0))
+    ax.yaxis.set_minor_locator(MultipleLocator(0.5))
+    ax.grid(which="major", linestyle="-", linewidth=0.8, alpha=0.7)
+    ax.grid(which="minor", linestyle=":", linewidth=0.5, alpha=0.5)
     buf = io.BytesIO()
     fig.tight_layout()
     fig.savefig(buf, format="png")
