@@ -172,12 +172,14 @@ def _create_easy_problem() -> Dict[str, object]:
 
     # Compute the correct spectra step by step and generate distractors
     letter_results: List[Dict[str, object]] = []
-    cur_sig = x_sig.copy()
+    signal_labels = ["a(t)", "b(t)", "c(t)"]
+    freq_titles = ["A(jω)", "B(jω)", "C(jω)"]
+    prev_sig = x_sig.copy()
     for i, op_name in enumerate(op_sequence):
         # Apply correct operation
         param = params[op_name]
-        cur_sig = _apply_operation(cur_sig, op_name, param, w)
-        correct = cur_sig.copy()
+        next_sig = _apply_operation(prev_sig, op_name, param, w)
+        correct = next_sig.copy()
 
         # Generate two distractors by varying the current operation only
         distractors = []
@@ -185,11 +187,11 @@ def _create_easy_problem() -> Dict[str, object]:
             # two new multiplication params
             for _ in range(2):
                 alt_param = _random_multiplication_param(exclude=mul_param)
-                alt_sig = _apply_operation(x_sig if i == 0 else letter_results[-1]["correct_sig"], op_name, alt_param, w)
+                alt_sig = _apply_operation(prev_sig, op_name, alt_param, w)
                 distractors.append(alt_sig)
         elif op_name == "Hilbert":
             # distractor 1: skip Hilbert
-            alt_sig1 = (cur_sig.copy() if i == 0 else letter_results[-1]["correct_sig"].copy())
+            alt_sig1 = prev_sig.copy()
             # distractor 2: apply Hilbert on the input rather than at this point
             alt_sig2 = _apply_operation(x_sig, "Hilbert", None, w)
             distractors.extend([alt_sig1, alt_sig2])
@@ -197,7 +199,7 @@ def _create_easy_problem() -> Dict[str, object]:
             # generate two different filters
             for _ in range(2):
                 alt_param = _random_filter_param(exclude=fil_param)
-                alt_sig = _apply_operation(letter_results[-1]["correct_sig"], "Filter", alt_param, w)
+                alt_sig = _apply_operation(prev_sig, "Filter", alt_param, w)
                 distractors.append(alt_sig)
         else:
             # fallback: copy signal twice
@@ -212,27 +214,27 @@ def _create_easy_problem() -> Dict[str, object]:
 
         # Encode each option as base64 image
         encoded_imgs = [
-            _plot_spectrum(w, sig, title=f"{chr(ord('A')+i)}(jω)") for sig in shuffled
+            _plot_spectrum(w, sig, title=f"{freq_titles[i]}") for sig in shuffled
         ]
         letter_results.append(
             {
                 "letter": chr(ord("A") + i),
+                "signalLabel": signal_labels[i],
                 "images": encoded_imgs,
                 "correctIndex": correct_index,
-                "correct_sig": correct,  # keep for next stage computation
             }
         )
+        prev_sig = next_sig
 
     # Draw block diagram
     diagram_img = _draw_diagram(op_sequence)
+    input_plot = _plot_spectrum(w, x_sig, title="X(jω)")
 
-    # Strip internal signal objects before serialising
-    for item in letter_results:
-        item.pop("correct_sig", None)
 
     return {
         "diagram": diagram_img,
         "inputExpression": input_expr,
+        "inputPlot": input_plot,
         # convert tuple to list for JSON serialisation
         "operations": list(op_sequence),
         "letters": letter_results,
@@ -482,43 +484,56 @@ def _plot_spectrum(w: np.ndarray, sig: np.ndarray, title: str) -> str:
 
 def _draw_diagram(sequence: Tuple[str, str, str]) -> str:
     """
-    Draw a simple block diagram for the given sequence of operations.
+    Draw a block diagram that mirrors the processing chain presentation.
 
-    ``sequence`` is a tuple of three operation names corresponding to the
-    blocks.  The diagram is drawn horizontally with labellsed arrows for
-    connections A, B and C.  The returned value is a base64 PNG
+    Multiplication is shown as a circle with a multiplication symbol and the
+    intermediate signals are labelled x(t) → a(t) → b(t) → c(t) along the
+    arrows to match the training flow.
     """
-    fig, ax = plt.subplots(figsize=(6, 1.8))
+    fig, ax = plt.subplots(figsize=(7, 2))
     ax.axis("off")
-    # Coordinates for blocks
-    x_positions = [0.5, 2.5, 4.5]
+
+    x_positions = [1.2, 3.2, 5.2]
+    y_pos = 0.5
     block_labels = list(sequence)
-    # Draw input label
-    ax.text(0.0, 0.5, "$x(t)$", ha="center", va="center", fontsize=12)
-    # Draw blocks and arrows
+    signal_labels = ["x(t)", "a(t)", "b(t)", "c(t)"]
+
+    input_x = 0.2
+    arrow_props = dict(arrowstyle="->", lw=1.2)
+    right_edges = []
+
     for i, (x, lbl) in enumerate(zip(x_positions, block_labels)):
-        # rectangle
-        rect = plt.Rectangle((x - 0.4, 0.3), 0.8, 0.4, fill=False, lw=1.5)
-        ax.add_patch(rect)
-        ax.text(x, 0.5, lbl, ha="center", va="center", fontsize=10)
-        # arrow from previous
-        if i == 0:
-            ax.annotate("", xy=(x - 0.8, 0.5), xytext=(0.2, 0.5),
-                        arrowprops=dict(arrowstyle="->", lw=1.2))
-            # label letter on this connection is after this block, handled below
+        if lbl == "Multiplication":
+            radius = 0.4
+            left_edge = x - radius
+            right_edge = x + radius
+            circle = plt.Circle((x, y_pos), radius, fill=False, lw=1.5)
+            ax.add_patch(circle)
+            ax.text(x, y_pos, "×", ha="center", va="center", fontsize=14, fontweight="bold")
         else:
-            ax.annotate("", xy=(x - 0.8, 0.5), xytext=(x_positions[i - 1] + 0.4, 0.5),
-                        arrowprops=dict(arrowstyle="->", lw=1.2))
-        # letter label above arrow (A, B, C)
-        letter = chr(ord("A") + i)  # A for first connection, etc.
-        # Place letter halfway between this block and previous
-        x_letter = (x_positions[i - 1] + 0.4 + (x - 0.8)) / 2.0 if i > 0 else (0.2 + (x - 0.8)) / 2.0
-        ax.text(x_letter, 0.7, letter, ha="center", va="center", fontsize=12, fontweight="bold")
-    # final arrow to output
-    x_end = x_positions[-1] + 0.4
-    ax.annotate("", xy=(x_end + 0.8, 0.5), xytext=(x_end, 0.5),
-                arrowprops=dict(arrowstyle="->", lw=1.2))
-    ax.text(x_end + 1.0, 0.5, "$y(t)$", ha="center", va="center", fontsize=12)
+            half_width = 0.45
+            left_edge = x - half_width
+            right_edge = x + half_width
+            rect = plt.Rectangle((left_edge, y_pos - 0.3), 2 * half_width, 0.6, fill=False, lw=1.5)
+            ax.add_patch(rect)
+            ax.text(x, y_pos, lbl, ha="center", va="center", fontsize=10)
+
+        if i == 0:
+            ax.text((input_x + left_edge) / 2.0, y_pos + 0.18, f"${signal_labels[0]}$", ha="center", va="center", fontsize=12)
+            ax.annotate("", xy=(left_edge, y_pos), xytext=(input_x, y_pos), arrowprops=arrow_props)
+        else:
+            prev_right = right_edges[-1]
+            ax.annotate("", xy=(left_edge, y_pos), xytext=(prev_right, y_pos), arrowprops=arrow_props)
+            ax.text((prev_right + left_edge) / 2.0, y_pos + 0.18, f"${signal_labels[i]}$", ha="center", va="center", fontsize=12)
+
+        right_edges.append(right_edge)
+
+    last_right = right_edges[-1]
+    output_x = last_right + 0.8
+    ax.annotate("", xy=(output_x, y_pos), xytext=(last_right, y_pos), arrowprops=arrow_props)
+    ax.text((last_right + output_x) / 2.0, y_pos + 0.18, f"${signal_labels[-1]}$", ha="center", va="center", fontsize=12)
+    ax.text(output_x + 0.4, y_pos, "$y(t)$", ha="center", va="center", fontsize=12)
+
     # Save diagram
     buf = io.BytesIO()
     fig.tight_layout()

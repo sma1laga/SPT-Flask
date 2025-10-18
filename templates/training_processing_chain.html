@@ -24,6 +24,11 @@
 <div style="text-align:center;margin-bottom:20px;">
   <img id="diagram_image" alt="Processing chain diagram" style="max-width:100%;display:none;border:1px solid #ccd0d5;border-radius:4px;" />
 </div>
+<!-- Input spectrum -->
+<div id="inputSection" style="display:none;text-align:center;margin-bottom:25px;">
+  <p id="input_expression" style="margin-bottom:10px;font-size:1.05em;color:var(--text-color);"></p>
+  <img id="input_plot" alt="Input spectrum" style="max-width:100%;border:1px solid #ccd0d5;border-radius:4px;display:none;" />
+</div>
 
 <!-- Letters container -->
 <div id="lettersContainer" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:25px;"></div>
@@ -65,6 +70,23 @@ function renderProblem() {
   answeredLetters = 0;
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('feedback').textContent = 'Problem generated. Select the correct outputs.';
+  // show input details
+  const inputSection = document.getElementById('inputSection');
+  const inputExpr = document.getElementById('input_expression');
+  const inputPlot = document.getElementById('input_plot');
+  if (currentProblem.inputExpression) {
+    inputExpr.textContent = 'Input spectrum: ' + currentProblem.inputExpression;
+  } else {
+    inputExpr.textContent = '';
+  }
+  if (currentProblem.inputPlot) {
+    inputPlot.src = 'data:image/png;base64,' + currentProblem.inputPlot;
+    inputPlot.style.display = 'block';
+  } else {
+    inputPlot.removeAttribute('src');
+    inputPlot.style.display = 'none';
+  }
+  inputSection.style.display = 'block';
   // show diagram
   const diag = document.getElementById('diagram_image');
   diag.src = 'data:image/png;base64,' + currentProblem.diagram;
@@ -78,7 +100,8 @@ function renderProblem() {
     section.className = 'letter-section';
     // heading
     const h = document.createElement('h3');
-    h.textContent = 'Connection ' + letterObj.letter;
+    const signalName = letterObj.signalLabel || letterObj.letter;
+    h.textContent = 'Signal ' + signalName;
     section.appendChild(h);
     // image options
     const imgRow = document.createElement('div');
@@ -150,6 +173,7 @@ document.getElementById('generateBtn').addEventListener('click', () => {
   // clear any previous problem state
   currentProblem = null;
   document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('inputSection').style.display = 'none';
   document.getElementById('lettersContainer').innerHTML = '';
   document.getElementById('feedback').textContent = 'Generating problem…';
   // Use url_for to resolve the generate endpoint.  See comment above.
@@ -168,6 +192,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('feedback').textContent = '';
   document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('inputSection').style.display = 'none';
   document.getElementById('lettersContainer').innerHTML = '';
   currentProblem = null;
 });
