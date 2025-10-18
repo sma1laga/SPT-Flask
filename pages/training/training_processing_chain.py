@@ -198,10 +198,10 @@ def _create_easy_problem() -> Dict[str, object]:
                 alt_sig = _apply_operation(prev_sig, op_name, alt_param, w)
                 distractors.append(alt_sig)
         elif op_name == "Hilbert":
-            # distractor 1: skip Hilbert
+            # distractor 1: skip Hilbert entirely
             alt_sig1 = prev_sig.copy()
-            # distractor 2: apply Hilbert on the input rather than at this point
-            alt_sig2 = _apply_operation(x_sig, "Hilbert", None, w)
+            # distractor 2: apply an incorrect Hilbert phase (sign error)
+            alt_sig2 = _apply_incorrect_hilbert(prev_sig, w)
             distractors.extend([alt_sig1, alt_sig2])
         elif op_name == "Filter":
             # generate two different filters
@@ -214,7 +214,7 @@ def _create_easy_problem() -> Dict[str, object]:
             distractors.extend([correct.copy(), correct.copy()])
 
         # Shuffle options and determine correct index
-        options = [correct] + distractors
+        options = _ensure_option_diversity([correct] + distractors, w)
         indices = list(range(3))
         random.shuffle(indices)
         shuffled = [options[j] for j in indices]
@@ -441,6 +441,14 @@ def _apply_hilbert(signal: np.ndarray, w: np.ndarray) -> np.ndarray:
     sign_w = np.sign(w)
     return -1j * sign_w * signal
 
+def _apply_incorrect_hilbert(signal: np.ndarray, w: np.ndarray) -> np.ndarray:
+    """Return a plausible but incorrect Hilbert transform variant."""
+
+    sign_w = np.sign(w)
+    # flip the sign convention to emulate a common mistake
+    return 1j * sign_w * signal
+
+
 
 def _apply_filter(signal: np.ndarray, param: str | None, w: np.ndarray) -> np.ndarray:
     """
@@ -658,6 +666,79 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         "label": label,
         "param": param_text,
     }
+
+def _ensure_option_diversity(options: List[np.ndarray], w: np.ndarray) -> List[np.ndarray]:
+    """Ensure the spectra shown to the user are pairwise distinguishable."""
+
+    adjusted: List[np.ndarray] = []
+    for idx, spec in enumerate(options):
+        candidate = spec.copy()
+        if idx == 0:
+            adjusted.append(candidate)
+            continue
+
+        attempt = 0
+        while any(_spectra_are_close(candidate, other) for other in adjusted):
+            candidate = _nudge_spectrum(candidate, w, attempt)
+            attempt += 1
+            if attempt > 6:
+                break
+        adjusted.append(candidate)
+    return adjusted
+
+
+def _spectra_are_close(a: np.ndarray, b: np.ndarray) -> bool:
+    """Return True when two spectra are visually indistinguishable."""
+
+    return np.allclose(a, b, rtol=1e-3, atol=1e-5)
+
+
+def _nudge_spectrum(sig: np.ndarray, w: np.ndarray, attempt: int) -> np.ndarray:
+    """Perturb ``sig`` slightly so it no longer matches another option."""
+
+    if np.allclose(sig, 0.0, atol=1e-8):
+        width = 1.2 + 0.4 * attempt
+        scale = 0.2 + 0.05 * attempt
+        return scale * np.exp(-0.5 * (w / (width + 1e-6)) ** 2)
+
+    real_part = np.real(sig)
+    imag_part = np.imag(sig)
+    real_max = np.max(np.abs(real_part)) if np.any(real_part) else 0.0
+    imag_max = np.max(np.abs(imag_part)) if np.any(imag_part) else 0.0
+    overall_scale = max(real_max, imag_max, 1e-3)
+
+    mostly_real = imag_max < 0.1 * max(real_max, 1e-6)
+
+    if attempt % 2 == 0:
+        amp_factor = 1.0 + 0.12 * (attempt + 1)
+    else:
+        amp_factor = 1.0 - 0.1 * (attempt + 1) / (attempt + 2)
+
+    # Add a gentle tilt plus a localised bump so that the shape remains
+    # believable but visibly different from the original
+    tilt_strength = 0.03 * (attempt + 1)
+    tilt = tilt_strength * (w / 5.0)
+
+    bump_centres = [0.0, 2.5, -2.5, 1.5, -1.5, 3.5]
+    centre = bump_centres[attempt % len(bump_centres)]
+    width = 1.1 + 0.3 * (attempt % 3)
+    bump = np.exp(-0.5 * ((w - centre) / width) ** 2)
+    bump_strength = 0.15 * (attempt + 1) * overall_scale
+
+    if mostly_real:
+        new_real = amp_factor * real_part + bump_strength * bump + tilt * overall_scale
+        new_imag = amp_factor * imag_part
+        return new_real + 1j * new_imag
+
+    # For real complex spectra adjust the magnitude slightly and apply a
+    # tiny phase shift -
+    mag = np.abs(sig)
+    phase = np.angle(sig)
+    mag *= amp_factor
+    phase += 0.08 * (-1) ** attempt
+    complex_perturbation = bump_strength * bump * np.exp(1j * phase)
+    return mag * np.exp(1j * phase) + complex_perturbation
+
 
 
 def _operation_parameter_label(op_name: str, param: str | None) -> str | None:
