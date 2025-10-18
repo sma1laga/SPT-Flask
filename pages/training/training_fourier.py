@@ -144,7 +144,33 @@ _GREEN = "#2e8b57"
 
 def _format_time_axis(ax: matplotlib.axes.Axes, t: np.ndarray):
     ax.set_xlim(t[0], t[-1])
-    ax.grid(True, alpha=0.35)
+
+    # Major ticks at whole seconds and minor ticks every half second
+    t_start, t_end = float(t[0]), float(t[-1])
+    major_start = math.floor(t_start)
+    major_end = math.ceil(t_end)
+    if major_end < major_start:
+        major_end = major_start
+    major_ticks = np.arange(major_start, major_end + 1, 1.0)
+    if major_ticks.size:
+        major_ticks = major_ticks[(major_ticks >= t_start - 1e-9) & (major_ticks <= t_end + 1e-9)]
+    if major_ticks.size:
+        ax.set_xticks(major_ticks)
+
+    minor_start = math.floor(t_start * 2.0) / 2.0
+    minor_end = math.ceil(t_end * 2.0) / 2.0
+    if minor_end < minor_start:
+        minor_end = minor_start
+    minor_ticks = np.arange(minor_start, minor_end + 0.25, 0.5)
+    if minor_ticks.size:
+        minor_ticks = minor_ticks[(minor_ticks >= t_start - 1e-9) & (minor_ticks <= t_end + 1e-9)]
+    if minor_ticks.size and major_ticks.size:
+        minor_ticks = np.setdiff1d(minor_ticks, major_ticks)
+    if minor_ticks.size:
+        ax.set_xticks(minor_ticks, minor=True)
+
+    ax.grid(True, which="major", alpha=0.45)
+    ax.grid(True, which="minor", alpha=0.25, ls="--")
     ax.set_title(r"$y(t)$", fontsize=11)
     ax.set_xlabel(r"$t \rightarrow$", fontsize=10)
 
