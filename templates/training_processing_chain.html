@@ -1,8 +1,175 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Processing Chain Training Module</h2>
-<p>This module lets you practice designing and understanding processing chains.
-   <!-- Insert your training content, interactive steps, or quiz questions here -->
-</p>
-<p><a href="{{ url_for('home') }}">Back to Home</a></p>
+<div class="page-header" style="margin-bottom:30px;text-align:center;">
+  <h1 style="font-size:2.5em;margin-bottom:10px;">Processing Chain Training</h1>
+  <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:0 auto;">
+    Practice analysing simple processing chains in the frequency domain.  Each problem
+    presents an input spectrum, three processing blocks (multiplication, Hilbert and filter)
+    arranged in a random order, and connection letters A-C.  For every letter
+    you must identify the correct output among three plotted options.
+  </p>
+</div>
+
+<!-- Controls -->
+<div class="controls" style="max-width:700px;margin:0 auto 30px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:20px;text-align:center;">
+  <div class="radio-group">
+    <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
+    <label class="radio-label" style="opacity:0.5;"><input type="radio" name="difficulty" value="MEDIUM" disabled> Medium</label>
+    <label class="radio-label" style="opacity:0.5;"><input type="radio" name="difficulty" value="HARD" disabled> Hard</label>
+  </div>
+  <button id="generateBtn" class="action-btn">Generate Problem</button>
+</div>
+
+<!-- Diagram -->
+<div style="text-align:center;margin-bottom:20px;">
+  <img id="diagram_image" alt="Processing chain diagram" style="max-width:100%;display:none;border:1px solid #ccd0d5;border-radius:4px;" />
+</div>
+
+<!-- Letters container -->
+<div id="lettersContainer" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:25px;"></div>
+
+<!-- Next Problem button -->
+<div style="text-align:center;margin-top:20px;">
+  <button id="nextBtn" class="action-btn" style="display:none;">Next Problem</button>
+</div>
+
+<!-- Feedback -->
+<div id="feedback" style="text-align:center;font-size:1.1em;color:var(--text-color);min-height:1.2em;margin-top:10px;"></div>
+
+<script>
+// Store current problem data
+let currentProblem = null;
+let answeredLetters = 0;
+
+function getDifficulty() {
+  return document.querySelector('input[name="difficulty"]:checked').value;
+}
+
+// Helper to send POST requests
+function postJson(url, payload) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+}
+
+// Render the problem to the DOM
+function renderProblem() {
+  if (!currentProblem || currentProblem.error) {
+    const msg = currentProblem ? currentProblem.error : 'No problem data.';
+    document.getElementById('feedback').textContent = msg;
+    return;
+  }
+  // reset answered count
+  answeredLetters = 0;
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('feedback').textContent = 'Problem generated. Select the correct outputs.';
+  // show diagram
+  const diag = document.getElementById('diagram_image');
+  diag.src = 'data:image/png;base64,' + currentProblem.diagram;
+  diag.style.display = 'block';
+  // clear container
+  const container = document.getElementById('lettersContainer');
+  container.innerHTML = '';
+  // create sections for each letter
+  currentProblem.letters.forEach((letterObj, idx) => {
+    const section = document.createElement('div');
+    section.className = 'letter-section';
+    // heading
+    const h = document.createElement('h3');
+    h.textContent = 'Connection ' + letterObj.letter;
+    section.appendChild(h);
+    // image options
+    const imgRow = document.createElement('div');
+    imgRow.style.display = 'flex';
+    imgRow.style.flexWrap = 'wrap';
+    imgRow.style.gap = '10px';
+    letterObj.images.forEach((imgData, optIdx) => {
+      const wrapper = document.createElement('div');
+      wrapper.style.cursor = 'pointer';
+      wrapper.style.border = '2px solid transparent';
+      wrapper.style.borderRadius = '4px';
+      // embed letter and option indices for handler
+      wrapper.dataset.letterIndex = idx;
+      wrapper.dataset.optionIndex = optIdx;
+      const img = document.createElement('img');
+      img.src = 'data:image/png;base64,' + imgData;
+      img.style.maxWidth = '260px';
+      img.style.borderRadius = '4px';
+      wrapper.appendChild(img);
+      wrapper.addEventListener('click', onOptionClick);
+      imgRow.appendChild(wrapper);
+    });
+    section.appendChild(imgRow);
+    container.appendChild(section);
+  });
+}
+
+function onOptionClick(evt) {
+  const wrapper = evt.currentTarget;
+  const letterIndex = parseInt(wrapper.dataset.letterIndex);
+  const optionIndex = parseInt(wrapper.dataset.optionIndex);
+  const letterObj = currentProblem.letters[letterIndex];
+  // disable clicks for this letter if already answered
+  const section = wrapper.parentElement;
+  if (section.dataset.answered === 'true') return;
+  // call server to check answer
+  // Post to the check_answer endpoint using url_for.  The blueprint
+  // name ``training_processing_chain`` is registered in main.py, so
+  // url_for resolves correctly.
+  postJson("{{ url_for('training_processing_chain.check_answer') }}", {
+    selectedIndex: optionIndex,
+    correctIndex: letterObj.correctIndex
+  }).then(res => {
+    // mark images
+    const siblings = wrapper.parentElement.children;
+    for (let i = 0; i < siblings.length; i++) {
+      const elem = siblings[i];
+      elem.style.pointerEvents = 'none';
+      if (i === letterObj.correctIndex) {
+        elem.style.border = '2px solid var(--green-color, #28a745)';
+      }
+      if (i === optionIndex && i !== letterObj.correctIndex) {
+        elem.style.border = '2px solid var(--red-color, #dc3545)';
+      }
+    }
+    section.dataset.answered = 'true';
+    // update feedback text
+    document.getElementById('feedback').textContent = res.feedback;
+    // increase answered count
+    answeredLetters += 1;
+    if (answeredLetters === currentProblem.letters.length) {
+      document.getElementById('nextBtn').style.display = 'inline-block';
+    }
+  });
+}
+
+// Generate button handler
+document.getElementById('generateBtn').addEventListener('click', () => {
+  // clear any previous problem state
+  currentProblem = null;
+  document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('lettersContainer').innerHTML = '';
+  document.getElementById('feedback').textContent = 'Generating problem…';
+  // Use url_for to resolve the generate endpoint.  See comment above.
+  postJson("{{ url_for('training_processing_chain.generate_problem') }}", {
+    difficulty: getDifficulty()
+  }).then(data => {
+    currentProblem = data;
+    renderProblem();
+  }).catch(() => {
+    document.getElementById('feedback').textContent = 'Error generating problem.';
+  });
+});
+
+// Next Problem button handler
+document.getElementById('nextBtn').addEventListener('click', () => {
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('lettersContainer').innerHTML = '';
+  currentProblem = null;
+});
+</script>
 {% endblock %}
