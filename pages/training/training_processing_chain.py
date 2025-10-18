@@ -544,13 +544,15 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
             ax.add_patch(circle)
             ax.text(block["centre"], y_pos, block["label"], ha="center", va="center", fontsize=16, fontweight="bold")
             if block.get("param"):
-                ax.text(
-                    block["centre"],
-                    y_pos + block["radius"] + 0.35,
+                param_text_y = y_pos + block["radius"] + 0.6
+                ax.annotate(
                     block["param"],
+                    xy=(block["centre"], y_pos + block["radius"] * 0.35),
+                    xytext=(block["centre"], param_text_y),
                     ha="center",
                     va="bottom",
                     fontsize=11,
+                    arrowprops=dict(arrowstyle="->", lw=1.2, color="#111111"),
                 )
         else:
             rect = plt.Rectangle(
@@ -611,7 +613,7 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
     """Return geometry and labels for rendering a block."""
 
     if op_name == "Multiplication":
-        radius = 0.55
+        radius = 0.45
         return {
             "shape": "circle",
             "radius": radius,
