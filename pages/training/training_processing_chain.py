@@ -226,13 +226,27 @@ def _create_easy_problem() -> Dict[str, object]:
         )
         prev_sig = next_sig
 
-    # Draw block diagram
-    diagram_img = _draw_diagram(op_sequence)
+    # Build diagram metadata and image
+    diagram_ops = []
+    for idx, op_name in enumerate(op_sequence):
+        letter = chr(ord("A") + idx)
+        signal_name = f"{chr(ord('a') + idx)}(t)"
+        diagram_ops.append(
+            {
+                "letter": letter,
+                "signal": signal_name,
+                "name": op_name,
+                "parameter": _operation_parameter_label(op_name, params[op_name]),
+            }
+        )
+
+    diagram_img = _draw_diagram(op_sequence, params)
     input_plot = _plot_spectrum(w, x_sig, title="X(jω)")
 
 
     return {
         "diagram": diagram_img,
+        "diagramOperations": diagram_ops,
         "inputExpression": input_expr,
         "inputPlot": input_plot,
         # convert tuple to list for JSON serialisation
@@ -482,7 +496,7 @@ def _plot_spectrum(w: np.ndarray, sig: np.ndarray, title: str) -> str:
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
-def _draw_diagram(sequence: Tuple[str, str, str]) -> str:
+def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None]) -> str:
     """
     Draw a block diagram that mirrors the processing chain presentation.
 
@@ -490,53 +504,248 @@ def _draw_diagram(sequence: Tuple[str, str, str]) -> str:
     intermediate signals are labelled x(t) → a(t) → b(t) → c(t) along the
     arrows to match the training flow.
     """
-    fig, ax = plt.subplots(figsize=(7, 2))
+    fig, ax = plt.subplots(figsize=(9, 2.6))
     ax.axis("off")
 
-    x_positions = [1.2, 3.2, 5.2]
-    y_pos = 0.5
-    block_labels = list(sequence)
-    signal_labels = ["x(t)", "a(t)", "b(t)", "c(t)"]
+    # Position the three blocks evenly on the canvas
+    n_blocks = len(sequence)
+    start = 1.8
+    spacing = 2.7
+    block_centres = [start + i * spacing for i in range(n_blocks)]
+    y_pos = 1.3
 
-    input_x = 0.2
-    arrow_props = dict(arrowstyle="->", lw=1.2)
-    right_edges = []
+    signal_labels = ["x(t)"] + [f"{chr(ord('a') + i)}(t)" for i in range(n_blocks)]
+    letter_labels = [chr(ord("A") + i) for i in range(n_blocks)]
 
-    for i, (x, lbl) in enumerate(zip(x_positions, block_labels)):
-        if lbl == "Multiplication":
-            radius = 0.4
-            left_edge = x - radius
-            right_edge = x + radius
-            circle = plt.Circle((x, y_pos), radius, fill=False, lw=1.5)
+    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+
+    block_geometries = []
+    for centre, op_name in zip(block_centres, sequence):
+        op_params = params.get(op_name)
+        block_info = _block_render_info(op_name, op_params)
+        block_info["centre"] = centre
+        if block_info["shape"] == "circle":
+            radius = block_info["radius"]
+            block_info["left"] = centre - radius
+            block_info["right"] = centre + radius
+        else:
+            half_width = block_info["width"] / 2.0
+            block_info["left"] = centre - half_width
+            block_info["right"] = centre + half_width
+        block_geometries.append(block_info)
+
+    input_x = block_geometries[0]["left"] - 0.9
+    ax.annotate("", xy=(block_geometries[0]["left"], y_pos), xytext=(input_x, y_pos), arrowprops=arrow_props)
+    ax.text((input_x + block_geometries[0]["left"]) / 2.0, y_pos + 0.5, f"${signal_labels[0]}$", ha="center", va="center", fontsize=12)
+
+    for block in block_geometries:
+        if block["shape"] == "circle":
+            circle = plt.Circle((block["centre"], y_pos), block["radius"], fill=False, lw=1.6, color="#111111")
             ax.add_patch(circle)
-            ax.text(x, y_pos, "×", ha="center", va="center", fontsize=14, fontweight="bold")
+            ax.text(block["centre"], y_pos, block["label"], ha="center", va="center", fontsize=16, fontweight="bold")
+            if block.get("param"):
+                ax.text(
+                    block["centre"],
+                    y_pos + block["radius"] + 0.35,
+                    block["param"],
+                    ha="center",
+                    va="bottom",
+                    fontsize=11,
+                )
         else:
-            half_width = 0.45
-            left_edge = x - half_width
-            right_edge = x + half_width
-            rect = plt.Rectangle((left_edge, y_pos - 0.3), 2 * half_width, 0.6, fill=False, lw=1.5)
+            rect = plt.Rectangle(
+                (block["left"], y_pos - block["height"] / 2.0),
+                block["width"],
+                block["height"],
+                fill=False,
+                lw=1.6,
+                color="#111111",
+                joinstyle="round",
+            )
             ax.add_patch(rect)
-            ax.text(x, y_pos, lbl, ha="center", va="center", fontsize=10)
+            ax.text(block["centre"], y_pos + 0.18, block["label"], ha="center", va="center", fontsize=11, fontweight="bold")
+            if block.get("param"):
+                ax.text(
+                    block["centre"],
+                    y_pos - 0.18,
+                    block["param"],
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                )
 
-        if i == 0:
-            ax.text((input_x + left_edge) / 2.0, y_pos + 0.18, f"${signal_labels[0]}$", ha="center", va="center", fontsize=12)
-            ax.annotate("", xy=(left_edge, y_pos), xytext=(input_x, y_pos), arrowprops=arrow_props)
-        else:
-            prev_right = right_edges[-1]
-            ax.annotate("", xy=(left_edge, y_pos), xytext=(prev_right, y_pos), arrowprops=arrow_props)
-            ax.text((prev_right + left_edge) / 2.0, y_pos + 0.18, f"${signal_labels[i]}$", ha="center", va="center", fontsize=12)
+    for idx in range(len(block_geometries) - 1):
+        left_block = block_geometries[idx]
+        right_block = block_geometries[idx + 1]
+        ax.annotate(
+            "",
+            xy=(right_block["left"], y_pos),
+            xytext=(left_block["right"], y_pos),
+            arrowprops=arrow_props,
+        )
+        mid_x = (left_block["right"] + right_block["left"]) / 2.0
+        ax.text(mid_x, y_pos + 0.5, letter_labels[idx], ha="center", va="center", fontsize=12, fontweight="bold")
+        ax.text(mid_x, y_pos - 0.6, f"${signal_labels[idx + 1]}$", ha="center", va="center", fontsize=11)
 
-        right_edges.append(right_edge)
+    last_block = block_geometries[-1]
+    output_x = last_block["right"] + 0.9
+    ax.annotate("", xy=(output_x, y_pos), xytext=(last_block["right"], y_pos), arrowprops=arrow_props)
+    mid_out = (last_block["right"] + output_x) / 2.0
+    ax.text(mid_out, y_pos + 0.5, letter_labels[-1], ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_out, y_pos - 0.6, f"${signal_labels[-1]}$", ha="center", va="center", fontsize=11)
+    ax.text(output_x + 0.6, y_pos, "$y(t)$", ha="center", va="center", fontsize=12)
 
-    last_right = right_edges[-1]
-    output_x = last_right + 0.8
-    ax.annotate("", xy=(output_x, y_pos), xytext=(last_right, y_pos), arrowprops=arrow_props)
-    ax.text((last_right + output_x) / 2.0, y_pos + 0.18, f"${signal_labels[-1]}$", ha="center", va="center", fontsize=12)
-    ax.text(output_x + 0.4, y_pos, "$y(t)$", ha="center", va="center", fontsize=12)
+    max_x = start + (n_blocks - 1) * spacing + 2.4
+    ax.set_xlim(0, max_x)
+    ax.set_ylim(0.2, 2.4)
 
-    # Save diagram
     buf = io.BytesIO()
     fig.tight_layout()
-    fig.savefig(buf, format="png")
+    fig.savefig(buf, format="png", dpi=200)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+
+def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
+    """Return geometry and labels for rendering a block."""
+
+    if op_name == "Multiplication":
+        radius = 0.55
+        return {
+            "shape": "circle",
+            "radius": radius,
+            "left": None,  # filled in later
+            "right": None,
+            "label": "×",
+            "param": _describe_multiplication_param(param),
+        }
+
+    width = 1.6
+    height = 0.9
+    if op_name == "Filter":
+        label = "Filter"
+        param_text = _describe_filter_param(param)
+    elif op_name == "Hilbert":
+        label = "Hilbert"
+        param_text = None
+    else:
+        label = op_name
+        param_text = None
+
+    return {
+        "shape": "rect",
+        "width": width,
+        "height": height,
+        "left": None,
+        "right": None,
+        "label": label,
+        "param": param_text,
+    }
+
+
+def _operation_parameter_label(op_name: str, param: str | None) -> str | None:
+    """Return a text label describing an operation's parameter."""
+
+    if op_name == "Multiplication":
+        return _describe_multiplication_param(param)
+    if op_name == "Filter":
+        return _describe_filter_param(param)
+    return None
+
+
+def _describe_multiplication_param(param: str | None) -> str | None:
+    """Return a display string for the multiplication parameter."""
+
+    if not param:
+        return None
+
+    raw = param.strip()
+    lower = raw.lower()
+
+    if lower.startswith("constant:"):
+        value = _format_number(raw.split(":", 1)[1])
+        return value
+
+    if lower.startswith("imaginary"):
+        parts = raw.split(":", 1)
+        if len(parts) == 2:
+            coeff = _format_number(parts[1])
+            if coeff == "1":
+                return "j"
+            return f"{coeff}·j"
+        return "j"
+
+    if lower.startswith("linear:"):
+        value = _format_number(raw.split(":", 1)[1])
+        if value == "1":
+            return "ω"
+        return f"{value}·ω"
+
+    if lower.startswith("sin:") or lower.startswith("cos:"):
+        func = "sin" if lower.startswith("sin:") else "cos"
+        _, rest = raw.split(":", 1)
+        tokens = [t.strip() for t in rest.split(",")]
+        amp = _format_number(tokens[0]) if tokens and tokens[0] else "1"
+        freq = _format_number(tokens[1]) if len(tokens) > 1 else "1"
+        amp_prefix = "" if amp == "1" else f"{amp}·"
+        return f"{amp_prefix}{func}({freq}·t)"
+
+    if lower.startswith("exponential:"):
+        _, rest = raw.split(":", 1)
+        parts = [p.strip() for p in rest.split(",") if p.strip()]
+        if len(parts) == 3:
+            coeff, sign, freq = parts
+        elif len(parts) == 2:
+            coeff, sign, freq = "1", parts[0], parts[1]
+        else:
+            coeff, sign, freq = "1", "+", "1"
+        sign_symbol = "+" if sign.startswith("+") else "-"
+        coeff_fmt = _format_number(coeff)
+        freq_fmt = _format_number(freq)
+        coeff_prefix = "" if coeff_fmt == "1" else f"{coeff_fmt}·"
+        return f"{coeff_prefix}exp({sign_symbol}j{freq_fmt}t)"
+
+    return raw
+
+
+def _describe_filter_param(param: str | None) -> str | None:
+    """Return a readable filter description."""
+
+    if not param:
+        return None
+
+    raw = param.strip()
+    lower = raw.lower()
+
+    if lower.startswith("lowpass:"):
+        value = _format_number(raw.split(":", 1)[1])
+        return f"lowpass (ω_c={value})"
+
+    if lower.startswith("highpass:"):
+        value = _format_number(raw.split(":", 1)[1])
+        return f"highpass (ω_c={value})"
+
+    if lower.startswith("bandpass:"):
+        _, rest = raw.split(":", 1)
+        try:
+            lo, hi = [part.strip() for part in rest.split(",", 1)]
+        except ValueError:
+            lo, hi = rest, ""
+        lo_fmt = _format_number(lo)
+        hi_fmt = _format_number(hi) if hi else ""
+        return f"bandpass ({lo_fmt} – {hi_fmt})"
+
+    return raw
+
+
+def _format_number(value: str) -> str:
+    """Format a numeric string without unnecessary decimal places."""
+
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return value.strip()
+    if abs(num - round(num)) < 1e-9:
+        return str(int(round(num)))
+    return f"{num:g}"

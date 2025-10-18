@@ -24,6 +24,10 @@
 <div style="text-align:center;margin-bottom:20px;">
   <img id="diagram_image" alt="Processing chain diagram" style="max-width:100%;display:none;border:1px solid #ccd0d5;border-radius:4px;" />
 </div>
+<div id="diagramSummary" style="display:none;max-width:600px;margin:0 auto 25px;padding:12px 16px;border:1px solid #ccd0d5;border-radius:6px;background-color:var(--panel-bg,#f8f9fb);">
+  <h3 style="margin:0 0 8px 0;font-size:1.1em;color:var(--text-color);text-align:center;">Connection summary</h3>
+  <ul id="diagramSummaryList" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;font-size:0.95em;color:var(--text-color);"></ul>
+</div>
 <!-- Input spectrum -->
 <div id="inputSection" style="display:none;text-align:center;margin-bottom:25px;">
   <p id="input_expression" style="margin-bottom:10px;font-size:1.05em;color:var(--text-color);"></p>
@@ -74,6 +78,8 @@ function renderProblem() {
   const inputSection = document.getElementById('inputSection');
   const inputExpr = document.getElementById('input_expression');
   const inputPlot = document.getElementById('input_plot');
+  const summaryBox = document.getElementById('diagramSummary');
+  const summaryList = document.getElementById('diagramSummaryList');
   if (currentProblem.inputExpression) {
     inputExpr.textContent = 'Input spectrum: ' + currentProblem.inputExpression;
   } else {
@@ -91,6 +97,30 @@ function renderProblem() {
   const diag = document.getElementById('diagram_image');
   diag.src = 'data:image/png;base64,' + currentProblem.diagram;
   diag.style.display = 'block';
+  summaryList.innerHTML = '';
+  const ops = Array.isArray(currentProblem.diagramOperations) ? currentProblem.diagramOperations : [];
+  if (ops.length) {
+    ops.forEach(op => {
+      const li = document.createElement('li');
+      const strong = document.createElement('strong');
+      strong.textContent = op.letter + ':';
+      li.appendChild(strong);
+      const signalSpan = document.createElement('span');
+      signalSpan.textContent = ' ' + (op.signal || '');
+      li.appendChild(signalSpan);
+      li.appendChild(document.createTextNode(' after '));
+      const nameEm = document.createElement('em');
+      nameEm.textContent = op.name || '';
+      li.appendChild(nameEm);
+      if (op.parameter) {
+        li.appendChild(document.createTextNode(' (' + op.parameter + ')'));
+      }
+      summaryList.appendChild(li);
+    });
+    summaryBox.style.display = 'block';
+  } else {
+    summaryBox.style.display = 'none';
+  }
   // clear container
   const container = document.getElementById('lettersContainer');
   container.innerHTML = '';
@@ -173,6 +203,8 @@ document.getElementById('generateBtn').addEventListener('click', () => {
   // clear any previous problem state
   currentProblem = null;
   document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('diagramSummary').style.display = 'none';
+  document.getElementById('diagramSummaryList').innerHTML = '';
   document.getElementById('inputSection').style.display = 'none';
   document.getElementById('lettersContainer').innerHTML = '';
   document.getElementById('feedback').textContent = 'Generating problem…';
@@ -192,6 +224,8 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('feedback').textContent = '';
   document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('diagramSummary').style.display = 'none';
+  document.getElementById('diagramSummaryList').innerHTML = '';
   document.getElementById('inputSection').style.display = 'none';
   document.getElementById('lettersContainer').innerHTML = '';
   currentProblem = null;
