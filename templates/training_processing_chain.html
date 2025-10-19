@@ -2,10 +2,11 @@
 {% block content %}
 <div class="page-header" style="margin-bottom:30px;text-align:center;">
   <h1 style="font-size:2.5em;margin-bottom:10px;">Processing Chain Training</h1>
-  <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:0 auto;">
-    Practice analysing simple processing chains in the frequency domain.  Each problem
-    presents an input spectrum, three processing blocks (multiplication, Hilbert and filter)
-    arranged in a random order, and connection letters A-C.  For every letter
+  <p style="font-size:1.1em;color:var(--subtext-color);max-width:620px;margin:0 auto;">
+    Practice analysing processing chains in the frequency domain.  Easy problems use
+    three serial blocks chosen from multiplication, Hilbert and filtering, whereas Medium
+    problems introduce a branching structure with two multipliers (or samplers), a adder,
+    and a derivative/Hilbert stage before the final filter.  For every labelled connection
     you must identify the correct output among three plotted options.
   </p>
 </div>
@@ -14,7 +15,7 @@
 <div class="controls" style="max-width:700px;margin:0 auto 30px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:20px;text-align:center;">
   <div class="radio-group">
     <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
-    <label class="radio-label" style="opacity:0.5;"><input type="radio" name="difficulty" value="MEDIUM" disabled> Medium</label>
+    <label class="radio-label"><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
     <label class="radio-label" style="opacity:0.5;"><input type="radio" name="difficulty" value="HARD" disabled> Hard</label>
   </div>
   <button id="generateBtn" class="action-btn">Generate Problem</button>

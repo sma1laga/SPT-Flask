@@ -3,16 +3,17 @@ Blueprint and problem generator for the processing‑chain training module.
 
 This module exposes a simple Flask blueprint that serves a template for the
 processing chain training page and provides endpoints to generate practice
-problems on demand.  Problems are generated at three difficulty levels, but
-for now only the ``EASY`` level is implemented.  Each generated problem
-consists of a small block diagram with three processing operations
-(multiplication, Hilbert transform and filtering) arranged in one of three
-predefined layouts.  A random input spectrum (rectangular or triangular) is
-chosen and the operations are parameterised randomly.  The server then
-computes the correct frequency‑domain output after each block as well as
-plausible distractors by varying one parameter at a time.  Results are
-returned to the client as base64‑encoded PNG images along with the correct
-answer index for each connection.
+problems on demand.  Problems are generated at multiple difficulty levels;
+this module currently implements the ``EASY`` and ``MEDIUM`` tiers.  Easy
+problems consist of three serial operations (multiplication, Hilbert transform
+and filtering) arranged in one of three predefined layouts.  Medium problems
+extend this idea with a branching structure that introduces sampling and
+derivative blocks alongside the original operations.  A random input spectrum
+(rectangular or triangular) is chosen and the operations are parameterised
+randomly.  The server then computes the correct frequency‑domain output after
+each labelled connection as well as plausible distractors by varying one
+parameter at a time.  Results are returned to the client as base64‑encoded PNG
+images along with the correct answer index for each connection.
 
 The client can display the diagram and the plots and let the user pick
 their answer for every letter.  A simple check endpoint is also provided to
@@ -69,25 +70,28 @@ def generate_problem() -> Tuple[Dict[str, str], int]:
     """
     Generate a new processing chain problem.
 
-    The client sends JSON with a ``difficulty`` field.  For the ``EASY``
-    difficulty a random layout and random operation parameters are selected.
+    The client sends JSON with a ``difficulty`` field.  For the ``EASY`` and
+    ``MEDIUM`` difficulties a random layout and random operation parameters are
+    selected that match the respective block catalogue.
     The returned JSON has the following structure:
 
     ``diagram`` – a base64‑encoded PNG image of the block diagram.
-    ``letters`` – a list of objects, one per connection (A, B, C).  Each
-      object contains the letter name, a list of three base64 image strings
-      and the index (0,1,2) of the correct image in that list.
+    ``letters`` – a list of objects, one per labelled connection.  Each object
+      contains the letter name, a list of three base64 image strings and the
+      index (0,1,2) of the correct image in that list.
 
     If an unsupported difficulty is requested an error message is returned.
     """
     data = request.get_json(force=True) or {}
     difficulty: str = str(data.get("difficulty", "EASY")).upper()
 
-    if difficulty != "EASY":
-        return jsonify({"error": "Only EASY difficulty is implemented."}), 400
-
     try:
-        problem = _create_easy_problem()
+        if difficulty == "EASY":
+            problem = _create_easy_problem()
+        elif difficulty == "MEDIUM":
+            problem = _create_medium_problem()
+        else:
+            return jsonify({"error": "Only EASY and MEDIUM difficulties are implemented."}), 400
     except Exception as exc:
         return jsonify({"error": f"Failed to create problem: {exc}"}), 500
     return jsonify(problem)
@@ -277,6 +281,214 @@ def _create_easy_problem() -> Dict[str, object]:
         "inputExpressionLatex": input_expr_latex,
     }
 
+def _create_medium_problem() -> Dict[str, object]:
+    """Construct a MEDIUM difficulty processing chain problem."""
+
+    W = 10.0
+    n_points = 2048
+    w = np.linspace(-W, W, n_points)
+
+    # Input spectrum identical to EASY mode for consistency
+    input_shape = random.choice(["rect", "tri"])
+    amp = random.choice([0.5, 1.0, 1.5, 2.0])
+    width = random.choice([1.0, 2.0, 3.0])
+    base = _rect_spectrum(w, width) if input_shape == "rect" else _tri_spectrum(w, width)
+    x_sig = amp * base
+    input_expr = f"{amp}*{input_shape}(w/{width})"
+    amp_fmt = format(amp, "g")
+    width_fmt = format(width, "g")
+    operator_name = "rect" if input_shape == "rect" else "tri"
+    input_expr_latex = (
+        rf"{amp_fmt} \cdot \operatorname{{{operator_name}}}\left(\frac{{\omega}}{{{width_fmt}}}\right)"
+    )
+
+    # Branch operations: Multiplication or Sampling on each split
+    branch_ops: List[Tuple[str, str | None]] = []
+    branch_outputs: List[np.ndarray] = []
+    branch_signals = ["a(t)", "b(t)"]
+    branch_signals_latex = ["a(t)", "b(t)"]
+    for _ in range(2):
+        op_name = random.choice(["Multiplication", "Sampling"])
+        if op_name == "Multiplication":
+            param = _random_multiplication_param()
+        else:
+            param = _random_sampling_param()
+        branch_ops.append((op_name, param))
+        branch_outputs.append(_apply_operation(x_sig, op_name, param, w))
+
+    # Combine via addition
+    sum_sig = branch_outputs[0] + branch_outputs[1]
+
+    # Post-addition block: derivative, Hilbert or another multiplication
+    post_choices = ["Derivative", "Hilbert", "Multiplication"]
+    post_op = random.choice(post_choices)
+    if post_op == "Multiplication":
+        post_param = _random_multiplication_param()
+    else:
+        post_param = None
+    post_sig = _apply_operation(sum_sig, post_op, post_param, w)
+
+    # Final filter
+    filter_param = _random_filter_param()
+    final_sig = _apply_operation(post_sig, "Filter", filter_param, w)
+
+    # Prepare letters and spectra
+    letter_results: List[Dict[str, object]] = []
+    letter_specs = [
+        ("A", branch_signals[0], branch_signals_latex[0], branch_outputs[0]),
+        ("B", branch_signals[1], branch_signals_latex[1], branch_outputs[1]),
+        ("C", "c(t)", "c(t)", sum_sig),
+        ("D", "d(t)", "d(t)", post_sig),
+        ("E", "e(t)", "e(t)", final_sig),
+    ]
+    freq_titles = {
+        "A": r"$A(j\omega)$",
+        "B": r"$B(j\omega)$",
+        "C": r"$C(j\omega)$",
+        "D": r"$D(j\omega)$",
+        "E": r"$E(j\omega)$",
+    }
+
+    # Distractor helpers for each stage
+    for idx, (letter, label, label_latex, correct_sig) in enumerate(letter_specs):
+        if letter in ("A", "B"):
+            op_name, param = branch_ops[idx]
+            if op_name == "Multiplication":
+                distractors = []
+                for _ in range(2):
+                    alt_param = _random_multiplication_param(exclude=param)
+                    distractors.append(_apply_operation(x_sig, "Multiplication", alt_param, w))
+            else:
+                distractors = []
+                for _ in range(2):
+                    alt_param = _random_sampling_param(exclude=param)
+                    distractors.append(_apply_operation(x_sig, "Sampling", alt_param, w))
+        elif letter == "C":
+            distractors = [
+                branch_outputs[0] - branch_outputs[1],
+                0.5 * (branch_outputs[0] + branch_outputs[1]),
+            ]
+        elif letter == "D":
+            if post_op == "Derivative":
+                distractors = [
+                    1j * sum_sig,
+                    -1j * w * sum_sig,
+                ]
+            elif post_op == "Hilbert":
+                distractors = [sum_sig.copy(), _apply_incorrect_hilbert(sum_sig, w)]
+            else:
+                distractors = []
+                for _ in range(2):
+                    alt_param = _random_multiplication_param(exclude=post_param)
+                    distractors.append(_apply_operation(sum_sig, "Multiplication", alt_param, w))
+        else:  # letter == "E"
+            distractors = []
+            for _ in range(2):
+                alt_param = _random_filter_param(exclude=filter_param)
+                distractors.append(_apply_operation(post_sig, "Filter", alt_param, w))
+
+        options = _ensure_option_diversity([correct_sig] + distractors, w)
+        indices = list(range(len(options)))
+        random.shuffle(indices)
+        shuffled = [options[i] for i in indices]
+        correct_index = indices.index(0)
+        encoded_imgs = [
+            _plot_spectrum(w, sig, title=freq_titles.get(letter, r"$S(j\omega)$"))
+            for sig in shuffled
+        ]
+        letter_results.append(
+            {
+                "letter": letter,
+                "signalLabel": label,
+                "signalLabelLatex": label_latex,
+                "images": encoded_imgs,
+                "correctIndex": correct_index,
+            }
+        )
+
+    # Diagram metadata
+    diagram_ops = []
+    for idx, letter in enumerate(["A", "B"]):
+        op_name, param = branch_ops[idx]
+        name_latex = _operation_name_latex(op_name)
+        param_label = _operation_parameter_label(op_name, param)
+        param_label_latex = _operation_parameter_label_latex(op_name, param)
+        summary = rf"\mathbf{{{letter}}}:\; {branch_signals_latex[idx]}\; \text{{after}}\; {name_latex}"
+        if param_label_latex:
+            summary += rf"\;({param_label_latex})"
+        diagram_ops.append(
+            {
+                "letter": letter,
+                "signal": branch_signals[idx],
+                "name": op_name,
+                "parameter": param_label,
+                "signalLatex": branch_signals_latex[idx],
+                "nameLatex": name_latex,
+                "parameterLatex": param_label_latex,
+                "summaryLatex": summary,
+            }
+        )
+
+    diagram_ops.append(
+        {
+            "letter": "C",
+            "signal": "c(t)",
+            "name": "Addition",
+            "parameter": None,
+            "signalLatex": "c(t)",
+            "nameLatex": _operation_name_latex("Addition"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("C", "c(t)", "Addition", None),
+        }
+    )
+
+    diagram_ops.append(
+        {
+            "letter": "D",
+            "signal": "d(t)",
+            "name": post_op,
+            "parameter": _operation_parameter_label(post_op, post_param),
+            "signalLatex": "d(t)",
+            "nameLatex": _operation_name_latex(post_op),
+            "parameterLatex": _operation_parameter_label_latex(post_op, post_param),
+            "summaryLatex": _build_summary_latex("D", "d(t)", post_op, post_param),
+        }
+    )
+
+    diagram_ops.append(
+        {
+            "letter": "E",
+            "signal": "e(t)",
+            "name": "Filter",
+            "parameter": _operation_parameter_label("Filter", filter_param),
+            "signalLatex": "e(t)",
+            "nameLatex": _operation_name_latex("Filter"),
+            "parameterLatex": _operation_parameter_label_latex("Filter", filter_param),
+            "summaryLatex": _build_summary_latex("E", "e(t)", "Filter", filter_param),
+        }
+    )
+
+    diagram_img = _draw_medium_diagram(branch_ops, post_op, post_param, filter_param)
+    input_plot = _plot_spectrum(w, x_sig, title=r"$X(j\omega)$")
+
+    return {
+        "diagram": diagram_img,
+        "diagramOperations": diagram_ops,
+        "inputExpression": input_expr,
+        "inputPlot": input_plot,
+        "operations": [
+            {"type": op, "param": param} for op, param in branch_ops
+        ]
+        + [
+            {"type": "Addition", "param": None},
+            {"type": post_op, "param": post_param},
+            {"type": "Filter", "param": filter_param},
+        ],
+        "letters": letter_results,
+        "inputExpressionLatex": input_expr_latex,
+    }
+
+
 
 def _rect_spectrum(w: np.ndarray, width: float) -> np.ndarray:
     """Return a rectangular spectrum of the specified width."""
@@ -358,6 +570,15 @@ def _random_filter_param(exclude: str | None = None) -> str:
         options = [o for o in options if o != exclude]
     return random.choice(options)
 
+def _random_sampling_param(exclude: str | None = None) -> str:
+    """Return a random sampling parameter string of the form ``sampling:T``."""
+
+    choices = [f"sampling:{T}" for T in [0.5, 0.75, 1.0, 1.5, 2.0, 3.0]]
+    if exclude is not None and exclude in choices:
+        choices = [c for c in choices if c != exclude]
+    return random.choice(choices)
+
+
 
 def _apply_operation(signal: np.ndarray, op_name: str, param: str | None, w: np.ndarray) -> np.ndarray:
     """
@@ -370,8 +591,12 @@ def _apply_operation(signal: np.ndarray, op_name: str, param: str | None, w: np.
     """
     if op_name == "Multiplication":
         return _apply_multiplication(signal, param, w)
+    elif op_name == "Sampling":
+        return _apply_sampling(signal, param, w)
     elif op_name == "Hilbert":
         return _apply_hilbert(signal, w)
+    elif op_name == "Derivative":
+        return _apply_derivative(signal, w)
     elif op_name == "Filter":
         return _apply_filter(signal, param, w)
     raise ValueError(f"Unsupported operation: {op_name}")
@@ -450,12 +675,36 @@ def _apply_multiplication(signal: np.ndarray, param: str | None, w: np.ndarray) 
     except Exception:
         return signal
 
+def _apply_sampling(signal: np.ndarray, param: str | None, w: np.ndarray) -> np.ndarray:
+    """Apply an ideal sampling comb with spacing ``T`` in frequency."""
+
+    T = 1.0
+    if param:
+        p = param.strip().lower()
+        if p.startswith("sampling:"):
+            try:
+                T = float(p.split(":", 1)[1])
+            except ValueError:
+                T = 1.0
+    T = max(abs(T), 1e-3)
+    tol = T / 10.0
+    comb_centres = np.round(w / T) * T
+    mask = np.where(np.abs(w - comb_centres) < tol, 1.0 / T, 0.0)
+    return signal * mask
+
+
 
 def _apply_hilbert(signal: np.ndarray, w: np.ndarray) -> np.ndarray:
     """Apply a Hilbert transform in the frequency domain."""
     # Hilbert transform: multiply by -j*sign(w)
     sign_w = np.sign(w)
     return -1j * sign_w * signal
+
+
+def _apply_derivative(signal: np.ndarray, w: np.ndarray) -> np.ndarray:
+    """Differentiate a signal in the frequency domain."""
+
+    return 1j * w * signal
 
 def _apply_incorrect_hilbert(signal: np.ndarray, w: np.ndarray) -> np.ndarray:
     """Return a plausible but incorrect Hilbert transform variant."""
@@ -646,6 +895,149 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
+def _draw_medium_diagram(
+    branch_ops: List[Tuple[str, str | None]],
+    post_op: str,
+    post_param: str | None,
+    filter_param: str,
+) -> str:
+    """Draw the MEDIUM difficulty diagram with two-branch structure."""
+
+    fig, ax = plt.subplots(figsize=(9.5, 4.0))
+    ax.axis("off")
+
+    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+
+    y_mid = 1.6
+    top_y = 2.6
+    bot_y = 0.6
+    input_x = 0.8
+    split_x = 1.6
+    branch_x = 3.2
+    adder_x = 5.2
+    post_x = 7.2
+    filter_x = 9.1
+    output_x = 10.4
+
+    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
+        info = dict(info)
+        info["centre"] = centre
+        info["y"] = y_pos
+        if info["shape"] == "circle":
+            radius = info["radius"]
+            info["left"] = centre - radius
+            info["right"] = centre + radius
+            info["top"] = y_pos + radius
+            info["bottom"] = y_pos - radius
+        else:
+            width = info["width"]
+            height = info["height"]
+            info["left"] = centre - width / 2.0
+            info["right"] = centre + width / 2.0
+            info["top"] = y_pos + height / 2.0
+            info["bottom"] = y_pos - height / 2.0
+        return info
+
+    top_block = prepare_block(_block_render_info(*branch_ops[0]), branch_x, top_y)
+    bot_block = prepare_block(_block_render_info(*branch_ops[1]), branch_x, bot_y)
+    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
+    post_block = prepare_block(_block_render_info(post_op, post_param), post_x, y_mid)
+    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+
+    blocks = [top_block, bot_block, adder_block, post_block, filter_block]
+
+    def draw_block(block: Dict[str, object]) -> None:
+        if block["shape"] == "circle":
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
+            ax.add_patch(circle)
+            ax.text(block["centre"], block["y"], block["label"], ha="center", va="center", fontsize=16, fontweight="bold")
+            if block.get("param"):
+                ax.annotate(
+                    block["param"],
+                    xy=(block["centre"], block["y"] + block["radius"] * 0.4),
+                    xytext=(block["centre"], block["y"] + block["radius"] + 0.6),
+                    ha="center",
+                    va="bottom",
+                    fontsize=11,
+                    arrowprops=dict(arrowstyle="->", lw=1.2, color="#111111"),
+                )
+        else:
+            rect = plt.Rectangle(
+                (block["left"], block["bottom"]),
+                block["width"],
+                block["height"],
+                fill=False,
+                lw=1.6,
+                color="#111111",
+                joinstyle="round",
+            )
+            ax.add_patch(rect)
+            ax.text(block["centre"], block["y"] + 0.18, block["label"], ha="center", va="center", fontsize=11, fontweight="bold")
+            if block.get("param"):
+                ax.text(block["centre"], block["y"] - 0.18, block["param"], ha="center", va="center", fontsize=10)
+
+    for block in blocks:
+        draw_block(block)
+
+    # Input and splitter
+    ax.annotate("", xy=(split_x, y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
+    ax.text((input_x + split_x) / 2.0, y_mid + 0.45, "$x(t)$", ha="center", va="center", fontsize=12)
+    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    ax.add_patch(split_circle)
+
+    # Branch connections
+    ax.plot([split_x, split_x], [y_mid, top_block["y"]], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_block["y"]], color="#111111", lw=1.4)
+    ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
+    ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
+
+    # Branch outputs into adder
+    adder_radius = adder_block.get("radius", 0.45)
+    top_target = (adder_block["centre"], y_mid + adder_radius / 1.2)
+    bot_target = (adder_block["centre"], y_mid - adder_radius / 1.2)
+    ax.annotate("", xy=top_target, xytext=(top_block["right"], top_block["y"]), arrowprops=arrow_props)
+    ax.annotate("", xy=bot_target, xytext=(bot_block["right"], bot_block["y"]), arrowprops=arrow_props)
+
+    # Labels for branches
+    mid_top_x = (top_block["right"] + adder_block["centre"]) / 2.0
+    mid_top_y = (top_block["y"] + top_target[1]) / 2.0
+    ax.text(mid_top_x, mid_top_y + 0.25, "A", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_top_x, mid_top_y - 0.35, "$a(t)$", ha="center", va="center", fontsize=11)
+
+    mid_bot_x = (bot_block["right"] + adder_block["centre"]) / 2.0
+    mid_bot_y = (bot_block["y"] + bot_target[1]) / 2.0
+    ax.text(mid_bot_x, mid_bot_y + 0.25, "B", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_bot_x, mid_bot_y - 0.35, "$b(t)$", ha="center", va="center", fontsize=11)
+
+    # Adder to post block
+    ax.annotate("", xy=(post_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
+    mid_c_x = (adder_block["right"] + post_block["left"]) / 2.0
+    ax.text(mid_c_x, y_mid + 0.4, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, y_mid - 0.55, "$c(t)$", ha="center", va="center", fontsize=11)
+
+    # Post block to filter
+    ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(post_block["right"], y_mid), arrowprops=arrow_props)
+    mid_d_x = (post_block["right"] + filter_block["left"]) / 2.0
+    ax.text(mid_d_x, y_mid + 0.4, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, y_mid - 0.55, "$d(t)$", ha="center", va="center", fontsize=11)
+
+    # Filter to output
+    ax.annotate("", xy=(output_x, y_mid), xytext=(filter_block["right"], y_mid), arrowprops=arrow_props)
+    mid_e_x = (filter_block["right"] + output_x) / 2.0
+    ax.text(mid_e_x, y_mid + 0.4, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, y_mid - 0.55, "$e(t)$", ha="center", va="center", fontsize=11)
+    ax.text(output_x + 0.6, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
+
+    ax.set_xlim(0.2, output_x + 1.2)
+    ax.set_ylim(bot_y - 0.6, top_y + 0.9)
+
+    buf = io.BytesIO()
+    fig.tight_layout()
+    fig.savefig(buf, format="png", dpi=200)
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
 
 def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
     """Return geometry and labels for rendering a block."""
@@ -661,6 +1053,17 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "param": _describe_multiplication_param(param),
         }
 
+    if op_name == "Addition":
+        radius = 0.45
+        return {
+            "shape": "circle",
+            "radius": radius,
+            "left": None,
+            "right": None,
+            "label": "+",
+            "param": None,
+        }
+
     width = 1.6
     height = 0.9
     if op_name == "Filter":
@@ -668,6 +1071,12 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         param_text = _describe_filter_param(param)
     elif op_name == "Hilbert":
         label = "Hilbert"
+        param_text = None
+    elif op_name == "Sampling":
+        label = "Sampling"
+        param_text = _describe_sampling_param(param)
+    elif op_name == "Derivative":
+        label = "Derivative"
         param_text = None
     else:
         label = op_name
@@ -764,6 +1173,8 @@ def _operation_parameter_label(op_name: str, param: str | None) -> str | None:
         return _describe_multiplication_param(param)
     if op_name == "Filter":
         return _describe_filter_param(param)
+    if op_name == "Sampling":
+        return _describe_sampling_param(param)
     return None
 
 def _operation_name_latex(op_name: str) -> str:
@@ -773,6 +1184,12 @@ def _operation_name_latex(op_name: str) -> str:
         return r"\text{Multiplication}"
     if op_name == "Hilbert":
         return r"\mathcal{H}"
+    if op_name == "Sampling":
+        return r"\text{Sampling}"
+    if op_name == "Derivative":
+        return r"\frac{d}{dt}"
+    if op_name == "Addition":
+        return r"\text{Adder}"
     if op_name == "Filter":
         return r"\text{Filter}"
     return rf"\text{{{op_name}}}"
@@ -785,7 +1202,20 @@ def _operation_parameter_label_latex(op_name: str, param: str | None) -> str | N
         return _describe_multiplication_param_latex(param)
     if op_name == "Filter":
         return _describe_filter_param_latex(param)
+    if op_name == "Sampling":
+        return _describe_sampling_param_latex(param)
     return None
+
+def _build_summary_latex(letter: str, signal_latex: str, op_name: str, param: str | None) -> str:
+    """Return a LaTeX summary string for diagram metadata entries."""
+
+    name_latex = _operation_name_latex(op_name)
+    param_latex = _operation_parameter_label_latex(op_name, param)
+    summary = rf"\mathbf{{{letter}}}:\; {signal_latex}\; \text{{after}}\; {name_latex}"
+    if param_latex:
+        summary += rf"\;({param_latex})"
+    return summary
+
 
 
 
@@ -967,6 +1397,36 @@ def _describe_filter_param_latex(param: str | None) -> str | None:
 
     safe_raw = raw.replace("\\", r"\textbackslash ")
     return rf"\text{{{safe_raw}}}"
+
+
+def _describe_sampling_param(param: str | None) -> str | None:
+    """Return a readable description for a sampling parameter."""
+
+    if not param:
+        return "sampling (T=1)"
+
+    raw = param.strip()
+    lower = raw.lower()
+    if lower.startswith("sampling:"):
+        value = _format_number(raw.split(":", 1)[1])
+        return f"sampling (T={value})"
+    return raw
+
+
+def _describe_sampling_param_latex(param: str | None) -> str | None:
+    """Return a LaTeX version of a sampling parameter description."""
+
+    if not param:
+        return r"\text{sampling}\; (T = 1)"
+
+    raw = param.strip()
+    lower = raw.lower()
+    if lower.startswith("sampling:"):
+        value = _format_number_latex(_format_number(raw.split(":", 1)[1]))
+        return rf"\text{{sampling}}\; (T = {value})"
+    safe_raw = raw.replace("\\", r"\textbackslash ")
+    return rf"\text{{{safe_raw}}}"
+
 
 def _format_number(value: str) -> str:
     """Format a numeric string without unnecessary decimal places."""
