@@ -1040,11 +1040,19 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
         if block["shape"] == "circle":
             circle = plt.Circle((block["centre"], y_pos), block["radius"], fill=False, lw=1.6, color="#111111")
             ax.add_patch(circle)
-            ax.text(block["centre"], y_pos, block["label"], ha="center", va="center", fontsize=16, fontweight="bold")
-            if block.get("param"):
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(block["centre"], y_pos, label, ha="center", va="center", fontsize=16, fontweight="bold")
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
                 param_text_y = y_pos + block["radius"] + 0.6
                 ax.annotate(
-                    block["param"],
+                    param_label,
                     xy=(block["centre"], y_pos + block["radius"] * 0.35),
                     xytext=(block["centre"], param_text_y),
                     ha="center",
@@ -1063,12 +1071,20 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
                 joinstyle="round",
             )
             ax.add_patch(rect)
-            ax.text(block["centre"], y_pos + 0.18, block["label"], ha="center", va="center", fontsize=11, fontweight="bold")
-            if block.get("param"):
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(block["centre"], y_pos + 0.18, label, ha="center", va="center", fontsize=11, fontweight="bold")
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
                 ax.text(
                     block["centre"],
                     y_pos - 0.18,
-                    block["param"],
+                    param_label,
                     ha="center",
                     va="center",
                     fontsize=10,
@@ -1161,10 +1177,18 @@ def _draw_medium_diagram_sampling(
         if block["shape"] == "circle":
             circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
             ax.add_patch(circle)
-            ax.text(block["centre"], block["y"], block["label"], ha="center", va="center", fontsize=16, fontweight="bold")
-            if block.get("param"):
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(block["centre"], block["y"], label, ha="center", va="center", fontsize=16, fontweight="bold")
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
                 ax.annotate(
-                    block["param"],
+                    param_label,
                     xy=(block["centre"], block["y"] + block["radius"] * 0.4),
                     xytext=(block["centre"], block["y"] + block["radius"] + 0.6),
                     ha="center",
@@ -1183,9 +1207,17 @@ def _draw_medium_diagram_sampling(
                 joinstyle="round",
             )
             ax.add_patch(rect)
-            ax.text(block["centre"], block["y"] + 0.18, block["label"], ha="center", va="center", fontsize=11, fontweight="bold")
-            if block.get("param"):
-                ax.text(block["centre"], block["y"] - 0.18, block["param"], ha="center", va="center", fontsize=10)
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(block["centre"], block["y"] + 0.18, label, ha="center", va="center", fontsize=11, fontweight="bold")
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
+                ax.text(block["centre"], block["y"] - 0.18, param_label, ha="center", va="center", fontsize=10)
 
     for block in blocks:
         draw_block(block)
@@ -1312,10 +1344,18 @@ def _draw_medium_diagram_multiplication_split(
         if block["shape"] == "circle":
             circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
             ax.add_patch(circle)
-            ax.text(block["centre"], block["y"], block["label"], ha="center", va="center", fontsize=16, fontweight="bold")
-            if block.get("param"):
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(block["centre"], block["y"], label, ha="center", va="center", fontsize=16, fontweight="bold")
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
                 ax.annotate(
-                    block["param"],
+                    param_label,
                     xy=(block["centre"], block["y"] + block["radius"] * 0.4),
                     xytext=(block["centre"], block["y"] + block["radius"] + 0.6),
                     ha="center",
@@ -1334,9 +1374,17 @@ def _draw_medium_diagram_multiplication_split(
                 joinstyle="round",
             )
             ax.add_patch(rect)
-            ax.text(block["centre"], block["y"] + 0.18, block["label"], ha="center", va="center", fontsize=11, fontweight="bold")
-            if block.get("param"):
-                ax.text(block["centre"], block["y"] - 0.18, block["param"], ha="center", va="center", fontsize=10)
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(block["centre"], block["y"] + 0.18, label, ha="center", va="center", fontsize=11, fontweight="bold")
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
+                ax.text(block["centre"], block["y"] - 0.18, param_label, ha="center", va="center", fontsize=10)
 
     for block in blocks:
         draw_block(block)
@@ -1422,7 +1470,9 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "left": None,  # filled in later
             "right": None,
             "label": "×",
+            "label_latex": r"\times",
             "param": _describe_multiplication_param(param),
+            "param_latex": _describe_multiplication_param_latex(param),
         }
 
     if op_name == "Addition":
@@ -1433,7 +1483,9 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "left": None,
             "right": None,
             "label": "+",
+            "label_latex": r"+",
             "param": None,
+            "param_latex": None,
         }
 
     width = 1.6
@@ -1441,18 +1493,24 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
     if op_name == "Filter":
         label = "Filter"
         param_text = _describe_filter_param(param)
+        param_text_latex = _describe_filter_param_latex(param)
     elif op_name == "Hilbert":
         label = "Hilbert"
         param_text = None
+        param_text_latex = None
     elif op_name == "Sampling":
         label = "Sampling"
         param_text = _describe_sampling_param(param)
+        param_text_latex = _describe_sampling_param_latex(param)
     elif op_name == "Derivative":
         label = "Derivative"
         param_text = None
+        param_text_latex = None
     else:
         label = op_name
         param_text = None
+        param_text_latex = None
+
 
     return {
         "shape": "rect",
@@ -1461,7 +1519,9 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         "left": None,
         "right": None,
         "label": label,
+        "label_latex": _operation_name_latex(op_name),
         "param": param_text,
+        "param_latex": param_text_latex,
     }
 
 def _ensure_option_diversity(options: List[np.ndarray], w: np.ndarray) -> List[np.ndarray]:
