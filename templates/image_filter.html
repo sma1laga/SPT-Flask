@@ -2,191 +2,230 @@
 
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/image_filter.css') }}">
-<div class="image-filter-wrapper">
-  <h1>Image-Filter Playground</h1>
-  </h1>
+<section class="image-filter-page">
+  <header class="page-hero">
+    <div>
+      <p class="eyebrow">Interactive Lab</p>
+      <h1>Image Filter Playground</h1>
+      <p class="subtitle">
+        Quickly compare preset filters with your own Butterworth design. Upload a photo or use
+        the demo image, tune the parameters, and inspect how the spectrum reacts in real time.
+      </p>
+    </div>
+  </header>
 
   {% if error %}
-    <div class="alert-error">
-      {{ error }}</div>
+    <div class="alert-error" role="alert">{{ error }}</div>
   {% endif %}
 
-  <form method="POST" enctype="multipart/form-data" class="image-filter-form">
-    <!-- Image choice -->
-    <fieldset>
-      <legend>Image source</legend>
-      <label class='inline' >
-        <input type="radio" name="img_choice" value="default" {% if img_choice=='default' %}checked{% endif %}>
-        Demo
-      </label>
-      <label class='inline'>
-        <input type="radio" name="img_choice" value="upload" {% if img_choice=='upload' %}checked{% endif %}>
-        Upload
-      </label>
-          <div id='uploadBlock' {% if img_choice!='upload' %}style='display:none;'{% endif %}>
-            <input type='file' name='image_file' accept='image/*'
-               {% if img_choice=='upload' %}required{% endif %}>
+  <div class="page-grid">
+    <form method="POST" enctype="multipart/form-data" class="image-filter-form">
+      <div class="form-section">
+        <div class="section-header">
+          <span class="step">1</span>
+          <div>
+            <h2>Choose an image</h2>
+            <p class="muted">Work with the built-in demo or upload your own PNG/JPG.</p>
+          </div>
+        </div>
+        <div class="option-tiles">
+          <label class="option-tile">
+            <input type="radio" name="img_choice" value="default" {% if img_choice=='default' %}checked{% endif %}>
+            <span class="title">Demo</span>
+            <span class="description">Use the provided image to explore the filter behavior.</span>
+          </label>
+          <label class="option-tile">
+            <input type="radio" name="img_choice" value="upload" {% if img_choice=='upload' %}checked{% endif %}>
+            <span class="title">Upload</span>
+            <span class="description">Select a local image to see how your settings translate.</span>
+          </label>
+        </div>
+        <div id="uploadBlock" class="upload-input" {% if img_choice!='upload' %}style="display:none;"{% endif %}>
+          <input type="file" name="image_file" accept="image/*" {% if img_choice=='upload' %}required{% endif %}>
+        </div>
       </div>
-    </fieldset>
 
-    <!-- Standard vs Custom -->
-    <label class='inline'>
-      <input id="useStd" type="checkbox" name="use_standard_filter" {% if use_standard_filter %}checked{% endif %}>
-      <span class='label-text'>Use preset filter</span>
-    </label>
+      <div class="form-section">
+        <div class="section-header">
+          <span class="step">2</span>
+          <div>
+            <h2>Pick a filter strategy</h2>
+            <p class="muted">Toggle between curated presets or customise a Butterworth filter.</p>
+          </div>
+        </div>
+        <label class="switch-row">
+          <input id="useStd" type="checkbox" name="use_standard_filter" {% if use_standard_filter %}checked{% endif %}>
+          <span class="switch-indicator" aria-hidden="true"></span>
+          <span class="switch-label">
+            <strong>Use preset filter</strong>
+            <span class="muted">Great for quick comparisons—blur, sharpen, and more.</span>
+          </span>
+        </label>
 
-    <!-- Presets -->
-      <div id='stdDiv' class='preset-block' {% if not use_standard_filter %}style='display:none;'{% endif %}>
-        <label class='block-title'>Preset</label>
-        <select name='standard_filter'>
-        <option value="blur"    {% if standard_filter=='blur'    %}selected{% endif %}>Gaussian Blur</option>
-        <option value="sharpen" {% if standard_filter=='sharpen' %}selected{% endif %}>Sharpen</option>
-        <option value="edge"    {% if standard_filter=='edge'    %}selected{% endif %}>Edge Detect</option>
-        <option value="emboss"  {% if standard_filter=='emboss'  %}selected{% endif %}>Emboss</option>
-      </select>
-    </div>
-
-    <!-- Custom Butterworth -->
-        <div id='customDiv' class='custom-block' {% if use_standard_filter %}style='display:none;'{% endif %}>
-      <div class='block-title'>Design Butterworth</div>
-      <div class='grid-3'>
-        <div>
-          <label>Type</label>
-          <select name='filter_type'>
-            <option value="lowpass"  {% if filter_type=='lowpass'  %}selected{% endif %}>Low-pass</option>
-            <option value="highpass" {% if filter_type=='highpass' %}selected{% endif %}>High-pass</option>
-            <option value="bandpass" {% if filter_type=='bandpass' %}selected{% endif %}>Band-pass</option>
+        <div id="stdDiv" class="card" {% if not use_standard_filter %}style="display:none;"{% endif %}>
+          <label for="standard_filter" class="card-title">Preset</label>
+          <select id="standard_filter" name="standard_filter">
+            <option value="blur"    {% if standard_filter=='blur'    %}selected{% endif %}>Gaussian Blur</option>
+            <option value="sharpen" {% if standard_filter=='sharpen' %}selected{% endif %}>Sharpen</option>
+            <option value="edge"    {% if standard_filter=='edge'    %}selected{% endif %}>Edge Detect</option>
+            <option value="emboss"  {% if standard_filter=='emboss'  %}selected{% endif %}>Emboss</option>
           </select>
         </div>
-        <div>
-          <label>Order</label>
-          <input type='number' name='order' min='1' max='5' value='{{ order }}'>
-        </div>
-        <div>
-          <label>Cut-off</label>
-          <input type='text' name='cutoff' value='{{ cutoff }}' placeholder='0.1 or 0.05,0.3'>
+
+        <div id="customDiv" class="card" {% if use_standard_filter %}style="display:none;"{% endif %}>
+          <div class="card-title">Butterworth parameters</div>
+          <div class="custom-grid">
+            <label>
+              <span>Type</span>
+              <select name="filter_type">
+                <option value="lowpass"  {% if filter_type=='lowpass'  %}selected{% endif %}>Low-pass</option>
+                <option value="highpass" {% if filter_type=='highpass' %}selected{% endif %}>High-pass</option>
+                <option value="bandpass" {% if filter_type=='bandpass' %}selected{% endif %}>Band-pass</option>
+              </select>
+            </label>
+            <label>
+              <span>Order</span>
+              <input type="number" name="order" min="1" max="5" value="{{ order }}">
+            </label>
+            <label>
+              <span>Cut-off</span>
+              <input type="text" name="cutoff" value="{{ cutoff }}" placeholder="0.1 or 0.05,0.3">
+            </label>
+          </div>
+          <p class="muted small-print">Order controls the steepness. Use two values for band-pass cut-offs.</p>
         </div>
       </div>
-    </div>
 
-    <input type="hidden" name="y_scan" id="y_scan" value="{{ y_scan }}">
+      <input type="hidden" name="y_scan" id="y_scan" value="{{ y_scan }}">
 
-    <div class='submit-row'>
-      <button>
-        Apply filter
-      </button>
-    </div>
-  </form>
 
-  {% if orig_img %}
-    <!-- Blend slider -->
-      <div class='blend-control'>
-      <label>Blend:</label>
-      <input id='blendSlider' type='range' min='0' max='100' value='100'>
-    </div>
-
-    <!-- Image preview -->
-      <div class='preview-images'>
-      <div class='image-wrap'>
-        <img id='origImg' src='{{ orig_img }}' alt='Original'>
-        <canvas id='lineCanvas'></canvas>
+      <div class="submit-row">
+        <button type="submit" class="primary-btn">Apply filter</button>
       </div>
-      <div class='image-wrap'>
-        <img id='filteredImg' src='{{ filt_img }}' alt='Filtered'>
-      </div>
-    </div>
+    </form>
 
-    <!-- Plot + Mask + Difference -->
-     <div id='plotContainer'>
-      <div class='plot-options'>
-        <label><input type="radio" name="plot_view" value="dft" checked> |DFT|</label>
-        <label><input type="radio" name="plot_view" value="acorr"> Autocorr</label>
-        <label><input type="radio" name="plot_view" value="psd"> PSD</label>
-        <label><input type="radio" name="plot_view" value="mask"> Mask</label>
-        {% if diff_img %}
-          <label><input type="radio" name="plot_view" value="diff"> Difference</label>
-        {% endif %}
-      </div>
-      <div class='plot-area'>
-        <img id='dftPlot' src='{{ dft_img }}'>
-        <div class="plot-theory">
-          <h4>Theory: 2D Fourier Transform</h4>
-          <p>
-            The 2D DFT decomposes the spatial image into sinusoidal basis functions.  Bright
-            values at the center correspond to low‐frequency (smooth) components; values
-            further out represent high‐frequency details (edges, noise).  By inspecting the
-            log‐magnitude, you see which bands your filter attenuates or boosts.
-          </p>
+
+    {% if orig_img %}
+      <aside class="preview-column">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Preview</h2>
+              <p class="muted">Click on the original image to choose the analysis scan-line.</p>
+            </div>
+            <div class="blend-control">
+              <label for="blendSlider">Blend</label>
+              <input id="blendSlider" type="range" min="0" max="100" value="100">
+            </div>
+          </div>
+          <div class="preview-images">
+            <figure class="image-wrap">
+              <img id="origImg" src="{{ orig_img }}" alt="Original image">
+              <canvas id="lineCanvas"></canvas>
+              <figcaption>Original</figcaption>
+            </figure>
+            <figure class="image-wrap">
+              <img id="filteredImg" src="{{ filt_img }}" alt="Filtered image">
+              <figcaption>Filtered</figcaption>
+            </figure>
+          </div>
         </div>
-        <img id='acorrPlot' src='{{ acorr_img }}' style='display:none;'>
-        <div class="plot-theory">
-          <h4>Theory: Autocorrelation</h4>
-          <p>
-            Autocorrelation measures how similar an image is to a shifted version of itself.
-            A sharp central peak indicates strong self‐similarity at zero shift, while
-            surrounding patterns reveal periodic textures or repeating structures.
-          </p>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Frequency insight</h2>
+              <p class="muted">Switch the view to inspect the transform, autocorrelation, PSD, and mask.</p>
+            </div>
+          </div>
+          <div id="plotContainer" class="plot-container">
+            <div class="plot-options" role="radiogroup" aria-label="Plot view">
+              <label class="chip"><input type="radio" name="plot_view" value="dft" checked> |DFT|</label>
+              <label class="chip"><input type="radio" name="plot_view" value="acorr"> Autocorr</label>
+              <label class="chip"><input type="radio" name="plot_view" value="psd"> PSD</label>
+              <label class="chip"><input type="radio" name="plot_view" value="mask"> Mask</label>
+              {% if diff_img %}
+                <label class="chip"><input type="radio" name="plot_view" value="diff"> Difference</label>
+              {% endif %}
+            </div>
+            <div class="plot-area">
+              <img id="dftPlot" src="{{ dft_img }}" alt="2D DFT magnitude">
+              <div class="plot-theory">
+                <h3>2D Fourier Transform</h3>
+                <p>
+                  The 2D DFT decomposes the spatial image into sinusoidal basis functions. Bright values at the
+                  center correspond to low-frequency (smooth) components; values further out represent
+                  high-frequency details. Inspecting the log-magnitude reveals which bands your filter attenuates
+                  or boosts.
+                </p>
+              </div>
+              <img id="acorrPlot" src="{{ acorr_img }}" style="display:none;" alt="Autocorrelation heatmap">
+              <div class="plot-theory">
+                <h3>Autocorrelation</h3>
+                <p>
+                  Autocorrelation measures similarity between the image and shifted copies. Strong central peaks
+                  indicate self-similarity, while surrounding patterns expose periodic textures or repeating
+                  structures.
+                </p>
+              </div>
+              <img id="psdPlot" src="{{ psd_img }}" style="display:none;" alt="Power spectral density plot">
+              <div class="plot-theory">
+                <h3>Power Spectral Density</h3>
+                <p>
+                  The PSD shows how energy is distributed along the selected scan-line. Peaks reveal dominant
+                  frequencies, while valleys expose the bands your filter suppresses.
+                </p>
+              </div>
+              <img id="maskPlot" src="{{ mask_img }}" style="display:none;" alt="Filter mask visualization">
+              <div class="plot-theory">
+                <h3>Filter Mask</h3>
+                <p>
+                  In the spatial domain, this mask is the convolution kernel. In the frequency domain, it acts as
+                  the transfer function showing which frequencies pass (bright) versus attenuate (dark).
+                </p>
+              </div>
+              <div class="cta">
+                <a href="{{ url_for('kernel_animator.show_animator') }}" class="link-btn">▶ Try the Kernel Animator</a>
+              </div>
+              {% if diff_img %}
+                <img id="diffPlot" src="{{ diff_img }}" style="display:none;" alt="Difference image">
+                <div class="plot-theory">
+                  <h3>Difference Image</h3>
+                  <p>
+                    Visualises <code>|filtered − original|</code> to highlight where pixels changed the most. Bright
+                    edges indicate strong sharpening or smoothing activity.
+                  </p>
+                </div>
+              {% endif %}
+            </div>
+            <div id="plotDesc" class="plot-desc">A |DFT| magnitude shows the log-scaled 2D Fourier transform of the filtered image.</div>
+          </div>
         </div>
-        <img id='psdPlot' src='{{ psd_img }}' style='display:none;'>
-        <div class="plot-theory">
-          <h4>Theory: 1D Power Spectral Density</h4>
-          <p>
-            The PSD shows how energy is distributed across spatial frequencies along the
-            selected row.  Peaks reveal dominant frequencies (e.g. texture spacing), while
-            valleys show the bands your filter suppresses.
-          </p>
-        </div>
-        <img id='maskPlot' src='{{ mask_img }}' style='display:none;'>
-        <div class="plot-theory">
-          <h4>Theory: Filter Mask</h4>
-          <p>
-            In the spatial domain, this mask is the convolution kernel (e.g. sharpen, blur).
-            In the frequency domain, it shows which frequencies pass (bright) vs. attenuate
-            (dark)—the “transfer function” of your filter.
-          </p>
-        </div>
-        <div class="my-3 text-center">
-          <a href="{{ url_for('kernel_animator.show_animator') }}"
-             class="btn btn-primary">
-            ▶ Try the Kernel Animator
-          </a>
-        </div>
-        {% if diff_img %}
-          <img id='diffPlot' src='{{ diff_img }}' style='display:none;'>
-          <div class="plot-theory">
-            <h4>Theory: Difference Image</h4>
-            <p>
-              By taking <code>|filtered − original|</code>, this image highlights exactly
-              where and how strongly pixels changed.  Bright edges mean substantial filtering
-              effects (e.g. edge‐enhancement or smoothing artifacts).
-            </p>
+
+        {% if orig_prof|length > 2 and filt_prof|length > 2 %}
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>Radial response</h2>
+                <p class="muted">Compare how the average frequency energy shifts after filtering.</p>
+              </div>
+            </div>
+            <div class="radial-container">
+              <canvas id="radialChart" width="500" height="300" class="chart-canvas"></canvas>
+              <div class="plot-theory">
+                <h3>Radial Frequency Response</h3>
+                <p>
+                  Averaging the log-magnitude over concentric circles collapses the 2D spectrum into a 1D profile.
+                  Compare the curves to see how much the filter dampens or amplifies each band.
+                </p>
+              </div>
+            </div>
           </div>
         {% endif %}
-      </div>
-      <div id='plotDesc' class='plot-desc'>
-        A |DFT| magnitude shows the log-scaled 2D Fourier transform of the filtered image.
-      </div>
-    </div>
-
-    <!-- Radial Frequency Response chart -->
-    {% if orig_prof|length > 2 and filt_prof|length > 2 %}
-        <div class='radial-container'>
-        <h3>Radial Frequency Response</h3>
-        <canvas id='radialChart' width='500' height='300' class='chart-canvas'></canvas>
-            <div class="plot-theory">
-              <h4>Theory: Radial Frequency Response</h4>
-              <p>
-                Averaging the log‐magnitude over concentric circles collapses the 2D spectrum
-                into a 1D profile.  The x‑axis is radius (frequency), and the two curves let
-                you compare original vs. filtered band‑responses at a glance.
-              </p>
-            </div>
-      </div>
-      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      </aside>
     {% endif %}
-  {% endif %}
-</div>
-</div>
+  </div>
+</section>
 <script>
 // Blend slider logic
 const blendSlider = document.getElementById("blendSlider");
