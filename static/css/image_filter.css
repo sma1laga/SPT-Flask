@@ -35,7 +35,6 @@ body.dark-mode {
   background: var(--if-surface);
   border-radius: var(--if-radius-lg);
   padding: 2.5rem 2.75rem;
-  box-shadow: var(--if-shadow-soft);
   border: 1px solid var(--if-border);
   display: flex;
   align-items: center;
@@ -68,8 +67,8 @@ body.dark-mode .page-hero h1 {
 }
 
 .page-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 2rem;
 }
 
@@ -77,14 +76,11 @@ body.dark-mode .page-hero h1 {
   background: var(--if-surface);
   border-radius: var(--if-radius-lg);
   padding: 2rem;
-  box-shadow: var(--if-shadow-soft);
   border: 1px solid var(--if-border);
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  position: sticky;
-  top: 1.5rem;
-  height: fit-content;
+
 }
 
 .form-section {
@@ -150,12 +146,11 @@ body.dark-mode .step {
   gap: 0.35rem;
   position: relative;
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .option-tile:hover {
   border-color: var(--if-border-strong);
-  transform: translateY(-1px);
 }
 
 .option-tile input {
@@ -310,17 +305,17 @@ body.dark-mode .card input[type="text"] {
   padding: 0.85rem 1.6rem;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, var(--if-primary), #60a5fa);
+  background: var(--if-primary);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.25);
+  transition: background 0.2s ease;
+  box-shadow: none;
 }
 
 .primary-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.35);
+  background: var(--if-primary-dark);
+
 }
 
 .preview-column {
@@ -333,11 +328,11 @@ body.dark-mode .card input[type="text"] {
   background: var(--if-surface);
   border-radius: var(--if-radius-lg);
   padding: 2rem;
-  box-shadow: var(--if-shadow-soft);
   border: 1px solid var(--if-border);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  box-shadow: none;
 }
 
 .panel-header {
@@ -451,11 +446,7 @@ body.dark-mode .card input[type="text"] {
 .plot-area img {
   width: 100%;
   border-radius: var(--if-radius-sm);
-  transition: transform 0.2s ease;
-}
 
-.plot-area img.active {
-  transform: scale(1.02);
 }
 
 .plot-theory {
@@ -485,7 +476,8 @@ body.dark-mode .plot-theory h3 {
   gap: 0.35rem;
   padding: 0.6rem 1.2rem;
   border-radius: 999px;
-  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid var(--if-border);
+  background: transparent;
   color: var(--if-primary-dark);
   text-decoration: none;
   font-weight: 600;
@@ -515,16 +507,6 @@ body.dark-mode .plot-theory h3 {
   color: #b91c1c;
   padding: 0.9rem 1.1rem;
   border-radius: var(--if-radius-md);
-}
-
-@media (max-width: 1100px) {
-  .page-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .image-filter-form {
-    position: static;
-  }
 }
 
 @media (max-width: 640px) {
