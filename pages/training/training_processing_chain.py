@@ -151,14 +151,14 @@ def _create_easy_problem() -> Dict[str, object]:
     else:
         base = _tri_spectrum(w, width)
     x_sig = amp * base
-    input_expr = f"{amp}*{input_shape}(w/{width})"
-    amp_fmt = format(amp, "g")
+    amp_text, amp_latex = _format_complex_gain(amp)
+    input_expr = f"{amp_text}*{input_shape}(w/{width})"
     width_fmt = format(width, "g")
     operator_name = "rect" if input_shape == "rect" else "tri"
     latex_shape = (
         rf"\operatorname{{{operator_name}}}\left(\frac{{\omega}}{{{width_fmt}}}\right)"
     )
-    input_expr_latex = f"{amp_fmt} \\cdot {latex_shape}"
+    input_expr_latex = f"{amp_latex} \\cdot {latex_shape}"
 
     # 2) Choose operations and layout
     # Define three layouts: sequences of operation names; letters always refer
@@ -293,14 +293,16 @@ def _create_medium_problem() -> Dict[str, object]:
     amp = random.choice([0.5, 1.0, 1.5, 2.0])
     width = random.choice([1.0, 2.0, 3.0])
     base = _rect_spectrum(w, width) if input_shape == "rect" else _tri_spectrum(w, width)
-    x_sig = amp * base
-    input_expr = f"{amp}*{input_shape}(w/{width})"
-    amp_fmt = format(amp, "g")
+    # Allow the medium difficulty input to be purely real or purely imaginary.
+    phase_choice = random.choice([1.0, -1.0, 1j, -1j])
+    complex_amp = phase_choice * amp
+    coeff_text, coeff_latex = _format_complex_gain(complex_amp)
+    x_sig = complex_amp * base
+    input_expr = f"{coeff_text}*{input_shape}(w/{width})"
     width_fmt = format(width, "g")
     operator_name = "rect" if input_shape == "rect" else "tri"
-    input_expr_latex = (
-        rf"{amp_fmt} \cdot \operatorname{{{operator_name}}}\left(\frac{{\omega}}{{{width_fmt}}}\right)"
-    )
+    latex_shape = rf"\operatorname{{{operator_name}}}\left(\frac{{\omega}}{{{width_fmt}}}\right)"
+    input_expr_latex = rf"{coeff_latex} \cdot {latex_shape}"
 
     # Branch operations: Multiplication or Sampling on each split
     branch_ops: List[Tuple[str, str | None]] = []
@@ -487,6 +489,42 @@ def _create_medium_problem() -> Dict[str, object]:
         "letters": letter_results,
         "inputExpressionLatex": input_expr_latex,
     }
+
+def _format_complex_gain(value: complex) -> Tuple[str, str]:
+    """Return plain-text and LaTeX strings for a (possibly complex) gain."""
+
+    real_part = float(np.real(value))
+    imag_part = float(np.imag(value))
+    tol = 1e-9
+    real_zero = abs(real_part) < tol
+    imag_zero = abs(imag_part) < tol
+
+    if real_zero and imag_zero:
+        return "0", "0"
+
+    if imag_zero:
+        scalar = format(real_part, "g")
+        return scalar, scalar
+
+    j_unit_text = "j"
+    j_unit_latex = r"\mathrm{j}"
+    imag_mag = abs(imag_part)
+    if np.isclose(imag_mag, 1.0):
+        magnitude = ""
+    else:
+        magnitude = format(imag_mag, "g")
+
+    if real_zero:
+        sign = "-" if imag_part < 0 else ""
+        return f"{sign}{magnitude}{j_unit_text}", f"{sign}{magnitude}{j_unit_latex}"
+
+    real_str = format(real_part, "g")
+    sign = "+" if imag_part > 0 else "-"
+    return (
+        f"{real_str}{sign}{magnitude}{j_unit_text}",
+        f"{real_str}{sign}{magnitude}{j_unit_latex}",
+    )
+
 
 
 
@@ -995,17 +1033,27 @@ def _draw_medium_diagram(
     adder_radius = adder_block.get("radius", 0.45)
     top_target = (adder_block["centre"], y_mid + adder_radius / 1.2)
     bot_target = (adder_block["centre"], y_mid - adder_radius / 1.2)
-    ax.annotate("", xy=top_target, xytext=(top_block["right"], top_block["y"]), arrowprops=arrow_props)
-    ax.annotate("", xy=bot_target, xytext=(bot_block["right"], bot_block["y"]), arrowprops=arrow_props)
+
+    top_knee_x = (top_block["right"] + adder_block["left"]) / 2.0
+    bot_knee_x = (bot_block["right"] + adder_block["left"]) / 2.0
+
+    # Draw Manhattan style connections from branches into the adder
+    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color="#111111", lw=1.4)
+    ax.plot([top_knee_x, top_knee_x], [top_block["y"], top_target[1]], color="#111111", lw=1.4)
+    ax.annotate("", xy=top_target, xytext=(top_knee_x, top_target[1]), arrowprops=arrow_props)
+
+    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.4)
+    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], bot_target[1]], color="#111111", lw=1.4)
+    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, bot_target[1]), arrowprops=arrow_props)
 
     # Labels for branches
-    mid_top_x = (top_block["right"] + adder_block["centre"]) / 2.0
-    mid_top_y = (top_block["y"] + top_target[1]) / 2.0
+    mid_top_x = (top_knee_x + top_target[0]) / 2.0
+    mid_top_y = (top_target[1] + top_block["y"]) / 2.0
     ax.text(mid_top_x, mid_top_y + 0.25, "A", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_top_x, mid_top_y - 0.35, "$a(t)$", ha="center", va="center", fontsize=11)
 
-    mid_bot_x = (bot_block["right"] + adder_block["centre"]) / 2.0
-    mid_bot_y = (bot_block["y"] + bot_target[1]) / 2.0
+    mid_bot_x = (bot_knee_x + bot_target[0]) / 2.0
+    mid_bot_y = (bot_target[1] + bot_block["y"]) / 2.0
     ax.text(mid_bot_x, mid_bot_y + 0.25, "B", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_bot_x, mid_bot_y - 0.35, "$b(t)$", ha="center", va="center", fontsize=11)
 
