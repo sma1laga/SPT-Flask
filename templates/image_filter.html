@@ -4,14 +4,22 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/image_filter.css') }}">
 <section class="image-filter-page">
   <header class="page-hero">
-    <div>
+    <div class="hero-text">
       <p class="eyebrow">Interactive Lab</p>
       <h1>Image Filter Playground</h1>
-      <p class="subtitle">
-        Quickly compare preset filters with your own Butterworth design. Upload a photo or use
-        the demo image, tune the parameters, and inspect how the spectrum reacts in real time.
-      </p>
+      <details class="hero-details">
+        <summary>What can I do here?</summary>
+        <p class="subtitle">
+          Quickly compare preset filters with your own Butterworth design. Upload a photo or use
+          the demo image, tune the parameters, and inspect how the spectrum reacts in real time.
+        </p>
+      </details>
     </div>
+    <ul class="hero-highlights">
+      <li>Preset vs. custom filters</li>
+      <li>Blend slider preview</li>
+      <li>Switchable spectrum views</li>
+    </ul>
   </header>
 
   {% if error %}
@@ -20,7 +28,7 @@
 
   <div class="page-grid">
     <form method="POST" enctype="multipart/form-data" class="image-filter-form">
-      <div class="form-section">
+      <div class="form-section compact">
         <div class="section-header">
           <span class="step">1</span>
           <div>
@@ -45,7 +53,7 @@
         </div>
       </div>
 
-      <div class="form-section">
+      <div class="form-section compact">
         <div class="section-header">
           <span class="step">2</span>
           <div>
@@ -107,7 +115,7 @@
 
     {% if orig_img %}
       <aside class="preview-column">
-        <div class="panel">
+        <div class="panel compact-panel">
           <div class="panel-header">
             <div>
               <h2>Preview</h2>
@@ -131,7 +139,7 @@
           </div>
         </div>
 
-        <div class="panel">
+        <div class="panel compact-panel">
           <div class="panel-header">
             <div>
               <h2>Frequency insight</h2>
@@ -150,52 +158,52 @@
             </div>
             <div class="plot-area">
               <img id="dftPlot" src="{{ dft_img }}" alt="2D DFT magnitude">
-              <div class="plot-theory">
-                <h3>2D Fourier Transform</h3>
+              <details id="dftInfo" class="plot-note">
+                <summary>About the |DFT| view</summary>
                 <p>
                   The 2D DFT decomposes the spatial image into sinusoidal basis functions. Bright values at the
                   center correspond to low-frequency (smooth) components; values further out represent
                   high-frequency details. Inspecting the log-magnitude reveals which bands your filter attenuates
                   or boosts.
                 </p>
-              </div>
+              </details>
               <img id="acorrPlot" src="{{ acorr_img }}" style="display:none;" alt="Autocorrelation heatmap">
-              <div class="plot-theory">
-                <h3>Autocorrelation</h3>
+              <details id="acorrInfo" class="plot-note">
+                <summary>About autocorrelation</summary>
                 <p>
                   Autocorrelation measures similarity between the image and shifted copies. Strong central peaks
                   indicate self-similarity, while surrounding patterns expose periodic textures or repeating
                   structures.
                 </p>
-              </div>
+              </details>
               <img id="psdPlot" src="{{ psd_img }}" style="display:none;" alt="Power spectral density plot">
-              <div class="plot-theory">
-                <h3>Power Spectral Density</h3>
+              <details id="psdInfo" class="plot-note">
+                <summary>About the PSD</summary>
                 <p>
                   The PSD shows how energy is distributed along the selected scan-line. Peaks reveal dominant
                   frequencies, while valleys expose the bands your filter suppresses.
                 </p>
-              </div>
+              </details>
               <img id="maskPlot" src="{{ mask_img }}" style="display:none;" alt="Filter mask visualization">
-              <div class="plot-theory">
-                <h3>Filter Mask</h3>
+              <details id="maskInfo" class="plot-note">
+                <summary>About the mask</summary>
                 <p>
                   In the spatial domain, this mask is the convolution kernel. In the frequency domain, it acts as
                   the transfer function showing which frequencies pass (bright) versus attenuate (dark).
                 </p>
-              </div>
+              </details>
               <div class="cta">
                 <a href="{{ url_for('kernel_animator.show_animator') }}" class="link-btn">▶ Try the Kernel Animator</a>
               </div>
               {% if diff_img %}
                 <img id="diffPlot" src="{{ diff_img }}" style="display:none;" alt="Difference image">
-                <div class="plot-theory">
-                  <h3>Difference Image</h3>
+                <details id="diffInfo" class="plot-note">
+                  <summary>About the difference view</summary>
                   <p>
                     Visualises <code>|filtered − original|</code> to highlight where pixels changed the most. Bright
                     edges indicate strong sharpening or smoothing activity.
                   </p>
-                </div>
+                </details>
               {% endif %}
             </div>
             <div id="plotDesc" class="plot-desc">A |DFT| magnitude shows the log-scaled 2D Fourier transform of the filtered image.</div>
@@ -203,7 +211,7 @@
         </div>
 
         {% if orig_prof|length > 2 and filt_prof|length > 2 %}
-          <div class="panel">
+          <div class="panel compact-panel">
             <div class="panel-header">
               <div>
                 <h2>Radial response</h2>
@@ -212,13 +220,13 @@
             </div>
             <div class="radial-container">
               <canvas id="radialChart" width="500" height="300" class="chart-canvas"></canvas>
-              <div class="plot-theory">
-                <h3>Radial Frequency Response</h3>
+              <details class="plot-note">
+                <summary>About the radial profile</summary>
                 <p>
                   Averaging the log-magnitude over concentric circles collapses the 2D spectrum into a 1D profile.
                   Compare the curves to see how much the filter dampens or amplifies each band.
                 </p>
-              </div>
+              </details>
             </div>
           </div>
         {% endif %}
@@ -278,29 +286,35 @@ origImgElem.addEventListener('click', e=>{
   yField.value = Math.round(y/origImgElem.clientHeight*origImgElem.naturalHeight);
 });
 
-document.querySelectorAll('input[name="plot_view"]').forEach(r=>{
-  r.addEventListener('change', ()=>{
-    const view = document.querySelector('input[name="plot_view"]:checked').value;
-    ['dft','acorr','psd','mask','diff'].forEach(k=>{
-      const el = document.getElementById(k+'Plot');
-      if(!el) return;
-      const isActive = (k===view);
-      el.style.display = isActive ? 'block':'none';
-      // toggle the CSS class so it slightly enlarges
-      if(isActive) el.classList.add('active');
-      else         el.classList.remove('active');
-    });
-    const desc = {
-      dft  : 'Log-scaled 2D FFT magnitude of the filtered image.',
-      acorr: '2D autocorrelation showing spatial similarity.',
-      psd  : 'Welch PSD of the selected scan-line.',
-      mask : '{{ mask_label }}',
-      diff : 'Absolute difference between filtered and original images.'
-    };
-    const pd = document.getElementById('plotDesc');
-    if(pd) pd.innerText = desc[view] || '';
+const plotRadios = document.querySelectorAll('input[name="plot_view"]');
+function updatePlotView() {
+  const active = document.querySelector('input[name="plot_view"]:checked');
+  const view = active ? active.value : 'dft';
+  ['dft','acorr','psd','mask','diff'].forEach(k=>{
+    const el = document.getElementById(k+'Plot');
+    if(!el) return;
+    const isActive = (k===view);
+    el.style.display = isActive ? 'block':'none';
+    if(isActive) el.classList.add('active');
+    else         el.classList.remove('active');
+    const info = document.getElementById(k+'Info');
+    if(info) {
+      if(isActive) info.setAttribute('open', 'open');
+      else         info.removeAttribute('open');
+    }
   });
-});
+  const desc = {
+    dft  : 'Log-scaled 2D FFT magnitude of the filtered image.',
+    acorr: '2D autocorrelation showing spatial similarity.',
+    psd  : 'Welch PSD of the selected scan-line.',
+    mask : '{{ mask_label }}',
+    diff : 'Absolute difference between filtered and original images.'
+  };
+  const pd = document.getElementById('plotDesc');
+  if(pd) pd.innerText = desc[view] || '';
+}
+plotRadios.forEach(r=>r.addEventListener('change', updatePlotView));
+updatePlotView();
 
 // Radial chart
 {% if orig_prof|length > 2 and filt_prof|length > 2 %}
