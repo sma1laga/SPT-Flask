@@ -1043,7 +1043,15 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
                 label = f"${label}$"
-            ax.text(block["centre"], y_pos, label, ha="center", va="center", fontsize=16, fontweight="bold")
+            ax.text(
+                block["centre"],
+                y_pos,
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 16),
+                fontweight="bold",
+            )
             param_label = None
             if block.get("param_latex"):
                 param_label = f"${block['param_latex']}$"
@@ -1074,7 +1082,15 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
                 label = f"${label}$"
-            ax.text(block["centre"], y_pos + 0.18, label, ha="center", va="center", fontsize=11, fontweight="bold")
+            ax.text(
+                block["centre"],
+                y_pos + block.get("label_y_offset", 0.18),
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 11),
+                fontweight="bold",
+            )
             param_label = None
             if block.get("param_latex"):
                 param_label = f"${block['param_latex']}$"
@@ -1083,7 +1099,7 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
             if param_label:
                 ax.text(
                     block["centre"],
-                    y_pos - 0.18,
+                    y_pos - block.get("param_y_offset", 0.18),
                     param_label,
                     ha="center",
                     va="center",
@@ -1180,7 +1196,15 @@ def _draw_medium_diagram_sampling(
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
                 label = f"${label}$"
-            ax.text(block["centre"], block["y"], label, ha="center", va="center", fontsize=16, fontweight="bold")
+            ax.text(
+                block["centre"],
+                block["y"],
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 16),
+                fontweight="bold",
+            )
             param_label = None
             if block.get("param_latex"):
                 param_label = f"${block['param_latex']}$"
@@ -1210,15 +1234,29 @@ def _draw_medium_diagram_sampling(
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
                 label = f"${label}$"
-            ax.text(block["centre"], block["y"] + 0.18, label, ha="center", va="center", fontsize=11, fontweight="bold")
+            ax.text(
+                block["centre"],
+                block["y"] + block.get("label_y_offset", 0.18),
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 11),
+                fontweight="bold",
+            )
             param_label = None
             if block.get("param_latex"):
                 param_label = f"${block['param_latex']}$"
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
-                ax.text(block["centre"], block["y"] - 0.18, param_label, ha="center", va="center", fontsize=10)
-
+                ax.text(
+                    block["centre"],
+                    block["y"] - block.get("param_y_offset", 0.18),
+                    param_label,
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                )
     for block in blocks:
         draw_block(block)
 
@@ -1473,6 +1511,7 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "label_latex": r"\times",
             "param": _describe_multiplication_param(param),
             "param_latex": _describe_multiplication_param_latex(param),
+            "label_fontsize": 16,
         }
 
     if op_name == "Addition":
@@ -1486,10 +1525,14 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "label_latex": r"+",
             "param": None,
             "param_latex": None,
+            "label_fontsize": 16,
         }
 
     width = 1.6
     height = 0.9
+    label_fontsize = 11
+    label_y_offset = 0.18
+    param_y_offset = 0.18
     if op_name == "Filter":
         label = "Filter"
         param_text = _describe_filter_param(param)
@@ -1498,6 +1541,9 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         label = "Hilbert"
         param_text = None
         param_text_latex = None
+        label_fontsize = 17
+        label_y_offset = 0.0
+        param_y_offset = 0.18
     elif op_name == "Sampling":
         label = "Sampling"
         param_text = _describe_sampling_param(param)
@@ -1506,6 +1552,9 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         label = "Derivative"
         param_text = None
         param_text_latex = None
+        label_fontsize = 17
+        label_y_offset = 0.0
+        param_y_offset = 0.18
     else:
         label = op_name
         param_text = None
@@ -1522,6 +1571,9 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         "label_latex": _operation_name_latex(op_name),
         "param": param_text,
         "param_latex": param_text_latex,
+        "label_fontsize": label_fontsize,
+        "label_y_offset": label_y_offset,
+        "param_y_offset": param_y_offset,
     }
 
 def _ensure_option_diversity(options: List[np.ndarray], w: np.ndarray) -> List[np.ndarray]:
