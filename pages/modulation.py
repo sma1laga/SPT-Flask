@@ -65,9 +65,6 @@ PRESETS = {
     'am_broadcast':     {'type':'AM','fs':4000,'t_end':1.0,'fc':400,'fm':5,'m':0.6,'snr_db':40},
     'fm_nbfm_voice':    {'type':'FM','fs':8000,'t_end':1.0,'fc':500,'fm':5,'beta':1.5,'snr_db':25},
     'pm_demo':          {'type':'PM','fs':4000,'t_end':1.0,'fc':300,'fm':5,'m':0.8,'snr_db':35},
-    'pwm_slow':         {'type':'PWM','fs':2000,'t_end':1.0,'prf':20,'fm':2,'snr_db':np.inf},
-    'ppm_demo':         {'type':'PPM','fs':2000,'t_end':1.0,'prf':40,'fm':3,'snr_db':np.inf},
-    'pcm_16lvl':        {'type':'PCM','fs':2000,'t_end':1.0,'prf':40,'fm':4,'levels':16,'snr_db':np.inf},
 }
 
 @mod_bp.route('/api/presets')
@@ -132,51 +129,6 @@ def modulate_api():
         modulated  = np.cos(inst_phase)
         info.update({'fc':fc,'fm':fm,'phase_index':midx})
 
-    # —— Pulse —— #
-    elif kind == 'PAM':
-        prf = float(params.get('prf',50))
-        fm  = float(params.get('fm', 5))
-        message   = np.sin(2*np.pi*fm*t)
-        pulses    = (np.mod(t,1/prf) < (1/(2*prf))).astype(float)
-        carrier   = pulses.copy()
-        modulated = pulses * message
-        info.update({'prf':prf,'fm':fm})
-
-    elif kind == 'PWM':
-        prf = float(params.get('prf',50))
-        fm  = float(params.get('fm', 5))
-        message = np.sin(2*np.pi*fm*t)
-        duty    = (message + 1)/2
-        tau     = np.mod(t,1/prf)
-        pulses  = (tau < (duty/prf)).astype(float)
-        carrier   = pulses.copy()
-        modulated = pulses
-        info.update({'prf':prf,'fm':fm})
-
-    elif kind == 'PPM':
-        prf   = float(params.get('prf',50))
-        fm    = float(params.get('fm', 5))
-        message = np.sin(2*np.pi*fm*t)
-        shift   = (message + 1)/2 * (1/(2*prf))
-        tau     = np.mod(t,1/prf)
-        width   = 1/(20*prf)
-        pulses  = (np.abs(tau - shift) < width).astype(float)
-        carrier   = pulses.copy()
-        modulated = pulses
-        info.update({'prf':prf,'fm':fm})
-
-    elif kind == 'PCM':
-        prf    = float(params.get('prf', 40))
-        fm     = float(params.get('fm',  5))
-        levels = int(params.get('levels', 8)); levels = max(2, levels)
-        message = np.sin(2*np.pi*fm*t)
-        q       = np.round((message+1)/2*(levels-1))
-        qnorm   = q/(levels-1)*2 - 1
-        sidx    = np.floor(t*prf).astype(int)
-        carrier   = np.ones_like(t)
-        modulated = qnorm[np.clip(sidx,0,len(qnorm)-1)]
-        info.update({'prf':prf,'fm':fm,'levels':levels})
-
     else:
         return jsonify(error="Unknown modulation type"), 400
 
@@ -239,31 +191,6 @@ def demodulate_api():
         deph = phi - base
         demod = deph / (m + 1e-12)
 
-    elif kind in ['PAM','PWM','PPM','PCM']:
-        prf = float(params.get('prf',50))
-        fm  = float(params.get('fm',5))
-        msg = np.sin(2*np.pi*fm*t)
-
-        if kind == 'PAM':
-            tx    = (np.mod(t,1/prf) < 1/(2*prf)).astype(float) * msg
-            demod = msg
-        elif kind == 'PWM':
-            duty  = (msg + 1)/2
-            tau   = np.mod(t,1/prf)
-            tx    = (tau < (duty/prf)).astype(float)
-            demod = msg
-        elif kind == 'PPM':
-            shift = (msg + 1)/2 * (1/(2*prf))
-            tau   = np.mod(t,1/prf)
-            width = 1/(20*prf)
-            tx    = (np.abs(tau - shift) < width).astype(float)
-            demod = msg
-        elif kind == 'PCM':
-            levels = int(params.get('levels',8))
-            q      = np.round((msg+1)/2*(levels-1))
-            demod  = q/(levels-1)*2 - 1
-            sidx   = np.floor(t*prf).astype(int)
-            tx     = demod[np.clip(sidx,0,len(demod)-1)]
     else:
         return jsonify(error="Unknown demodulation type"), 400
 

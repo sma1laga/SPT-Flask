@@ -1,125 +1,95 @@
 // static/js/digital_modulation.js
 
-// ---------- small utils ----------
-function debounce(fn, wait = 150) {
-  let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+window.DIG_URLS = window.DIG_URLS || {
+  presets: '/digital_modulation/api/presets',
+  modulate: '/digital_modulation/api/modulate',
+  demod: '/digital_modulation/api/demodulate'
+};
+
+function $(id){ return document.getElementById(id); }
+
+
+function setLabel(id){
+  const el = $(id), lab = $(id + '_val');
+  if (el && lab) lab.innerText = el.value;
 }
 
-function getEl(id) { return document.getElementById(id); }
-
-function setSliderLabel(id) {
-  const el = getEl(id);
-  const lab = getEl(id + '_val');
-  if (el && lab) lab.textContent = el.value;
+async function fetchJSON(url, params){
+  const q = new URLSearchParams(params).toString();
+  const res = await fetch(url + '?' + q);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-function getDefaultLayout(title, height = 280) {
-  return {
-    margin: { t: 30, r: 10, l: 50, b: 40 },
-    title,
-    height,
-    legend: { orientation: 'h' },
-    xaxis: { automargin: true, title: 't [s]' },
-    yaxis: { automargin: true, title: 'Signal' }
+function updateDigControls(){
+  const type = $('dig_mod_type').value;
+  const levelsGroup = $('dig_pcm_levels_group');
+  if (levelsGroup) levelsGroup.style.display = (type === 'PCM') ? '' : 'none';
+
+  [
+    'dig_fs','dig_t_end','dig_prf','dig_fm','dig_levels','dig_snr_db'
+  ].forEach(setLabel);
+}
+
+function renderDigFacts(info){
+  if (!info) return;
+  const parts = [];
+  parts.push(`${info.type} @ fs=${info.fs} Hz`);
+  if (info.prf) parts.push(`prf = ${info.prf} Hz`);
+  if (info.fm) parts.push(`fm = ${info.fm} Hz`);
+  if (info.levels) parts.push(`${info.levels} levels`);
+  if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
+  const el = $('dig_facts');
+  if (el) el.innerText = parts.join('  •  ');
+}
+
+function collectModParams(){
+  const type = $('dig_mod_type').value;
+  const params = {
+    type,
+    fs: +$('dig_fs').value,
+    t_end: +$('dig_t_end').value,
+    snr_db: $('dig_snr_toggle').checked ? +$('dig_snr_db').value : Infinity
   };
+  params.prf = +$('dig_prf').value;
+  params.fm = +$('dig_fm').value;
+  if (type === 'PCM') params.levels = +$('dig_levels').value;
+  return params;
 }
 
-function plotlySafeReact(divId, data, layout) {
-  const div = getEl(divId);
-  if (!div || typeof Plotly === 'undefined') return;
-  Plotly.react(div, data, layout, { responsive: true, displayModeBar: false });
-}
-
-function plotlyResize(divId) {
-  const div = getEl(divId);
-  if (!div || typeof Plotly === 'undefined') return;
-  try { Plotly.Plots.resize(div); } catch (_) {}
-}
-
-// ---------- core helpers ----------
-function makeTime(tEnd = 1.0, fs = 1000) {
-  const N = Math.max(8, Math.floor(fs * tEnd));
-  const t = new Array(N);
-  for (let i = 0; i < N; i++) t[i] = i / fs;
-  return t;
-}
-
-function digitalModulate({ type, fc, br, dev }) {
-  const fs = 1000;       // keep lightweight client side demo
-  const tEnd = 1.0;
-  const t = makeTime(tEnd, fs);
-  const Tb = 1 / br;
-  const bits = t.map(v => (v % Tb < Tb / 2 ? 1 : 0));
-
-  let y;
-  if (type === 'ASK') {
-    y = t.map((v, i) => bits[i] * Math.cos(2 * Math.PI * fc * v));
-  } else if (type === 'PSK') {
-    // 0 -> phase 0, 1 -> phase pi - BPSK demo
-    y = t.map((v, i) => Math.cos(2 * Math.PI * fc * v + Math.PI * (1 - bits[i])));
-  } else if (type === 'FSK') {
-    const f0 = fc - dev, f1 = fc + dev;
-    y = t.map((v, i) => Math.cos(2 * Math.PI * (bits[i] ? f1 : f0) * v));
-  } else {
-    throw new Error('Unknown digital modulation type');
-  }
-
-  return { t, bits, modulated: y, fs };
-}
-
-function digitalDemodulate({ br }) {
-  // echoes ideal bits as a clean reference
-  const fs = 1000, tEnd = 1.0;
-  const t = makeTime(tEnd, fs);
-  const Tb = 1 / br;
-  const bits = t.map(v => (v % Tb < Tb / 2 ? 1 : 0));
-  return { t, modulated: [...bits], demodulated: bits, fs };
-}
-
-function estimateConstellation({ type, fc, br }) {
-  if (type === 'FSK') return { I: [], Q: [], evm: null };
-
-  const { t, modulated, fs } = digitalModulate({ type, fc, br, dev: 0 });
-  const spb = Math.max(1, Math.floor(fs / br));
-  const nSym = Math.floor(t.length / spb);
-  const I = new Array(nSym), Q = new Array(nSym);
-
-  for (let k = 0; k < nSym; k++) {
-    let sI = 0, sQ = 0;
-    const n0 = k * spb, n1 = (k + 1) * spb;
-    for (let n = n0; n < n1; n++) {
-      const c = Math.cos(2 * Math.PI * fc * t[n]);
-      const s = -Math.sin(2 * Math.PI * fc * t[n]);
-      sI += modulated[n] * c;
-      sQ += modulated[n] * s;
-    }
-    I[k] = (2 / spb) * sI;
-    Q[k] = (2 / spb) * sQ;
-  }
-
-  // crude EVM vs two ideal BPSK points (+/-1, 0)
-  let err = 0;
-  const ideals = [[1, 0], [-1, 0]];
-  for (let k = 0; k < I.length; k++) {
-    const d0 = Math.hypot(I[k] - 1, Q[k] - 0);
-    const d1 = Math.hypot(I[k] + 1, Q[k] - 0);
-    err += Math.min(d0, d1);
-  }
-  const evm = I.length ? err / I.length : null;
-  return { I, Q, evm };
-}
-
-// ---------- plotting ----------
-function plotDigital(demod = false) {
-  const type = demod ? getEl('dig_demod').value : getEl('dig_type').value;
+function collectDemodParams(){
+  const type = $('dig_demod_type').value;
 
   const params = {
     type,
-    fc: +getEl('dig_fc').value,
-    br: +getEl('dig_br').value,
-    dev: +getEl('dig_dev').value
+    fs: +$('dig_fs').value,
+    t_end: +$('dig_t_end').value,
+    prf: +$('dig_prf').value,
+    fm: +$('dig_fm').value
   };
+async function plotDigMod(){
+  const params = collectModParams();
+  const data = await fetchJSON(DIG_URLS.modulate, params);
+
+  Plotly.newPlot('dig_mod_plot', [
+    { x: data.t, y: data.message, name: 'Message' },
+    ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
+    { x: data.t, y: data.modulated, name: `${params.type} Signal` }
+  ], {
+    margin: { t: 30 },
+    title: `${params.type} — Modulation`,
+    legend: { orientation: 'h' }
+  }, {responsive: true});
+
+  if ($('dig_show_spectrum').checked) {
+    Plotly.newPlot('dig_mod_spec', [
+      { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (modulated)' }
+    ], {
+      margin: { t: 30 },
+      title: 'Spectrum (Hann + rFFT)',
+      xaxis: { title: 'Frequency [Hz]' },
+      yaxis: { title: 'Power [dB]' }
+    }, {responsive: true});
 
   const data = demod ? digitalDemodulate(params) : digitalModulate(params);
 
@@ -132,54 +102,62 @@ function plotDigital(demod = false) {
     layout.yaxis2 = { overlaying: 'y', side: 'right', showgrid: false, title: 'Bits', range: [-0.2, 1.2] };
     plotlySafeReact('dig_plot', traces, layout);
   } else {
-    const traces = [
-      { x: data.t, y: data.modulated,   name: 'Received' },
-      { x: data.t, y: data.demodulated, name: 'Demodulated Bits', yaxis: 'y2' }
-    ];
-    const layout = getDefaultLayout(`${type} Demodulation`);
-    layout.yaxis2 = { overlaying: 'y', side: 'right', showgrid: false, title: 'Bits', range: [-0.2, 1.2] };
-    plotlySafeReact('dig_demod_plot', traces, layout);
+    Plotly.purge('dig_mod_spec');
+    const div = $('dig_mod_spec');
+    if (div) div.innerHTML = '<div class="muted">Spectrum hidden</div>';
+  }
+
+
+  renderDigFacts(data.info);
+}
+
+async function plotDigDemod(){
+  const params = collectDemodParams();
+  const data = await fetchJSON(DIG_URLS.demod, params);
+  const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
+
+  Plotly.newPlot('dig_demod_plot', [
+    { x: data.t, y: data.modulated, name: 'Received' },
+    { x: tDem, y: data.demodulated, name: 'Demodulated' }
+  ], {
+    margin: { t: 30 },
+    title: `${params.type} — Demodulation`,
+    legend: { orientation: 'h' }
+  }, {responsive: true});
+
+  if ($('dig_show_spectrum').checked) {
+    Plotly.newPlot('dig_demod_spec', [
+      { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (demodulated)' }
+    ], {
+      margin: { t: 30 },
+      title: 'Demod Spectrum',
+      xaxis: { title: 'Frequency [Hz]' },
+      yaxis: { title: 'Power [dB]' }
+    }, {responsive: true});
+  } else {
+    Plotly.purge('dig_demod_spec');
+    const div = $('dig_demod_spec');
+    if (div) div.innerHTML = '';
   }
 }
 
-function drawConstellation() {
-  const type = getEl('dig_type').value;
-  const fc   = +getEl('dig_fc').value;
-  const br   = +getEl('dig_br').value;
-
-  const infoEl = getEl('dig_constellation');
-  const plotId = 'dig_constellation_plot';
-
-  const { I, Q, evm } = estimateConstellation({ type, fc, br });
-
-  if (!I.length) {
-    if (infoEl) infoEl.innerHTML = '<span class="muted">Constellation not applicable (FSK)</span>';
-    const div = getEl(plotId);
-    if (div) Plotly.purge(div);
-    return;
+async function applyDigPreset(){
+  const p = $('dig_preset').value;
+  if (!p) return;
+  const data = await fetchJSON(DIG_URLS.modulate, { preset: p });
+  if (data.info){
+    const I = data.info;
+    $('dig_mod_type').value = I.type;
+    $('dig_demod_type').value = I.type;
+    if (I.fs) $('dig_fs').value = I.fs;
+    if (I.duration_s) $('dig_t_end').value = I.duration_s;
+    if (I.prf) $('dig_prf').value = I.prf;
+    if (I.fm) $('dig_fm').value = I.fm;
+    if (I.levels) $('dig_levels').value = I.levels;
+    updateDigControls();
   }
-
-  if (infoEl) infoEl.innerHTML =
-    `<strong>Constellation</strong> — per-symbol integrate/mix; EVM≈${evm?.toFixed(2) ?? 'n/a'}`;
-
-  const traces = [
-    { x: I, y: Q, mode: 'markers', name: 'Symbols' },
-    { x: [1, -1], y: [0, 0], mode: 'markers', name: 'Ideal BPSK' }
-  ];
-  const layout = {
-    ...getDefaultLayout('Constellation', 300),
-    xaxis: { title: 'I', automargin: true },
-    yaxis: { title: 'Q', automargin: true, scaleanchor: 'x' }
-  };
-  plotlySafeReact(plotId, traces, layout);
-}
-
-// ---------- UI wiring  ----------
-function updateSliderValue(id) {
-  setSliderLabel(id);
-  plotDigital(false);
-  plotDigital(true);
-  drawConstellation();
+  plotDigMod();
+  plotDigDemod();
 }
 
 function updateDigControls() {
@@ -192,19 +170,25 @@ function updateDigControls() {
 
 // ---------- init ----------
 document.addEventListener('DOMContentLoaded', () => {
-  // slider labels and live update
-  ['dig_fc','dig_br','dig_dev'].forEach(id => {
-    const el = getEl(id);
-    if (!el) return;
-    setSliderLabel(id);
-    el.addEventListener('input', () => updateSliderValue(id));
+  ['dig_mod_type','dig_demod_type'].forEach(id => {
+    const el = $(id); if (el) el.addEventListener('change', () => {
+      updateDigControls();
+      plotDigMod();
+      plotDigDemod();
+    });
   });
 
-  // scheme & demod selectorss
-  const typeSel = getEl('dig_type');
-  if (typeSel) typeSel.addEventListener('change', () => {
-    updateDigControls();
-    ['dig_fc','dig_br','dig_dev'].forEach(setSliderLabel);
+  $('dig_snr_toggle').addEventListener('change', () => {
+    plotDigMod();
+  });
+
+  $('dig_show_spectrum').addEventListener('change', () => {
+    plotDigMod();
+    plotDigDemod();
+  });
+
+  loadDigPresets();
+  $('dig_preset').addEventListener('change', applyDigPreset);
   });
 
   const demodSel = getEl('dig_demod');
@@ -212,13 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // first draw
   updateDigControls();
-  plotDigital(false);
-  plotDigital(true);
-  drawConstellation();
+  plotDigMod();
+  plotDigDemod();
 
-  // resize handling — good for stacked layout
-  const onResize = debounce(() => {
-    ['dig_plot','dig_demod_plot','dig_constellation_plot'].forEach(plotlyResize);
-  }, 100);
-  window.addEventListener('resize', onResize);
+  window.addEventListener('resize', () => {
+    ['dig_mod_plot','dig_demod_plot','dig_mod_spec','dig_demod_spec'].forEach(id => {
+      try { Plotly.Plots.resize(id); } catch (_) {}
+    });
+  });
 });
+

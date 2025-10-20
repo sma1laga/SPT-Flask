@@ -1,156 +1,129 @@
 {% extends "base.html" %}
-{% block title %}Digital Modulation Explorer{% endblock %}
-
-{% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/digital_modulation.css') }}">
-{% endblock %}
+{% block title %}Digital Modulation Lab{% endblock %}
 
 {% block content %}
-<div class="container my-5">
-  <h1 class="mb-4">Digital Modulation Playground</h1>
+<div class="page-header">
+  <h1>Digital Modulation Lab</h1>
+  <p class="text-muted">Experiment with pulse and sampled modulation schemes (PAM/PWM/PPM/PCM) separate from the analog toolbox.</p>
+</div>
 
-  <!-- Modulation Scheme Selector -->
-  <div class="form-group">
-    <label for="dig_type"><strong>Scheme:</strong></label>
-    <select id="dig_type"
-            class="form-control w-auto"
-            onchange="updateDigControls()">
-      <option value="ASK">ASK</option>
-      <option value="PSK">PSK</option>
-      <option value="FSK">FSK</option>
-    </select>
-  </div>
+<style>
+  .dig-wrap { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .card { border: 1px solid var(--border-color, #ddd); border-radius: 10px; padding: 12px; background: var(--surface, #fff); }
+  .h { font-weight: 700; margin: 8px 0; }
+  .muted { color: #666; font-size: .9rem; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+  .plots { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .plot { min-height: 320px; }
+  label { display:flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+  select,
+  input[type="range"] { font-size: 0.9rem; }
+  select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color, #ccc); max-width: 220px; }
+  input[type="range"] { width: 100%; height: 22px; }
+  .row small { font-size: 0.75rem; }
+  @media (max-width: 768px) {
+    .row { grid-template-columns: 1fr 1fr; }
+    select { max-width: 100%; }
+  }
+  @media (max-width: 540px) {
+    .row { grid-template-columns: 1fr; }
+  }
+</style>
 
-  <!-- Parameter Controls -->
-  <div class="row mb-4" id="dig_controls">
-    <div class="col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header">Parameters</div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="dig_fc">Carrier freq (Hz):
-              <span id="dig_fc_val">100</span>
-            </label>
-            <input id="dig_fc" type="range"
-                   class="form-control-range"
-                   min="10" max="1000" step="1"
-                   value="100"
-                   oninput="updateSliderValue('dig_fc')">
-          </div>
-          <div class="form-group">
-            <label for="dig_br">Bit rate (Hz):
-              <span id="dig_br_val">5</span>
-            </label>
-            <input id="dig_br" type="range"
-                   class="form-control-range"
-                   min="1" max="50" step="1"
-                   value="5"
-                   oninput="updateSliderValue('dig_br')">
-          </div>
-          <div class="form-group" id="dev_group">
-            <label for="dig_dev">Freq deviation (Hz):
-              <span id="dig_dev_val">20</span>
-            </label>
-            <input id="dig_dev" type="range"
-                   class="form-control-range"
-                   min="1" max="200" step="1"
-                   value="20"
-                   oninput="updateSliderValue('dig_dev')">
-          </div>
-        </div>
+<div class="dig-wrap">
+  <div class="card">
+    <div class="h">Digital modulation controls</div>
+
+    <div class="row">
+      <label>Preset:
+        <select id="dig_preset">
+          <option value="">— choose preset —</option>
+        </select>
+      </label>
+    </div>
+    <div class="row">
+      <label>Type (mod):
+        <select id="dig_mod_type">
+          <option>PAM</option><option>PWM</option><option>PPM</option><option>PCM</option>
+        </select>
+      </label>
+      <label>Type (demod):
+        <select id="dig_demod_type">
+          <option>PAM</option><option>PWM</option><option>PPM</option><option>PCM</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="row">
+      <label>fs [Hz]
+        <input id="dig_fs" type="range" min="500" max="20000" step="100" value="2000">
+        <div><small id="dig_fs_val">2000</small></div>
+      </label>
+      <label>Duration [s]
+        <input id="dig_t_end" type="range" min="0.2" max="3.0" step="0.1" value="1.0">
+        <div><small id="dig_t_end_val">1.0</small></div>
+      </label>
+    </div>
+
+    <div id="dig_pulse_controls" class="card">
+      <div class="h">Pulse parameters</div>
+      <div class="row">
+        <label>PRF [Hz]
+          <input id="dig_prf" type="range" min="5" max="200" step="1" value="40">
+          <div><small id="dig_prf_val">40</small></div>
+        </label>
+        <label>fm [Hz]
+          <input id="dig_fm" type="range" min="1" max="50" step="1" value="4">
+          <div><small id="dig_fm_val">4</small></div>
+        </label>
+      </div>
+      <div id="dig_pcm_levels_group">
+        <label>PCM levels
+          <input id="dig_levels" type="range" min="2" max="64" step="1" value="8">
+          <div><small id="dig_levels_val">8</small></div>
+        </label>
       </div>
     </div>
+
+
+    <div class="card">
+      <div class="h">Noise &amp; Spectrum</div>
+      <div class="row">
+        <label><input type="checkbox" id="dig_snr_toggle" checked> Add AWGN</label>
+        <label>SNR [dB]
+          <input id="dig_snr_db" type="range" min="0" max="50" step="1" value="30">
+          <div><small id="dig_snr_db_val">30</small></div>
+        </label>
+      </div>
+      <label class="muted"><input type="checkbox" id="dig_show_spectrum" checked> Show spectra</label>
+    </div>
+
+    <div class="muted" id="dig_facts"></div>
   </div>
 
-  <!-- Modulation Plot -->
-  <button class="btn btn-primary mb-3" onclick="plotDigital()">Generate &amp; Plot</button>
-  <div id="dig_plot" style="height:300px;"></div>
-
-  <hr class="my-5">
-
-  <!-- Demodulation -->
-  <div class="form-group">
-    <label for="dig_demod"><strong>Demodulate:</strong></label>
-    <select id="dig_demod"
-            class="form-control w-auto"
-            onchange="plotDigital(true)">
-      <option value="ASK">ASK</option>
-      <option value="PSK">PSK</option>
-      <option value="FSK">FSK</option>
-    </select>
+  <div class="card">
+    <div class="plots">
+      <div id="dig_mod_plot" class="plot"></div>
+      <div id="dig_demod_plot" class="plot"></div>
+      <div id="dig_mod_spec" class="plot"></div>
+      <div id="dig_demod_spec" class="plot"></div>
+    </div>
   </div>
-  <button class="btn btn-primary mb-3" onclick="plotDigital(true)">Demodulate &amp; Plot</button>
-  <div id="dig_demod_plot" style="height:300px;"></div>
-
-  <!-- Deep Theory Section -->
-  <h2 class="mt-5">Theory &amp; Background</h2>
-  <section class="theory-section">
-    <h3>Digital vs. Analog Modulation</h3>
-    <p>
-      Unlike analog modulation, where a continuous carrier parameter is varied, digital modulation
-      encodes discrete bit streams onto a carrier. This allows robust data transmission, error detection,
-      and integration with digital systems. Key goals include maximizing spectral efficiency,
-      minimizing bit error rate (BER), and ensuring reliable demodulation in noisy or multipath channels.
-    </p>
-
-    <h3>Amplitude Shift Keying (ASK)</h3>
-    <p>
-      ASK represents bits by switching the carrier amplitude on and off (or between two levels).
-      It’s conceptually simple and used in optical communication, RFID, and low-cost wireless links.
-      The basic form is:
-      <div class="formula">
-        \( s_{\mathrm{ASK}}(t) = b_n \cos(2\pi f_c t) \),&nbsp; 
-        where \(b_n\in\{0,1\}\).
-      </div>
-      <strong>Pros:</strong> Simple hardware; <strong>Cons:</strong> vulnerable to amplitude noise and fading.
-    </p>
-
-    <h3>Phase Shift Keying (PSK)</h3>
-    <p>
-      PSK encodes bits by shifting the carrier phase. In Binary PSK (BPSK), two phases 0 and \(\pi\)
-      represent 1 and 0 respectively:
-      <div class="formula">
-        \( s_{\mathrm{BPSK}}(t) = \cos\bigl(2\pi f_c t + \pi(1 - b_n)\bigr). \)
-      </div>
-      <strong>Pros:</strong> Better noise immunity than ASK; <strong>Cons:</strong> requires coherent detection.
-    </p>
-
-    <h3>Frequency Shift Keying (FSK)</h3>
-    <p>
-      FSK switches between two carrier frequencies \(f_0,f_1\) for bits 0 and 1:
-      <div class="formula">
-        \( s_{\mathrm{FSK}}(t) = \cos\!\bigl(2\pi[f_0 + (f_1 - f_0)b_n]\,t\bigr). \)
-      </div>
-      <strong>Pros:</strong> non-coherent demodulation possible; <strong>Cons:</strong> wider bandwidth usage.
-    </p>
-
-    <h3>Comparisons &amp; Trade-offs</h3>
-    <ul>
-      <li><strong>Spectral Efficiency:</strong> PSK &gt; FSK &gt; ASK.</li>
-      <li><strong>Noise Immunity:</strong> BPSK &gt; ASK; FSK with non-coherent detection offers intermediate performance.</li>
-      <li><strong>Complexity:</strong> ASK simplest; PSK requires phase recovery; FSK needs frequency discrimination.</li>
-      <li><strong>Applications:</strong> ASK in optical/RFID; PSK in Wi-Fi (QPSK/QAM variants); FSK in low-power RF links, Bluetooth Low Energy.</li>
-    </ul>
-
-    <h3>Practical Considerations</h3>
-    <p>
-      Real systems often use higher-order variants: QPSK (4-phase), 16-QAM (phase+amplitude), MSK (continuous-phase FSK),
-      and OFDM (parallel subcarrier PSK/QAM). Error-correction codes (e.g., convolutional, LDPC) are combined
-      with modulation to achieve reliable high-rate links.
-    </p>
-
-    <p class="text-center">
-      <em>Use these interactive plots above to experience firsthand how each digital scheme balances
-      bandwidth, noise resilience, and hardware complexity.</em>
-    </p>
-  </section>
 </div>
 {% endblock %}
 
 {% block scripts %}
-  {{ super() }}
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <script>
+    (function () {
+      const root = "{{ request.script_root }}";
+      window.DIG_URLS = {
+        presets: root + "/digital_modulation/api/presets",
+        modulate: root + "/digital_modulation/api/modulate",
+        demod: root + "/digital_modulation/api/demodulate"
+      };
+    })();
+  </script>
+
   <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/digital_modulation.js') }}"></script>
 {% endblock %}

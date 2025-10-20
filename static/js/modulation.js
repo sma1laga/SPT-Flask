@@ -17,7 +17,7 @@ async function fetchJSON(url, params) {
 
 function updateModControls() {
   const type = $('mod_type').value;
-  ['am_controls','fm_controls','pulse_controls'].forEach(i=>{
+  ['am_controls','fm_controls'].forEach(i=>{
     const e = $(i); if (e) e.style.display = 'none';
   });
 
@@ -26,16 +26,12 @@ function updateModControls() {
     $('fm_controls').style.display = '';
     $('fm_header').innerText = `${type} Modulation`;
     $('beta_label').innerText = (type==='FM') ? 'β (mod index):' : 'Phase index m:';
-  } else {
-    $('pulse_controls').style.display = '';
-    $('pulse_header').innerText = `${type} Modulation`;
-    $('pcm_levels_group').style.display = (type==='PCM') ? '' : 'none';
+
   }
 
   [
     'am_fc','am_fm','am_m',
     'fm_fc','fm_fm','fm_beta',
-    'pm_prf','pm_fm','pm_levels',
     'fs','t_end','snr_db'
   ].forEach(setLabel);
 }
@@ -52,9 +48,6 @@ function renderFacts(info){
   } else if (info.type==='PM'){
     parts.push(`phase index m = ${(+info.phase_index).toFixed(2)}`);
     parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
-  } else if (['PAM','PWM','PPM','PCM'].includes(info.type)){
-    parts.push(`prf = ${info.prf} Hz`); if (info.fm) parts.push(`fm = ${info.fm} Hz`);
-    if (info.levels) parts.push(`${info.levels} levels`);
   }
   if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
   $('facts').innerText = parts.join('  •  ');
@@ -79,10 +72,6 @@ async function plotMod() {
     params.fm   = +$('fm_fm').value;
     params.beta = +$('fm_beta').value;
     if (type==='PM'){ params.m = params.beta; delete params.beta; }
-  } else {
-    params.prf = +$('pm_prf').value;
-    params.fm  = +$('pm_fm').value;
-    if (type==='PCM') params.levels = +$('pm_levels').value;
   }
 
   const data = await fetchJSON(MOD_URLS.modulate, params);
@@ -130,9 +119,6 @@ async function plotDemod() {
   } else if (type==='FM' || type==='PM') {
     params.fc = +$('fm_fc').value; params.fm = +$('fm_fm').value;
     if (type==='FM') params.beta = +$('fm_beta').value; else params.m = +$('fm_beta').value;
-  } else {
-    params.prf = +$('pm_prf').value; params.fm = +$('pm_fm').value;
-    if (type==='PCM') params.levels = +$('pm_levels').value;
   }
 
   const data = await fetchJSON(MOD_URLS.demod, params);
@@ -186,12 +172,10 @@ async function applyPreset(){
     if (I.fs)   $('fs').value = I.fs;
     if (I.duration_s) $('t_end').value = I.duration_s;
     if (I.fc)   { $('am_fc').value = I.fc; $('fm_fc').value = I.fc; }
-    if (I.fm)   { $('am_fm').value = I.fm; $('fm_fm').value = I.fm; $('pm_fm').value = I.fm; }
+    if (I.fm)   { $('am_fm').value = I.fm; $('fm_fm').value = I.fm; }
     if (I.m!=null)    $('am_m').value = I.m;
     if (I.phase_index!=null) $('fm_beta').value = I.phase_index;
     if (I.beta!=null) $('fm_beta').value = I.beta;
-    if (I.prf)  $('pm_prf').value = I.prf;
-    if (I.levels) $('pm_levels').value = I.levels;
     updateModControls();
   }
   plotMod(); plotDemod();
@@ -204,7 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
   [
     'am_fc','am_fm','am_m',
     'fm_fc','fm_fm','fm_beta',
-    'pm_prf','pm_fm','pm_levels',
     'fs','t_end','snr_db'
   ].forEach(id=>{
     const el = $(id); if (el) {

@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Modulation Lab</h1>
-  <p class="text-muted">Analog (AM/FM/PM) &amp; Pulse (PAM/PWM/PPM/PCM) with SNR, spectra, presets — plus a digital mini-lab.</p>
+  <p class="text-muted">Analog (AM/FM/PM) exploration with SNR control, spectra and presets.</p>
 </div>
 
 <style>
@@ -52,13 +52,11 @@
       <label>Type (mod):
         <select id="mod_type">
           <option>AM</option><option>FM</option><option>PM</option>
-          <option>PAM</option><option>PWM</option><option>PPM</option><option>PCM</option>
         </select>
       </label>
       <label>Type (demod):
         <select id="demod_type">
           <option>AM</option><option>FM</option><option>PM</option>
-          <option>PAM</option><option>PWM</option><option>PPM</option><option>PCM</option>
         </select>
       </label>
     </div>
@@ -110,26 +108,6 @@
       </label>
     </div>
 
-    <div id="pulse_controls" style="display:none" class="card">
-      <div class="h" id="pulse_header">Pulse</div>
-      <div class="row">
-        <label>PRF
-          <input id="pm_prf" type="range" min="5" max="200" step="1" value="40">
-          <div><small id="pm_prf_val">40</small></div>
-        </label>
-        <label>fm
-          <input id="pm_fm" type="range" min="1" max="50" step="1" value="4">
-          <div><small id="pm_fm_val">4</small></div>
-        </label>
-      </div>
-      <div id="pcm_levels_group">
-        <label>PCM levels
-          <input id="pm_levels" type="range" min="2" max="64" step="1" value="8">
-          <div><small id="pm_levels_val">8</small></div>
-        </label>
-      </div>
-    </div>
-
     <div class="card">
       <div class="h">Noise &amp; Spectrum</div>
       <div class="row">
@@ -155,48 +133,6 @@
     </div>
   </div>
 
-  <!-- digital mini lab -->
-  <div class="card">
-    <div class="h">Digital mini-lab (ASK/PSK/FSK)</div>
-
-    <div class="row">
-      <label>Scheme
-        <select id="dig_type">
-          <option>ASK</option><option>PSK</option><option>FSK</option>
-        </select>
-      </label>
-      <label>Demod view
-        <select id="dig_demod">
-          <option>ASK</option><option>PSK</option><option>FSK</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="row">
-      <label>fc
-        <input id="dig_fc" type="range" min="20" max="2000" step="10" value="300">
-        <div><small id="dig_fc_val">300</small></div>
-      </label>
-      <label>bit rate
-        <input id="dig_br" type="range" min="2" max="100" step="1" value="20">
-        <div><small id="dig_br_val">20</small></div>
-      </label>
-    </div>
-
-    <div id="dev_group">
-      <label>FSK deviation
-        <input id="dig_dev" type="range" min="2" max="200" step="1" value="40">
-        <div><small id="dig_dev_val">40</small></div>
-      </label>
-    </div>
-
-    <div class="plots" style="margin-top:12px">
-      <div id="dig_plot" class="plot"></div>
-      <div id="dig_demod_plot" class="plot"></div>
-      <div id="dig_constellation" class="pad"></div>
-      <div id="dig_constellation_plot" class="plot" style="height:300px"></div>
-    </div>
-  </div>
 </div>
 {% endblock %}
 
@@ -214,6 +150,5 @@
 
   <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
   <script src="{{ url_for('static', filename='js/modulation.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/digital_modulation.js') }}"></script>
 {% endblock %}
 
