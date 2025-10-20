@@ -6,39 +6,46 @@ window.DIG_URLS = window.DIG_URLS || {
   demod: '/digital_modulation/api/demodulate'
 };
 
-function $(id){ return document.getElementById(id); }
-
-
-function setLabel(id){
-  const el = $(id), lab = $(id + '_val');
+const $ = (id) => document.getElementById(id);
+const setLabel = (id) => {
+  const el = $(id);
+  const lab = $(id + '_val');
   if (el && lab) lab.innerText = el.value;
-}
+};
 
-async function fetchJSON(url, params){
+async function fetchJSON(url, params = {}) {
   const q = new URLSearchParams(params).toString();
-  const res = await fetch(url + '?' + q);
+  const res = await fetch(q ? `${url}?${q}` : url);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-function updateDigControls(){
+function updateDigControls() {
   const type = $('dig_mod_type').value;
   const levelsGroup = $('dig_pcm_levels_group');
-  if (levelsGroup) levelsGroup.style.display = (type === 'PCM') ? '' : 'none';
+  if (levelsGroup) levelsGroup.style.display = type === 'PCM' ? '' : 'none';
 
   [
-    'dig_fs','dig_t_end','dig_prf','dig_fm','dig_levels','dig_snr_db'
+    'dig_fs',
+    'dig_t_end',
+    'dig_prf',
+    'dig_fm',
+    'dig_levels',
+    'dig_snr_db'
   ].forEach(setLabel);
 }
 
-function renderDigFacts(info){
+function renderDigFacts(info) {
   if (!info) return;
   const parts = [];
-  parts.push(`${info.type} @ fs=${info.fs} Hz`);
-  if (info.prf) parts.push(`prf = ${info.prf} Hz`);
-  if (info.fm) parts.push(`fm = ${info.fm} Hz`);
-  if (info.levels) parts.push(`${info.levels} levels`);
-  if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
+  if (info.type) parts.push(`${info.type} @ fs=${info.fs} Hz`);
+  if (info.prf != null) parts.push(`prf = ${info.prf} Hz`);
+  if (info.fm != null) parts.push(`fm = ${info.fm} Hz`);
+  if (info.levels != null) parts.push(`${info.levels} levels`);
+  if (info.snr_db != null && info.snr_db !== 'inf') {
+    const snr = Number(info.snr_db);
+    if (Number.isFinite(snr)) parts.push(`SNR = ${snr.toFixed(1)} dB`);
+  }
   const el = $('dig_facts');
   if (el) el.innerText = parts.join('  •  ');
 }
@@ -49,10 +56,10 @@ function collectModParams(){
     type,
     fs: +$('dig_fs').value,
     t_end: +$('dig_t_end').value,
-    snr_db: $('dig_snr_toggle').checked ? +$('dig_snr_db').value : Infinity
+    snr_db: $('dig_snr_toggle').checked ? +$('dig_snr_db').value : Infinity,
+    prf: +$('dig_prf').value,
+    fm: +$('dig_fm').value
   };
-  params.prf = +$('dig_prf').value;
-  params.fm = +$('dig_fm').value;
   if (type === 'PCM') params.levels = +$('dig_levels').value;
   return params;
 }
@@ -67,141 +74,183 @@ function collectDemodParams(){
     prf: +$('dig_prf').value,
     fm: +$('dig_fm').value
   };
-async function plotDigMod(){
+  if (type === 'PCM') params.levels = +$('dig_levels').value;
+  return params;
+}
+
+function showError(targetId, err) {
+  const el = $(targetId);
+  if (el) el.innerHTML = `<div class="muted">${err}</div>`;
+}
+
+async function plotDigMod() {
   const params = collectModParams();
-  const data = await fetchJSON(DIG_URLS.modulate, params);
+  try {
+    const data = await fetchJSON(DIG_URLS.modulate, params);
 
-  Plotly.newPlot('dig_mod_plot', [
-    { x: data.t, y: data.message, name: 'Message' },
-    ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
-    { x: data.t, y: data.modulated, name: `${params.type} Signal` }
-  ], {
-    margin: { t: 30 },
-    title: `${params.type} — Modulation`,
-    legend: { orientation: 'h' }
-  }, {responsive: true});
-
-  if ($('dig_show_spectrum').checked) {
-    Plotly.newPlot('dig_mod_spec', [
-      { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (modulated)' }
+    Plotly.newPlot('dig_mod_plot', [
+      { x: data.t, y: data.message, name: 'Message' },
+      ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
+      { x: data.t, y: data.modulated, name: `${params.type} Signal` }
     ], {
       margin: { t: 30 },
-      title: 'Spectrum (Hann + rFFT)',
-      xaxis: { title: 'Frequency [Hz]' },
-      yaxis: { title: 'Power [dB]' }
-    }, {responsive: true});
+      title: `${params.type} — Modulation`,
+      legend: { orientation: 'h' }
+    }, { responsive: true });
 
-  const data = demod ? digitalDemodulate(params) : digitalModulate(params);
+    if ($('dig_show_spectrum').checked) {
+      Plotly.newPlot('dig_mod_spec', [
+        { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (modulated)' }
+      ], {
+        margin: { t: 30 },
+        title: 'Spectrum (Hann + rFFT)',
+        xaxis: { title: 'Frequency [Hz]' },
+        yaxis: { title: 'Power [dB]' }
+      }, { responsive: true });
+    } else {
+      Plotly.purge('dig_mod_spec');
+      showError('dig_mod_spec', 'Spectrum hidden');
+    }
 
-  if (!demod) {
-    const traces = [
-      { x: data.t, y: data.bits, name: 'Bits', yaxis: 'y2' },
-      { x: data.t, y: data.modulated, name: `${type} Signal` }
-    ];
-    const layout = getDefaultLayout(`${type} Modulation`);
-    layout.yaxis2 = { overlaying: 'y', side: 'right', showgrid: false, title: 'Bits', range: [-0.2, 1.2] };
-    plotlySafeReact('dig_plot', traces, layout);
-  } else {
-    Plotly.purge('dig_mod_spec');
-    const div = $('dig_mod_spec');
-    if (div) div.innerHTML = '<div class="muted">Spectrum hidden</div>';
+    renderDigFacts(data.info);
+  } catch (err) {
+    const msg = `Modulation error: ${err.message || err}`;
+    showError('dig_mod_plot', msg);
+    showError('dig_mod_spec', msg);
   }
 
-
-  renderDigFacts(data.info);
 }
 
 async function plotDigDemod(){
   const params = collectDemodParams();
-  const data = await fetchJSON(DIG_URLS.demod, params);
-  const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
+  try {
+    const data = await fetchJSON(DIG_URLS.demod, params);
+    const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
 
-  Plotly.newPlot('dig_demod_plot', [
-    { x: data.t, y: data.modulated, name: 'Received' },
-    { x: tDem, y: data.demodulated, name: 'Demodulated' }
-  ], {
-    margin: { t: 30 },
-    title: `${params.type} — Demodulation`,
-    legend: { orientation: 'h' }
-  }, {responsive: true});
-
-  if ($('dig_show_spectrum').checked) {
-    Plotly.newPlot('dig_demod_spec', [
-      { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (demodulated)' }
+    Plotly.newPlot('dig_demod_plot', [
+      { x: data.t, y: data.modulated, name: 'Received' },
+      { x: tDem, y: data.demodulated, name: 'Demodulated' }
     ], {
       margin: { t: 30 },
-      title: 'Demod Spectrum',
-      xaxis: { title: 'Frequency [Hz]' },
-      yaxis: { title: 'Power [dB]' }
-    }, {responsive: true});
-  } else {
-    Plotly.purge('dig_demod_spec');
-    const div = $('dig_demod_spec');
-    if (div) div.innerHTML = '';
+      title: `${params.type} — Demodulation`,
+      legend: { orientation: 'h' }
+    }, { responsive: true });
+
+    if ($('dig_show_spectrum').checked) {
+      Plotly.newPlot('dig_demod_spec', [
+        { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (demodulated)' }
+      ], {
+        margin: { t: 30 },
+        title: 'Demod Spectrum',
+        xaxis: { title: 'Frequency [Hz]' },
+        yaxis: { title: 'Power [dB]' }
+      }, { responsive: true });
+    } else {
+      Plotly.purge('dig_demod_spec');
+      showError('dig_demod_spec', '');
+    }
+  } catch (err) {
+    const msg = `Demodulation error: ${err.message || err}`;
+    showError('dig_demod_plot', msg);
+    showError('dig_demod_spec', msg);
   }
 }
 
-async function applyDigPreset(){
-  const p = $('dig_preset').value;
-  if (!p) return;
-  const data = await fetchJSON(DIG_URLS.modulate, { preset: p });
-  if (data.info){
-    const I = data.info;
-    $('dig_mod_type').value = I.type;
-    $('dig_demod_type').value = I.type;
-    if (I.fs) $('dig_fs').value = I.fs;
-    if (I.duration_s) $('dig_t_end').value = I.duration_s;
-    if (I.prf) $('dig_prf').value = I.prf;
-    if (I.fm) $('dig_fm').value = I.fm;
-    if (I.levels) $('dig_levels').value = I.levels;
+async function loadDigPresets() {
+  try {
+    const list = await fetchJSON(DIG_URLS.presets, {});
+    const sel = $('dig_preset');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— choose preset —</option>';
+    list.forEach((name) => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  } catch (_) {
+    // ignore silently; UI stays usable without presets
+  }
+}
+
+async function applyDigPreset() {
+  const sel = $('dig_preset');
+  if (!sel || !sel.value) return;
+  try {
+    const data = await fetchJSON(DIG_URLS.modulate, { preset: sel.value });
+    const info = data.info || {};
+    if (info.type) {
+      $('dig_mod_type').value = info.type;
+      $('dig_demod_type').value = info.type;
+    }
+    if (info.fs != null) $('dig_fs').value = info.fs;
+    if (info.duration_s != null) $('dig_t_end').value = info.duration_s;
+    if (info.prf != null) $('dig_prf').value = info.prf;
+    if (info.fm != null) $('dig_fm').value = info.fm;
+    if (info.levels != null) $('dig_levels').value = info.levels;
     updateDigControls();
+    await plotDigMod();
+    await plotDigDemod();
+  } catch (err) {
+    showError('dig_mod_plot', `Preset error: ${err.message || err}`);
   }
-  plotDigMod();
-  plotDigDemod();
+
 }
 
-function updateDigControls() {
-  const type = getEl('dig_type').value;
-  const devGroup = getEl('dev_group');
-  if (devGroup) devGroup.style.display = (type === 'FSK' ? '' : 'none');
-  plotDigital(false);
-  drawConstellation();
+function attachInputHandlers(ids, handler) {
+  ids.forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener('input', handler);
+  });
 }
 
 // ---------- init ----------
 document.addEventListener('DOMContentLoaded', () => {
-  ['dig_mod_type','dig_demod_type'].forEach(id => {
-    const el = $(id); if (el) el.addEventListener('change', () => {
-      updateDigControls();
-      plotDigMod();
-      plotDigDemod();
-    });
+  ['dig_mod_type', 'dig_demod_type'].forEach((id) => {
+    const el = $(id);
+    if (el) {
+      el.addEventListener('change', () => {
+        updateDigControls();
+        plotDigMod();
+        plotDigDemod();
+      });
+    }
   });
 
-  $('dig_snr_toggle').addEventListener('change', () => {
-    plotDigMod();
-  });
-
-  $('dig_show_spectrum').addEventListener('change', () => {
+  attachInputHandlers([
+    'dig_fs',
+    'dig_t_end',
+    'dig_prf',
+    'dig_fm',
+    'dig_levels',
+    'dig_snr_db'
+  ], () => {
+    updateDigControls();
     plotDigMod();
     plotDigDemod();
   });
 
-  loadDigPresets();
-  $('dig_preset').addEventListener('change', applyDigPreset);
+  const snrToggle = $('dig_snr_toggle');
+  if (snrToggle) snrToggle.addEventListener('change', plotDigMod);
+
+  const specToggle = $('dig_show_spectrum');
+  if (specToggle) specToggle.addEventListener('change', () => {
+    plotDigMod();
+    plotDigDemod();
   });
 
-  const demodSel = getEl('dig_demod');
-  if (demodSel) demodSel.addEventListener('change', () => plotDigital(true));
+  const presetSel = $('dig_preset');
+  if (presetSel) presetSel.addEventListener('change', applyDigPreset);
 
-  // first draw
+  loadDigPresets();
   updateDigControls();
   plotDigMod();
   plotDigDemod();
 
   window.addEventListener('resize', () => {
-    ['dig_mod_plot','dig_demod_plot','dig_mod_spec','dig_demod_spec'].forEach(id => {
-      try { Plotly.Plots.resize(id); } catch (_) {}
+    ['dig_mod_plot', 'dig_demod_plot', 'dig_mod_spec', 'dig_demod_spec'].forEach((id) => {
+      try { Plotly.Plots.resize(id); } catch (_) { /* ignore */ }
     });
   });
 });
