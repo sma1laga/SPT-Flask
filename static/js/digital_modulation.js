@@ -95,7 +95,9 @@ async function plotDigMod() {
     ], {
       margin: { t: 30 },
       title: `${params.type} — Modulation`,
-      legend: { orientation: 'h' }
+      legend: { orientation: 'h' },
+      xaxis: { title: 'Time [s]' },
+      yaxis: { title: 'Amplitude' }
     }, { responsive: true });
 
     if ($('dig_show_spectrum').checked) {
@@ -133,7 +135,9 @@ async function plotDigDemod(){
     ], {
       margin: { t: 30 },
       title: `${params.type} — Demodulation`,
-      legend: { orientation: 'h' }
+      legend: { orientation: 'h' },
+      xaxis: { title: 'Time [s]' },
+      yaxis: { title: 'Amplitude' }
     }, { responsive: true });
 
     if ($('dig_show_spectrum').checked) {

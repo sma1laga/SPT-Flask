@@ -8,6 +8,22 @@
   <h1>Modulation Lab</h1>
   <p class="text-muted">Analog (AM/FM/PM) exploration with SNR control, spectra and presets.</p>
 </div>
+<div class="card" style="margin-bottom: 16px;">
+  <h2 style="margin: 0 0 8px; font-size: 1.15rem;">What is happening here?</h2>
+  <p>
+    Modulation shapes a high-frequency carrier \(c(t)=A_c \cos(2\pi f_c t)\) with a message \(m(t)\) so it can be
+    transmitted or analyzed efficiently. In this lab you can explore how different analog schemes affect the
+    resulting waveform and how noisy channels distort them.
+  </p>
+  <ul style="margin: 0; padding-left: 20px;">
+    <li><strong>Amplitude Modulation (AM):</strong> \(s_{AM}(t) = A_c\bigl[1 + m(t)\bigr]\cos(2\pi f_c t)\)</li>
+    <li><strong>Frequency Modulation (FM):</strong> \(s_{FM}(t) = A_c \cos\bigl(2\pi f_c t + \beta \sin(2\pi f_m t)\bigr)\)</li>
+    <li><strong>Phase Modulation (PM):</strong> \(s_{PM}(t) = A_c \cos\bigl(2\pi f_c t + k_p m(t)\bigr)\)</li>
+  </ul>
+  <p class="text-muted" style="margin-top: 8px;">
+    Try different presets, tweak the modulation parameters and observe the spectra and demodulated signal below.
+  </p>
+</div>
 
 <style>
   /* Stacked layout: controls above plots, one under another */
@@ -17,7 +33,9 @@
   .muted    { color: #666; font-size: .9rem; }
   .pad      { padding: 4px 0; }
   .row      { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
-  .plots    { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .plots    { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .plot-block { display: flex; flex-direction: column; }
+  .plot-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-strong, #222); }
   .plot     { min-height: 340px; }
   label { display:flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
   select,
@@ -126,10 +144,22 @@
   <!-- PLOTS -->
   <div class="card">
     <div class="plots">
-      <div id="mod_plot" class="plot"></div>
-      <div id="demod_plot" class="plot"></div>
-      <div id="spec_plot" class="plot"></div>
-      <div id="spec_demod_plot" class="plot"></div>
+      <div class="plot-block">
+        <div class="plot-title">Modulation &mdash; time domain</div>
+        <div id="mod_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Demodulation &mdash; time domain</div>
+        <div id="demod_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Modulation spectrum</div>
+        <div id="spec_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Demodulation spectrum</div>
+        <div id="spec_demod_plot" class="plot"></div>
+      </div>
     </div>
   </div>
 

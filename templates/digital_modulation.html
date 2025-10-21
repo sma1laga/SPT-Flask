@@ -10,10 +10,13 @@
 <style>
   .dig-wrap { display: grid; grid-template-columns: 1fr; gap: 16px; }
   .card { border: 1px solid var(--border-color, #ddd); border-radius: 10px; padding: 12px; background: var(--surface, #fff); }
+  .intro-card { background: rgba(96, 165, 250, 0.08); border-color: rgba(96, 165, 250, 0.24); }
   .h { font-weight: 700; margin: 8px 0; }
   .muted { color: #666; font-size: .9rem; }
   .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
-  .plots { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .plots { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .plot-block { display: flex; flex-direction: column; }
+  .plot-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-strong, #222); }
   .plot { min-height: 320px; }
   label { display:flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
   select,
@@ -21,6 +24,9 @@
   select { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color, #ccc); max-width: 220px; }
   input[type="range"] { width: 100%; height: 22px; }
   .row small { font-size: 0.75rem; }
+  .intro-card dl { margin: 12px 0 0; }
+  .intro-card dt { font-weight: 600; }
+  .intro-card dd { margin: 0 0 8px; color: #444; font-size: 0.92rem; }
   @media (max-width: 768px) {
     .row { grid-template-columns: 1fr 1fr; }
     select { max-width: 100%; }
@@ -31,6 +37,24 @@
 </style>
 
 <div class="dig-wrap">
+  <div class="card intro-card">
+    <div class="h">How the digital modulation lab fits together</div>
+    <p>
+      The page generates discrete message samples \(m[k]\) and maps them to pulses \(s(t)\) using the modulation
+      scheme you choose.  The sampling frequency must satisfy \(f_s \ge 2 f_m\) to avoid aliasing, while the pulse
+      repetition frequency sets the symbol spacing \(T_p = 1/\mathrm{PRF}\).  Additive white Gaussian noise models the
+      channel with a signal-to-noise ratio
+      \(\mathrm{SNR} = 10 \log_{10}\!\left(\tfrac{P_s}{P_n}\right)\,\text{dB}\), which you can sweep below.
+    </p>
+    <dl>
+      <dt>PAM/PWM/PPM</dt>
+      <dd>Encode the amplitude, width, or timing of each pulse in proportion to the sample \(m[k]\).</dd>
+      <dt>PCM</dt>
+      <dd>Quantises samples into \(L\) discrete levels before line coding, showing quantisation noise in the spectra.</dd>
+      <dt>Spectra</dt>
+      <dd>Toggle the spectral plots to compare transmitted and recovered signals after demodulation.</dd>
+    </dl>
+  </div>
   <div class="card">
     <div class="h">Digital modulation controls</div>
 
@@ -103,10 +127,22 @@
 
   <div class="card">
     <div class="plots">
-      <div id="dig_mod_plot" class="plot"></div>
-      <div id="dig_demod_plot" class="plot"></div>
-      <div id="dig_mod_spec" class="plot"></div>
-      <div id="dig_demod_spec" class="plot"></div>
+      <div class="plot-block">
+        <div class="plot-title">Modulation &mdash; time domain</div>
+        <div id="dig_mod_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Demodulation &mdash; time domain</div>
+        <div id="dig_demod_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Modulation spectrum</div>
+        <div id="dig_mod_spec" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Demodulation spectrum</div>
+        <div id="dig_demod_spec" class="plot"></div>
+      </div>
     </div>
   </div>
 </div>

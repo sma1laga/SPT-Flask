@@ -85,7 +85,9 @@ async function plotMod() {
   Plotly.newPlot('mod_plot', traces, {
     margin: { t: 30 },
     title: `${type} — Modulation`,
-    legend: { orientation: 'h' }
+    legend: { orientation: 'h' },
+    xaxis: { title: 'Time [s]' },
+    yaxis: { title: 'Amplitude' }
   }, {responsive: true});
 
   if ($('show_spectrum').checked) {
@@ -130,7 +132,9 @@ async function plotDemod() {
   ], {
     margin: { t: 30 },
     title: `${type} — Demodulation`,
-    legend: { orientation: 'h' }
+    legend: { orientation: 'h' },
+    xaxis: { title: 'Time [s]' },
+    yaxis: { title: 'Amplitude' }
   }, {responsive: true});
 
   if ($('show_spectrum').checked) {
