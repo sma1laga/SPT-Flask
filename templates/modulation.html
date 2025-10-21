@@ -37,6 +37,11 @@
   .plot-block { display: flex; flex-direction: column; }
   .plot-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-strong, #222); }
   .plot     { min-height: 340px; }
+  .snr-card { border-top: 1px solid var(--border-color, #ddd); margin-top: 12px; padding-top: 12px; }
+  .snr-summary table { width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text, #333); }
+  .snr-summary th, .snr-summary td { border-top: 1px solid var(--border-color, #e0e0e0); padding: 6px 4px; text-align: left; vertical-align: top; }
+  .snr-summary tr:first-child th, .snr-summary tr:first-child td { border-top: none; }
+  .snr-summary .active { background: rgba(0, 128, 255, 0.08); color: var(--text-strong, #111); }
   label { display:flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
   select,
   input[type="range"] { font-size: 0.9rem; }
@@ -102,6 +107,14 @@
           <div><small id="am_fm_val">5</small></div>
         </label>
       </div>
+      <div class="row">
+        <label>AM mode
+          <select id="am_carrier">
+            <option value="with" selected>with carrier</option>
+            <option value="without">without carrier (ZSB)</option>
+          </select>
+        </label>
+      </div>
       <label>m (mod depth)
         <input id="am_m" type="range" min="0" max="1.2" step="0.05" value="0.5">
         <div><small id="am_m_val">0.5</small></div>
@@ -160,6 +173,11 @@
         <div class="plot-title">Demodulation spectrum</div>
         <div id="spec_demod_plot" class="plot"></div>
       </div>
+    </div>
+    <div id="snr_card" class="snr-card">
+      <div class="plot-title" style="margin-top:12px;">NF &amp; SNR efficiency</div>
+      <div class="muted" style="margin-bottom:8px;">Theoretical baseband SNR and efficiency for common AM variants.</div>
+      <div id="snr_summary" class="snr-summary muted"></div>
     </div>
   </div>
 

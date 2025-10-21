@@ -45,6 +45,111 @@ def add_awgn(x: np.ndarray, snr_db):
     n = np.random.normal(0.0, np.sqrt(p_noise), size=x.shape)
     return x + n
 
+def _format_lin(value: float, digits: int = 3) -> str:
+    if value is None:
+        return "—"
+    if np.isinf(value):
+        return "∞"
+    if value == 0:
+        return "0"
+    if value >= 100:
+        return f"{value:.1f}"
+    if value >= 10:
+        return f"{value:.2f}"
+    return f"{value:.{digits}f}"
+
+def _format_db(value: float) -> str:
+    if value is None:
+        return "—"
+    if np.isinf(value):
+        return "∞ dB"
+    if value <= 0:
+        return "−∞ dB"
+    return f"{10*np.log10(value):.2f} dB"
+
+def _snr_out_db(snr_in_db, factor):
+    if factor is None:
+        return "—"
+    if factor <= 0:
+        return "−∞ dB"
+    if snr_in_db is None or np.isinf(snr_in_db):
+        return "∞ dB"
+    snr_in_lin = 10.0 ** (float(snr_in_db) / 10.0)
+    snr_out_lin = snr_in_lin * factor
+    if snr_out_lin <= 0:
+        return "−∞ dB"
+    return f"{10*np.log10(snr_out_lin):.2f} dB"
+
+def snr_summary_am(m: float, snr_db, active_mode: str):
+    m = max(0.0, float(m))
+    snr_db_val = None if snr_db is None else float(snr_db)
+
+    def entry(name, snr_formula, nf_formula, eta_formula, factor, eta_value, requires_sync=False, active=False):
+        nf = np.inf if factor == 0 else (1.0 / factor)
+        return {
+            'scheme': name,
+            'snr_formula': snr_formula,
+            'nf_formula': nf_formula,
+            'eta_formula': eta_formula,
+            'snr_factor': _format_lin(factor),
+            'snr_out_db': _snr_out_db(snr_db_val, factor),
+            'nf_value': _format_lin(nf),
+            'nf_db': _format_db(nf),
+            'eta_value': _format_lin(eta_value),
+            'requires_sync': requires_sync,
+            'active': active,
+        }
+
+    m_sq = m ** 2
+    am_with_factor = m_sq / 2.0
+    am_with_eta = m_sq / (2.0 + m_sq) if (2.0 + m_sq) > 0 else 0.0
+
+    summary = [
+        entry(
+            'AM o.Tr. (DSB-SC)',
+            r"\(\mathrm{SNR}_{\text{out}} = \mathrm{SNR}_{\text{in}}\)",
+            r"\(NF = 1\)",
+            r"\(\eta = 1\)",
+            1.0,
+            1.0,
+            requires_sync=True,
+            active=(active_mode == 'without')
+        ),
+        entry(
+            'AM m.Tr. (with carrier)',
+            r"\(\mathrm{SNR}_{\text{out}} = \frac{m^2}{2}\, \mathrm{SNR}_{\text{in}}\)",
+            r"\(NF = \frac{2}{m^2}\)",
+            r"\(\eta = \frac{m^2}{2 + m^2}\)",
+            am_with_factor,
+            am_with_eta,
+            requires_sync=False,
+            active=(active_mode == 'with')
+        ),
+        entry(
+            'QAM (coherent)',
+            r"\(\mathrm{SNR}_{\text{out}} = \mathrm{SNR}_{\text{in}}\)",
+            r"\(NF = 1\)",
+            r"\(\eta = 1\)",
+            1.0,
+            1.0,
+            requires_sync=True,
+            active=False
+        ),
+        entry(
+            'EM / RM (SSB / VSB)',
+            r"\(\mathrm{SNR}_{\text{out}} \approx \mathrm{SNR}_{\text{in}}\)",
+            r"\(NF \approx 1\)",
+            r"\(\eta \approx 1\)",
+            1.0,
+            1.0,
+            requires_sync=True,
+            active=False
+        )
+    ]
+
+    return summary
+
+
 def _to_float_or_inf(s):
     if s is None:
         return None
@@ -62,7 +167,7 @@ def modulation():
 # ---------- presets ----------
 
 PRESETS = {
-    'am_broadcast':     {'type':'AM','fs':4000,'t_end':1.0,'fc':400,'fm':5,'m':0.6,'snr_db':40},
+    'am_broadcast':     {'type':'AM','fs':4000,'t_end':1.0,'fc':400,'fm':5,'m':0.6,'snr_db':40,'carrier_mode':'with'},
     'fm_nbfm_voice':    {'type':'FM','fs':8000,'t_end':1.0,'fc':500,'fm':5,'beta':1.5,'snr_db':25},
     'pm_demo':          {'type':'PM','fs':4000,'t_end':1.0,'fc':300,'fm':5,'m':0.8,'snr_db':35},
 }
@@ -81,6 +186,8 @@ def modulate_api():
     fs    = float(params.get('fs', 1000))
     t_end = float(params.get('t_end', 1.0))
     snr_db = _to_float_or_inf(params.get('snr_db', None))
+    carrier_mode = (params.get('carrier_mode') or 'with').lower()
+
 
     # apply preset
     preset = params.get('preset')
@@ -91,6 +198,8 @@ def modulate_api():
         fs    = float(PRESETS[preset].get('fs', fs))
         t_end = float(PRESETS[preset].get('t_end', t_end))
         snr_db = _to_float_or_inf(PRESETS[preset].get('snr_db', snr_db))
+        carrier_mode = (PRESETS[preset].get('carrier_mode', carrier_mode) or carrier_mode).lower()
+
 
     t = make_time(t_end=t_end, fs=fs)
 
@@ -98,7 +207,7 @@ def modulate_api():
     message   = np.zeros_like(t)
     carrier   = np.zeros_like(t)
     modulated = np.zeros_like(t)
-    info = {'type': kind, 'fs': fs, 'duration_s': t_end}
+    info = {'type': kind, 'fs': fs, 'duration_s': t_end, 'carrier_mode': carrier_mode}
 
     # —— Analog —— #
     if kind == 'AM':
@@ -107,8 +216,12 @@ def modulate_api():
         m  = float(params.get('m',  0.5)); m = clamp(m, 0.0, 1.2)
         message   = np.sin(2*np.pi*fm*t)
         carrier   = np.cos(2*np.pi*fc*t)
-        modulated = (1.0 + m*message) * carrier
-        info.update({'fc':fc,'fm':fm,'m':m,'overmod': m>1.0})
+        if carrier_mode == 'without':
+            modulated = (m * message) * carrier
+        else:
+            modulated = (1.0 + m*message) * carrier
+            info.update({'fc':fc,'fm':fm,'m':m,'overmod': m>1.0})
+        info['snr_summary'] = snr_summary_am(m, snr_db, carrier_mode)
 
     elif kind == 'FM':
         fc   = float(params.get('fc',   100))
@@ -136,6 +249,8 @@ def modulate_api():
     mod_noisy = add_awgn(modulated, snr_db)
     if snr_db is not None:
         info['snr_db'] = float(snr_db) if not np.isinf(snr_db) else 'inf'
+    else:
+        info['snr_db'] = None
     f_mod, Pdb_mod = spectrum_db(mod_noisy, fs)
 
     return jsonify({
@@ -162,9 +277,14 @@ def demodulate_api():
         fc = float(params.get('fc',100))
         fm = float(params.get('fm',5))
         m  = float(params.get('m',0.5))
+        carrier_mode = (params.get('carrier_mode') or 'with').lower()
         msg = np.sin(2*np.pi*fm*t)
-        tx  = (1 + m*msg) * np.cos(2*np.pi*fc*t)
-        env   = np.abs(analytic_signal(tx))
+        carrier = np.cos(2*np.pi*fc*t)
+        if carrier_mode == 'without':
+            tx = (m * msg) * carrier
+        else:
+            tx  = (1 + m*msg) * carrier
+            env   = np.abs(analytic_signal(tx))
         demod = env - np.mean(env)
 
     elif kind == 'FM':

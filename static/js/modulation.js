@@ -42,6 +42,9 @@ function renderFacts(info){
   if (info.type==='AM'){
     parts.push(`m = ${(+info.m).toFixed(2)}` + (info.overmod ? ' (overmod ⚠️)' : ''));
     parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
+    if (info.carrier_mode){
+      parts.push(info.carrier_mode === 'without' ? 'mode: without carrier' : 'mode: with carrier');
+    }
   } else if (info.type==='FM'){
     parts.push(`β = ${(+info.beta).toFixed(2)}, fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
     parts.push(`Carson BW ≈ ${info.carson_bw_hz.toFixed(1)} Hz`);
@@ -52,6 +55,47 @@ function renderFacts(info){
   if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
   $('facts').innerText = parts.join('  •  ');
 }
+
+function renderSummary(info){
+  const wrap = $('snr_summary');
+  if (!wrap) return;
+  const rows = info?.snr_summary;
+  if (!rows || !rows.length){
+    wrap.innerHTML = '<div>No AM SNR summary available for this mode.</div>';
+    return;
+  }
+
+  const body = rows.map((row) => {
+    const classes = row.active ? 'active' : '';
+    const syncText = row.requires_sync ? '<div class="muted">needs synchronous demod</div>' : '';
+    return `<tr class="${classes}">
+      <th scope="row">${row.scheme}${syncText}</th>
+      <td>${row.snr_formula}</td>
+      <td>${row.nf_formula}<div class="muted">NF=${row.nf_value} (${row.nf_db})</div></td>
+      <td>${row.eta_formula}<div class="muted">η=${row.eta_value}</div></td>
+      <td><div>SNR<sub>out</sub>: ${row.snr_out_db}</div><div class="muted">factor ×${row.snr_factor}</div></td>
+    </tr>`;
+  }).join('');
+
+  wrap.classList.remove('muted');
+  wrap.innerHTML = `<table>
+    <thead>
+      <tr>
+        <th>Scheme</th>
+        <th>SNR formula</th>
+        <th>NF</th>
+        <th>Efficiency</th>
+        <th>Current values</th>
+      </tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>`;
+
+  if (window.MathJax?.typesetPromise){
+    MathJax.typesetPromise([wrap]);
+  }
+}
+
 
 async function plotMod() {
   const type = $('mod_type').value;
@@ -67,6 +111,7 @@ async function plotMod() {
     params.fc = +$('am_fc').value;
     params.fm = +$('am_fm').value;
     params.m  = +$('am_m').value;
+    params.carrier_mode = $('am_carrier').value;
   } else if (type==='FM' || type==='PM') {
     params.fc   = +$('fm_fc').value;
     params.fm   = +$('fm_fm').value;
@@ -105,6 +150,7 @@ async function plotMod() {
   }
 
   renderFacts(data.info);
+  renderSummary(data.info);
 }
 
 async function plotDemod() {
@@ -118,6 +164,7 @@ async function plotDemod() {
 
   if (type === 'AM') {
     params.fc = +$('am_fc').value; params.fm = +$('am_fm').value; params.m = +$('am_m').value;
+    params.carrier_mode = $('am_carrier').value;
   } else if (type==='FM' || type==='PM') {
     params.fc = +$('fm_fc').value; params.fm = +$('fm_fm').value;
     if (type==='FM') params.beta = +$('fm_beta').value; else params.m = +$('fm_beta').value;
@@ -180,6 +227,7 @@ async function applyPreset(){
     if (I.m!=null)    $('am_m').value = I.m;
     if (I.phase_index!=null) $('fm_beta').value = I.phase_index;
     if (I.beta!=null) $('fm_beta').value = I.beta;
+    if (I.carrier_mode){ $('am_carrier').value = I.carrier_mode; }
     updateModControls();
   }
   plotMod(); plotDemod();
@@ -198,6 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
       el.addEventListener('input', ()=>{ setLabel(id); plotMod(); plotDemod(); });
     }
   });
+
+  const amCarrier = $('am_carrier');
+  if (amCarrier){
+    amCarrier.addEventListener('change', ()=>{ plotMod(); plotDemod(); });
+  }
 
   $('snr_toggle').addEventListener('change', ()=>{ plotMod(); });
   $('show_spectrum').addEventListener('change', ()=>{ plotMod(); plotDemod(); });
