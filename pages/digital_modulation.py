@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from flask import Blueprint, render_template, request, jsonify
 
@@ -38,6 +39,212 @@ def _to_float_or_inf(s):
     if v in ('inf', 'infinity'):
         return np.inf
     return float(s)
+
+def _to_bool(s, default=True):
+    if s is None:
+        return default
+    v = str(s).strip().lower()
+    if v in ("0", "false", "off", "no"):
+        return False
+    if v in ("1", "true", "on", "yes"):
+        return True
+    return default
+
+
+_erfc_vec = np.vectorize(math.erfc)
+
+
+def qfunc(x):
+    x_arr = np.asarray(x, dtype=float)
+    return 0.5 * _erfc_vec(x_arr / np.sqrt(2.0))
+
+
+def root_raised_cosine(beta: float, span: int, sps: int):
+    beta = float(np.clip(beta, 0.0, 1.0))
+    span = int(max(2, span))
+    sps = int(max(2, sps))
+    N = span * sps
+    t = np.arange(-N / 2, N / 2 + 1) / sps
+    h = np.zeros_like(t)
+
+    if beta == 0.0:
+        h = np.sinc(t)
+    else:
+        for i, ti in enumerate(t):
+            ti = float(ti)
+            four_bt = 4 * beta * ti
+            if abs(ti) < 1e-12:
+                h[i] = 1.0 + beta * (4 / np.pi - 1)
+            elif abs(abs(four_bt) - 1.0) < 1e-12:
+                h[i] = (
+                    beta
+                    / np.sqrt(2)
+                    * (
+                        (1 + 2 / np.pi) * np.sin(np.pi / (4 * beta))
+                        + (1 - 2 / np.pi) * np.cos(np.pi / (4 * beta))
+                    )
+                )
+            else:
+                numerator = (
+                    np.sin(np.pi * ti * (1 - beta))
+                    + four_bt * np.cos(np.pi * ti * (1 + beta))
+                )
+                denominator = np.pi * ti * (1 - four_bt**2)
+                h[i] = numerator / denominator
+
+    energy = np.sum(h**2)
+    if energy <= 0:
+        return h
+    return h / np.sqrt(energy)
+
+
+def pam_symbol_levels(M: int):
+    M = int(M)
+    levels = 2 * np.arange(M) - (M - 1)
+    energy = np.mean(levels**2)
+    norm = np.sqrt(energy)
+    return levels / norm
+
+
+def pam_theoretical_ber(M: int, ebn0_db):
+    M = int(M)
+    k = np.log2(M)
+    if not float(k).is_integer() or M < 2:
+        return np.nan
+    k = int(k)
+    ebn0_db = np.asarray(ebn0_db, dtype=float)
+    ebn0_lin = 10 ** (ebn0_db / 10.0)
+    const = 6 * k / (M**2 - 1)
+    arg = np.sqrt(const * ebn0_lin)
+    return 2 * (M - 1) / (M * k) * qfunc(arg)
+
+
+# ---------- simulation helpers ----------
+
+
+def simulate_m_pam(
+    *,
+    M: int,
+    sps: int,
+    rolloff: float,
+    span: int,
+    snr_db: float,
+    symbols: int,
+    enable_tx_rrc: bool,
+    enable_rx_rrc: bool,
+    rng=None,
+    include_waveforms: bool = True,
+    include_eye: bool = True,
+):
+    if rng is None:
+        rng = np.random.default_rng()
+
+    M = int(max(2, M))
+    if not float(np.log2(M)).is_integer():
+        raise ValueError("M must be a power of 2 for M-PAM")
+    bits_per_symbol = int(np.log2(M))
+    symbols = int(max(16, symbols))
+    sps = int(max(2, sps))
+    span = int(max(2, span))
+    rolloff = float(np.clip(rolloff, 0.0, 1.0))
+
+    levels = pam_symbol_levels(M)
+    sym_idx = rng.integers(0, M, size=symbols)
+    sym_wave = levels[sym_idx]
+
+    upsampled = np.zeros(symbols * sps)
+    upsampled[::sps] = sym_wave
+
+    tx_rrc = root_raised_cosine(rolloff, span, sps)
+    if enable_tx_rrc:
+        tx_wave = np.convolve(upsampled, tx_rrc, mode='full')
+        tx_delay = (tx_rrc.size - 1) // 2
+    else:
+        tx_wave = upsampled.copy()
+        tx_delay = 0
+
+    snr_db = float(snr_db)
+    ebn0_lin = 10 ** (snr_db / 10.0)
+    sigma = np.sqrt(1.0 / (2.0 * bits_per_symbol * ebn0_lin))
+    noise = rng.normal(0.0, sigma, size=tx_wave.shape)
+    rx_input = tx_wave + noise
+
+    if enable_rx_rrc:
+        rx_rrc = tx_rrc
+        rx_wave = np.convolve(rx_input, rx_rrc, mode='full')
+        rx_delay = (rx_rrc.size - 1) // 2
+    else:
+        rx_wave = rx_input
+        rx_delay = 0
+
+    total_delay = tx_delay + rx_delay
+    sample_idx = total_delay + np.arange(symbols) * sps
+    sample_idx = sample_idx.astype(int)
+    valid = sample_idx < rx_wave.size
+    sample_idx = sample_idx[valid]
+    sym_idx = sym_idx[valid]
+    sym_wave = sym_wave[valid]
+    rx_symbols = rx_wave[sample_idx]
+
+    diffs = rx_symbols[:, None] - levels[None, :]
+    decisions = np.argmin(diffs**2, axis=1)
+    detected_levels = levels[decisions]
+
+    tx_bits = np.unpackbits(sym_idx[:, None].astype(np.uint8), axis=1, bitorder='big')
+    tx_bits = tx_bits[:, -bits_per_symbol:].reshape(-1)
+
+    det_bits = np.unpackbits(decisions[:, None].astype(np.uint8), axis=1, bitorder='big')
+    det_bits = det_bits[:, -bits_per_symbol:].reshape(-1)
+    nbits = tx_bits.size
+    bit_errors = int(np.sum(tx_bits != det_bits))
+    ber = bit_errors / max(1, nbits)
+
+    eye = None
+    if include_eye:
+        mf_wave = rx_wave
+        eye_span = 2 * sps
+        half = sps
+        traces = []
+        for center in sample_idx:
+            if center - half < 0 or center + half > mf_wave.size:
+                continue
+            seg = mf_wave[center - half : center + half]
+            if seg.size == eye_span:
+                traces.append(seg)
+            if len(traces) >= 40:
+                break
+        if traces:
+            time_eye = (np.arange(eye_span) - half) / sps
+            eye = {
+                'time': time_eye,
+                'traces': np.array(traces),
+            }
+
+    waveforms = None
+    if include_waveforms:
+        t_tx = np.arange(tx_wave.size) / sps
+        t_rx = np.arange(rx_wave.size) / sps
+        waveforms = {
+            'tx_time': t_tx,
+            'tx': tx_wave,
+            'rx_time': t_rx,
+            'rx': rx_wave,
+        }
+
+    return {
+        'levels': levels,
+        'tx_symbols': sym_wave,
+        'rx_symbols': rx_symbols,
+        'decisions': detected_levels,
+        'sample_indices': sample_idx,
+        'bit_errors': bit_errors,
+        'ber': ber,
+        'eye': eye,
+        'waveforms': waveforms,
+        'bits_per_symbol': bits_per_symbol,
+        'symbols': int(sample_idx.size),
+    }
+
 
 
 # ---------- UI page ----------
@@ -197,6 +404,138 @@ def demodulate_api():
         'demodulated': demod.tolist(),
         'f': f_rx.tolist(),
         'P_db': Pdb_rx.tolist()
+    })
+
+@dig_bp.route('/api/m_pam')
+def m_pam_api():
+    params = {k: request.args.get(k) for k in request.args.keys()}
+
+    try:
+        M = int(params.get('M', params.get('m', 4)))
+        sps = int(params.get('sps', 8))
+        rolloff = float(params.get('rolloff', 0.35))
+        span = int(params.get('span', 8))
+        snr_db = float(params.get('snr_db', 12.0))
+        symbols = int(params.get('symbols', 2000))
+    except ValueError as exc:
+        return jsonify(error=f"Invalid parameter: {exc}"), 400
+
+    seed_val = params.get('seed')
+    curve_seed_base = None
+    if seed_val is not None:
+        try:
+            seed_int = int(seed_val)
+        except ValueError:
+            return jsonify(error="seed must be an integer"), 400
+        rng_main = np.random.default_rng(seed_int)
+        curve_seed_base = seed_int + 1
+    else:
+        rng_main = np.random.default_rng()
+
+    enable_tx_rrc = _to_bool(params.get('tx_filter', params.get('enable_tx_rrc', '1')), default=True)
+    enable_rx_rrc = _to_bool(params.get('rx_filter', params.get('enable_rx_rrc', '1')), default=True)
+
+    try:
+        sim = simulate_m_pam(
+            M=M,
+            sps=sps,
+            rolloff=rolloff,
+            span=span,
+            snr_db=snr_db,
+            symbols=symbols,
+            enable_tx_rrc=enable_tx_rrc,
+            enable_rx_rrc=enable_rx_rrc,
+            rng=rng_main,
+            include_waveforms=False,
+            include_eye=True,
+        )
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+
+    levels = sim['levels']
+    rx_symbols = sim['rx_symbols']
+    tx_symbols = sim['tx_symbols']
+    decisions = sim['decisions']
+    sample_idx = sim['sample_indices']
+    bits_per_symbol = sim['bits_per_symbol']
+    symbol_count = sim['symbols']
+    bits_total = symbol_count * bits_per_symbol
+
+    eye_data = sim['eye']
+    if eye_data is not None:
+        eye_payload = {
+            'time': eye_data['time'].tolist(),
+            'traces': eye_data['traces'].tolist(),
+        }
+    else:
+        eye_payload = {'time': [], 'traces': []}
+
+    theory_current = float(pam_theoretical_ber(M, snr_db))
+
+    snr_grid = np.arange(0, 21, 2)
+    theory_curve = pam_theoretical_ber(M, snr_grid)
+    sim_curve = []
+    sim_curve_raw = []
+    curve_symbols = max(800, min(4000, symbols))
+    for idx, snr_test in enumerate(snr_grid):
+        if curve_seed_base is not None:
+            rng_loop = np.random.default_rng(curve_seed_base + idx)
+        else:
+            rng_loop = np.random.default_rng()
+        sim_point = simulate_m_pam(
+            M=M,
+            sps=sps,
+            rolloff=rolloff,
+            span=span,
+            snr_db=float(snr_test),
+            symbols=curve_symbols,
+            enable_tx_rrc=enable_tx_rrc,
+            enable_rx_rrc=enable_rx_rrc,
+            rng=rng_loop,
+            include_waveforms=False,
+            include_eye=False,
+        )
+        raw = sim_point['ber']
+        min_floor = 1.0 / max(1, sim_point['symbols'] * sim_point['bits_per_symbol'])
+        sim_curve_raw.append(raw)
+        sim_curve.append(max(raw, min_floor))
+
+    min_floor_current = 1.0 / max(1, bits_total)
+    measured_point = max(sim['ber'], min_floor_current)
+
+    return jsonify({
+        'constellation': {
+            'samples': rx_symbols.tolist(),
+            'ideal': levels.tolist(),
+            'decisions': decisions.tolist(),
+            'tx': tx_symbols.tolist(),
+        },
+        'sample_indices': sample_idx.tolist(),
+        'eye': eye_payload,
+        'ber': {
+            'curve_snr': snr_grid.tolist(),
+            'curve_theory': theory_curve.tolist(),
+            'curve_sim': sim_curve,
+            'curve_sim_raw': sim_curve_raw,
+            'point': {
+                'snr_db': snr_db,
+                'measured': float(sim['ber']),
+                'measured_plot': measured_point,
+                'theory': theory_current,
+                'bit_errors': int(sim['bit_errors']),
+                'bits': int(bits_total),
+            },
+        },
+        'info': {
+            'M': M,
+            'bits_per_symbol': bits_per_symbol,
+            'rolloff': rolloff,
+            'span': span,
+            'sps': sps,
+            'symbols': symbol_count,
+            'tx_rrc': bool(enable_tx_rrc),
+            'rx_rrc': bool(enable_rx_rrc),
+        },
     })
 
 

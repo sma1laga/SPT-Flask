@@ -3,7 +3,8 @@
 window.DIG_URLS = window.DIG_URLS || {
   presets: '/digital_modulation/api/presets',
   modulate: '/digital_modulation/api/modulate',
-  demod: '/digital_modulation/api/demodulate'
+  demod: '/digital_modulation/api/demodulate',
+  mpam: '/digital_modulation/api/m_pam'
 };
 
 const $ = (id) => document.getElementById(id);
@@ -50,6 +51,79 @@ function renderDigFacts(info) {
   if (el) el.innerText = parts.join('  •  ');
 }
 
+function updatePamControls() {
+  [
+    'pam_rolloff',
+    'pam_sps',
+    'pam_span',
+    'pam_snr',
+    'pam_symbols'
+  ].forEach(setLabel);
+}
+
+function collectPamParams() {
+  const orderEl = $('pam_m');
+  const rolloffEl = $('pam_rolloff');
+  const spsEl = $('pam_sps');
+  const spanEl = $('pam_span');
+  const snrEl = $('pam_snr');
+  const symEl = $('pam_symbols');
+  if (!orderEl || !rolloffEl || !spsEl || !spanEl || !snrEl || !symEl) {
+    return {};
+  }
+  const disableTx = $('pam_disable_tx')?.checked;
+  const disableRx = $('pam_disable_rx')?.checked;
+  return {
+    M: +orderEl.value,
+    rolloff: +rolloffEl.value,
+    sps: +spsEl.value,
+    span: +spanEl.value,
+    snr_db: +snrEl.value,
+    symbols: +symEl.value,
+    tx_filter: disableTx ? 0 : 1,
+    rx_filter: disableRx ? 0 : 1
+  };
+}
+
+function formatBer(value, bits) {
+  if (value == null) return '—';
+  const v = Number(value);
+  if (!Number.isFinite(v)) return '—';
+  if (v <= 0) {
+    if (bits) {
+      const floor = 1 / Math.max(1, Number(bits));
+      return `< ${floor.toExponential(1)}`;
+    }
+    return '0';
+  }
+  if (v < 1e-3) return v.toExponential(2);
+  return v.toFixed(3);
+}
+
+function renderPamFacts(info, ber) {
+  const el = $('pam_facts');
+  if (!el) return;
+  if (!info) {
+    el.innerText = '';
+    return;
+  }
+  const parts = [];
+  if (info.M) parts.push(`${info.M}-PAM`);
+  if (info.bits_per_symbol != null) parts.push(`${info.bits_per_symbol} bits/sym`);
+  if (info.rolloff != null) parts.push(`α=${Number(info.rolloff).toFixed(2)}`);
+  if (info.sps != null) parts.push(`sps=${info.sps}`);
+  if (info.span != null) parts.push(`span=${info.span}`);
+  if (info.tx_rrc === false) parts.push('TX RRC off');
+  if (info.rx_rrc === false) parts.push('RX MF off');
+  const point = ber?.point;
+  if (point) {
+    if (point.snr_db != null) parts.push(`Eb/N₀=${Number(point.snr_db).toFixed(1)} dB`);
+    if (point.measured != null) parts.push(`BER ≈ ${formatBer(point.measured, point.bits)}`);
+    if (point.theory != null) parts.push(`theory ${formatBer(point.theory)}`);
+  }
+  el.innerText = parts.join('  •  ');
+}
+
 function collectModParams(){
   const type = $('dig_mod_type').value;
   const params = {
@@ -82,6 +156,125 @@ function showError(targetId, err) {
   const el = $(targetId);
   if (el) el.innerHTML = `<div class="muted">${err}</div>`;
 }
+
+async function plotPam() {
+  const params = collectPamParams();
+  if (params.M == null) return;
+  try {
+    const data = await fetchJSON(DIG_URLS.mpam, params);
+
+    const constellation = data.constellation || {};
+    const samples = (constellation.samples || []).map(Number);
+    const jitter = samples.map((_, idx) => ((idx % 5) - 2) * 0.02);
+    const ideal = (constellation.ideal || []).map(Number);
+
+    const traces = [];
+    if (ideal.length) {
+      traces.push({
+        x: ideal,
+        y: ideal.map(() => 0),
+        mode: 'markers',
+        name: 'Ideal levels',
+        marker: { size: 10, symbol: 'line-ns-open', color: '#111827' }
+      });
+    }
+    if (samples.length) {
+      traces.push({
+        x: samples,
+        y: jitter,
+        mode: 'markers',
+        name: 'Matched samples',
+        marker: { size: 6, color: '#2563eb', opacity: 0.7 }
+      });
+    }
+    Plotly.newPlot('pam_constellation_plot', traces, {
+      margin: { t: 30 },
+      xaxis: { title: 'Amplitude', zeroline: false },
+      yaxis: { showticklabels: false, showgrid: false, zeroline: false, range: [-0.12, 0.12] },
+      legend: { orientation: 'h' }
+    }, { responsive: true });
+
+    const eye = data.eye || {};
+    const eyeTime = Array.isArray(eye.time) ? eye.time.map(Number) : [];
+    const eyeTraces = Array.isArray(eye.traces) ? eye.traces.map((row) => row.map(Number)) : [];
+    if (eyeTime.length && eyeTraces.length) {
+      const eyePlot = eyeTraces.map((row) => ({
+        x: eyeTime,
+        y: row,
+        mode: 'lines',
+        line: { color: 'rgba(59, 130, 246, 0.25)', width: 1 },
+        hoverinfo: 'skip',
+        showlegend: false
+      }));
+      const avg = eyeTime.map((_, idx) => eyeTraces.reduce((acc, row) => acc + row[idx], 0) / eyeTraces.length);
+      eyePlot.push({
+        x: eyeTime,
+        y: avg,
+        mode: 'lines',
+        name: 'Mean',
+        line: { color: '#2563eb', width: 2 }
+      });
+      Plotly.newPlot('pam_eye_plot', eyePlot, {
+        margin: { t: 30 },
+        xaxis: { title: 'Time [symbols]' },
+        yaxis: { title: 'Amplitude' }
+      }, { responsive: true });
+    } else {
+      Plotly.purge('pam_eye_plot');
+      showError('pam_eye_plot', 'Eye diagram unavailable — increase symbols or enable filtering.');
+    }
+
+    const ber = data.ber || {};
+    const snrGrid = (ber.curve_snr || []).map(Number);
+    const theoryCurve = (ber.curve_theory || []).map(Number);
+    const simCurve = (ber.curve_sim || []).map(Number);
+    const point = ber.point || {};
+    const berTraces = [];
+    if (snrGrid.length && theoryCurve.length) {
+      berTraces.push({
+        x: snrGrid,
+        y: theoryCurve,
+        mode: 'lines',
+        name: 'Theory',
+        line: { color: '#1f77b4', width: 2 }
+      });
+    }
+    if (snrGrid.length && simCurve.length) {
+      berTraces.push({
+        x: snrGrid,
+        y: simCurve,
+        mode: 'markers+lines',
+        name: 'Simulation',
+        marker: { color: '#d97706', size: 7 },
+        line: { color: '#d97706', width: 1 }
+      });
+    }
+    if (point.snr_db != null && point.measured_plot != null) {
+      berTraces.push({
+        x: [Number(point.snr_db)],
+        y: [Number(point.measured_plot)],
+        mode: 'markers',
+        name: 'Current',
+        marker: { color: '#22c55e', size: 10 }
+      });
+    }
+    Plotly.newPlot('pam_ber_plot', berTraces, {
+      margin: { t: 30 },
+      xaxis: { title: 'Eb/N₀ [dB]' },
+      yaxis: { title: 'Bit error rate', type: 'log', rangemode: 'tozero' },
+      legend: { orientation: 'h' }
+    }, { responsive: true });
+
+    renderPamFacts(data.info, ber);
+  } catch (err) {
+    const msg = `M-PAM error: ${err.message || err}`;
+    ['pam_constellation_plot', 'pam_eye_plot', 'pam_ber_plot'].forEach((id) => {
+      Plotly.purge(id);
+      showError(id, msg);
+    });
+  }
+}
+
 
 async function plotDigMod() {
   const params = collectModParams();
@@ -235,6 +428,30 @@ document.addEventListener('DOMContentLoaded', () => {
     plotDigDemod();
   });
 
+  const pamModSel = $('pam_m');
+  if (pamModSel) {
+    pamModSel.addEventListener('change', () => {
+      updatePamControls();
+      plotPam();
+    });
+  }
+
+  attachInputHandlers([
+    'pam_rolloff',
+    'pam_sps',
+    'pam_span',
+    'pam_snr',
+    'pam_symbols'
+  ], () => {
+    updatePamControls();
+    plotPam();
+  });
+
+  ['pam_disable_tx', 'pam_disable_rx'].forEach((id) => {
+    const el = $(id);
+    if (el) el.addEventListener('change', plotPam);
+  });
+
   const snrToggle = $('dig_snr_toggle');
   if (snrToggle) snrToggle.addEventListener('change', plotDigMod);
 
@@ -249,11 +466,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadDigPresets();
   updateDigControls();
+  updatePamControls();
   plotDigMod();
   plotDigDemod();
+  plotPam();
+
 
   window.addEventListener('resize', () => {
-    ['dig_mod_plot', 'dig_demod_plot', 'dig_mod_spec', 'dig_demod_spec'].forEach((id) => {
+    ['dig_mod_plot', 'dig_demod_plot', 'dig_mod_spec', 'dig_demod_spec', 'pam_constellation_plot', 'pam_eye_plot', 'pam_ber_plot'].forEach((id) => {
       try { Plotly.Plots.resize(id); } catch (_) { /* ignore */ }
     });
   });

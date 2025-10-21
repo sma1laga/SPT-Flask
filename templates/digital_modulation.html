@@ -27,8 +27,13 @@
   .intro-card dl { margin: 12px 0 0; }
   .intro-card dt { font-weight: 600; }
   .intro-card dd { margin: 0 0 8px; color: #444; font-size: 0.92rem; }
+  .pam-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
+  .pam-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .pam-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .pam-facts { margin-top: 8px; font-size: 0.88rem; color: var(--text-muted, #4b5563); }
   @media (max-width: 768px) {
     .row { grid-template-columns: 1fr 1fr; }
+    .pam-plots { grid-template-columns: 1fr; }
     select { max-width: 100%; }
   }
   @media (max-width: 540px) {
@@ -145,6 +150,72 @@
       </div>
     </div>
   </div>
+
+  <div class="card">
+    <div class="h">Digital PAM (M-PAM) simulation</div>
+    <p class="muted">Shape baseband symbols with a root-raised cosine pulse, add AWGN, and recover with a matched filter. Toggle the TX/RX pulse shaping to explore inter-symbol interference.</p>
+
+    <div class="pam-controls">
+      <label>Order (M)
+        <select id="pam_m">
+          <option value="2">2 (BPSK)</option>
+          <option value="4" selected>4</option>
+          <option value="8">8</option>
+          <option value="16">16</option>
+        </select>
+      </label>
+      <label>Rolloff α
+        <input id="pam_rolloff" type="range" min="0" max="1" step="0.05" value="0.35">
+        <div><small id="pam_rolloff_val">0.35</small></div>
+      </label>
+      <label>Samples / symbol
+        <input id="pam_sps" type="range" min="2" max="16" step="1" value="8">
+        <div><small id="pam_sps_val">8</small></div>
+      </label>
+      <label>Filter span [symbols]
+        <input id="pam_span" type="range" min="4" max="12" step="1" value="8">
+        <div><small id="pam_span_val">8</small></div>
+      </label>
+      <label>Eb/N<sub>0</sub> [dB]
+        <input id="pam_snr" type="range" min="0" max="20" step="1" value="12">
+        <div><small id="pam_snr_val">12</small></div>
+      </label>
+      <label>Symbols simulated
+        <input id="pam_symbols" type="range" min="400" max="4000" step="200" value="2000">
+        <div><small id="pam_symbols_val">2000</small></div>
+      </label>
+    </div>
+
+    <div class="pam-controls" style="margin-top:12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+      <label style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" id="pam_disable_tx">
+        Disable TX RRC (introduce ISI)
+      </label>
+      <label style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" id="pam_disable_rx">
+        Disable RX matched filter
+      </label>
+    </div>
+
+    <div id="pam_facts" class="pam-facts"></div>
+  </div>
+
+  <div class="card">
+    <div class="pam-grid">
+      <div class="plot-block">
+        <div class="plot-title">Constellation after matched filter</div>
+        <div id="pam_constellation_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Eye diagram</div>
+        <div id="pam_eye_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">BER vs. theory</div>
+        <div id="pam_ber_plot" class="plot"></div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -155,7 +226,8 @@
       window.DIG_URLS = {
         presets: root + "/digital_modulation/api/presets",
         modulate: root + "/digital_modulation/api/modulate",
-        demod: root + "/digital_modulation/api/demodulate"
+        demod: root + "/digital_modulation/api/demodulate",
+        mpam: root + "/digital_modulation/api/m_pam"
       };
     })();
   </script>
