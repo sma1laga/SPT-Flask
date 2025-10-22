@@ -216,28 +216,60 @@ def simulate_m_pam(
         tx_wave = upsampled.copy()
         tx_delay = 0
 
-    snr_db = float(snr_db)
-    ebn0_lin = 10 ** (snr_db / 10.0)
-    sigma = np.sqrt(1.0 / (2.0 * bits_per_symbol * ebn0_lin))
-    noise = rng.normal(0.0, sigma, size=tx_wave.shape)
-    rx_input = tx_wave + noise
-
     if enable_rx_rrc:
         rx_rrc = tx_rrc
-        rx_wave = np.convolve(rx_input, rx_rrc, mode='full')
         rx_delay = (rx_rrc.size - 1) // 2
+        rx_clean = np.convolve(tx_wave, rx_rrc, mode='full')
+        noise_gain = float(np.sum(rx_rrc**2))
     else:
-        rx_wave = rx_input
+        rx_rrc = None
         rx_delay = 0
+        rx_clean = tx_wave.copy()
+        noise_gain = 1.0
 
     total_delay = tx_delay + rx_delay
     sample_idx = total_delay + np.arange(symbols) * sps
     sample_idx = sample_idx.astype(int)
-    valid = sample_idx < rx_wave.size
+    valid = sample_idx < rx_clean.size
     sample_idx = sample_idx[valid]
-    sym_idx = sym_idx[valid]
-    sym_wave = sym_wave[valid]
-    rx_symbols = rx_wave[sample_idx]
+    signal_samples = rx_clean[sample_idx]
+    sym_idx_valid = sym_idx[valid]
+    sym_wave_valid = sym_wave[valid]
+
+    snr_db = float(snr_db)
+    ebn0_lin = 10 ** (snr_db / 10.0)
+    if signal_samples.size == 0 or bits_per_symbol <= 0 or not np.isfinite(ebn0_lin):
+        sigma = 0.0
+    else:
+        es = float(np.mean(signal_samples**2))
+        if es <= 0.0:
+            sigma = 0.0
+        else:
+            eb = es / bits_per_symbol
+            if ebn0_lin <= 0.0:
+                sigma = 0.0
+            else:
+                n0 = eb / ebn0_lin
+                sigma = float(np.sqrt(max(n0 / 2.0, 0.0) / max(noise_gain, 1e-18)))
+
+    noise = rng.normal(0.0, sigma, size=tx_wave.shape)
+    rx_input = tx_wave + noise
+
+    if enable_rx_rrc:
+        rx_wave = np.convolve(rx_input, rx_rrc, mode='full')
+    else:
+        rx_wave = rx_input
+
+    if sample_idx.size == 0:
+        sym_idx = np.array([], dtype=int)
+        sym_wave = np.array([], dtype=float)
+        rx_symbols = np.array([], dtype=float)
+    else:
+        valid_rx = sample_idx < rx_wave.size
+        sample_idx = sample_idx[valid_rx]
+        sym_idx = sym_idx_valid[valid_rx]
+        sym_wave = sym_wave_valid[valid_rx]
+        rx_symbols = rx_wave[sample_idx]
 
     diffs = rx_symbols[:, None] - levels[None, :]
     decisions = np.argmin(diffs**2, axis=1)
