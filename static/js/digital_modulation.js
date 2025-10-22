@@ -4,7 +4,8 @@ window.DIG_URLS = window.DIG_URLS || {
   presets: '/digital_modulation/api/presets',
   modulate: '/digital_modulation/api/modulate',
   demod: '/digital_modulation/api/demodulate',
-  mpam: '/digital_modulation/api/m_pam'
+  mpam: '/digital_modulation/api/m_pam',
+  passband: '/digital_modulation/api/passband'
 };
 
 const $ = (id) => document.getElementById(id);
@@ -123,6 +124,183 @@ function renderPamFacts(info, ber) {
   }
   el.innerText = parts.join('  •  ');
 }
+
+
+function updatePassbandControls() {
+  [
+    'pass_carrier',
+    'pass_symbol_rate',
+    'pass_offset',
+    'pass_phase',
+    'pass_sps'
+  ].forEach(setLabel);
+}
+
+function collectPassbandParams() {
+  const schemeEl = $('pass_scheme');
+  const params = {
+    scheme: schemeEl ? schemeEl.value : 'BPSK',
+    carrier: +($('pass_carrier')?.value || 2000),
+    symbol_rate: +($('pass_symbol_rate')?.value || 400),
+    freq_offset: +($('pass_offset')?.value || 0),
+    phase_deg: +($('pass_phase')?.value || 0),
+    sps: +($('pass_sps')?.value || 16),
+    costas: $('pass_costas')?.checked ? 1 : 0
+  };
+  return params;
+}
+
+function renderPassbandFacts(info) {
+  const el = $('passband_info');
+  if (!el) return;
+  if (!info) {
+    el.innerText = '';
+    return;
+  }
+  const parts = [];
+  if (info.scheme) parts.push(info.scheme);
+  if (info.bits_per_symbol != null) parts.push(`${info.bits_per_symbol} bits/sym`);
+  if (info.symbol_rate != null) parts.push(`${Number(info.symbol_rate).toFixed(0)} baud`);
+  if (info.carrier_hz != null) parts.push(`fc=${Number(info.carrier_hz).toFixed(0)} Hz`);
+  if (info.freq_offset_hz != null && Number(info.freq_offset_hz) !== 0) {
+    parts.push(`Δf=${Number(info.freq_offset_hz).toFixed(1)} Hz`);
+  }
+  if (info.phase_offset_deg != null && Number(info.phase_offset_deg) !== 0) {
+    parts.push(`Δφ=${Number(info.phase_offset_deg).toFixed(1)}°`);
+  }
+  if (info.costas_enabled === false) {
+    parts.push('Costas loop off');
+  } else if (info.costas_enabled) {
+    parts.push('Costas loop on');
+    if (info.estimated_freq_hz != null) {
+      parts.push(`est Δf≈${Number(info.estimated_freq_hz).toFixed(2)} Hz`);
+    }
+    if (info.estimated_phase_deg != null) {
+      parts.push(`est Δφ≈${Number(info.estimated_phase_deg).toFixed(1)}°`);
+    }
+  }
+  el.innerText = parts.join('  •  ');
+}
+
+async function plotPassband() {
+  const params = collectPassbandParams();
+  try {
+    const data = await fetchJSON(DIG_URLS.passband, params);
+    const t = (data.time || []).map(Number);
+    const tx = (data.tx_passband || []).map(Number);
+    const rx = (data.rx_passband || []).map(Number);
+
+    const waveTraces = [];
+    if (t.length && tx.length) {
+      waveTraces.push({ x: t, y: tx, name: 'TX passband', line: { color: '#1d4ed8' } });
+    }
+    if (t.length && rx.length) {
+      waveTraces.push({ x: t, y: rx, name: 'RX (offset)', line: { color: '#dc2626' } });
+    }
+    if (waveTraces.length) {
+      Plotly.newPlot('passband_wave_plot', waveTraces, {
+        margin: { t: 30 },
+        legend: { orientation: 'h' },
+        xaxis: { title: 'Time [s]' },
+        yaxis: { title: 'Amplitude' }
+      }, { responsive: true });
+    } else {
+      Plotly.purge('passband_wave_plot');
+      showError('passband_wave_plot', 'No waveform data');
+    }
+
+    const base = data.baseband || {};
+    const baseTime = (base.time || []).map(Number);
+    const baseTraces = [];
+    if (baseTime.length && Array.isArray(base.i_tx) && base.i_tx.length) {
+      baseTraces.push({ x: baseTime, y: base.i_tx.map(Number), name: 'I (tx)', line: { color: '#111827' } });
+    }
+    if (baseTime.length && Array.isArray(base.q_tx) && base.q_tx.length) {
+      baseTraces.push({ x: baseTime, y: base.q_tx.map(Number), name: 'Q (tx)', line: { color: '#6b7280', dash: 'dash' } });
+    }
+    if (baseTime.length && Array.isArray(base.i_rx) && base.i_rx.length) {
+      baseTraces.push({ x: baseTime, y: base.i_rx.map(Number), name: 'I (rx)', line: { color: '#2563eb' } });
+    }
+    if (baseTime.length && Array.isArray(base.q_rx) && base.q_rx.length) {
+      baseTraces.push({ x: baseTime, y: base.q_rx.map(Number), name: 'Q (rx)', line: { color: '#ec4899' } });
+    }
+    if (baseTime.length && Array.isArray(base.i_costas) && base.i_costas.length) {
+      baseTraces.push({ x: baseTime, y: base.i_costas.map(Number), name: 'I (Costas)', line: { color: '#16a34a' } });
+    }
+    if (baseTime.length && Array.isArray(base.q_costas) && base.q_costas.length) {
+      baseTraces.push({ x: baseTime, y: base.q_costas.map(Number), name: 'Q (Costas)', line: { color: '#f97316' } });
+    }
+    if (baseTraces.length) {
+      Plotly.newPlot('passband_iq_plot', baseTraces, {
+        margin: { t: 30 },
+        legend: { orientation: 'h' },
+        xaxis: { title: 'Time [s]' },
+        yaxis: { title: 'I/Q amplitude' }
+      }, { responsive: true });
+    } else {
+      Plotly.purge('passband_iq_plot');
+      showError('passband_iq_plot', 'No baseband data');
+    }
+
+    const cons = data.constellation || {};
+    const idealX = (cons.ideal_i || []).map(Number);
+    const idealY = (cons.ideal_q || []).map(Number);
+    const rxX = (cons.rx_i || []).map(Number);
+    const rxY = (cons.rx_q || []).map(Number);
+    const corrX = (cons.corrected_i || []).map(Number);
+    const corrY = (cons.corrected_q || []).map(Number);
+
+    const constTraces = [];
+    if (idealX.length) {
+      constTraces.push({
+        x: idealX,
+        y: idealY,
+        mode: 'markers',
+        name: 'Ideal',
+        marker: { color: '#9ca3af', size: 6, symbol: 'circle-open' }
+      });
+    }
+    if (rxX.length) {
+      constTraces.push({
+        x: rxX,
+        y: rxY,
+        mode: 'markers',
+        name: 'RX',
+        marker: { color: '#ef4444', size: 7, opacity: 0.7 }
+      });
+    }
+    if (corrX.length) {
+      constTraces.push({
+        x: corrX,
+        y: corrY,
+        mode: 'markers',
+        name: cons.costas ? 'Costas corrected' : 'RX (no Costas)',
+        marker: { color: '#10b981', size: 7, opacity: 0.75 }
+      });
+    }
+    if (constTraces.length) {
+      Plotly.newPlot('passband_constellation_plot', constTraces, {
+        margin: { t: 30 },
+        legend: { orientation: 'h' },
+        xaxis: { title: 'In-phase', zeroline: true, scaleanchor: 'y', scaleratio: 1 },
+        yaxis: { title: 'Quadrature', zeroline: true },
+        hovermode: 'closest'
+      }, { responsive: true });
+    } else {
+      Plotly.purge('passband_constellation_plot');
+      showError('passband_constellation_plot', 'No constellation data');
+    }
+
+    renderPassbandFacts(data.info);
+  } catch (err) {
+    const msg = `Passband error: ${err.message || err}`;
+    ['passband_wave_plot', 'passband_iq_plot', 'passband_constellation_plot'].forEach((id) => {
+      Plotly.purge(id);
+      showError(id, msg);
+    });
+  }
+}
+
 
 function collectModParams(){
   const type = $('dig_mod_type').value;
@@ -452,6 +630,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.addEventListener('change', plotPam);
   });
 
+  const passScheme = $('pass_scheme');
+  if (passScheme) {
+    passScheme.addEventListener('change', () => {
+      plotPassband();
+    });
+  }
+
+  attachInputHandlers([
+    'pass_carrier',
+    'pass_symbol_rate',
+    'pass_offset',
+    'pass_phase',
+    'pass_sps'
+  ], () => {
+    updatePassbandControls();
+    plotPassband();
+  });
+
+  const passCostas = $('pass_costas');
+  if (passCostas) passCostas.addEventListener('change', plotPassband);
+
+
   const snrToggle = $('dig_snr_toggle');
   if (snrToggle) snrToggle.addEventListener('change', plotDigMod);
 
@@ -467,14 +667,15 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDigPresets();
   updateDigControls();
   updatePamControls();
+  updatePassbandControls();
   plotDigMod();
   plotDigDemod();
   plotPam();
+  plotPassband();
 
 
   window.addEventListener('resize', () => {
-    ['dig_mod_plot', 'dig_demod_plot', 'dig_mod_spec', 'dig_demod_spec', 'pam_constellation_plot', 'pam_eye_plot', 'pam_ber_plot'].forEach((id) => {
-      try { Plotly.Plots.resize(id); } catch (_) { /* ignore */ }
+    ['dig_mod_plot', 'dig_demod_plot', 'dig_mod_spec', 'dig_demod_spec', 'pam_constellation_plot', 'pam_eye_plot', 'pam_ber_plot', 'passband_wave_plot', 'passband_iq_plot', 'passband_constellation_plot'].forEach((id) => {      try { Plotly.Plots.resize(id); } catch (_) { /* ignore */ }
     });
   });
 });

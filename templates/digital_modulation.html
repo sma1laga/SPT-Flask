@@ -36,9 +36,13 @@
   .pam-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
   .pam-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
   .pam-facts { margin-top: 8px; font-size: 0.88rem; color: var(--text-muted, #666); }
+  .passband-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
+  .passband-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .passband-facts { margin-top: 8px; font-size: 0.88rem; color: var(--text-muted, #666); }
   @media (max-width: 768px) {
     .row { grid-template-columns: 1fr 1fr; }
     .pam-plots { grid-template-columns: 1fr; }
+    .passband-plots { grid-template-columns: 1fr; }
     select { max-width: 100%; }
   }
   @media (max-width: 540px) {
@@ -155,6 +159,66 @@
       </div>
     </div>
   </div>
+  <div class="card">
+    <div class="h">Coherent passband link (carrier-modulated digital)</div>
+    <p class="muted">
+      Compare how BPSK, QPSK, and 16-QAM behave when an RF carrier suffers frequency and phase errors.
+      Toggle the Costas loop to mimic a carrier recovery stage and watch the constellation collapse back into place.
+    </p>
+
+    <div class="passband-controls">
+      <label>Scheme
+        <select id="pass_scheme">
+          <option value="BPSK">BPSK</option>
+          <option value="QPSK">QPSK</option>
+          <option value="16QAM">16-QAM</option>
+        </select>
+      </label>
+      <label>Carrier [Hz]
+        <input id="pass_carrier" type="range" min="500" max="6000" step="100" value="2000">
+        <div><small id="pass_carrier_val">2000</small></div>
+      </label>
+      <label>Symbol rate [baud]
+        <input id="pass_symbol_rate" type="range" min="50" max="1500" step="50" value="400">
+        <div><small id="pass_symbol_rate_val">400</small></div>
+      </label>
+      <label>Carrier offset [Hz]
+        <input id="pass_offset" type="range" min="-400" max="400" step="10" value="80">
+        <div><small id="pass_offset_val">80</small></div>
+      </label>
+      <label>Phase offset [deg]
+        <input id="pass_phase" type="range" min="-180" max="180" step="5" value="45">
+        <div><small id="pass_phase_val">45</small></div>
+      </label>
+      <label>Samples / symbol
+        <input id="pass_sps" type="range" min="4" max="32" step="2" value="16">
+        <div><small id="pass_sps_val">16</small></div>
+      </label>
+      <label style="flex-direction: row; align-items: center; gap: 8px;">
+        <input type="checkbox" id="pass_costas" checked>
+        Costas loop on
+      </label>
+    </div>
+
+    <div id="passband_info" class="passband-facts"></div>
+  </div>
+
+  <div class="card">
+    <div class="passband-plots">
+      <div class="plot-block">
+        <div class="plot-title">Passband waveforms</div>
+        <div id="passband_wave_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Baseband I/Q vs. time</div>
+        <div id="passband_iq_plot" class="plot"></div>
+      </div>
+      <div class="plot-block">
+        <div class="plot-title">Constellation at symbol sampling</div>
+        <div id="passband_constellation_plot" class="plot"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="h">Digital PAM (M-PAM) simulation</div>
@@ -232,7 +296,8 @@
         presets: root + "/digital_modulation/api/presets",
         modulate: root + "/digital_modulation/api/modulate",
         demod: root + "/digital_modulation/api/demodulate",
-        mpam: root + "/digital_modulation/api/m_pam"
+        mpam: root + "/digital_modulation/api/m_pam",
+        passband: root + "/digital_modulation/api/passband"
       };
     })();
   </script>

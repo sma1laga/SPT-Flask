@@ -118,6 +118,59 @@ def pam_theoretical_ber(M: int, ebn0_db):
     arg = np.sqrt(const * ebn0_lin)
     return 2 * (M - 1) / (M * k) * qfunc(arg)
 
+# ----- passband helpers -----
+
+
+def _digital_constellation(scheme: str, n_symbols: int, rng):
+    scheme = scheme.upper()
+    if scheme == 'BPSK':
+        bits = rng.integers(0, 2, size=n_symbols)
+        symbols = 2 * bits - 1
+        return symbols.astype(complex), 1
+
+    if scheme == 'QPSK':
+        mapping = np.array(
+            [
+                1 + 1j,
+                -1 + 1j,
+                -1 - 1j,
+                1 - 1j,
+            ],
+            dtype=complex,
+        )
+        mapping /= np.sqrt(2)
+        idx = rng.integers(0, 4, size=n_symbols)
+        return mapping[idx], 2
+
+    if scheme in ('16QAM', '16-QAM', 'M-QAM'):
+        bits = rng.integers(0, 2, size=(n_symbols, 4))
+        gray_map = np.array([-3, -1, 3, 1], dtype=float)
+        i_idx = (bits[:, 0] << 1) | bits[:, 1]
+        q_idx = (bits[:, 2] << 1) | bits[:, 3]
+        i_level = gray_map[i_idx]
+        q_level = gray_map[q_idx]
+        symbols = (i_level + 1j * q_level) / np.sqrt(10.0)
+        return symbols, 4
+
+    raise ValueError('Unsupported scheme: {}'.format(scheme))
+
+
+def _costas_correct(symbols: np.ndarray, times: np.ndarray):
+    if symbols.size < 2:
+        return symbols.copy(), 0.0, 0.0
+
+    phases = np.unwrap(np.angle(symbols))
+    try:
+        coeffs = np.polyfit(times, phases, 1)
+    except np.linalg.LinAlgError:
+        return symbols.copy(), 0.0, 0.0
+
+    omega_est = float(coeffs[0])
+    phase_est = float(coeffs[1])
+    correction = np.exp(-1j * (omega_est * times + phase_est))
+    corrected = symbols * correction
+    return corrected, omega_est, phase_est
+
 
 # ---------- simulation helpers ----------
 
@@ -244,6 +297,123 @@ def simulate_m_pam(
         'bits_per_symbol': bits_per_symbol,
         'symbols': int(sample_idx.size),
     }
+
+@dig_bp.route('/api/passband')
+def passband_api():
+    params = {k: request.args.get(k) for k in request.args.keys()}
+
+    scheme = (params.get('scheme') or 'BPSK').upper()
+    try:
+        symbol_rate = float(params.get('symbol_rate', 400.0))
+        carrier = float(params.get('carrier', 2000.0))
+        freq_offset = float(params.get('freq_offset', 0.0))
+        phase_deg = float(params.get('phase_deg', 0.0))
+        sps = int(params.get('sps', 16))
+        n_symbols = int(params.get('symbols', 240))
+    except ValueError as exc:
+        return jsonify(error=f'Invalid parameter: {exc}'), 400
+
+    sps = int(max(4, sps))
+    n_symbols = int(max(16, n_symbols))
+    symbol_rate = float(max(10.0, symbol_rate))
+    carrier = float(max(1.0, carrier))
+
+    seed_val = params.get('seed')
+    if seed_val is not None:
+        try:
+            seed = int(seed_val)
+        except ValueError:
+            return jsonify(error='seed must be an integer'), 400
+        rng = np.random.default_rng(seed)
+    else:
+        rng = np.random.default_rng(2024)
+
+    try:
+        tx_symbols, bits_per_symbol = _digital_constellation(scheme, n_symbols, rng)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+
+    fs = symbol_rate * sps
+    dt = 1.0 / fs
+    t = np.arange(n_symbols * sps) * dt
+    baseband = np.repeat(tx_symbols, sps)
+
+    phase_rad = np.deg2rad(phase_deg)
+    carrier_actual = carrier + freq_offset
+    tx_passband = np.real(baseband * np.exp(1j * (2 * np.pi * carrier * t)))
+    rx_passband = np.real(baseband * np.exp(1j * (2 * np.pi * carrier_actual * t + phase_rad)))
+
+    # complex envelope after mixing with nominal carrier
+    rx_complex = baseband * np.exp(1j * (2 * np.pi * freq_offset * t + phase_rad))
+
+    center = sps // 2
+    sample_idx = center + np.arange(n_symbols) * sps
+    valid = sample_idx < rx_complex.size
+    sample_idx = sample_idx[valid]
+    symbol_times = sample_idx * dt
+    rx_symbols = rx_complex[sample_idx]
+    ideal_symbols = tx_symbols[: sample_idx.size]
+
+    costas_on = _to_bool(params.get('costas', params.get('costas_on', '1')), default=True)
+    corrected_symbols = np.array([], dtype=complex)
+    corrected_wave = rx_complex.copy()
+    omega_est = 0.0
+    phase_est = 0.0
+    if costas_on:
+        corrected_symbols, omega_est, phase_est = _costas_correct(rx_symbols, symbol_times)
+        correction_wave = np.exp(-1j * (omega_est * t + phase_est))
+        corrected_wave = rx_complex * correction_wave
+    else:
+        corrected_wave = rx_complex
+
+    info = {
+        'scheme': scheme,
+        'symbol_rate': symbol_rate,
+        'carrier_hz': carrier,
+        'freq_offset_hz': freq_offset,
+        'phase_offset_deg': phase_deg,
+        'bits_per_symbol': bits_per_symbol,
+        'costas_enabled': bool(costas_on),
+    }
+    if costas_on:
+        info['estimated_phase_deg'] = float(np.degrees(phase_est))
+        info['estimated_freq_hz'] = float(omega_est / (2 * np.pi))
+
+    constellation = {
+        'ideal_i': ideal_symbols.real.tolist(),
+        'ideal_q': ideal_symbols.imag.tolist(),
+        'rx_i': rx_symbols.real.tolist(),
+        'rx_q': rx_symbols.imag.tolist(),
+        'corrected_i': corrected_symbols.real.tolist() if corrected_symbols.size else [],
+        'corrected_q': corrected_symbols.imag.tolist() if corrected_symbols.size else [],
+        'costas': bool(costas_on),
+    }
+
+    baseband_payload = {
+        'time': t.tolist(),
+        'i_tx': baseband.real.tolist(),
+        'q_tx': baseband.imag.tolist(),
+        'i_rx': rx_complex.real.tolist(),
+        'q_rx': rx_complex.imag.tolist(),
+    }
+    if costas_on:
+        baseband_payload['i_costas'] = corrected_wave.real.tolist()
+        baseband_payload['q_costas'] = corrected_wave.imag.tolist()
+    else:
+        baseband_payload['i_costas'] = []
+        baseband_payload['q_costas'] = []
+
+    return jsonify(
+        {
+            'time': t.tolist(),
+            'tx_passband': tx_passband.tolist(),
+            'rx_passband': rx_passband.tolist(),
+            'baseband': baseband_payload,
+            'constellation': constellation,
+            'info': info,
+        }
+    )
+
 
 
 
