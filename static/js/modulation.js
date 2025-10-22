@@ -8,6 +8,10 @@ window.MOD_URLS = window.MOD_URLS || {
 function $(id){ return document.getElementById(id); }
 function setLabel(id){ const el=$(id), lab=$(id+'_val'); if(el&&lab) lab.innerText = el.value; }
 
+const PLOT_CONFIG = { responsive: true, displayModeBar: false };
+const tracesNoHover = (traces = []) => traces.map((trace) => ({ ...trace, hoverinfo: 'skip' }));
+const withNoHover = (layout = {}) => Object.assign({ hovermode: false }, layout);
+
 async function fetchJSON(url, params) {
   const q = new URLSearchParams(params).toString();
   const res = await fetch(url + '?' + q);
@@ -182,23 +186,23 @@ async function plotMod() {
     window.__QAM_LAST_MOD = null;
   }
 
-  Plotly.newPlot('mod_plot', traces, {
+  Plotly.newPlot('mod_plot', tracesNoHover(traces), withNoHover({
     margin: { t: 30 },
     title: type === 'QAM' ? 'QAM — Passband view' : `${type} — Modulation`,
     legend: { orientation: 'h' },
     xaxis: { title: 'Time [s]' },
     yaxis: { title: 'Amplitude' }
-  }, {responsive: true});
+  }), PLOT_CONFIG);
 
   if ($('show_spectrum').checked) {
-    Plotly.newPlot('spec_plot', [
+    Plotly.newPlot('spec_plot', tracesNoHover([
       { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (modulated)' }
-    ], {
+    ]), withNoHover({
       margin: { t: 30 },
       title: 'Spectrum (Hann + rFFT)',
       xaxis: { title: 'Frequency [Hz]' },
       yaxis: { title: 'Power [dB]' }
-    }, {responsive: true});
+    }), PLOT_CONFIG);
   } else {
     Plotly.purge('spec_plot');
     $('spec_plot').innerHTML = '<div class="muted">Spectrum hidden</div>';
@@ -276,7 +280,7 @@ async function plotDemod() {
       yaxis3: { title: 'Phase [deg]', overlaying: 'y2', side: 'right' }
     };
 
-    Plotly.newPlot('demod_plot', [...basebandTraces, ...magPhaseTraces], demodLayout, { responsive: true });
+    Plotly.newPlot('demod_plot', tracesNoHover([...basebandTraces, ...magPhaseTraces]), withNoHover(demodLayout), PLOT_CONFIG);
 
     const passbandTraces = [
       { x: data.t, y: data.modulated, name: 'QAM passband' }
@@ -291,23 +295,23 @@ async function plotDemod() {
       passbandTraces.push({ x: data.t, y: data.lo_cos, name: 'LO cos', line: { dash: 'dash', color: '#9ca3af' } });
       passbandTraces.push({ x: data.t, y: data.lo_sin, name: 'LO sin', line: { dash: 'dash', color: '#6b7280' } });
     }
-    Plotly.newPlot('mod_plot', passbandTraces, {
+    Plotly.newPlot('mod_plot', tracesNoHover(passbandTraces), withNoHover({
       margin: { t: 30 },
       title: `QAM — Passband view (phase error ${phaseLabel})`,
       legend: { orientation: 'h' },
       xaxis: { title: 'Time [s]' },
       yaxis: { title: 'Amplitude' }
-    }, { responsive: true });
+    }), PLOT_CONFIG);
 
     if ($('show_spectrum').checked) {
-      Plotly.newPlot('spec_demod_plot', [
+      Plotly.newPlot('spec_demod_plot', tracesNoHover([
         { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (I baseband)' }
-      ], {
+      ]), withNoHover({
         margin: { t: 30 },
         title: 'Demod Spectrum (I-channel)',
         xaxis: { title: 'Frequency [Hz]' },
         yaxis: { title: 'Power [dB]' }
-      }, { responsive: true });
+      }), PLOT_CONFIG);
     } else {
       Plotly.purge('spec_demod_plot');
       $('spec_demod_plot').innerHTML = '';
@@ -317,26 +321,26 @@ async function plotDemod() {
   }
   const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
 
-  Plotly.newPlot('demod_plot', [
+  Plotly.newPlot('demod_plot', tracesNoHover([
     { x: data.t,   y: data.modulated,   name: 'Received' },
     { x: tDem,     y: data.demodulated, name: 'Demodulated' }
-  ], {
+  ]), withNoHover({
     margin: { t: 30 },
     title: `${type} — Demodulation`,
     legend: { orientation: 'h' },
     xaxis: { title: 'Time [s]' },
     yaxis: { title: 'Amplitude' }
-  }, {responsive: true});
+  }), PLOT_CONFIG);
 
   if ($('show_spectrum').checked) {
-    Plotly.newPlot('spec_demod_plot', [
+    Plotly.newPlot('spec_demod_plot', tracesNoHover([
       { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (demodulated)' }
-    ], {
+    ]), withNoHover({
       margin: { t: 30 },
       title: 'Demod Spectrum',
       xaxis: { title: 'Frequency [Hz]' },
       yaxis: { title: 'Power [dB]' }
-    }, {responsive: true});
+    }), PLOT_CONFIG);
   } else {
     Plotly.purge('spec_demod_plot');
     $('spec_demod_plot').innerHTML = '';

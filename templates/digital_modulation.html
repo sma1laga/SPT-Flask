@@ -10,18 +10,18 @@
 <style>
   /* Shared module layout */
   .module-wrap { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  .card { border: 1px solid var(--border-color, #ddd); border-radius: 10px; padding: 12px; background: var(--surface, #fff); }
+  .card { border: 1px solid var(--border-color, #ddd); border-radius: 10px; padding: 12px; background: var(--card-background, #fff); color: var(--text-color, #222); }
   .intro-card { margin-bottom: 8px; }
-  .section-title { margin: 0 0 8px; font-size: 1.15rem; font-weight: 600; color: var(--text-strong, #222); }
+  .section-title { margin: 0 0 8px; font-size: 1.15rem; font-weight: 600; color: var(--text-color, #222); }
   .section-list { margin: 0; padding-left: 20px; }
-  .section-subtitle { margin: 8px 0 0; color: var(--text-muted, #666); font-size: 0.9rem; }
+  .section-subtitle { margin: 8px 0 0; color: var(--subtext-color, #666); font-size: 0.9rem; }
   .h { font-weight: 700; margin: 8px 0; }
-  .muted { color: #666; font-size: .9rem; }
-  .pad { padding: 4px 0; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #666; }
+  .muted { color: var(--subtext-color, #666); font-size: .9rem; }
+  .pad { padding: 4px 0; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--subtext-color, #666); }
   .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
   .plots { display: grid; grid-template-columns: 1fr; gap: 16px; }
   .plot-block { display: flex; flex-direction: column; }
-  .plot-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-strong, #222); }
+  .plot-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-color, #222); }
   .plot { min-height: 340px; }
   label { display:flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
   select,
@@ -31,14 +31,14 @@
   .row small { font-size: 0.75rem; }
   .intro-card dl { margin: 12px 0 0; }
   .intro-card dt { font-weight: 600; }
-  .intro-card dd { margin: 0 0 8px; color: var(--text, #333); font-size: 0.92rem; }
+  .intro-card dd { margin: 0 0 8px; color: var(--text-color, #333); font-size: 0.92rem; }
   .pam-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
   .pam-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
   .pam-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-  .pam-facts { margin-top: 8px; font-size: 0.88rem; color: var(--text-muted, #666); }
+  .pam-facts { margin-top: 8px; font-size: 0.88rem; color: var(--subtext-color, #666); }
   .passband-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
   .passband-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-  .passband-facts { margin-top: 8px; font-size: 0.88rem; color: var(--text-muted, #666); }
+  .passband-facts { margin-top: 8px; font-size: 0.88rem; color: var(--subtext-color, #666); }
   @media (max-width: 768px) {
     .row { grid-template-columns: 1fr 1fr; }
     .pam-plots { grid-template-columns: 1fr; }

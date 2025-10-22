@@ -15,6 +15,11 @@ const setLabel = (id) => {
   if (el && lab) lab.innerText = el.value;
 };
 
+const PLOT_CONFIG = { responsive: true, displayModeBar: false };
+const tracesNoHover = (traces = []) => traces.map((trace) => ({ ...trace, hoverinfo: 'skip' }));
+const withNoHover = (layout = {}) => Object.assign({ hovermode: false }, layout);
+
+
 async function fetchJSON(url, params = {}) {
   const q = new URLSearchParams(params).toString();
   const res = await fetch(q ? `${url}?${q}` : url);
@@ -233,12 +238,12 @@ async function plotPassband() {
       waveTraces.push({ x: t, y: rx, name: 'RX (offset)', line: { color: '#dc2626' } });
     }
     if (waveTraces.length) {
-      Plotly.newPlot('passband_wave_plot', waveTraces, {
+      Plotly.newPlot('passband_wave_plot', tracesNoHover(waveTraces), withNoHover({
         margin: { t: 30 },
         legend: { orientation: 'h' },
         xaxis: { title: 'Time [s]' },
         yaxis: { title: 'Amplitude' }
-      }, { responsive: true });
+      }), PLOT_CONFIG);
     } else {
       Plotly.purge('passband_wave_plot');
       showError('passband_wave_plot', 'No waveform data');
@@ -266,12 +271,12 @@ async function plotPassband() {
       baseTraces.push({ x: baseTime, y: base.q_costas.map(Number), name: 'Q (Costas)', line: { color: '#f97316' } });
     }
     if (baseTraces.length) {
-      Plotly.newPlot('passband_iq_plot', baseTraces, {
+      Plotly.newPlot('passband_iq_plot', tracesNoHover(baseTraces), withNoHover({
         margin: { t: 30 },
         legend: { orientation: 'h' },
         xaxis: { title: 'Time [s]' },
         yaxis: { title: 'I/Q amplitude' }
-      }, { responsive: true });
+      }), PLOT_CONFIG);
     } else {
       Plotly.purge('passband_iq_plot');
       showError('passband_iq_plot', 'No baseband data');
@@ -314,13 +319,12 @@ async function plotPassband() {
       });
     }
     if (constTraces.length) {
-      Plotly.newPlot('passband_constellation_plot', constTraces, {
+      Plotly.newPlot('passband_constellation_plot', tracesNoHover(constTraces), withNoHover({
         margin: { t: 30 },
         legend: { orientation: 'h' },
         xaxis: { title: 'In-phase', zeroline: true, scaleanchor: 'y', scaleratio: 1 },
-        yaxis: { title: 'Quadrature', zeroline: true },
-        hovermode: 'closest'
-      }, { responsive: true });
+        yaxis: { title: 'Quadrature', zeroline: true }
+      }), PLOT_CONFIG);
     } else {
       Plotly.purge('passband_constellation_plot');
       showError('passband_constellation_plot', 'No constellation data');
@@ -400,12 +404,12 @@ async function plotPam() {
         marker: { size: 6, color: '#2563eb', opacity: 0.7 }
       });
     }
-    Plotly.newPlot('pam_constellation_plot', traces, {
+    Plotly.newPlot('pam_constellation_plot', tracesNoHover(traces), withNoHover({
       margin: { t: 30 },
       xaxis: { title: 'Amplitude', zeroline: false },
       yaxis: { showticklabels: false, showgrid: false, zeroline: false, range: [-0.12, 0.12] },
       legend: { orientation: 'h' }
-    }, { responsive: true });
+    }), PLOT_CONFIG);
 
     const eye = data.eye || {};
     const eyeTime = Array.isArray(eye.time) ? eye.time.map(Number) : [];
@@ -496,7 +500,7 @@ async function plotPam() {
           }
         ];
       }
-      Plotly.newPlot('pam_eye_plot', eyePlot, layout, { responsive: true });
+      Plotly.newPlot('pam_eye_plot', tracesNoHover(eyePlot), withNoHover(layout), PLOT_CONFIG);
     } else {
       Plotly.purge('pam_eye_plot');
       showError('pam_eye_plot', 'Eye diagram unavailable — increase symbols or enable filtering.');
@@ -536,12 +540,12 @@ async function plotPam() {
         marker: { color: '#22c55e', size: 10 }
       });
     }
-    Plotly.newPlot('pam_ber_plot', berTraces, {
+    Plotly.newPlot('pam_ber_plot', tracesNoHover(berTraces), withNoHover({
       margin: { t: 30 },
       xaxis: { title: 'Eb/N₀ [dB]' },
       yaxis: { title: 'Bit error rate', type: 'log', rangemode: 'tozero' },
       legend: { orientation: 'h' }
-    }, { responsive: true });
+    }), PLOT_CONFIG);
 
     renderPamFacts(data.info, ber, data.challenge);
   } catch (err) {
@@ -559,27 +563,27 @@ async function plotDigMod() {
   try {
     const data = await fetchJSON(DIG_URLS.modulate, params);
 
-    Plotly.newPlot('dig_mod_plot', [
+    Plotly.newPlot('dig_mod_plot', tracesNoHover([
       { x: data.t, y: data.message, name: 'Message' },
       ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
       { x: data.t, y: data.modulated, name: `${params.type} Signal` }
-    ], {
+    ]), withNoHover({
       margin: { t: 30 },
       title: `${params.type} — Modulation`,
       legend: { orientation: 'h' },
       xaxis: { title: 'Time [s]' },
       yaxis: { title: 'Amplitude' }
-    }, { responsive: true });
+    }), PLOT_CONFIG);
 
     if ($('dig_show_spectrum').checked) {
-      Plotly.newPlot('dig_mod_spec', [
+      Plotly.newPlot('dig_mod_spec', tracesNoHover([
         { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (modulated)' }
-      ], {
+      ]), withNoHover({
         margin: { t: 30 },
         title: 'Spectrum (Hann + rFFT)',
         xaxis: { title: 'Frequency [Hz]' },
         yaxis: { title: 'Power [dB]' }
-      }, { responsive: true });
+      }), PLOT_CONFIG);
     } else {
       Plotly.purge('dig_mod_spec');
       showError('dig_mod_spec', 'Spectrum hidden');
@@ -600,26 +604,26 @@ async function plotDigDemod(){
     const data = await fetchJSON(DIG_URLS.demod, params);
     const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
 
-    Plotly.newPlot('dig_demod_plot', [
+    Plotly.newPlot('dig_demod_plot', tracesNoHover([
       { x: data.t, y: data.modulated, name: 'Received' },
       { x: tDem, y: data.demodulated, name: 'Demodulated' }
-    ], {
+    ]), withNoHover({
       margin: { t: 30 },
       title: `${params.type} — Demodulation`,
       legend: { orientation: 'h' },
       xaxis: { title: 'Time [s]' },
       yaxis: { title: 'Amplitude' }
-    }, { responsive: true });
+    }), PLOT_CONFIG);
 
     if ($('dig_show_spectrum').checked) {
-      Plotly.newPlot('dig_demod_spec', [
+      Plotly.newPlot('dig_demod_spec', tracesNoHover([
         { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (demodulated)' }
-      ], {
+      ]), withNoHover({
         margin: { t: 30 },
         title: 'Demod Spectrum',
         xaxis: { title: 'Frequency [Hz]' },
         yaxis: { title: 'Power [dB]' }
-      }, { responsive: true });
+      }), PLOT_CONFIG);
     } else {
       Plotly.purge('dig_demod_spec');
       showError('dig_demod_spec', '');
