@@ -183,6 +183,7 @@ def simulate_m_pam(
     span: int,
     snr_db: float,
     symbols: int,
+    timing_offset: float = 0.0,
     enable_tx_rrc: bool,
     enable_rx_rrc: bool,
     rng=None,
@@ -200,8 +201,21 @@ def simulate_m_pam(
     sps = int(max(2, sps))
     span = int(max(2, span))
     rolloff = float(np.clip(rolloff, 0.0, 1.0))
+    timing_offset = float(np.clip(timing_offset, -0.5, 0.5))
+
 
     levels = pam_symbol_levels(M)
+    if levels.size > 1:
+        spacing = float(np.min(np.diff(np.sort(levels))))
+    elif levels.size == 1:
+        spacing = float(abs(levels[0]) * 2.0)
+    else:
+        spacing = 0.0
+    if spacing > 0.0:
+        challenge_target = float(spacing * (0.55 + 0.35 * rolloff))
+    else:
+        challenge_target = None
+
     sym_idx = rng.integers(0, M, size=symbols)
     sym_wave = levels[sym_idx]
 
@@ -210,7 +224,7 @@ def simulate_m_pam(
 
     tx_rrc = root_raised_cosine(rolloff, span, sps)
     if enable_tx_rrc:
-        tx_wave = np.convolve(upsampled, tx_rrc, mode='full')
+        tx_wave = np.convolve(upsampled, tx_rrc, mode="full")
         tx_delay = (tx_rrc.size - 1) // 2
     else:
         tx_wave = upsampled.copy()
@@ -219,7 +233,7 @@ def simulate_m_pam(
     if enable_rx_rrc:
         rx_rrc = tx_rrc
         rx_delay = (rx_rrc.size - 1) // 2
-        rx_clean = np.convolve(tx_wave, rx_rrc, mode='full')
+        rx_clean = np.convolve(tx_wave, rx_rrc, mode="full")
         noise_gain = float(np.sum(rx_rrc**2))
     else:
         rx_rrc = None
@@ -228,13 +242,23 @@ def simulate_m_pam(
         noise_gain = 1.0
 
     total_delay = tx_delay + rx_delay
-    sample_idx = total_delay + np.arange(symbols) * sps
-    sample_idx = sample_idx.astype(int)
-    valid = sample_idx < rx_clean.size
-    sample_idx = sample_idx[valid]
-    signal_samples = rx_clean[sample_idx]
+    symbol_positions = total_delay + np.arange(symbols, dtype=float) * sps
+    sample_positions = symbol_positions + timing_offset * sps
+
+    if rx_clean.size > 0:
+        valid = (sample_positions >= 0) & (sample_positions <= rx_clean.size - 1)
+    else:
+        valid = np.zeros(sample_positions.shape, dtype=bool)
+
+    sample_positions = sample_positions[valid]
     sym_idx_valid = sym_idx[valid]
     sym_wave_valid = sym_wave[valid]
+
+    if sample_positions.size > 0 and rx_clean.size > 0:
+        axis_clean = np.arange(rx_clean.size, dtype=float)
+        signal_samples = np.interp(sample_positions, axis_clean, rx_clean)
+    else:
+        signal_samples = np.array([], dtype=float)
 
     snr_db = float(snr_db)
     ebn0_lin = 10 ** (snr_db / 10.0)
@@ -256,53 +280,98 @@ def simulate_m_pam(
     rx_input = tx_wave + noise
 
     if enable_rx_rrc:
-        rx_wave = np.convolve(rx_input, rx_rrc, mode='full')
+        rx_wave = np.convolve(rx_input, rx_rrc, mode="full")
     else:
         rx_wave = rx_input
 
-    if sample_idx.size == 0:
-        sym_idx = np.array([], dtype=int)
-        sym_wave = np.array([], dtype=float)
-        rx_symbols = np.array([], dtype=float)
+    if rx_wave.size > 0:
+        valid_rx = (sample_positions >= 0) & (sample_positions <= rx_wave.size - 1)
     else:
-        valid_rx = sample_idx < rx_wave.size
-        sample_idx = sample_idx[valid_rx]
-        sym_idx = sym_idx_valid[valid_rx]
-        sym_wave = sym_wave_valid[valid_rx]
-        rx_symbols = rx_wave[sample_idx]
+        valid_rx = np.zeros(sample_positions.shape, dtype=bool)
 
-    diffs = rx_symbols[:, None] - levels[None, :]
-    decisions = np.argmin(diffs**2, axis=1)
-    detected_levels = levels[decisions]
+    sample_positions = sample_positions[valid_rx]
+    sym_idx_valid = sym_idx_valid[valid_rx]
+    sym_wave_valid = sym_wave_valid[valid_rx]
 
-    tx_bits = np.unpackbits(sym_idx[:, None].astype(np.uint8), axis=1, bitorder='big')
-    tx_bits = tx_bits[:, -bits_per_symbol:].reshape(-1)
+    if sample_positions.size > 0 and rx_wave.size > 0:
+        axis_wave = np.arange(rx_wave.size, dtype=float)
+        rx_symbols = np.interp(sample_positions, axis_wave, rx_wave)
+    else:
+        rx_symbols = np.array([], dtype=float)
 
-    det_bits = np.unpackbits(decisions[:, None].astype(np.uint8), axis=1, bitorder='big')
-    det_bits = det_bits[:, -bits_per_symbol:].reshape(-1)
+    sym_idx = sym_idx_valid.astype(int)
+    sym_wave = sym_wave_valid.astype(float)
+
+    if rx_symbols.size:
+        diffs = rx_symbols[:, None] - levels[None, :]
+        decisions = np.argmin(diffs**2, axis=1)
+        detected_levels = levels[decisions]
+    else:
+        decisions = np.array([], dtype=int)
+        detected_levels = np.array([], dtype=float)
+
+    if sym_idx.size:
+        tx_bits = np.unpackbits(sym_idx[:, None].astype(np.uint8), axis=1, bitorder="big")
+        tx_bits = tx_bits[:, -bits_per_symbol:].reshape(-1)
+    else:
+        tx_bits = np.array([], dtype=np.uint8)
+
+    if decisions.size:
+        det_bits = np.unpackbits(decisions[:, None].astype(np.uint8), axis=1, bitorder="big")
+        det_bits = det_bits[:, -bits_per_symbol:].reshape(-1)
+    else:
+        det_bits = np.array([], dtype=np.uint8)
+
     nbits = tx_bits.size
-    bit_errors = int(np.sum(tx_bits != det_bits))
+    bit_errors = int(np.sum(tx_bits != det_bits)) if nbits else 0
     ber = bit_errors / max(1, nbits)
 
     eye = None
+    eye_opening = None
+    high = None
+    low = None
     if include_eye:
         mf_wave = rx_wave
         eye_span = 2 * sps
         half = sps
         traces = []
-        for center in sample_idx:
-            if center - half < 0 or center + half > mf_wave.size:
+        centers = np.round(sample_positions).astype(int)
+        for center in centers:
+            start = center - half
+            stop = center + half
+            if start < 0 or stop > mf_wave.size:
                 continue
-            seg = mf_wave[center - half : center + half]
+            seg = mf_wave[start:stop]
             if seg.size == eye_span:
                 traces.append(seg)
             if len(traces) >= 40:
                 break
         if traces:
+            traces_arr = np.array(traces)
             time_eye = (np.arange(eye_span) - half) / sps
+            y_min = float(np.min(traces_arr))
+            y_max = float(np.max(traces_arr))
+            mean_trace = np.mean(traces_arr, axis=0)
+            cursor = float(np.clip(timing_offset, float(time_eye[0]), float(time_eye[-1])))
+            cursor_samples = float(np.clip(cursor * sps + half, 0.0, eye_span - 1))
+            axis_eye = np.arange(eye_span, dtype=float)
+            samples_at_cursor = np.array(
+                [np.interp(cursor_samples, axis_eye, trace) for trace in traces_arr]
+            )
+            if samples_at_cursor.size:
+                high = float(np.percentile(samples_at_cursor, 90))
+                low = float(np.percentile(samples_at_cursor, 10))
+                eye_opening = float(max(high - low, 0.0))
             eye = {
-                'time': time_eye,
-                'traces': np.array(traces),
+                "time": time_eye,
+                "traces": traces_arr,
+                "mean": mean_trace,
+                "cursor_time": cursor,
+                "opening": eye_opening,
+                "high": high,
+                "low": low,
+                "y_min": y_min,
+                "y_max": y_max,
             }
 
     waveforms = None
@@ -310,24 +379,39 @@ def simulate_m_pam(
         t_tx = np.arange(tx_wave.size) / sps
         t_rx = np.arange(rx_wave.size) / sps
         waveforms = {
-            'tx_time': t_tx,
-            'tx': tx_wave,
-            'rx_time': t_rx,
-            'rx': rx_wave,
+            "tx_time": t_tx,
+            "tx": tx_wave,
+            "rx_time": t_rx,
+            "rx": rx_wave,
         }
+    challenge_pass = bool(
+        eye_opening is not None
+        and challenge_target is not None
+        and eye_opening >= challenge_target
+    )
 
     return {
-        'levels': levels,
-        'tx_symbols': sym_wave,
-        'rx_symbols': rx_symbols,
-        'decisions': detected_levels,
-        'sample_indices': sample_idx,
-        'bit_errors': bit_errors,
-        'ber': ber,
-        'eye': eye,
-        'waveforms': waveforms,
-        'bits_per_symbol': bits_per_symbol,
-        'symbols': int(sample_idx.size),
+        "levels": levels,
+        "tx_symbols": sym_wave,
+        "rx_symbols": rx_symbols,
+        "decisions": detected_levels,
+        "sample_indices": sample_positions,
+        "bit_errors": bit_errors,
+        "ber": ber,
+        "eye": eye,
+        "waveforms": waveforms,
+        "bits_per_symbol": bits_per_symbol,
+        "symbols": int(sample_positions.size),
+        "timing_offset": timing_offset,
+        "eye_opening": eye_opening,
+        "level_spacing": spacing,
+        "challenge_target": challenge_target,
+        "challenge_pass": challenge_pass,
+        "challenge": {
+            "target": challenge_target,
+            "opening": eye_opening,
+            "passed": challenge_pass,
+        },
     }
 
 @dig_bp.route('/api/passband')
@@ -619,6 +703,7 @@ def m_pam_api():
         span = int(params.get('span', 8))
         snr_db = float(params.get('snr_db', 12.0))
         symbols = int(params.get('symbols', 2000))
+        timing_offset = float(params.get('timing_offset', params.get('timing', 0.0)))
     except ValueError as exc:
         return jsonify(error=f"Invalid parameter: {exc}"), 400
 
@@ -645,6 +730,7 @@ def m_pam_api():
             span=span,
             snr_db=snr_db,
             symbols=symbols,
+            timing_offset=timing_offset,
             enable_tx_rrc=enable_tx_rrc,
             enable_rx_rrc=enable_rx_rrc,
             rng=rng_main,
@@ -668,9 +754,16 @@ def m_pam_api():
         eye_payload = {
             'time': eye_data['time'].tolist(),
             'traces': eye_data['traces'].tolist(),
+            'mean': eye_data.get('mean').tolist() if eye_data.get('mean') is not None else [],
+            'cursor_time': eye_data.get('cursor_time'),
+            'opening': eye_data.get('opening'),
+            'high': eye_data.get('high'),
+            'low': eye_data.get('low'),
+            'y_min': eye_data.get('y_min'),
+            'y_max': eye_data.get('y_max'),
         }
     else:
-        eye_payload = {'time': [], 'traces': []}
+        eye_payload = {'time': [], 'traces': [], 'mean': [], 'cursor_time': None, 'opening': None, 'high': None, 'low': None, 'y_min': None, 'y_max': None}
 
     theory_current = float(pam_theoretical_ber(M, snr_db))
 
@@ -691,6 +784,7 @@ def m_pam_api():
             span=span,
             snr_db=float(snr_test),
             symbols=curve_symbols,
+            timing_offset=timing_offset,
             enable_tx_rrc=enable_tx_rrc,
             enable_rx_rrc=enable_rx_rrc,
             rng=rng_loop,
@@ -714,6 +808,7 @@ def m_pam_api():
         },
         'sample_indices': sample_idx.tolist(),
         'eye': eye_payload,
+        'challenge': sim.get('challenge', {}),
         'ber': {
             'curve_snr': snr_grid.tolist(),
             'curve_theory': theory_curve.tolist(),
@@ -737,6 +832,11 @@ def m_pam_api():
             'symbols': symbol_count,
             'tx_rrc': bool(enable_tx_rrc),
             'rx_rrc': bool(enable_rx_rrc),
+            'timing_offset': float(sim.get('timing_offset', 0.0)),
+            'eye_opening': float(sim['eye_opening']) if sim.get('eye_opening') is not None else None,
+            'eye_target': float(sim['challenge_target']) if sim.get('challenge_target') is not None else None,
+            'eye_pass': bool(sim.get('challenge_pass')),
+            'level_spacing': float(sim['level_spacing']) if sim.get('level_spacing') is not None else None,
         },
     })
 

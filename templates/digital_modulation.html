@@ -237,6 +237,10 @@
         <input id="pam_rolloff" type="range" min="0" max="1" step="0.05" value="0.35">
         <div><small id="pam_rolloff_val">0.35</small></div>
       </label>
+      <label>Timing offset Δt/T<sub>s</sub>
+        <input id="pam_timing_offset" type="range" min="-0.48" max="0.48" step="0.02" value="0.00">
+        <div><small id="pam_timing_offset_val">0.00</small></div>
+      </label>
       <label>Samples / symbol
         <input id="pam_sps" type="range" min="2" max="16" step="1" value="8">
         <div><small id="pam_sps_val">8</small></div>
@@ -267,6 +271,7 @@
     </div>
 
     <div id="pam_facts" class="pam-facts"></div>
+    <div id="pam_challenge" class="pam-facts"></div>
   </div>
 
   <div class="card">

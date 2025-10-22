@@ -55,21 +55,32 @@ function renderDigFacts(info) {
 function updatePamControls() {
   [
     'pam_rolloff',
+    'pam_timing_offset',
     'pam_sps',
     'pam_span',
     'pam_snr',
     'pam_symbols'
   ].forEach(setLabel);
+
+  const offsetEl = $('pam_timing_offset');
+  if (offsetEl) {
+    const lab = $('pam_timing_offset_val');
+    if (lab) {
+      const val = Number(offsetEl.value);
+      lab.innerText = Number.isFinite(val) ? val.toFixed(2) : offsetEl.value;
+    }
+  }
 }
 
 function collectPamParams() {
   const orderEl = $('pam_m');
   const rolloffEl = $('pam_rolloff');
+  const timingEl = $('pam_timing_offset');
   const spsEl = $('pam_sps');
   const spanEl = $('pam_span');
   const snrEl = $('pam_snr');
   const symEl = $('pam_symbols');
-  if (!orderEl || !rolloffEl || !spsEl || !spanEl || !snrEl || !symEl) {
+  if (!orderEl || !rolloffEl || !timingEl || !spsEl || !spanEl || !snrEl || !symEl) {
     return {};
   }
   const disableTx = $('pam_disable_tx')?.checked;
@@ -77,6 +88,7 @@ function collectPamParams() {
   return {
     M: +orderEl.value,
     rolloff: +rolloffEl.value,
+    timing_offset: +timingEl.value,
     sps: +spsEl.value,
     span: +spanEl.value,
     snr_db: +snrEl.value,
@@ -101,7 +113,7 @@ function formatBer(value, bits) {
   return v.toFixed(3);
 }
 
-function renderPamFacts(info, ber) {
+function renderPamFacts(info, ber, challenge) {
   const el = $('pam_facts');
   if (!el) return;
   if (!info) {
@@ -112,6 +124,7 @@ function renderPamFacts(info, ber) {
   if (info.M) parts.push(`${info.M}-PAM`);
   if (info.bits_per_symbol != null) parts.push(`${info.bits_per_symbol} bits/sym`);
   if (info.rolloff != null) parts.push(`α=${Number(info.rolloff).toFixed(2)}`);
+  if (info.timing_offset != null) parts.push(`Δt=${Number(info.timing_offset).toFixed(2)}T`);
   if (info.sps != null) parts.push(`sps=${info.sps}`);
   if (info.span != null) parts.push(`span=${info.span}`);
   if (info.tx_rrc === false) parts.push('TX RRC off');
@@ -123,6 +136,28 @@ function renderPamFacts(info, ber) {
     if (point.theory != null) parts.push(`theory ${formatBer(point.theory)}`);
   }
   el.innerText = parts.join('  •  ');
+
+  const challengeEl = $('pam_challenge');
+  if (!challengeEl) return;
+  if (!challenge || challenge.target == null || challenge.opening == null) {
+    challengeEl.innerText = '';
+    return;
+  }
+
+  const target = Number(challenge.target);
+  const opening = Number(challenge.opening);
+  if (!Number.isFinite(target) || !Number.isFinite(opening)) {
+    challengeEl.innerText = '';
+    return;
+  }
+
+  const roll = info?.rolloff != null ? Number(info.rolloff).toFixed(2) : '—';
+  const passed = Boolean(challenge.passed && opening >= target);
+  const delta = opening - target;
+  const sign = delta >= 0 ? '+' : '−';
+  const absDelta = Math.abs(delta).toFixed(2);
+  const badge = passed ? '✅' : '⚠️';
+  challengeEl.innerText = `${badge} Micro-challenge: eye ≥ ${target.toFixed(2)} @ α=${roll}. Currently ${opening.toFixed(2)} (${sign}${absDelta}).`;
 }
 
 
@@ -375,6 +410,30 @@ async function plotPam() {
     const eye = data.eye || {};
     const eyeTime = Array.isArray(eye.time) ? eye.time.map(Number) : [];
     const eyeTraces = Array.isArray(eye.traces) ? eye.traces.map((row) => row.map(Number)) : [];
+    const meanTrace = Array.isArray(eye.mean) ? eye.mean.map(Number) : null;
+    const cursorTime = typeof eye.cursor_time === 'number' ? Number(eye.cursor_time) : null;
+    const eyeOpening = typeof eye.opening === 'number' ? Number(eye.opening) : null;
+    const eyeHigh = typeof eye.high === 'number' ? Number(eye.high) : null;
+    const eyeLow = typeof eye.low === 'number' ? Number(eye.low) : null;
+    let yMin = Number.isFinite(Number(eye.y_min)) ? Number(eye.y_min) : null;
+    let yMax = Number.isFinite(Number(eye.y_max)) ? Number(eye.y_max) : null;
+
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+      eyeTraces.forEach((row) => {
+        row.forEach((val) => {
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        });
+      });
+      if (minVal !== Infinity && maxVal !== -Infinity) {
+        yMin = minVal;
+        yMax = maxVal;
+      }
+    }
+    if (!Number.isFinite(yMin)) yMin = -1;
+    if (!Number.isFinite(yMax)) yMax = 1;
     if (eyeTime.length && eyeTraces.length) {
       const eyePlot = eyeTraces.map((row) => ({
         x: eyeTime,
@@ -384,19 +443,60 @@ async function plotPam() {
         hoverinfo: 'skip',
         showlegend: false
       }));
-      const avg = eyeTime.map((_, idx) => eyeTraces.reduce((acc, row) => acc + row[idx], 0) / eyeTraces.length);
-      eyePlot.push({
+      const avg = meanTrace && meanTrace.length === eyeTime.length
+        ? meanTrace
+        : eyeTime.map((_, idx) => eyeTraces.reduce((acc, row) => acc + row[idx], 0) / eyeTraces.length);
+        eyePlot.push({
         x: eyeTime,
         y: avg,
         mode: 'lines',
         name: 'Mean',
         line: { color: '#2563eb', width: 2 }
       });
-      Plotly.newPlot('pam_eye_plot', eyePlot, {
+      if (cursorTime != null && eyeHigh != null && eyeLow != null) {
+        eyePlot.push({
+          x: [cursorTime, cursorTime],
+          y: [eyeLow, eyeHigh],
+          mode: 'lines',
+          name: 'Eye opening',
+          line: { color: '#f97316', width: 3 },
+          hoverinfo: 'skip'
+        });
+      }
+      const layout = {
         margin: { t: 30 },
         xaxis: { title: 'Time [symbols]' },
-        yaxis: { title: 'Amplitude' }
-      }, { responsive: true });
+        yaxis: { title: 'Amplitude' },
+        legend: { orientation: 'h' }
+      };
+      if (cursorTime != null) {
+        layout.shapes = [
+          {
+            type: 'line',
+            x0: cursorTime,
+            x1: cursorTime,
+            y0: yMin,
+            y1: yMax,
+            line: { color: '#f97316', dash: 'dot', width: 1.5 }
+          }
+        ];
+      }
+      if (eyeOpening != null) {
+        layout.annotations = [
+          {
+            x: cursorTime != null ? cursorTime : eyeTime[Math.floor(eyeTime.length / 2)] || 0,
+            y: eyeHigh != null ? eyeHigh : yMax,
+            xref: 'x',
+            yref: 'y',
+            text: `opening≈${eyeOpening.toFixed(2)}`,
+            showarrow: false,
+            font: { size: 11, color: '#f97316' },
+            xanchor: 'left',
+            yanchor: 'bottom'
+          }
+        ];
+      }
+      Plotly.newPlot('pam_eye_plot', eyePlot, layout, { responsive: true });
     } else {
       Plotly.purge('pam_eye_plot');
       showError('pam_eye_plot', 'Eye diagram unavailable — increase symbols or enable filtering.');
@@ -443,7 +543,7 @@ async function plotPam() {
       legend: { orientation: 'h' }
     }, { responsive: true });
 
-    renderPamFacts(data.info, ber);
+    renderPamFacts(data.info, ber, data.challenge);
   } catch (err) {
     const msg = `M-PAM error: ${err.message || err}`;
     ['pam_constellation_plot', 'pam_eye_plot', 'pam_ber_plot'].forEach((id) => {
@@ -616,6 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   attachInputHandlers([
     'pam_rolloff',
+    'pam_timing_offset',
     'pam_sps',
     'pam_span',
     'pam_snr',
