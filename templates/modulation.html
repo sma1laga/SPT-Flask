@@ -38,6 +38,7 @@
   .pad        { padding: 4px 0; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: #666; }
   .row        { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
   .plots      { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .plots.is-wide { grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); }
   .plot-block { display: flex; flex-direction: column; }
   .plot-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; color: var(--text-strong, #222); }
   .plot       { min-height: 340px; }
@@ -78,16 +79,45 @@
     <div class="row">
       <label>Type (mod):
         <select id="mod_type">
-          <option>AM</option><option>FM</option><option>PM</option>
+          <option>AM</option><option>FM</option><option>PM</option><option>QAM</option>
         </select>
       </label>
       <label>Type (demod):
         <select id="demod_type">
-          <option>AM</option><option>FM</option><option>PM</option>
+          <option>AM</option><option>FM</option><option>PM</option><option>QAM</option>
         </select>
       </label>
     </div>
-
+    <div id="qam_controls" style="display:none" class="card">
+      <div class="h">QAM</div>
+      <div class="row">
+        <label>fc
+          <input id="qam_fc" type="range" min="20" max="3000" step="10" value="500">
+          <div><small id="qam_fc_val">500</small></div>
+        </label>
+        <label>fm
+          <input id="qam_fm" type="range" min="1" max="50" step="1" value="5">
+          <div><small id="qam_fm_val">5</small></div>
+        </label>
+      </div>
+      <div class="row">
+        <label>I amplitude
+          <input id="qam_i_amp" type="range" min="0" max="1.5" step="0.05" value="0.8">
+          <div><small id="qam_i_amp_val">0.8</small></div>
+        </label>
+        <label>Q amplitude
+          <input id="qam_q_amp" type="range" min="0" max="1.5" step="0.05" value="0.8">
+          <div><small id="qam_q_amp_val">0.8</small></div>
+        </label>
+      </div>
+      <div class="row">
+        <label>Phase error [deg]
+          <input id="qam_phase_error" type="range" min="-90" max="90" step="1" value="0">
+          <div><small id="qam_phase_error_val">0</small></div>
+        </label>
+      </div>
+      <label class="pad"><input type="checkbox" id="qam_show_mixers"> Show mixers (cos/sin)</label>
+    </div>
     <div class="row">
       <label>fs [Hz]
         <input id="fs" type="range" min="500" max="20000" step="100" value="4000">
@@ -160,7 +190,7 @@
 
   <!-- PLOTS -->
   <div class="card">
-    <div class="plots">
+    <div class="plots" id="plots_grid">
       <div class="plot-block">
         <div class="plot-title">Modulation &mdash; time domain</div>
         <div id="mod_plot" class="plot"></div>

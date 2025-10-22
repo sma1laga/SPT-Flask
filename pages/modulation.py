@@ -133,7 +133,7 @@ def snr_summary_am(m: float, snr_db, active_mode: str):
             1.0,
             1.0,
             requires_sync=True,
-            active=False
+            active=(active_mode == 'qam')
         ),
         entry(
             'EM / RM (SSB / VSB)',
@@ -207,8 +207,11 @@ def modulate_api():
     message   = np.zeros_like(t)
     carrier   = np.zeros_like(t)
     modulated = np.zeros_like(t)
-    info = {'type': kind, 'fs': fs, 'duration_s': t_end, 'carrier_mode': carrier_mode}
-
+    i_msg = None
+    q_msg = None
+    info = {'type': kind, 'fs': fs, 'duration_s': t_end}
+    if kind == 'AM':
+        info['carrier_mode'] = carrier_mode
     # —— Analog —— #
     if kind == 'AM':
         fc = float(params.get('fc', 100))
@@ -242,6 +245,25 @@ def modulate_api():
         modulated  = np.cos(inst_phase)
         info.update({'fc':fc,'fm':fm,'phase_index':midx})
 
+    elif kind == 'QAM':
+        fc   = float(params.get('fc', 200))
+        fm   = float(params.get('fm', 5))
+        i_amp = float(params.get('i_amp', 0.7))
+        q_amp = float(params.get('q_amp', 0.7))
+        i_msg = i_amp * np.cos(2*np.pi*fm*t)
+        q_msg = q_amp * np.sin(2*np.pi*fm*t)
+        complex_bb = i_msg + 1j*q_msg
+        modulated = np.real(complex_bb * np.exp(1j*2*np.pi*fc*t))
+        message = i_msg
+        carrier = np.zeros_like(t)
+        info.update({
+            'fc': fc,
+            'fm': fm,
+            'i_amp': i_amp,
+            'q_amp': q_amp,
+            'snr_summary': snr_summary_am(1.0, snr_db, 'qam')
+        })
+
     else:
         return jsonify(error="Unknown modulation type"), 400
 
@@ -258,6 +280,8 @@ def modulate_api():
         'message': message.tolist(),
         'carrier': carrier.tolist(),
         'modulated': mod_noisy.tolist(),
+        'message_i': i_msg.tolist() if i_msg is not None else None,
+        'message_q': q_msg.tolist() if q_msg is not None else None,
         'f': f_mod.tolist(),
         'P_db': Pdb_mod.tolist(),
         'info': info
@@ -310,6 +334,47 @@ def demodulate_api():
         base = 2*np.pi*fc*t
         deph = phi - base
         demod = deph / (m + 1e-12)
+    elif kind == 'QAM':
+        fc   = float(params.get('fc', 200))
+        fm   = float(params.get('fm', 5))
+        i_amp = float(params.get('i_amp', 0.7))
+        q_amp = float(params.get('q_amp', 0.7))
+        phase_error = np.deg2rad(float(params.get('phase_error_deg', 0.0)))
+        snr_db = _to_float_or_inf(params.get('snr_db'))
+        i_msg = i_amp * np.cos(2*np.pi*fm*t)
+        q_msg = q_amp * np.sin(2*np.pi*fm*t)
+        bb = i_msg + 1j*q_msg
+        tx = np.real(bb * np.exp(1j*2*np.pi*fc*t))
+        tx_noisy = add_awgn(tx, snr_db)
+        analytic = analytic_signal(tx_noisy)
+        lo = np.exp(-1j*(2*np.pi*fc*t + phase_error))
+        bb_rec = analytic * lo
+        i_rec = np.real(bb_rec)
+        q_rec = np.imag(bb_rec)
+        demod = i_rec
+        mag = np.abs(bb_rec)
+        phase = np.unwrap(np.angle(bb_rec))
+        mix_i = tx_noisy * np.cos(2*np.pi*fc*t + phase_error)
+        mix_q = tx_noisy * np.sin(2*np.pi*fc*t + phase_error)
+        response = {
+            't': t.tolist(),
+            'modulated': tx_noisy.tolist(),
+            'baseband_i': i_rec.tolist(),
+            'baseband_q': q_rec.tolist(),
+            'magnitude': mag.tolist(),
+            'phase_deg': np.degrees(phase).tolist(),
+            'mix_i': mix_i.tolist(),
+            'mix_q': mix_q.tolist(),
+            'lo_cos': np.cos(2*np.pi*fc*t + phase_error).tolist(),
+            'lo_sin': np.sin(2*np.pi*fc*t + phase_error).tolist(),
+            'message_i': i_msg.tolist(),
+            'message_q': q_msg.tolist(),
+            'phase_error_deg': float(params.get('phase_error_deg', 0.0))
+        }
+        f_rx, Pdb_rx = spectrum_db(i_rec, fs)
+        response['f'] = f_rx.tolist()
+        response['P_db'] = Pdb_rx.tolist()
+        return jsonify(response)
 
     else:
         return jsonify(error="Unknown demodulation type"), 400

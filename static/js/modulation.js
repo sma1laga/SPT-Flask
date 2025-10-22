@@ -17,7 +17,7 @@ async function fetchJSON(url, params) {
 
 function updateModControls() {
   const type = $('mod_type').value;
-  ['am_controls','fm_controls'].forEach(i=>{
+  ['am_controls','fm_controls','qam_controls'].forEach(i=>{
     const e = $(i); if (e) e.style.display = 'none';
   });
 
@@ -28,10 +28,14 @@ function updateModControls() {
     $('beta_label').innerText = (type==='FM') ? 'β (mod index):' : 'Phase index m:';
 
   }
+  else if (type === 'QAM') {
+    $('qam_controls').style.display = '';
+  }
 
   [
     'am_fc','am_fm','am_m',
     'fm_fc','fm_fm','fm_beta',
+    'qam_fc','qam_fm','qam_i_amp','qam_q_amp','qam_phase_error',
     'fs','t_end','snr_db'
   ].forEach(setLabel);
 }
@@ -51,6 +55,10 @@ function renderFacts(info){
   } else if (info.type==='PM'){
     parts.push(`phase index m = ${(+info.phase_index).toFixed(2)}`);
     parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
+  } else if (info.type==='QAM') {
+    parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
+    if (info.i_amp != null) parts.push(`Iₘax = ${(+info.i_amp).toFixed(2)}`);
+    if (info.q_amp != null) parts.push(`Qₘax = ${(+info.q_amp).toFixed(2)}`);
   }
   if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
   $('facts').innerText = parts.join('  •  ');
@@ -95,10 +103,13 @@ function renderSummary(info){
     MathJax.typesetPromise([wrap]);
   }
 }
-
+let modRequestId = 0;
+let demodRequestId = 0;
 
 async function plotMod() {
   const type = $('mod_type').value;
+  const requestId = ++modRequestId;
+
 
   const params = {
     type,
@@ -117,19 +128,49 @@ async function plotMod() {
     params.fm   = +$('fm_fm').value;
     params.beta = +$('fm_beta').value;
     if (type==='PM'){ params.m = params.beta; delete params.beta; }
+  } else if (type === 'QAM') {
+    params.fc = +$('qam_fc').value;
+    params.fm = +$('qam_fm').value;
+    params.i_amp = +$('qam_i_amp').value;
+    params.q_amp = +$('qam_q_amp').value;
   }
 
   const data = await fetchJSON(MOD_URLS.modulate, params);
 
-  const traces = [
-    { x: data.t, y: data.message,   name: 'Message' },
-    ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
-    { x: data.t, y: data.modulated, name: `${type} Signal` }
-  ];
+  if (requestId !== modRequestId) {
+    return;
+  }
+
+  const plots = $('plots_grid');
+  if (plots) {
+    const demodType = $('demod_type')?.value;
+    plots.classList.toggle('is-wide', type === 'QAM' || demodType === 'QAM');
+  }
+
+  let traces = [];
+  if (type === 'QAM') {
+    traces = [
+      { x: data.t, y: data.modulated, name: 'QAM passband' }
+    ];
+    if (Array.isArray(data.message_i)) {
+      traces.push({ x: data.t, y: data.message_i, name: 'I(t) (baseband)', line: { dash: 'dot' } });
+    }
+    if (Array.isArray(data.message_q)) {
+      traces.push({ x: data.t, y: data.message_q, name: 'Q(t) (baseband)', line: { dash: 'dot' } });
+    }
+    window.__QAM_LAST_MOD = data;
+  } else {
+    traces = [
+      { x: data.t, y: data.message,   name: 'Message' },
+      ...(data.carrier?.length ? [{ x: data.t, y: data.carrier, name: 'Carrier' }] : []),
+      { x: data.t, y: data.modulated, name: `${type} Signal` }
+    ];
+    window.__QAM_LAST_MOD = null;
+  }
 
   Plotly.newPlot('mod_plot', traces, {
     margin: { t: 30 },
-    title: `${type} — Modulation`,
+    title: type === 'QAM' ? 'QAM — Passband view' : `${type} — Modulation`,
     legend: { orientation: 'h' },
     xaxis: { title: 'Time [s]' },
     yaxis: { title: 'Amplitude' }
@@ -155,6 +196,7 @@ async function plotMod() {
 
 async function plotDemod() {
   const type = $('demod_type').value;
+  const requestId = ++demodRequestId;
 
   const params = {
     type,
@@ -168,9 +210,97 @@ async function plotDemod() {
   } else if (type==='FM' || type==='PM') {
     params.fc = +$('fm_fc').value; params.fm = +$('fm_fm').value;
     if (type==='FM') params.beta = +$('fm_beta').value; else params.m = +$('fm_beta').value;
+  } else if (type === 'QAM') {
+    params.fc = +$('qam_fc').value;
+    params.fm = +$('qam_fm').value;
+    params.i_amp = +$('qam_i_amp').value;
+    params.q_amp = +$('qam_q_amp').value;
+    params.phase_error_deg = +$('qam_phase_error').value;
+    params.snr_db = $('snr_toggle').checked ? +$('snr_db').value : Infinity;
   }
 
   const data = await fetchJSON(MOD_URLS.demod, params);
+
+  if (requestId !== demodRequestId) {
+    return;
+  }
+
+  const plots = $('plots_grid');
+  if (plots) {
+    const modType = $('mod_type')?.value;
+    plots.classList.toggle('is-wide', type === 'QAM' || modType === 'QAM');
+  }
+
+  if (type === 'QAM') {
+    const showMixers = $('qam_show_mixers')?.checked;
+    const phaseErr = Number.isFinite(Number(data.phase_error_deg)) ? Number(data.phase_error_deg) : Number(params.phase_error_deg || 0);
+    const phaseLabel = Number.isFinite(phaseErr) ? `${phaseErr.toFixed(0)}°` : `${phaseErr}`;
+
+    const basebandTraces = [
+      { x: data.t, y: data.baseband_i, name: 'I(t)', line: { color: '#2563eb' } },
+      { x: data.t, y: data.baseband_q, name: 'Q(t)', line: { color: '#f97316' } }
+    ];
+    if (showMixers && Array.isArray(data.mix_i) && Array.isArray(data.mix_q)) {
+      basebandTraces.push({ x: data.t, y: data.mix_i, name: 'Mixer ×cos', line: { dash: 'dot', color: '#1f2937' }, opacity: 0.6 });
+      basebandTraces.push({ x: data.t, y: data.mix_q, name: 'Mixer ×sin', line: { dash: 'dot', color: '#4b5563' }, opacity: 0.6 });
+    }
+
+    const magPhaseTraces = [
+      { x: data.t, y: data.magnitude, name: '|s_bb(t)|', xaxis: 'x2', yaxis: 'y2', line: { color: '#111827' } },
+      { x: data.t, y: data.phase_deg, name: '∠s_bb(t) [deg]', xaxis: 'x2', yaxis: 'y3', line: { color: '#10b981' } }
+    ];
+
+    const demodLayout = {
+      margin: { t: 30 },
+      title: `QAM — ECB view (phase error ${phaseLabel})`,
+      legend: { orientation: 'h' },
+      grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
+      xaxis: { title: 'Time [s]' },
+      yaxis: { title: 'Amplitude' },
+      xaxis2: { title: 'Time [s]' },
+      yaxis2: { title: '|s_bb(t)|' },
+      yaxis3: { title: 'Phase [deg]', overlaying: 'y2', side: 'right' }
+    };
+
+    Plotly.newPlot('demod_plot', [...basebandTraces, ...magPhaseTraces], demodLayout, { responsive: true });
+
+    const passbandTraces = [
+      { x: data.t, y: data.modulated, name: 'QAM passband' }
+    ];
+    if (window.__QAM_LAST_MOD?.message_i) {
+      passbandTraces.push({ x: data.t, y: window.__QAM_LAST_MOD.message_i, name: 'I(t) (baseband)', line: { dash: 'dot' } });
+    }
+    if (window.__QAM_LAST_MOD?.message_q) {
+      passbandTraces.push({ x: data.t, y: window.__QAM_LAST_MOD.message_q, name: 'Q(t) (baseband)', line: { dash: 'dot' } });
+    }
+    if (showMixers && Array.isArray(data.lo_cos) && Array.isArray(data.lo_sin)) {
+      passbandTraces.push({ x: data.t, y: data.lo_cos, name: 'LO cos', line: { dash: 'dash', color: '#9ca3af' } });
+      passbandTraces.push({ x: data.t, y: data.lo_sin, name: 'LO sin', line: { dash: 'dash', color: '#6b7280' } });
+    }
+    Plotly.newPlot('mod_plot', passbandTraces, {
+      margin: { t: 30 },
+      title: `QAM — Passband view (phase error ${phaseLabel})`,
+      legend: { orientation: 'h' },
+      xaxis: { title: 'Time [s]' },
+      yaxis: { title: 'Amplitude' }
+    }, { responsive: true });
+
+    if ($('show_spectrum').checked) {
+      Plotly.newPlot('spec_demod_plot', [
+        { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (I baseband)' }
+      ], {
+        margin: { t: 30 },
+        title: 'Demod Spectrum (I-channel)',
+        xaxis: { title: 'Frequency [Hz]' },
+        yaxis: { title: 'Power [dB]' }
+      }, { responsive: true });
+    } else {
+      Plotly.purge('spec_demod_plot');
+      $('spec_demod_plot').innerHTML = '';
+    }
+
+    return;
+  }
   const tDem = (data.t.length === data.demodulated.length) ? data.t : data.t.slice(1);
 
   Plotly.newPlot('demod_plot', [
@@ -240,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
   [
     'am_fc','am_fm','am_m',
     'fm_fc','fm_fm','fm_beta',
+    'qam_fc','qam_fm','qam_i_amp','qam_q_amp',
     'fs','t_end','snr_db'
   ].forEach(id=>{
     const el = $(id); if (el) {
@@ -252,7 +383,17 @@ document.addEventListener('DOMContentLoaded', () => {
     amCarrier.addEventListener('change', ()=>{ plotMod(); plotDemod(); });
   }
 
-  $('snr_toggle').addEventListener('change', ()=>{ plotMod(); });
+  const qamPhase = $('qam_phase_error');
+  if (qamPhase) {
+    qamPhase.addEventListener('input', ()=>{ setLabel('qam_phase_error'); plotDemod(); });
+  }
+
+  const qamMixers = $('qam_show_mixers');
+  if (qamMixers) {
+    qamMixers.addEventListener('change', ()=>{ plotDemod(); });
+  }
+
+  $('snr_toggle').addEventListener('change', ()=>{ plotMod(); plotDemod(); });
   $('show_spectrum').addEventListener('change', ()=>{ plotMod(); plotDemod(); });
 
   loadPresets();
