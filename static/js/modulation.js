@@ -405,9 +405,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ensure reflow in tight layouts
   window.addEventListener('resize', () => {
-    Plotly.Plots.resize('mod_plot');
-    Plotly.Plots.resize('demod_plot');
-    Plotly.Plots.resize('spec_plot');
-    Plotly.Plots.resize('spec_demod_plot');
+    [
+      'mod_plot',
+      'demod_plot',
+      'spec_plot',
+      'spec_demod_plot'
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      try {
+        Plotly.Plots.resize(el);
+      } catch (_) {
+        /* ignore */
+      }
+    });
   });
 });
