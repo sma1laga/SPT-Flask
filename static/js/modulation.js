@@ -42,12 +42,16 @@ function updateModControls() {
 
 function renderFacts(info){
   if (!info) return;
+  const wrap = $('facts');
+  if (!wrap) return;
   const parts = [];
   if (info.type==='AM'){
     parts.push(`m = ${(+info.m).toFixed(2)}` + (info.overmod ? ' (overmod ⚠️)' : ''));
     parts.push(`fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
-    if (info.carrier_mode){
-      parts.push(info.carrier_mode === 'without' ? 'mode: without carrier' : 'mode: with carrier');
+    if (info.carrier_mode_label){
+      parts.push(info.carrier_mode_label);
+    } else if (info.carrier_mode){
+      parts.push(info.carrier_mode === 'without' ? 'mode: without carrier' : `mode: ${info.carrier_mode}`);
     }
   } else if (info.type==='FM'){
     parts.push(`β = ${(+info.beta).toFixed(2)}, fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
@@ -60,8 +64,18 @@ function renderFacts(info){
     if (info.i_amp != null) parts.push(`Iₘax = ${(+info.i_amp).toFixed(2)}`);
     if (info.q_amp != null) parts.push(`Qₘax = ${(+info.q_amp).toFixed(2)}`);
   }
-  if (Number.isFinite(+info.snr_db)) parts.push(`SNR = ${(+info.snr_db).toFixed(1)} dB`);
-  $('facts').innerText = parts.join('  •  ');
+  if (info.snr_db != null) {
+    const snrVal = Number(info.snr_db);
+    if (Number.isFinite(snrVal)) {
+      parts.push(`SNR = ${snrVal.toFixed(1)} dB`);
+    } else if (typeof info.snr_db === 'string' && info.snr_db.toLowerCase() === 'inf') {
+      parts.push('SNR = ∞ dB');
+    }
+  }
+  const text = parts.join('  •  ');
+  const textSpan = text ? `<span class="fact-text">${text}</span>` : '';
+  const badgeSpan = info.badge ? `<span class="fact-badge">${info.badge}</span>` : '';
+  wrap.innerHTML = [textSpan, badgeSpan].filter(Boolean).join(' ');
 }
 
 function renderSummary(info){

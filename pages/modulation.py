@@ -136,14 +136,14 @@ def snr_summary_am(m: float, snr_db, active_mode: str):
             active=(active_mode == 'qam')
         ),
         entry(
-            'EM / RM (SSB / VSB)',
+            'EM (SSB)',
             r"\(\mathrm{SNR}_{\text{out}} \approx \mathrm{SNR}_{\text{in}}\)",
             r"\(NF \approx 1\)",
             r"\(\eta \approx 1\)",
             1.0,
             1.0,
             requires_sync=True,
-            active=False
+            active=(active_mode in ('ssb_regel', 'ssb_kehr'))
         )
     ]
 
@@ -219,11 +219,49 @@ def modulate_api():
         m  = float(params.get('m',  0.5)); m = clamp(m, 0.0, 1.2)
         message   = np.sin(2*np.pi*fm*t)
         carrier   = np.cos(2*np.pi*fc*t)
+        sin_carrier = np.sin(2*np.pi*fc*t)
+        baseband = m * message
         if carrier_mode == 'without':
-            modulated = (m * message) * carrier
+            modulated = baseband * carrier
+            info.update({
+                'fc': fc,
+                'fm': fm,
+                'm': m,
+                'carrier_mode_label': 'DSB-SC (without carrier)'
+            })
+        elif carrier_mode == 'ssb_regel':
+            analytic_msg = analytic_signal(baseband)
+            hilbert_msg = np.imag(analytic_msg)
+            modulated = baseband * carrier - hilbert_msg * sin_carrier
+            info.update({
+                'fc': fc,
+                'fm': fm,
+                'm': m,
+                'carrier_mode_label': 'EM (Regellage, upper SSB)',
+                'ssb_sideband': 'upper',
+                'badge': 'BW halves, SNR_out≈SNR_in'
+            })
+        elif carrier_mode == 'ssb_kehr':
+            analytic_msg = analytic_signal(baseband)
+            hilbert_msg = np.imag(analytic_msg)
+            modulated = baseband * carrier + hilbert_msg * sin_carrier
+            info.update({
+                'fc': fc,
+                'fm': fm,
+                'm': m,
+                'carrier_mode_label': 'EM (Kehrlage, lower SSB)',
+                'ssb_sideband': 'lower',
+                'badge': 'BW halves, SNR_out≈SNR_in'
+            })
         else:
             modulated = (1.0 + m*message) * carrier
-            info.update({'fc':fc,'fm':fm,'m':m,'overmod': m>1.0})
+            info.update({
+                'fc': fc,
+                'fm': fm,
+                'm': m,
+                'overmod': m>1.0,
+                'carrier_mode_label': 'AM with carrier'
+            })
         info['snr_summary'] = snr_summary_am(m, snr_db, carrier_mode)
 
     elif kind == 'FM':
@@ -304,16 +342,29 @@ def demodulate_api():
         carrier_mode = (params.get('carrier_mode') or 'with').lower()
         msg = np.sin(2*np.pi*fm*t)
         carrier = np.cos(2*np.pi*fc*t)
+        sin_car = np.sin(2*np.pi*fc*t)
         if carrier_mode == 'without':
             tx = (m * msg) * carrier
-        else:
-            tx  = (1 + m*msg) * carrier
-
-        analytic = analytic_signal(tx)
-        if carrier_mode == 'without':
+            analytic = analytic_signal(tx)
             baseband = analytic * np.exp(-1j*2*np.pi*fc*t)
             demod = np.real(baseband)
+        elif carrier_mode == 'ssb_regel':
+            baseband = m * msg
+            hilbert_msg = np.imag(analytic_signal(baseband))
+            tx = baseband * carrier - hilbert_msg * sin_car
+            analytic = analytic_signal(tx)
+            bb = analytic * np.exp(-1j*2*np.pi*fc*t)
+            demod = np.real(bb)
+        elif carrier_mode == 'ssb_kehr':
+            baseband = m * msg
+            hilbert_msg = np.imag(analytic_signal(baseband))
+            tx = baseband * carrier + hilbert_msg * sin_car
+            analytic = analytic_signal(tx)
+            bb = analytic * np.exp(1j*2*np.pi*fc*t)
+            demod = np.real(bb)
         else:
+            tx  = (1 + m*msg) * carrier
+            analytic = analytic_signal(tx)
             env = np.abs(analytic)
             demod = env - np.mean(env)
 
