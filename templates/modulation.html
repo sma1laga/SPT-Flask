@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Modulation Lab</h1>
-  <p class="text-muted">Analog (AM/FM/PM) exploration with SNR control, spectra and presets.</p>
+  <p class="text-muted">Drive carrier-based AM, FM and PM experiments with live spectra, baseband recovery and channel noise controls.</p>
 </div>
 <div class="card intro-card">
   <h2 class="section-title">What is happening here?</h2>
@@ -28,12 +28,12 @@
 <style>
   /* Shared module layout */
   .module-wrap { display: grid; grid-template-columns: 1fr; gap: 16px; }
-  .card        { border: 1px solid var(--border-color, #ddd); border-radius: 10px; padding: 12px; background: var(--card-background, #fff); color: var(--text-color, #222); }
-  .intro-card  { margin-bottom: 8px; }
+  .card        { border: 1px solid var(--border-color, #ddd); border-radius: 10px; padding: 12px; background: var(--card-background, #fff); color: var(--text-color, #222); box-shadow: var(--box-shadow); transition: none; }  .intro-card  { margin-bottom: 8px; }
   .section-title { margin: 0 0 8px; font-size: 1.15rem; font-weight: 600; color: var(--text-color, #222); }
   .section-list { margin: 0; padding-left: 20px; }
   .section-subtitle { margin: 8px 0 0; color: var(--subtext-color, #666); font-size: 0.9rem; }
   .h          { font-weight: 700; margin: 8px 0; }
+  .card:hover { transform: none; box-shadow: var(--box-shadow); }
   .muted      { color: var(--subtext-color, #666); font-size: .9rem; }
   .pad        { padding: 4px 0; display: flex; align-items: center; gap: 6px; font-size: 0.9rem; color: var(--subtext-color, #666); }
   .row        { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; align-items: end; }
