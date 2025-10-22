@@ -308,8 +308,14 @@ def demodulate_api():
             tx = (m * msg) * carrier
         else:
             tx  = (1 + m*msg) * carrier
-            env   = np.abs(analytic_signal(tx))
-        demod = env - np.mean(env)
+
+        analytic = analytic_signal(tx)
+        if carrier_mode == 'without':
+            baseband = analytic * np.exp(-1j*2*np.pi*fc*t)
+            demod = np.real(baseband)
+        else:
+            env = np.abs(analytic)
+            demod = env - np.mean(env)
 
     elif kind == 'FM':
         fc   = float(params.get('fc',100))

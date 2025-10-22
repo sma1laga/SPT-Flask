@@ -675,7 +675,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   window.addEventListener('resize', () => {
-    ['dig_mod_plot', 'dig_demod_plot', 'dig_mod_spec', 'dig_demod_spec', 'pam_constellation_plot', 'pam_eye_plot', 'pam_ber_plot', 'passband_wave_plot', 'passband_iq_plot', 'passband_constellation_plot'].forEach((id) => {      try { Plotly.Plots.resize(id); } catch (_) { /* ignore */ }
+    [
+      'dig_mod_plot',
+      'dig_demod_plot',
+      'dig_mod_spec',
+      'dig_demod_spec',
+      'pam_constellation_plot',
+      'pam_eye_plot',
+      'pam_ber_plot',
+      'passband_wave_plot',
+      'passband_iq_plot',
+      'passband_constellation_plot'
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      try {
+        Plotly.Plots.resize(el);
+      } catch (_) {
+        /* ignore */
+      }
     });
   });
 });
