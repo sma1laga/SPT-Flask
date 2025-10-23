@@ -65,6 +65,7 @@
 <script>
   // --- State ---
   let correctIndex = null;
+  let selectionLocked = false;
 
   // Prefetch pipeline state
   let cachedProblem = null;     // { plot_data, correctIndex,...}
@@ -178,6 +179,7 @@
     img.src = 'data:image/png;base64,' + data.plot_data;
     img.style.display = 'block';
     correctIndex = data.correctIndex;
+    selectionLocked = false;
 
     const optBtns = document.querySelectorAll('.option-btn');
     optBtns.forEach(b => {
@@ -286,6 +288,8 @@
 
   function checkAnswer(selected) {
     if (correctIndex === null) return showFeedback('Please generate a problem first!');
+    if (selectionLocked) return;
+    selectionLocked = true;
     req("{{ url_for('training_convolution.check_answer') }}", {
       selectedIndex: selected, correctIndex: correctIndex
     })
@@ -310,7 +314,10 @@
         prefetchNextProblem();
       }
     })
-    .catch(() => showFeedback('Error checking answer.'));
+    .catch(() => {
+      selectionLocked = false;
+      showFeedback('Error checking answer.');
+    });
   }
 
   // --- Prefetch pipeline ---
