@@ -351,6 +351,7 @@ def _create_hard_problem() -> Dict[str, object]:
         [
             lambda: _build_hard_layout_split_modulation(w, x_sig),
             lambda: _build_hard_layout_real_imag_mixer(w, x_sig),
+            lambda: _build_hard_layout_real_imag_sampling_chain(w, x_sig),
         ]
     )
     layout_data = layout_builder()
@@ -994,19 +995,19 @@ def _draw_hard_diagram_split_modulation(
 
     # Input to multiplier
     ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
-    ax.text((input_x + mul_block["left"]) / 2.0, y_mid + 0.45, "$x(t)$", ha="center", va="center", fontsize=12)
+    ax.text((input_x + mul_block["left"]) / 2.0, y_mid + 0.5, "$x(t)$", ha="center", va="center", fontsize=12)
 
     # Multiplier to split (letter A)
     ax.annotate("", xy=(split_x, y_mid), xytext=(mul_block["right"], y_mid), arrowprops=arrow_props)
     mid_a_x = (mul_block["right"] + split_x) / 2.0
-    ax.text(mid_a_x, y_mid + 0.4, "A", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_a_x, y_mid - 0.5, "$a(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_a_x, y_mid - 0.6, "$a(t)$", ha="center", va="center", fontsize=11)
 
     split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
     ax.add_patch(split_circle)
 
     # Branch to top Hilbert
-    ax.plot([split_x, split_x], [y_mid, top_y], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color="#111111", lw=1.4)
     ax.annotate("", xy=(hilbert_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
 
     # Hilbert to derivative (letter B)
@@ -1023,7 +1024,7 @@ def _draw_hard_diagram_split_modulation(
     ax.text(mid_c_x, mid_c_y - 0.35, "$c(t)$", ha="center", va="center", fontsize=11)
 
     # Branch to bottom multiplier
-    ax.plot([split_x, split_x], [y_mid, bot_y], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color="#111111", lw=1.4)
     ax.annotate("", xy=(bottom_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
 
     # Bottom multiplier to adder (letter D)
@@ -1645,6 +1646,241 @@ def _build_hard_layout_real_imag_mixer(
         "letters": letter_results,
     }
 
+def _build_hard_layout_real_imag_sampling_chain(
+    w: np.ndarray, x_sig: np.ndarray
+) -> Dict[str, object]:
+    """Hard layout that splits into real/imag paths before sampling and filtering."""
+
+    mul_primary = _random_multiplication_param()
+    sig_a = _apply_operation(x_sig, "Multiplication", mul_primary, w)
+
+    sig_b = _apply_operation(sig_a, "Real", None, w)
+    top_mul_param = _random_multiplication_param()
+    sig_c = _apply_operation(sig_b, "Multiplication", top_mul_param, w)
+
+    sig_d = _apply_operation(sig_a, "Imag", None, w)
+    bottom_mul_param = _random_multiplication_param()
+    sig_e = _apply_operation(sig_d, "Multiplication", bottom_mul_param, w)
+
+    sum_sig = sig_c + sig_e
+
+    sample_param = _random_sampling_param()
+    sig_g = _apply_operation(sum_sig, "Sampling", sample_param, w)
+
+    filter_param = _random_filter_param()
+    sig_h = _apply_operation(sig_g, "Filter", filter_param, w)
+
+    freq_titles = {
+        "A": r"$A(j\omega)$",
+        "B": r"$B(j\omega)$",
+        "C": r"$C(j\omega)$",
+        "D": r"$D(j\omega)$",
+        "E": r"$E(j\omega)$",
+        "F": r"$F(j\omega)$",
+        "G": r"$G(j\omega)$",
+        "H": r"$Y(j\omega)$",
+    }
+
+    letter_specs = [
+        ("A", "a(t)", "a(t)", sig_a),
+        ("B", "b(t)", "b(t)", sig_b),
+        ("C", "c(t)", "c(t)", sig_c),
+        ("D", "d(t)", "d(t)", sig_d),
+        ("E", "e(t)", "e(t)", sig_e),
+        ("F", "f(t)", "f(t)", sum_sig),
+        ("G", "g(t)", "g(t)", sig_g),
+        ("H", "y(t)", "y(t)", sig_h),
+    ]
+
+    letter_results: List[Dict[str, object]] = []
+    for letter, label, label_latex, correct_sig in letter_specs:
+        if letter == "A":
+            distractors = [
+                _apply_operation(
+                    x_sig,
+                    "Multiplication",
+                    _random_multiplication_param(exclude=mul_primary),
+                    w,
+                )
+                for _ in range(2)
+            ]
+        elif letter == "B":
+            distractors = [sig_a.copy(), np.imag(sig_a)]
+        elif letter == "C":
+            distractors = [
+                _apply_operation(
+                    sig_b,
+                    "Multiplication",
+                    _random_multiplication_param(exclude=top_mul_param),
+                    w,
+                )
+                for _ in range(2)
+            ]
+        elif letter == "D":
+            distractors = [sig_a.copy(), np.real(sig_a)]
+        elif letter == "E":
+            distractors = [
+                _apply_operation(
+                    sig_d,
+                    "Multiplication",
+                    _random_multiplication_param(exclude=bottom_mul_param),
+                    w,
+                )
+                for _ in range(2)
+            ]
+        elif letter == "F":
+            distractors = [sig_c - sig_e, 0.5 * (sig_c + sig_e)]
+        elif letter == "G":
+            distractors = [
+                _apply_operation(
+                    sum_sig,
+                    "Sampling",
+                    _random_sampling_param(exclude=sample_param),
+                    w,
+                )
+                for _ in range(2)
+            ]
+        else:  # letter == "H"
+            distractors = [
+                _apply_operation(
+                    sig_g,
+                    "Filter",
+                    _random_filter_param(exclude=filter_param),
+                    w,
+                )
+                for _ in range(2)
+            ]
+
+        options = _ensure_option_diversity([correct_sig] + distractors, w)
+        indices = list(range(len(options)))
+        random.shuffle(indices)
+        shuffled = [options[i] for i in indices]
+        correct_index = indices.index(0)
+
+        encoded_imgs = [
+            _plot_spectrum(w, sig, title=freq_titles.get(letter, r"$S(j\omega)$"))
+            for sig in shuffled
+        ]
+        letter_results.append(
+            {
+                "letter": letter,
+                "signalLabel": label,
+                "signalLabelLatex": label_latex,
+                "images": encoded_imgs,
+                "correctIndex": correct_index,
+            }
+        )
+
+    diagram_ops = [
+        {
+            "letter": "A",
+            "signal": "a(t)",
+            "name": "Multiplication",
+            "parameter": _operation_parameter_label("Multiplication", mul_primary),
+            "signalLatex": "a(t)",
+            "nameLatex": _operation_name_latex("Multiplication"),
+            "parameterLatex": _operation_parameter_label_latex("Multiplication", mul_primary),
+            "summaryLatex": _build_summary_latex("A", "a(t)", "Multiplication", mul_primary),
+        },
+        {
+            "letter": "B",
+            "signal": "b(t)",
+            "name": "Real",
+            "parameter": None,
+            "signalLatex": "b(t)",
+            "nameLatex": _operation_name_latex("Real"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("B", "b(t)", "Real", None),
+        },
+        {
+            "letter": "C",
+            "signal": "c(t)",
+            "name": "Multiplication",
+            "parameter": _operation_parameter_label("Multiplication", top_mul_param),
+            "signalLatex": "c(t)",
+            "nameLatex": _operation_name_latex("Multiplication"),
+            "parameterLatex": _operation_parameter_label_latex("Multiplication", top_mul_param),
+            "summaryLatex": _build_summary_latex("C", "c(t)", "Multiplication", top_mul_param),
+        },
+        {
+            "letter": "D",
+            "signal": "d(t)",
+            "name": "Imag",
+            "parameter": None,
+            "signalLatex": "d(t)",
+            "nameLatex": _operation_name_latex("Imag"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("D", "d(t)", "Imag", None),
+        },
+        {
+            "letter": "E",
+            "signal": "e(t)",
+            "name": "Multiplication",
+            "parameter": _operation_parameter_label("Multiplication", bottom_mul_param),
+            "signalLatex": "e(t)",
+            "nameLatex": _operation_name_latex("Multiplication"),
+            "parameterLatex": _operation_parameter_label_latex("Multiplication", bottom_mul_param),
+            "summaryLatex": _build_summary_latex("E", "e(t)", "Multiplication", bottom_mul_param),
+        },
+        {
+            "letter": "F",
+            "signal": "f(t)",
+            "name": "Addition",
+            "parameter": None,
+            "signalLatex": "f(t)",
+            "nameLatex": _operation_name_latex("Addition"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("F", "f(t)", "Addition", None),
+        },
+        {
+            "letter": "G",
+            "signal": "g(t)",
+            "name": "Sampling",
+            "parameter": _operation_parameter_label("Sampling", sample_param),
+            "signalLatex": "g(t)",
+            "nameLatex": _operation_name_latex("Sampling"),
+            "parameterLatex": _operation_parameter_label_latex("Sampling", sample_param),
+            "summaryLatex": _build_summary_latex("G", "g(t)", "Sampling", sample_param),
+        },
+        {
+            "letter": "H",
+            "signal": "y(t)",
+            "name": "Filter",
+            "parameter": _operation_parameter_label("Filter", filter_param),
+            "signalLatex": "y(t)",
+            "nameLatex": _operation_name_latex("Filter"),
+            "parameterLatex": _operation_parameter_label_latex("Filter", filter_param),
+            "summaryLatex": _build_summary_latex("H", "y(t)", "Filter", filter_param),
+        },
+    ]
+
+    diagram_img = _draw_hard_diagram_real_imag_sampling(
+        mul_primary,
+        top_mul_param,
+        bottom_mul_param,
+        sample_param,
+        filter_param,
+    )
+
+    operations = [
+        {"type": "Multiplication", "param": mul_primary},
+        {"type": "Real", "param": None},
+        {"type": "Multiplication", "param": top_mul_param},
+        {"type": "Imag", "param": None},
+        {"type": "Multiplication", "param": bottom_mul_param},
+        {"type": "Addition", "param": None},
+        {"type": "Sampling", "param": sample_param},
+        {"type": "Filter", "param": filter_param},
+    ]
+
+    return {
+        "diagram": diagram_img,
+        "diagramOperations": diagram_ops,
+        "operations": operations,
+        "letters": letter_results,
+    }
+
+
 
 def _draw_hard_diagram_real_imag(
     mul_param: str | None,
@@ -1655,26 +1891,26 @@ def _draw_hard_diagram_real_imag(
 ) -> str:
     """Draw the HARD layout that splits real and imaginary paths."""
 
-    fig, ax = plt.subplots(figsize=(11.5, 4.8))
+    fig, ax = plt.subplots(figsize=(12.4, 5.1))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
 
-    y_mid = 1.6
-    top_y = 2.9
-    bot_y = 0.3
-    input_x = 0.8
-    mul_x = 2.2
-    split_x = 3.4
-    top_sample_x = 5.0
-    top_real_x = 6.5
-    top_mul_x = 8.2
-    bottom_hilbert_x = 5.0
-    bottom_imag_x = 6.5
-    bottom_mul_x = 8.2
-    adder_x = 10.0
-    filter_x = 11.6
-    output_x = 12.9
+    y_mid = 1.9
+    top_y = 3.4
+    bot_y = 0.6
+    input_x = 0.9
+    mul_x = 2.5
+    split_x = 3.8
+    top_sample_x = 5.4
+    top_real_x = 7.0
+    top_mul_x = 8.7
+    bottom_hilbert_x = 5.4
+    bottom_imag_x = 7.0
+    bottom_mul_x = 8.7
+    adder_x = 10.4
+    filter_x = 12.3
+    output_x = 13.7
 
     def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
         info = dict(info)
@@ -1739,14 +1975,13 @@ def _draw_hard_diagram_real_imag(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
-                ax.annotate(
+                ax.text(
+                    block["centre"],
+                    block["y"] + block["radius"] + 0.55,
                     param_label,
-                    xy=(block["centre"], block["y"] + block["radius"] * 0.35),
-                    xytext=(block["centre"], block["y"] + block["radius"] + 0.65),
                     ha="center",
                     va="bottom",
-                    fontsize=11,
-                    arrowprops=dict(arrowstyle="->", lw=1.1, color="#111111"),
+                    fontsize=10.5,
                 )
         else:
             rect = plt.Rectangle(
@@ -1807,22 +2042,30 @@ def _draw_hard_diagram_real_imag(
     ax.annotate("", xy=(sample_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
     ax.annotate("", xy=(real_block["left"], top_y), xytext=(sample_block["right"], top_y), arrowprops=arrow_props)
     mid_b_x = (sample_block["right"] + real_block["left"]) / 2.0
-    ax.text(mid_b_x, top_y + 0.35, "B", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_b_x, top_y - 0.55, "$b(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_b_x, top_y + 0.4, "B", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_b_x, top_y - 0.6, "$b(t)$", ha="center", va="center", fontsize=11)
 
     ax.annotate("", xy=(top_mul_block["left"], top_y), xytext=(real_block["right"], top_y), arrowprops=arrow_props)
     mid_c_x = (real_block["right"] + top_mul_block["left"]) / 2.0
-    ax.text(mid_c_x, top_y + 0.35, "C", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_c_x, top_y - 0.55, "$c(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_c_x, top_y + 0.4, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, top_y - 0.6, "$c(t)$", ha="center", va="center", fontsize=11)
 
+    join_top_y = y_mid + 1.05
+    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.5], [top_y, top_y], color="#111111", lw=1.35)
+    ax.plot(
+        [top_mul_block["right"] + 0.5, top_mul_block["right"] + 0.5],
+        [top_y, join_top_y],
+        color="#111111",
+        lw=1.35,
+    )
     ax.annotate(
         "",
-        xy=(adder_block["left"], y_mid + 0.6),
-        xytext=(top_mul_block["right"], top_y),
+        xy=(adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
+        xytext=(top_mul_block["right"] + 0.5, join_top_y),
         arrowprops=arrow_props,
     )
-    mid_d_x = (top_mul_block["right"] + adder_block["left"]) / 2.0
-    mid_d_y = (top_y + (y_mid + 0.6)) / 2.0
+    mid_d_x = (top_mul_block["right"] + adder_block["centre"]) / 2.0
+    mid_d_y = (join_top_y + top_y) / 2.0
     ax.text(mid_d_x, mid_d_y + 0.35, "D", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_d_x, mid_d_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
 
@@ -1836,40 +2079,279 @@ def _draw_hard_diagram_real_imag(
 
     ax.annotate("", xy=(bottom_mul_block["left"], bot_y), xytext=(imag_block["right"], bot_y), arrowprops=arrow_props)
     mid_f_x = (imag_block["right"] + bottom_mul_block["left"]) / 2.0
-    ax.text(mid_f_x, bot_y + 0.55, "F", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_f_x, bot_y + 0.6, "F", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_f_x, bot_y - 0.35, "$f(t)$", ha="center", va="center", fontsize=11)
+    join_bot_y = y_mid - 1.05
+    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.5], [bot_y, bot_y], color="#111111", lw=1.35)
+    ax.plot(
+        [bottom_mul_block["right"] + 0.5, bottom_mul_block["right"] + 0.5],
+        [bot_y, join_bot_y],
+        color="#111111",
+        lw=1.35,
+    )
 
     ax.annotate(
         "",
-        xy=(adder_block["left"], y_mid - 0.6),
-        xytext=(bottom_mul_block["right"], bot_y),
+        xy=(adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
+        xytext=(bottom_mul_block["right"] + 0.5, join_bot_y),
         arrowprops=arrow_props,
     )
-    mid_g_x = (bottom_mul_block["right"] + adder_block["left"]) / 2.0
-    mid_g_y = (bot_y + (y_mid - 0.6)) / 2.0
+    mid_g_x = (bottom_mul_block["right"] + adder_block["centre"]) / 2.0
+    mid_g_y = (join_bot_y + bot_y) / 2.0
     ax.text(mid_g_x, mid_g_y + 0.35, "G", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_g_x, mid_g_y - 0.35, "$g(t)$", ha="center", va="center", fontsize=11)
 
     # Addition to filter (letter H)
     ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
     mid_h_x = (adder_block["right"] + filter_block["left"]) / 2.0
-    ax.text(mid_h_x, y_mid + 0.45, "H", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_h_x, y_mid - 0.5, "$h(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_h_x, y_mid + 0.5, "H", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_h_x, y_mid - 0.6, "$h(t)$", ha="center", va="center", fontsize=11)
 
     # Filter to output (letter I)
     ax.annotate("", xy=(output_x, y_mid), xytext=(filter_block["right"], y_mid), arrowprops=arrow_props)
     mid_i_x = (filter_block["right"] + output_x) / 2.0
-    ax.text(mid_i_x, y_mid + 0.45, "I", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_i_x, y_mid - 0.5, "$y(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_i_x, y_mid + 0.5, "I", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_i_x, y_mid - 0.6, "$y(t)$", ha="center", va="center", fontsize=11)
 
-    ax.text(output_x + 0.6, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
+    ax.text(output_x + 0.75, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
 
-    ax.set_xlim(0.3, output_x + 1.1)
-    ax.set_ylim(bot_y - 0.6, top_y + 0.8)
+    ax.set_xlim(0.3, output_x + 1.0)
+    ax.set_ylim(bot_y - 0.7, top_y + 0.8)
 
     buf = io.BytesIO()
-    fig.tight_layout()
-    fig.savefig(buf, format="png", dpi=220)
+    fig.savefig(buf, format="png", dpi=230, bbox_inches="tight", pad_inches=0.2)
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+
+def _draw_hard_diagram_real_imag_sampling(
+    mul_param: str | None,
+    top_mul_param: str | None,
+    bottom_mul_param: str | None,
+    sample_param: str | None,
+    filter_param: str | None,
+) -> str:
+    """Draw the additional HARD layout with real/imag branches followed by sampling."""
+
+    fig, ax = plt.subplots(figsize=(11.8, 4.8))
+    ax.axis("off")
+
+    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
+
+    y_mid = 1.9
+    top_y = 3.2
+    bot_y = 0.6
+    input_x = 0.9
+    mul_x = 2.4
+    split_x = 3.6
+    top_real_x = 5.0
+    top_mul_x = 6.6
+    bottom_imag_x = 5.0
+    bottom_mul_x = 6.6
+    adder_x = 8.6
+    sampling_x = 10.4
+    filter_x = 12.2
+    output_x = 13.6
+
+    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
+        info = dict(info)
+        info["centre"] = centre
+        info["y"] = y_pos
+        if info["shape"] == "circle":
+            radius = info["radius"]
+            info["left"] = centre - radius
+            info["right"] = centre + radius
+            info["top"] = y_pos + radius
+            info["bottom"] = y_pos - radius
+        else:
+            width = info["width"]
+            height = info["height"]
+            info["left"] = centre - width / 2.0
+            info["right"] = centre + width / 2.0
+            info["top"] = y_pos + height / 2.0
+            info["bottom"] = y_pos - height / 2.0
+        return info
+
+    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    real_block = prepare_block(_block_render_info("Real", None), top_real_x, top_y)
+    top_mul_block = prepare_block(_block_render_info("Multiplication", top_mul_param), top_mul_x, top_y)
+    imag_block = prepare_block(_block_render_info("Imag", None), bottom_imag_x, bot_y)
+    bottom_mul_block = prepare_block(_block_render_info("Multiplication", bottom_mul_param), bottom_mul_x, bot_y)
+    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
+    sampling_block = prepare_block(_block_render_info("Sampling", sample_param), sampling_x, y_mid)
+    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+
+    blocks = [
+        mul_block,
+        real_block,
+        top_mul_block,
+        imag_block,
+        bottom_mul_block,
+        adder_block,
+        sampling_block,
+        filter_block,
+    ]
+
+    def draw_block(block: Dict[str, object]) -> None:
+        if block["shape"] == "circle":
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"] * 1.0, fill=False, lw=1.6, color="#111111")
+            ax.add_patch(circle)
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(
+                block["centre"],
+                block["y"],
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 16),
+                fontweight="bold",
+            )
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
+                ax.text(
+                    block["centre"],
+                    block["y"] + block["radius"] + 0.5,
+                    param_label,
+                    ha="center",
+                    va="bottom",
+                    fontsize=10.5,
+                )
+        else:
+            rect = plt.Rectangle(
+                (block["left"], block["bottom"]),
+                block["width"],
+                block["height"],
+                fill=False,
+                lw=1.6,
+                color="#111111",
+                joinstyle="round",
+            )
+            ax.add_patch(rect)
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(
+                block["centre"],
+                block["y"] + block.get("label_y_offset", 0.18),
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 11),
+                fontweight="bold",
+            )
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
+                ax.text(
+                    block["centre"],
+                    block["y"] - block.get("param_y_offset", 0.18),
+                    param_label,
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                )
+
+    for block in blocks:
+        draw_block(block)
+
+    ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
+    ax.text((input_x + mul_block["left"]) / 2.0, y_mid + 0.5, "$x(t)$", ha="center", va="center", fontsize=12)
+
+    ax.annotate("", xy=(split_x, y_mid), xytext=(mul_block["right"], y_mid), arrowprops=arrow_props)
+    mid_a_x = (mul_block["right"] + split_x) / 2.0
+    ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_a_x, y_mid - 0.6, "$a(t)$", ha="center", va="center", fontsize=11)
+
+    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    ax.add_patch(split_circle)
+
+    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color="#111111", lw=1.4)
+
+    ax.annotate("", xy=(real_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
+    ax.annotate("", xy=(imag_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
+
+    ax.annotate("", xy=(top_mul_block["left"], top_y), xytext=(real_block["right"], top_y), arrowprops=arrow_props)
+    mid_b_x = (real_block["right"] + top_mul_block["left"]) / 2.0
+    ax.text(mid_b_x, top_y + 0.4, "B", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_b_x, top_y - 0.6, "$b(t)$", ha="center", va="center", fontsize=11)
+
+    ax.annotate("", xy=(bottom_mul_block["left"], bot_y), xytext=(imag_block["right"], bot_y), arrowprops=arrow_props)
+    mid_d_x = (imag_block["right"] + bottom_mul_block["left"]) / 2.0
+    ax.text(mid_d_x, bot_y + 0.6, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, bot_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
+
+    join_top_y = y_mid + 0.95
+    join_bot_y = y_mid - 0.95
+
+    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.45], [top_y, top_y], color="#111111", lw=1.35)
+    ax.plot(
+        [top_mul_block["right"] + 0.45, top_mul_block["right"] + 0.45],
+        [top_y, join_top_y],
+        color="#111111",
+        lw=1.35,
+    )
+    ax.annotate(
+        "",
+        xy=(adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
+        xytext=(top_mul_block["right"] + 0.45, join_top_y),
+        arrowprops=arrow_props,
+    )
+    mid_c_x = (top_mul_block["right"] + adder_block["centre"]) / 2.0
+    mid_c_y = (join_top_y + top_y) / 2.0
+    ax.text(mid_c_x, mid_c_y + 0.33, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, mid_c_y - 0.38, "$c(t)$", ha="center", va="center", fontsize=11)
+
+    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.45], [bot_y, bot_y], color="#111111", lw=1.35)
+    ax.plot(
+        [bottom_mul_block["right"] + 0.45, bottom_mul_block["right"] + 0.45],
+        [bot_y, join_bot_y],
+        color="#111111",
+        lw=1.35,
+    )
+    ax.annotate(
+        "",
+        xy=(adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
+        xytext=(bottom_mul_block["right"] + 0.45, join_bot_y),
+        arrowprops=arrow_props,
+    )
+    mid_e_x = (bottom_mul_block["right"] + adder_block["centre"]) / 2.0
+    mid_e_y = (join_bot_y + bot_y) / 2.0
+    ax.text(mid_e_x, mid_e_y + 0.33, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, mid_e_y - 0.38, "$e(t)$", ha="center", va="center", fontsize=11)
+
+    ax.annotate("", xy=(sampling_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
+    mid_f_x = (adder_block["right"] + sampling_block["left"]) / 2.0
+    ax.text(mid_f_x, y_mid + 0.5, "F", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_f_x, y_mid - 0.6, "$f(t)$", ha="center", va="center", fontsize=11)
+
+    ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(sampling_block["right"], y_mid), arrowprops=arrow_props)
+    mid_g_x = (sampling_block["right"] + filter_block["left"]) / 2.0
+    ax.text(mid_g_x, y_mid + 0.5, "G", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_g_x, y_mid - 0.6, "$g(t)$", ha="center", va="center", fontsize=11)
+
+    ax.annotate("", xy=(output_x, y_mid), xytext=(filter_block["right"], y_mid), arrowprops=arrow_props)
+    mid_h_x = (filter_block["right"] + output_x) / 2.0
+    ax.text(mid_h_x, y_mid + 0.5, "H", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_h_x, y_mid - 0.6, "$y(t)$", ha="center", va="center", fontsize=11)
+
+    ax.text(output_x + 0.75, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
+
+    ax.set_xlim(0.3, output_x + 0.9)
+    ax.set_ylim(bot_y - 0.7, top_y + 0.7)
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=220, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
@@ -1882,7 +2364,7 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
     intermediate signals are labelled x(t) → a(t) → b(t) → c(t) along the
     arrows to match the training flow.
     """
-    fig, ax = plt.subplots(figsize=(9, 2.6))
+    fig, ax = plt.subplots(figsize=(9.8, 3.0))
     ax.axis("off")
 
     # Position the three blocks evenly on the canvas
@@ -1895,7 +2377,7 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
     signal_labels = ["x(t)"] + [f"{chr(ord('a') + i)}(t)" for i in range(n_blocks)]
     letter_labels = [chr(ord("A") + i) for i in range(n_blocks)]
 
-    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
 
     block_geometries = []
     for centre, op_name in zip(block_centres, sequence):
@@ -1938,15 +2420,13 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
-                param_text_y = y_pos + block["radius"] + 0.6
-                ax.annotate(
+                ax.text(
+                    block["centre"],
+                    y_pos + block["radius"] + 0.5,
                     param_label,
-                    xy=(block["centre"], y_pos + block["radius"] * 0.35),
-                    xytext=(block["centre"], param_text_y),
                     ha="center",
                     va="bottom",
-                    fontsize=11,
-                    arrowprops=dict(arrowstyle="->", lw=1.2, color="#111111"),
+                    fontsize=10.5,
                 )
         else:
             rect = plt.Rectangle(
@@ -2009,11 +2489,10 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
 
     max_x = start + (n_blocks - 1) * spacing + 2.4
     ax.set_xlim(0, max_x)
-    ax.set_ylim(0.2, 2.4)
+    ax.set_ylim(0.1, 2.6)
 
     buf = io.BytesIO()
-    fig.tight_layout()
-    fig.savefig(buf, format="png", dpi=200)
+    fig.savefig(buf, format="png", dpi=210, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
@@ -2026,21 +2505,21 @@ def _draw_medium_diagram_sampling(
 ) -> str:
     """Draw the original MEDIUM layout with sampling/multiplication branches."""
 
-    fig, ax = plt.subplots(figsize=(9.5, 4.0))
+    fig, ax = plt.subplots(figsize=(10.5, 4.6))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
 
-    y_mid = 1.6
-    top_y = 2.6
-    bot_y = 0.6
+    y_mid = 1.9
+    top_y = 3.1
+    bot_y = 0.7
     input_x = 0.8
-    split_x = 1.6
-    branch_x = 3.2
-    adder_x = 5.2
-    post_x = 7.2
-    filter_x = 9.1
-    output_x = 10.4
+    split_x = 1.7
+    branch_x = 3.5
+    adder_x = 5.9
+    post_x = 8.0
+    filter_x = 10.1
+    output_x = 11.5
 
     def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
         info = dict(info)
@@ -2091,14 +2570,13 @@ def _draw_medium_diagram_sampling(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
-                ax.annotate(
+                ax.text(
+                    block["centre"],
+                    block["y"] + block["radius"] + 0.5,
                     param_label,
-                    xy=(block["centre"], block["y"] + block["radius"] * 0.4),
-                    xytext=(block["centre"], block["y"] + block["radius"] + 0.6),
                     ha="center",
                     va="bottom",
-                    fontsize=11,
-                    arrowprops=dict(arrowstyle="->", lw=1.2, color="#111111"),
+                    fontsize=10.5,
                 )
         else:
             rect = plt.Rectangle(
@@ -2142,69 +2620,71 @@ def _draw_medium_diagram_sampling(
 
     # Input and splitter
     ax.annotate("", xy=(split_x, y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
-    ax.text((input_x + split_x) / 2.0, y_mid + 0.45, "$x(t)$", ha="center", va="center", fontsize=12)
+    ax.text((input_x + split_x) / 2.0, y_mid + 0.5, "$x(t)$", ha="center", va="center", fontsize=12)
     split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
     ax.add_patch(split_circle)
 
     # Branch connections
-    ax.plot([split_x, split_x], [y_mid, top_block["y"]], color="#111111", lw=1.4)
-    ax.plot([split_x, split_x], [y_mid, bot_block["y"]], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color="#111111", lw=1.4)
     ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
     ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
 
     # Branch outputs into adder
     adder_radius = adder_block.get("radius", 0.45)
-    top_target = (adder_block["centre"], y_mid + adder_radius / 1.2)
-    bot_target = (adder_block["centre"], y_mid - adder_radius / 1.2)
+    top_target = (adder_block["centre"], y_mid + adder_radius * 0.95)
+    bot_target = (adder_block["centre"], y_mid - adder_radius * 0.95)
 
     top_knee_x = (top_block["right"] + adder_block["left"]) / 2.0
     bot_knee_x = (bot_block["right"] + adder_block["left"]) / 2.0
 
-    # Draw Manhattan style connections from branches into the adder
-    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color="#111111", lw=1.4)
-    ax.plot([top_knee_x, top_knee_x], [top_block["y"], top_target[1]], color="#111111", lw=1.4)
-    ax.annotate("", xy=top_target, xytext=(top_knee_x, top_target[1]), arrowprops=arrow_props)
+    join_top_y = y_mid + 1.0
+    join_bot_y = y_mid - 1.0
 
-    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.4)
-    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], bot_target[1]], color="#111111", lw=1.4)
-    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, bot_target[1]), arrowprops=arrow_props)
+    ax.plot([top_block["right"], top_knee_x], [top_block["y"] - 0.0, top_block["y"] - 0.0], color="#111111", lw=1.35)
+    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color="#111111", lw=1.35)
+    ax.annotate("", xy=top_target, xytext=(top_knee_x, join_top_y), arrowprops=arrow_props)
+
+    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.35)
+    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color="#111111", lw=1.35)
+    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, join_bot_y), arrowprops=arrow_props)
 
     # Labels for branches
     mid_top_x = (top_knee_x + top_target[0]) / 2.0
-    mid_top_y = (top_target[1] + top_block["y"]) / 2.0
-    ax.text(mid_top_x, mid_top_y + 0.25, "A", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_top_x, mid_top_y - 0.35, "$a(t)$", ha="center", va="center", fontsize=11)
+    mid_top_y = (join_top_y + top_block["y"]) / 2.0
+    ax.text(mid_top_x, mid_top_y + 0.28, "A", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_top_x, mid_top_y - 0.38, "$a(t)$", ha="center", va="center", fontsize=11)
 
     mid_bot_x = (bot_knee_x + bot_target[0]) / 2.0
-    mid_bot_y = (bot_target[1] + bot_block["y"]) / 2.0
-    ax.text(mid_bot_x, mid_bot_y + 0.25, "B", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_bot_x, mid_bot_y - 0.35, "$b(t)$", ha="center", va="center", fontsize=11)
+    mid_bot_y = (join_bot_y + bot_block["y"]) / 2.0
+    ax.text(mid_bot_x, mid_bot_y + 0.28, "B", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_bot_x, mid_bot_y - 0.38, "$b(t)$", ha="center", va="center", fontsize=11)
 
     # Adder to post block
     ax.annotate("", xy=(post_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
     mid_c_x = (adder_block["right"] + post_block["left"]) / 2.0
-    ax.text(mid_c_x, y_mid + 0.4, "C", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_c_x, y_mid - 0.55, "$c(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_c_x, y_mid + 0.45, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, y_mid - 0.6, "$c(t)$", ha="center", va="center", fontsize=11)
 
     # Post block to filter
     ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(post_block["right"], y_mid), arrowprops=arrow_props)
     mid_d_x = (post_block["right"] + filter_block["left"]) / 2.0
-    ax.text(mid_d_x, y_mid + 0.4, "D", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_d_x, y_mid - 0.55, "$d(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_d_x, y_mid + 0.45, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, y_mid - 0.6, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Filter to output
     ax.annotate("", xy=(output_x, y_mid), xytext=(filter_block["right"], y_mid), arrowprops=arrow_props)
     mid_e_x = (filter_block["right"] + output_x) / 2.0
-    ax.text(mid_e_x, y_mid + 0.4, "E", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_e_x, y_mid - 0.55, "$e(t)$", ha="center", va="center", fontsize=11)
-    ax.text(output_x + 0.6, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
+    ax.text(mid_e_x, y_mid + 0.45, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, y_mid - 0.6, "$e(t)$", ha="center", va="center", fontsize=11)
+    ax.text(output_x + 0.7, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
 
-    ax.set_xlim(0.2, output_x + 1.2)
-    ax.set_ylim(bot_y - 0.6, top_y + 0.9)
+    ax.set_xlim(0.2, output_x + 1.1)
+    ax.set_ylim(bot_y - 0.7, top_y + 0.8)
 
     buf = io.BytesIO()
-    fig.tight_layout()
-    fig.savefig(buf, format="png", dpi=200)
+    fig.savefig(buf, format="png", dpi=220, bbox_inches="tight", pad_inches=0.2)
+
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
@@ -2215,21 +2695,21 @@ def _draw_medium_diagram_multiplication_split(
 ) -> str:
     """Draw the MEDIUM layout with an initial multiplication before branching."""
 
-    fig, ax = plt.subplots(figsize=(9.5, 4.0))
+    fig, ax = plt.subplots(figsize=(10.6, 4.6))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
 
-    y_mid = 1.6
-    top_y = 2.6
-    bot_y = 0.6
+    y_mid = 1.9
+    top_y = 3.1
+    bot_y = 0.7
     input_x = 0.8
-    mul_x = 2.2
-    split_x = 3.3
-    branch_x = 5.1
-    adder_x = 7.1
-    filter_x = 9.1
-    output_x = 10.4
+    mul_x = 2.4
+    split_x = 3.7
+    branch_x = 5.5
+    adder_x = 7.7
+    filter_x = 9.9
+    output_x = 11.3
 
     def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
         info = dict(info)
@@ -2272,14 +2752,13 @@ def _draw_medium_diagram_multiplication_split(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
-                ax.annotate(
+                ax.text(
+                    block["centre"],
+                    block["y"] + block["radius"] + 0.5,
                     param_label,
-                    xy=(block["centre"], block["y"] + block["radius"] * 0.4),
-                    xytext=(block["centre"], block["y"] + block["radius"] + 0.6),
                     ha="center",
                     va="bottom",
-                    fontsize=11,
-                    arrowprops=dict(arrowstyle="->", lw=1.2, color="#111111"),
+                    fontsize=10.5,
                 )
         else:
             rect = plt.Rectangle(
@@ -2314,64 +2793,66 @@ def _draw_medium_diagram_multiplication_split(
     # Multiplication to splitter
     ax.annotate("", xy=(split_x, y_mid), xytext=(mul_block["right"], y_mid), arrowprops=arrow_props)
     mid_a_x = (mul_block["right"] + split_x) / 2.0
-    ax.text(mid_a_x, y_mid + 0.4, "A", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_a_x, y_mid - 0.55, "$a(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_a_x, y_mid - 0.6, "$a(t)$", ha="center", va="center", fontsize=11)
 
     split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
     ax.add_patch(split_circle)
 
     # Branch connections
-    ax.plot([split_x, split_x], [y_mid, top_block["y"]], color="#111111", lw=1.4)
-    ax.plot([split_x, split_x], [y_mid, bot_block["y"]], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color="#111111", lw=1.4)
     ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
     ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
 
     # Branch outputs into adder
     adder_radius = adder_block.get("radius", 0.45)
-    top_target = (adder_block["centre"], y_mid + adder_radius / 1.2)
-    bot_target = (adder_block["centre"], y_mid - adder_radius / 1.2)
+    top_target = (adder_block["centre"], y_mid + adder_radius * 0.95)
+    bot_target = (adder_block["centre"], y_mid - adder_radius * 0.95)
 
     top_knee_x = (top_block["right"] + adder_block["left"]) / 2.0
     bot_knee_x = (bot_block["right"] + adder_block["left"]) / 2.0
 
-    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color="#111111", lw=1.4)
-    ax.plot([top_knee_x, top_knee_x], [top_block["y"], top_target[1]], color="#111111", lw=1.4)
-    ax.annotate("", xy=top_target, xytext=(top_knee_x, top_target[1]), arrowprops=arrow_props)
+    join_top_y = y_mid + 1.0
+    join_bot_y = y_mid - 1.0
 
-    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.4)
-    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], bot_target[1]], color="#111111", lw=1.4)
-    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, bot_target[1]), arrowprops=arrow_props)
+    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color="#111111", lw=1.35)
+    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color="#111111", lw=1.35)
+    ax.annotate("", xy=top_target, xytext=(top_knee_x, join_top_y), arrowprops=arrow_props)
+
+    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.35)
+    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color="#111111", lw=1.35)
+    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, join_bot_y), arrowprops=arrow_props)
 
     # Labels for branches
     mid_top_x = (top_knee_x + top_target[0]) / 2.0
-    mid_top_y = (top_target[1] + top_block["y"]) / 2.0
-    ax.text(mid_top_x, mid_top_y + 0.25, "B", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_top_x, mid_top_y - 0.35, "$b(t)$", ha="center", va="center", fontsize=11)
+    mid_top_y = (join_top_y + top_block["y"]) / 2.0
+    ax.text(mid_top_x, mid_top_y + 0.28, "B", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_top_x, mid_top_y - 0.38, "$b(t)$", ha="center", va="center", fontsize=11)
 
     mid_bot_x = (bot_knee_x + bot_target[0]) / 2.0
-    mid_bot_y = (bot_target[1] + bot_block["y"]) / 2.0
-    ax.text(mid_bot_x, mid_bot_y + 0.25, "C", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_bot_x, mid_bot_y - 0.35, "$c(t)$", ha="center", va="center", fontsize=11)
+    mid_bot_y = (join_bot_y + bot_block["y"]) / 2.0
+    ax.text(mid_bot_x, mid_bot_y + 0.28, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_bot_x, mid_bot_y - 0.38, "$c(t)$", ha="center", va="center", fontsize=11)
 
     # Adder to filter
     ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
     mid_d_x = (adder_block["right"] + filter_block["left"]) / 2.0
-    ax.text(mid_d_x, y_mid + 0.4, "D", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_d_x, y_mid - 0.55, "$d(t)$", ha="center", va="center", fontsize=11)
+    ax.text(mid_d_x, y_mid + 0.45, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, y_mid - 0.6, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Filter to output
     ax.annotate("", xy=(output_x, y_mid), xytext=(filter_block["right"], y_mid), arrowprops=arrow_props)
     mid_e_x = (filter_block["right"] + output_x) / 2.0
-    ax.text(mid_e_x, y_mid + 0.4, "E", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_e_x, y_mid - 0.55, "$e(t)$", ha="center", va="center", fontsize=11)
-    ax.text(output_x + 0.6, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
+    ax.text(mid_e_x, y_mid + 0.45, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, y_mid - 0.6, "$e(t)$", ha="center", va="center", fontsize=11)
+    ax.text(output_x + 0.7, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
 
-    ax.set_xlim(0.2, output_x + 1.2)
-    ax.set_ylim(bot_y - 0.6, top_y + 0.9)
+    ax.set_xlim(0.2, output_x + 1.1)
+    ax.set_ylim(bot_y - 0.7, top_y + 0.8)
 
     buf = io.BytesIO()
-    fig.tight_layout()
-    fig.savefig(buf, format="png", dpi=200)
+    fig.savefig(buf, format="png", dpi=220, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
