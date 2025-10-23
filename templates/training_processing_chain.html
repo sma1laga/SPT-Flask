@@ -4,9 +4,10 @@
   <h1 style="font-size:2.5em;margin-bottom:10px;">Processing Chain Training</h1>
   <p style="font-size:1.1em;color:var(--subtext-color);max-width:620px;margin:0 auto;">
     Practice analysing processing chains in the frequency domain.  Easy problems use
-    three serial blocks chosen from multiplication, Hilbert and filtering, whereas Medium
-    problems introduce a branching structure with two multipliers (or samplers), a adder,
-    and a derivative/Hilbert stage before the final filter.  For every labelled connection
+    three serial blocks chosen from multiplication, Hilbert and filtering, Medium
+    problems introduce branching with sampling, derivatives and adders, and Hard
+    problems add modulation loops that mix sampling with real/imaginary splitting
+    before recombining through additional filters.  For every labelled connection
     you must identify the correct output among three plotted options.
   </p>
 </div>
@@ -16,7 +17,7 @@
   <div class="radio-group">
     <label class="radio-label"><input type="radio" name="difficulty" value="EASY" checked> Easy</label>
     <label class="radio-label"><input type="radio" name="difficulty" value="MEDIUM"> Medium</label>
-    <label class="radio-label" style="opacity:0.5;"><input type="radio" name="difficulty" value="HARD" disabled> Hard</label>
+    <label class="radio-label"><input type="radio" name="difficulty" value="HARD"> Hard</label>
   </div>
   <button id="generateBtn" class="action-btn">Generate Problem</button>
 </div>
