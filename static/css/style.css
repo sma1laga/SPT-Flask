@@ -8,6 +8,7 @@
     --text-color: #333;
     --subtext-color: #555;
     --border-color: #ccd0d5;
+    --panel-bg: #f8f9fb;
     --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     --header-bg: rgba(34, 82, 156, 0.88);
     --header-highlight: linear-gradient(120deg, rgba(96, 165, 250, 0.36), rgba(129, 199, 255, 0.14));
@@ -513,6 +514,7 @@ body.colorblind-mode a {
       --text-color: #f5f5f5;
       --subtext-color: #c2c9d1;
       --border-color: #3a4250;
+      --panel-bg: #222836;
       --card-background: #262d37;
       --header-bg: rgba(18, 57, 128, 0.9);
       --header-highlight: linear-gradient(120deg, rgba(79, 135, 232, 0.4), rgba(59, 130, 246, 0.22));
