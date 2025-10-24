@@ -149,15 +149,6 @@
   </div>
 </div>
 
-<div class="card" style="margin-top:12px">
-  <h3>Live Filtering Simulation</h3>
-  <div class="body">
-    <p class="hint">The image below simulates filtering of white noise with current parameters.</p>
-    <img id="livePlot" src="{{ url_for('filter_design.live_plot') }}" alt="Live Filter Plot" style="max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px">
-    <div class="actions"><button type="button" id="toggleLive" class="btn ghost">Start Live</button></div>
-  </div>
-</div>
-
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" defer></script>
 <script>
 const $ = (id)=>document.getElementById(id);
@@ -229,19 +220,6 @@ $('dlBtn').addEventListener('click', ev=>{
   const p=params();
   const qs = new URLSearchParams({fmt: $('fmt').value, filter_type: p.ftype, order: p.order, cutoff: (p.mode==='specs'? (p.fp): p.fc), sample_rate: p.fs});
   window.location = `{{ url_for('filter_design.export') }}?`+qs.toString();
-});
-
-// Live demo 
-let timer=null; const live=$('livePlot');
-$('toggleLive').addEventListener('click', ()=>{
-  if(timer){ clearInterval(timer); timer=null; $('toggleLive').textContent='Start Live'; return; }
-  const tick=()=>{
-    const p=params();
-    const cutoff = (p.mode==='specs'? p.fp : p.fc);
-    const liveURL = `{{ url_for('filter_design.live_plot') }}?filter_type=${p.ftype}&order=${p.order}&cutoff=${encodeURIComponent(cutoff)}&sample_rate=${p.fs}&num_samples=${p.N}`;
-    live.src = liveURL + `&t=${Date.now()}`;
-  };
-  timer=setInterval(tick,1000); tick(); $('toggleLive').textContent='Stop Live';
 });
 
 // initial render
