@@ -1987,14 +1987,24 @@ def _draw_hard_diagram_real_imag(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
+                param_text_y = block["y"] + block["radius"] + 0.55
                 ax.text(
                     block["centre"],
-                    block["y"] + block["radius"] + 0.55,
+                    param_text_y,
                     param_label,
                     ha="center",
                     va="bottom",
                     fontsize=10.5,
                 )
+                if block.get("param_connector") == "top":
+                    arrow_tail_y = param_text_y - 0.18
+                    arrow_head_y = block["y"] + block["radius"] * 0.98
+                    ax.annotate(
+                        "",
+                        xy=(block["centre"], arrow_head_y),
+                        xytext=(block["centre"], arrow_tail_y),
+                        arrowprops=arrow_props,
+                    )
         else:
             rect = plt.Rectangle(
                 (block["left"], block["bottom"]),
@@ -2227,14 +2237,24 @@ def _draw_hard_diagram_real_imag_sampling(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
+                param_text_y = block["y"] + block["radius"] + 0.5
                 ax.text(
                     block["centre"],
-                    block["y"] + block["radius"] + 0.5,
+                    param_text_y,
                     param_label,
                     ha="center",
                     va="bottom",
                     fontsize=10.5,
                 )
+                if block.get("param_connector") == "top":
+                    arrow_tail_y = param_text_y - 0.18
+                    arrow_head_y = block["y"] + block["radius"] * 0.98
+                    ax.annotate(
+                        "",
+                        xy=(block["centre"], arrow_head_y),
+                        xytext=(block["centre"], arrow_tail_y),
+                        arrowprops=arrow_props,
+                    )
         else:
             rect = plt.Rectangle(
                 (block["left"], block["bottom"]),
@@ -2432,14 +2452,24 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
+                param_text_y = y_pos + block["radius"] + 0.5
                 ax.text(
                     block["centre"],
-                    y_pos + block["radius"] + 0.5,
+                    param_text_y,
                     param_label,
                     ha="center",
                     va="bottom",
                     fontsize=10.5,
                 )
+                if block.get("param_connector") == "top":
+                    arrow_tail_y = param_text_y - 0.18
+                    arrow_head_y = y_pos + block["radius"] * 0.98
+                    ax.annotate(
+                        "",
+                        xy=(block["centre"], arrow_head_y),
+                        xytext=(block["centre"], arrow_tail_y),
+                        arrowprops=arrow_props,
+                    )
         else:
             rect = plt.Rectangle(
                 (block["left"], y_pos - block["height"] / 2.0),
@@ -2582,14 +2612,24 @@ def _draw_medium_diagram_sampling(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
+                param_text_y = block["y"] + block["radius"] + 0.5
                 ax.text(
                     block["centre"],
-                    block["y"] + block["radius"] + 0.5,
+                    param_text_y,
                     param_label,
                     ha="center",
                     va="bottom",
                     fontsize=10.5,
                 )
+                if block.get("param_connector") == "top":
+                    arrow_tail_y = param_text_y - 0.18
+                    arrow_head_y = block["y"] + block["radius"] * 0.98
+                    ax.annotate(
+                        "",
+                        xy=(block["centre"], arrow_head_y),
+                        xytext=(block["centre"], arrow_tail_y),
+                        arrowprops=arrow_props,
+                    )
         else:
             rect = plt.Rectangle(
                 (block["left"], block["bottom"]),
@@ -2764,14 +2804,24 @@ def _draw_medium_diagram_multiplication_split(
             elif block.get("param"):
                 param_label = block["param"]
             if param_label:
+                param_text_y = block["y"] + block["radius"] + 0.5
                 ax.text(
                     block["centre"],
-                    block["y"] + block["radius"] + 0.5,
+                    param_text_y,
                     param_label,
                     ha="center",
                     va="bottom",
                     fontsize=10.5,
                 )
+                if block.get("param_connector") == "top":
+                    arrow_tail_y = param_text_y - 0.18
+                    arrow_head_y = block["y"] + block["radius"] * 0.98
+                    ax.annotate(
+                        "",
+                        xy=(block["centre"], arrow_head_y),
+                        xytext=(block["centre"], arrow_tail_y),
+                        arrowprops=arrow_props,
+                    )
         else:
             rect = plt.Rectangle(
                 (block["left"], block["bottom"]),
@@ -2885,6 +2935,7 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "param": _describe_multiplication_param(param),
             "param_latex": _describe_multiplication_param_latex(param),
             "label_fontsize": 16,
+            "param_connector": "top",
         }
 
     if op_name == "Addition":
@@ -2911,7 +2962,7 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         param_text = _describe_filter_param(param)
         param_text_latex = _describe_filter_param_latex(param)
         width = 2.2
-        param_y_offset = 0.32
+        param_y_offset = 0.22
     elif op_name == "Hilbert":
         label = "Hilbert"
         param_text = None
