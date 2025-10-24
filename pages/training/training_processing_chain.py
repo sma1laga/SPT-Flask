@@ -875,7 +875,7 @@ def _draw_hard_diagram_split_modulation(
 ) -> str:
     """Draw the HARD layout with a cascaded Hilbert/derivative branch."""
 
-    fig, ax = plt.subplots(figsize=(9.8, 4.2))
+    fig, ax = plt.subplots(figsize=(10.6, 4.3))
     ax.axis("off")
 
     arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
@@ -883,15 +883,15 @@ def _draw_hard_diagram_split_modulation(
     y_mid = 1.6
     top_y = 2.8
     bot_y = 0.6
-    input_x = 0.8
-    mul_x = 2.2
-    split_x = 3.4
-    top_hilbert_x = 5.0
-    top_derivative_x = 6.4
-    bottom_mul_x = 5.2
-    adder_x = 7.8
-    filter_x = 9.6
-    output_x = 10.9
+    input_x = 0.85
+    mul_x = 2.35
+    split_x = 3.55
+    top_hilbert_x = 5.05
+    top_derivative_x = 6.9
+    bottom_mul_x = 5.45
+    adder_x = 8.55
+    filter_x = 10.55
+    output_x = 11.95
 
     def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
         info = dict(info)
@@ -1048,7 +1048,7 @@ def _draw_hard_diagram_split_modulation(
 
     ax.text(output_x + 0.6, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
 
-    ax.set_xlim(0.3, output_x + 1.0)
+    ax.set_xlim(0.35, output_x + 1.05)
     ax.set_ylim(bot_y - 0.6, top_y + 0.8)
 
     buf = io.BytesIO()
@@ -1891,7 +1891,7 @@ def _draw_hard_diagram_real_imag(
 ) -> str:
     """Draw the HARD layout that splits real and imaginary paths."""
 
-    fig, ax = plt.subplots(figsize=(12.4, 5.1))
+    fig, ax = plt.subplots(figsize=(14.4, 5.3))
     ax.axis("off")
 
     arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
@@ -1902,15 +1902,15 @@ def _draw_hard_diagram_real_imag(
     input_x = 0.9
     mul_x = 2.5
     split_x = 3.8
-    top_sample_x = 5.4
-    top_real_x = 7.0
-    top_mul_x = 8.7
-    bottom_hilbert_x = 5.4
-    bottom_imag_x = 7.0
-    bottom_mul_x = 8.7
-    adder_x = 10.4
-    filter_x = 12.3
-    output_x = 13.7
+    top_sample_x = 5.6
+    top_real_x = 8.0
+    top_mul_x = 10.4
+    bottom_hilbert_x = 5.6
+    bottom_imag_x = 8.0
+    bottom_mul_x = 10.4
+    adder_x = 12.6
+    filter_x = 14.8
+    output_x = 16.4
 
     def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
         info = dict(info)
@@ -2134,7 +2134,7 @@ def _draw_hard_diagram_real_imag_sampling(
 ) -> str:
     """Draw the additional HARD layout with real/imag branches followed by sampling."""
 
-    fig, ax = plt.subplots(figsize=(11.8, 4.8))
+    fig, ax = plt.subplots(figsize=(13.0, 4.9))
     ax.axis("off")
 
     arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
@@ -2145,14 +2145,14 @@ def _draw_hard_diagram_real_imag_sampling(
     input_x = 0.9
     mul_x = 2.4
     split_x = 3.6
-    top_real_x = 5.0
-    top_mul_x = 6.6
-    bottom_imag_x = 5.0
-    bottom_mul_x = 6.6
-    adder_x = 8.6
-    sampling_x = 10.4
-    filter_x = 12.2
-    output_x = 13.6
+    top_real_x = 5.3
+    top_mul_x = 7.3
+    bottom_imag_x = 5.3
+    bottom_mul_x = 7.3
+    adder_x = 9.6
+    sampling_x = 11.6
+    filter_x = 13.6
+    output_x = 15.0
 
     def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
         info = dict(info)
@@ -2347,7 +2347,7 @@ def _draw_hard_diagram_real_imag_sampling(
 
     ax.text(output_x + 0.75, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
 
-    ax.set_xlim(0.3, output_x + 0.9)
+    ax.set_xlim(0.3, output_x + 1.0)
     ax.set_ylim(bot_y - 0.7, top_y + 0.7)
 
     buf = io.BytesIO()
