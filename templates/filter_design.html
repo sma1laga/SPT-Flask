@@ -152,7 +152,7 @@
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" defer></script>
 <script>
 const $ = (id)=>document.getElementById(id);
-const staticPlotConfig={staticPlot:true,displayModeBar:false,responsive:true};
+const plotConfig={displayModeBar:true,responsive:true,scrollZoom:true};
 const modeEl=$('mode'), famEl=$('family'), typeEl=$('ftype'), fsEl=$('fs'), orderEl=$('order'),
       rpEl=$('rp'), rsEl=$('rs'), NEl=$('N'), fcEl=$('fc'), fpEl=$('fp'), fsbEl=$('fsb'),
       gpassEl=$('gpass'), gstopEl=$('gstop');
@@ -202,15 +202,15 @@ async function design(){
   badge.textContent = (d.spec_ok? 'Meets specs' : 'Specs not met') + ` • N=${d.order} • ${d.family}`;
   badge.className = 'badge '+(d.spec_ok?'ok':'warn');
 
-  Plotly.react('magPlot', [{x:d.f, y:d.H_db, mode:'lines', name:'|H| dB', hoverinfo:'skip'}], layout('Magnitude', 'Frequency (Hz)', true), staticPlotConfig);
-  Plotly.react('phasePlot', [{x:d.f, y:d.phase_deg, mode:'lines', name:'Phase (°)', hoverinfo:'skip'}], layout('Phase', 'Frequency (Hz)'), staticPlotConfig);
-  Plotly.react('gdPlot', [{x:d.f_gd, y:d.gd, mode:'lines', name:'τ (s)', hoverinfo:'skip'}], layout('Group delay', 'Frequency (Hz)'), staticPlotConfig);
-  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]', hoverinfo:'skip'}], layout('Impulse response', 'Time (s)'), staticPlotConfig);
-  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]', hoverinfo:'skip'}], layout('Step response', 'Time (s)'), staticPlotConfig);
+  Plotly.react('magPlot', [{x:d.f, y:d.H_db, mode:'lines', name:'|H| dB', hoverinfo:'skip'}], layout('Magnitude', 'Frequency (Hz)', true), plotConfig);
+  Plotly.react('phasePlot', [{x:d.f, y:d.phase_deg, mode:'lines', name:'Phase (°)', hoverinfo:'skip'}], layout('Phase', 'Frequency (Hz)'), plotConfig);
+  Plotly.react('gdPlot', [{x:d.f_gd, y:d.gd, mode:'lines', name:'τ (s)', hoverinfo:'skip'}], layout('Group delay', 'Frequency (Hz)'), plotConfig);
+  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]', hoverinfo:'skip'}], layout('Impulse response', 'Time (s)'), plotConfig);
+  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]', hoverinfo:'skip'}], layout('Step response', 'Time (s)'), plotConfig);
   Plotly.react('pzPlot', [
     {x:d.z_re, y:d.z_im, mode:'markers', name:'zeros', marker:{symbol:'circle-open'}, hoverinfo:'skip'},
     {x:d.p_re, y:d.p_im, mode:'markers', name:'poles', marker:{symbol:'x', size:10}, hoverinfo:'skip'}
-  ], pzLayout(), staticPlotConfig);
+  ], pzLayout(), plotConfig);
 }
 
 $('designBtn').addEventListener('click', ev=>{ev.preventDefault(); design();});
