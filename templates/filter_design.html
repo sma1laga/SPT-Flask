@@ -122,7 +122,7 @@
           <option value="python">Export .PY</option>
           <option value="arduino">Export .INO</option>
         </select>
-        <button type="button" class="btn ghost" id="dlBtn">⬇︎ Export</button>
+        <button type="button" class="btn primary" id="dlBtn">⬇︎ Export</button>
         
       </div>
       <div class="hint">Info: Specify pass/stop bands and ripple/attenuation; the badge will tell you if specs are met.</div>
@@ -186,11 +186,11 @@ function params(){
 }
 
 function layout(title,x,dby=false){
-  return {title,margin:{l:50,r:10,t:28,b:40},xaxis:{title:x},yaxis:{title:dby?'Magnitude (dB)':'Amplitude'},height:340};
+  return {title,margin:{l:50,r:10,t:28,b:40},xaxis:{title:x},yaxis:{title:dby?'Magnitude (dB)':'Amplitude'},height:340,hovermode:false};
 }
 
 function pzLayout(){
-  return {title:'Pole–Zero Map',margin:{l:40,r:10,t:28,b:40},xaxis:{title:'Re',scaleanchor:'y',constrain:'domain'},yaxis:{title:'Im'},shapes:[{type:'circle',xref:'x',yref:'y',x0:-1,y0:-1,x1:1,y1:1,line:{dash:'dot'}}],height:340};
+  return {title:'Pole–Zero Map',margin:{l:40,r:10,t:28,b:40},xaxis:{title:'Re',scaleanchor:'y',constrain:'domain'},yaxis:{title:'Im'},shapes:[{type:'circle',xref:'x',yref:'y',x0:-1,y0:-1,x1:1,y1:1,line:{dash:'dot'}}],height:340,hovermode:false};
 }
 
 async function design(){
@@ -205,14 +205,14 @@ async function design(){
   badge.textContent = (d.spec_ok? 'Meets specs' : 'Specs not met') + ` • N=${d.order} • ${d.family}`;
   badge.className = 'badge '+(d.spec_ok?'ok':'warn');
 
-  Plotly.react('magPlot', [{x:d.f, y:d.H_db, mode:'lines', name:'|H| dB'}], layout('Magnitude', 'Frequency (Hz)', true));
-  Plotly.react('phasePlot', [{x:d.f, y:d.phase_deg, mode:'lines', name:'Phase (°)'}], layout('Phase', 'Frequency (Hz)'));
-  Plotly.react('gdPlot', [{x:d.f_gd, y:d.gd, mode:'lines', name:'τ (s)'}], layout('Group delay', 'Frequency (Hz)'));
-  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]'}], layout('Impulse response', 'Time (s)'));
-  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]'}], layout('Step response', 'Time (s)'));
+  Plotly.react('magPlot', [{x:d.f, y:d.H_db, mode:'lines', name:'|H| dB', hoverinfo:'skip'}], layout('Magnitude', 'Frequency (Hz)', true));
+  Plotly.react('phasePlot', [{x:d.f, y:d.phase_deg, mode:'lines', name:'Phase (°)', hoverinfo:'skip'}], layout('Phase', 'Frequency (Hz)'));
+  Plotly.react('gdPlot', [{x:d.f_gd, y:d.gd, mode:'lines', name:'τ (s)', hoverinfo:'skip'}], layout('Group delay', 'Frequency (Hz)'));
+  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]', hoverinfo:'skip'}], layout('Impulse response', 'Time (s)'));
+  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]', hoverinfo:'skip'}], layout('Step response', 'Time (s)'));
   Plotly.react('pzPlot', [
-    {x:d.z_re, y:d.z_im, mode:'markers', name:'zeros', marker:{symbol:'circle-open'}},
-    {x:d.p_re, y:d.p_im, mode:'markers', name:'poles', marker:{symbol:'x', size:10}}
+    {x:d.z_re, y:d.z_im, mode:'markers', name:'zeros', marker:{symbol:'circle-open'}, hoverinfo:'skip'},
+    {x:d.p_re, y:d.p_im, mode:'markers', name:'poles', marker:{symbol:'x', size:10}, hoverinfo:'skip'}
   ], pzLayout());
 }
 
