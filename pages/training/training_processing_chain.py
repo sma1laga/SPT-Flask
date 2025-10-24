@@ -42,6 +42,18 @@ matplotlib.use("Agg")  # noqa: E402
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
 
+_EDGE_COLOR = "#050505"
+_BLOCK_LINEWIDTH = 1.85
+_CONNECTOR_LINEWIDTH = 1.55
+_ARROW_LINEWIDTH = 1.65
+_SPLITTER_RADIUS = 0.08
+
+
+def _arrow_props() -> Dict[str, object]:
+    """Return a consistent arrow style for block diagrams."""
+
+    return dict(arrowstyle="->", lw=_ARROW_LINEWIDTH, color=_EDGE_COLOR, shrinkA=0, shrinkB=0)
+
 
 # Define a blueprint for the processing chain training.  Do not specify a URL
 # prefix here – the main application registers this blueprint with a
@@ -878,7 +890,7 @@ def _draw_hard_diagram_split_modulation(
     fig, ax = plt.subplots(figsize=(10.6, 4.3))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.4, color="#111111")
+    arrow_props = _arrow_props()
 
     y_mid = 1.6
     top_y = 2.8
@@ -923,7 +935,7 @@ def _draw_hard_diagram_split_modulation(
 
     def draw_block(block: Dict[str, object]) -> None:
         if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
             ax.add_patch(circle)
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
@@ -950,7 +962,7 @@ def _draw_hard_diagram_split_modulation(
                     ha="center",
                     va="bottom",
                     fontsize=11,
-                    arrowprops=dict(arrowstyle="->", lw=1.1, color="#111111"),
+                    arrowprops=_arrow_props(),
                 )
         else:
             rect = plt.Rectangle(
@@ -958,8 +970,8 @@ def _draw_hard_diagram_split_modulation(
                 block["width"],
                 block["height"],
                 fill=False,
-                lw=1.6,
-                color="#111111",
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
                 joinstyle="round",
             )
             ax.add_patch(rect)
@@ -1003,11 +1015,11 @@ def _draw_hard_diagram_split_modulation(
     ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_a_x, y_mid - 0.6, "$a(t)$", ha="center", va="center", fontsize=11)
 
-    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
     ax.add_patch(split_circle)
 
     # Branch to top Hilbert
-    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(hilbert_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
 
     # Hilbert to derivative (letter B)
@@ -1024,7 +1036,7 @@ def _draw_hard_diagram_split_modulation(
     ax.text(mid_c_x, mid_c_y - 0.35, "$c(t)$", ha="center", va="center", fontsize=11)
 
     # Branch to bottom multiplier
-    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(bottom_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
 
     # Bottom multiplier to adder (letter D)
@@ -1894,7 +1906,7 @@ def _draw_hard_diagram_real_imag(
     fig, ax = plt.subplots(figsize=(14.4, 5.3))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
+    arrow_props = _arrow_props()
 
     y_mid = 1.9
     top_y = 3.4
@@ -1955,7 +1967,7 @@ def _draw_hard_diagram_real_imag(
 
     def draw_block(block: Dict[str, object]) -> None:
         if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
             ax.add_patch(circle)
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
@@ -1989,8 +2001,8 @@ def _draw_hard_diagram_real_imag(
                 block["width"],
                 block["height"],
                 fill=False,
-                lw=1.6,
-                color="#111111",
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
                 joinstyle="round",
             )
             ax.add_patch(rect)
@@ -2034,11 +2046,11 @@ def _draw_hard_diagram_real_imag(
     ax.text(mid_a_x, y_mid + 0.4, "A", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_a_x, y_mid - 0.5, "$a(t)$", ha="center", va="center", fontsize=11)
 
-    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
     ax.add_patch(split_circle)
 
     # Top branch connections
-    ax.plot([split_x, split_x], [y_mid, top_y], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(sample_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
     ax.annotate("", xy=(real_block["left"], top_y), xytext=(sample_block["right"], top_y), arrowprops=arrow_props)
     mid_b_x = (sample_block["right"] + real_block["left"]) / 2.0
@@ -2051,12 +2063,12 @@ def _draw_hard_diagram_real_imag(
     ax.text(mid_c_x, top_y - 0.6, "$c(t)$", ha="center", va="center", fontsize=11)
 
     join_top_y = y_mid + 1.05
-    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.5], [top_y, top_y], color="#111111", lw=1.35)
+    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.5], [top_y, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.plot(
         [top_mul_block["right"] + 0.5, top_mul_block["right"] + 0.5],
         [top_y, join_top_y],
-        color="#111111",
-        lw=1.35,
+        color=_EDGE_COLOR,
+        lw=_CONNECTOR_LINEWIDTH,
     )
     ax.annotate(
         "",
@@ -2070,7 +2082,7 @@ def _draw_hard_diagram_real_imag(
     ax.text(mid_d_x, mid_d_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Bottom branch connections
-    ax.plot([split_x, split_x], [y_mid, bot_y], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(hilbert_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
     ax.annotate("", xy=(imag_block["left"], bot_y), xytext=(hilbert_block["right"], bot_y), arrowprops=arrow_props)
     mid_e_x = (hilbert_block["right"] + imag_block["left"]) / 2.0
@@ -2082,12 +2094,12 @@ def _draw_hard_diagram_real_imag(
     ax.text(mid_f_x, bot_y + 0.6, "F", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_f_x, bot_y - 0.35, "$f(t)$", ha="center", va="center", fontsize=11)
     join_bot_y = y_mid - 1.05
-    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.5], [bot_y, bot_y], color="#111111", lw=1.35)
+    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.5], [bot_y, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.plot(
         [bottom_mul_block["right"] + 0.5, bottom_mul_block["right"] + 0.5],
         [bot_y, join_bot_y],
-        color="#111111",
-        lw=1.35,
+        color=_EDGE_COLOR,
+        lw=_CONNECTOR_LINEWIDTH,
     )
 
     ax.annotate(
@@ -2137,7 +2149,7 @@ def _draw_hard_diagram_real_imag_sampling(
     fig, ax = plt.subplots(figsize=(13.0, 4.9))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
+    arrow_props = _arrow_props()
 
     y_mid = 1.9
     top_y = 3.2
@@ -2195,7 +2207,7 @@ def _draw_hard_diagram_real_imag_sampling(
 
     def draw_block(block: Dict[str, object]) -> None:
         if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"] * 1.0, fill=False, lw=1.6, color="#111111")
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"] * 1.0, fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
             ax.add_patch(circle)
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
@@ -2229,8 +2241,8 @@ def _draw_hard_diagram_real_imag_sampling(
                 block["width"],
                 block["height"],
                 fill=False,
-                lw=1.6,
-                color="#111111",
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
                 joinstyle="round",
             )
             ax.add_patch(rect)
@@ -2272,11 +2284,11 @@ def _draw_hard_diagram_real_imag_sampling(
     ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_a_x, y_mid - 0.6, "$a(t)$", ha="center", va="center", fontsize=11)
 
-    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
     ax.add_patch(split_circle)
 
-    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color="#111111", lw=1.4)
-    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
 
     ax.annotate("", xy=(real_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
     ax.annotate("", xy=(imag_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
@@ -2294,12 +2306,12 @@ def _draw_hard_diagram_real_imag_sampling(
     join_top_y = y_mid + 0.95
     join_bot_y = y_mid - 0.95
 
-    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.45], [top_y, top_y], color="#111111", lw=1.35)
+    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.45], [top_y, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.plot(
         [top_mul_block["right"] + 0.45, top_mul_block["right"] + 0.45],
         [top_y, join_top_y],
-        color="#111111",
-        lw=1.35,
+        color=_EDGE_COLOR,
+        lw=_CONNECTOR_LINEWIDTH,
     )
     ax.annotate(
         "",
@@ -2312,12 +2324,12 @@ def _draw_hard_diagram_real_imag_sampling(
     ax.text(mid_c_x, mid_c_y + 0.33, "C", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_c_x, mid_c_y - 0.38, "$c(t)$", ha="center", va="center", fontsize=11)
 
-    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.45], [bot_y, bot_y], color="#111111", lw=1.35)
+    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.45], [bot_y, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.plot(
         [bottom_mul_block["right"] + 0.45, bottom_mul_block["right"] + 0.45],
         [bot_y, join_bot_y],
-        color="#111111",
-        lw=1.35,
+        color=_EDGE_COLOR,
+        lw=_CONNECTOR_LINEWIDTH,
     )
     ax.annotate(
         "",
@@ -2377,7 +2389,7 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
     signal_labels = ["x(t)"] + [f"{chr(ord('a') + i)}(t)" for i in range(n_blocks)]
     letter_labels = [chr(ord("A") + i) for i in range(n_blocks)]
 
-    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
+    arrow_props = _arrow_props()
 
     block_geometries = []
     for centre, op_name in zip(block_centres, sequence):
@@ -2400,7 +2412,7 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
 
     for block in block_geometries:
         if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], y_pos), block["radius"], fill=False, lw=1.6, color="#111111")
+            circle = plt.Circle((block["centre"], y_pos), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
             ax.add_patch(circle)
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
@@ -2434,8 +2446,8 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
                 block["width"],
                 block["height"],
                 fill=False,
-                lw=1.6,
-                color="#111111",
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
                 joinstyle="round",
             )
             ax.add_patch(rect)
@@ -2508,7 +2520,7 @@ def _draw_medium_diagram_sampling(
     fig, ax = plt.subplots(figsize=(10.5, 4.6))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
+    arrow_props = _arrow_props()
 
     y_mid = 1.9
     top_y = 3.1
@@ -2550,7 +2562,7 @@ def _draw_medium_diagram_sampling(
 
     def draw_block(block: Dict[str, object]) -> None:
         if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
             ax.add_patch(circle)
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
@@ -2584,8 +2596,8 @@ def _draw_medium_diagram_sampling(
                 block["width"],
                 block["height"],
                 fill=False,
-                lw=1.6,
-                color="#111111",
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
                 joinstyle="round",
             )
             ax.add_patch(rect)
@@ -2621,12 +2633,12 @@ def _draw_medium_diagram_sampling(
     # Input and splitter
     ax.annotate("", xy=(split_x, y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
     ax.text((input_x + split_x) / 2.0, y_mid + 0.5, "$x(t)$", ha="center", va="center", fontsize=12)
-    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
     ax.add_patch(split_circle)
 
     # Branch connections
-    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color="#111111", lw=1.4)
-    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
     ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
 
@@ -2641,12 +2653,12 @@ def _draw_medium_diagram_sampling(
     join_top_y = y_mid + 1.0
     join_bot_y = y_mid - 1.0
 
-    ax.plot([top_block["right"], top_knee_x], [top_block["y"] - 0.0, top_block["y"] - 0.0], color="#111111", lw=1.35)
-    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color="#111111", lw=1.35)
+    ax.plot([top_block["right"], top_knee_x], [top_block["y"] - 0.0, top_block["y"] - 0.0], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=top_target, xytext=(top_knee_x, join_top_y), arrowprops=arrow_props)
 
-    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.35)
-    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color="#111111", lw=1.35)
+    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=bot_target, xytext=(bot_knee_x, join_bot_y), arrowprops=arrow_props)
 
     # Labels for branches
@@ -2698,7 +2710,7 @@ def _draw_medium_diagram_multiplication_split(
     fig, ax = plt.subplots(figsize=(10.6, 4.6))
     ax.axis("off")
 
-    arrow_props = dict(arrowstyle="->", lw=1.35, color="#111111")
+    arrow_props = _arrow_props()
 
     y_mid = 1.9
     top_y = 3.1
@@ -2740,7 +2752,7 @@ def _draw_medium_diagram_multiplication_split(
 
     def draw_block(block: Dict[str, object]) -> None:
         if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=1.6, color="#111111")
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
             ax.add_patch(circle)
             label = block.get("label_latex") or block.get("label")
             if block.get("label_latex"):
@@ -2766,8 +2778,8 @@ def _draw_medium_diagram_multiplication_split(
                 block["width"],
                 block["height"],
                 fill=False,
-                lw=1.6,
-                color="#111111",
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
                 joinstyle="round",
             )
             ax.add_patch(rect)
@@ -2796,12 +2808,12 @@ def _draw_medium_diagram_multiplication_split(
     ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_a_x, y_mid - 0.6, "$a(t)$", ha="center", va="center", fontsize=11)
 
-    split_circle = plt.Circle((split_x, y_mid), 0.06, color="#111111")
+    split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
     ax.add_patch(split_circle)
 
     # Branch connections
-    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color="#111111", lw=1.4)
-    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color="#111111", lw=1.4)
+    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
     ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
 
@@ -2816,12 +2828,12 @@ def _draw_medium_diagram_multiplication_split(
     join_top_y = y_mid + 1.0
     join_bot_y = y_mid - 1.0
 
-    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color="#111111", lw=1.35)
-    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color="#111111", lw=1.35)
+    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=top_target, xytext=(top_knee_x, join_top_y), arrowprops=arrow_props)
 
-    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color="#111111", lw=1.35)
-    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color="#111111", lw=1.35)
+    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=bot_target, xytext=(bot_knee_x, join_bot_y), arrowprops=arrow_props)
 
     # Labels for branches
@@ -2862,7 +2874,7 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
     """Return geometry and labels for rendering a block."""
 
     if op_name == "Multiplication":
-        radius = 0.45
+        radius = 0.43
         return {
             "shape": "circle",
             "radius": radius,
@@ -2876,7 +2888,7 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
         }
 
     if op_name == "Addition":
-        radius = 0.45
+        radius = 0.36
         return {
             "shape": "circle",
             "radius": radius,
@@ -2889,47 +2901,50 @@ def _block_render_info(op_name: str, param: str | None) -> Dict[str, object]:
             "label_fontsize": 16,
         }
 
-    width = 1.6
-    height = 0.9
+    width = 1.65
+    height = 0.68
     label_fontsize = 11
-    label_y_offset = 0.18
-    param_y_offset = 0.18
+    label_y_offset = 0.12
+    param_y_offset = 0.26
     if op_name == "Filter":
         label = "Filter"
         param_text = _describe_filter_param(param)
         param_text_latex = _describe_filter_param_latex(param)
+        width = 2.2
+        param_y_offset = 0.32
     elif op_name == "Hilbert":
         label = "Hilbert"
         param_text = None
         param_text_latex = None
         label_fontsize = 17
         label_y_offset = 0.0
-        param_y_offset = 0.18
+        param_y_offset = 0.22
     elif op_name == "Sampling":
         label = "Sampling"
         param_text = _describe_sampling_param(param)
         param_text_latex = _describe_sampling_param_latex(param)
+        width = 1.8
     elif op_name == "Derivative":
         label = "Derivative"
         param_text = None
         param_text_latex = None
         label_fontsize = 17
         label_y_offset = 0.0
-        param_y_offset = 0.18
+        param_y_offset = 0.22
     elif op_name == "Real":
         label = "Re"
         param_text = None
         param_text_latex = None
         label_fontsize = 17
         label_y_offset = 0.0
-        param_y_offset = 0.18
+        param_y_offset = 0.22
     elif op_name == "Imag":
         label = "Im"
         param_text = None
         param_text_latex = None
         label_fontsize = 17
         label_y_offset = 0.0
-        param_y_offset = 0.18
+        param_y_offset = 0.22
     else:
         label = op_name
         param_text = None
