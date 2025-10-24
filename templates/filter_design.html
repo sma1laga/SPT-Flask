@@ -1,103 +1,164 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .filter-form {
+    max-width: 640px;
+    display: grid;
+    gap: 14px;
+  }
+  .filter-form label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .filter-form input,
+  .filter-form select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+  }
+  .filter-form .hint {
+    margin-top: 4px;
+    color: #4b5563;
+    font-size: 0.9rem;
+  }
+  .filter-form .input-with-info {
+    position: relative;
+  }
+  .filter-form .input-with-info input {
+    padding-right: 34px;
+  }
+  .filter-form .info-button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #007acc;
+    color: #fff;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    font-size: 12px;
+    text-align: center;
+    text-decoration: none;
+  }
+  .filter-form .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .filter-form .actions button,
+  .filter-form .actions select {
+    width: auto;
+  }
+  .filter-form .primary-button {
+    background: #007acc;
+    color: #fff;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+  }
+  .filter-form .secondary-button {
+    background: #10b981;
+    color: #fff;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+  }
+  .page-intro {
+    max-width: 720px;
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+</style>
+
 <h2>Filter Design &amp; Experimentation</h2>
-<p>
-  Design your digital filter and experiment with noise. The generated plots below show:<br>
-  – the <strong>spectrum (FFT) of the original noise signal</strong> (magnitude vs frequency),<br>
-  – the <strong>spectrum (FFT) of the filtered noise signal</strong>,<br>
-  – and the <strong>filter’s frequency response</strong>.
+<p class="page-intro">
+  Configure a digital filter, then compare its effect on noisy audio in real time. Adjust the type,
+  order, and cut-off parameters to see how the response reshapes the signal spectrum, while the plots
+  below provide a side-by-side view of the original noise, the filtered result, and the filter’s
+  frequency response.
 </p>
 
 {% if error %}
   <div style="color:red;">{{ error }}</div>
 {% endif %}
 
-<form method="post">
+<form method="post" class="filter-form">
   <!-- ───────────── Filter parameters ───────────── -->
-  <label for="filter_type">Filter Type:</label>
-  <select name="filter_type" id="filter_type">
-    <option value="lowpass"  {% if request.form.get('filter_type','lowpass')=='lowpass'  %}selected{% endif %}>Low Pass</option>
-    <option value="highpass" {% if request.form.get('filter_type')=='highpass' %}selected{% endif %}>High Pass</option>
-    <option value="bandpass" {% if request.form.get('filter_type')=='bandpass' %}selected{% endif %}>Band Pass</option>
-    <option value="bandstop" {% if request.form.get('filter_type')=='bandstop' %}selected{% endif %}>Band Stop</option>
-  </select>
-  <br>
-  <small>Choose the filter type. Use low/high pass for a single cutoff value, or band pass/stop for a range.</small>
-  <br><br>
+  <div>
+    <label for="filter_type">Filter Type</label>
+    <select name="filter_type" id="filter_type">
+      <option value="lowpass"  {% if request.form.get('filter_type','lowpass')=='lowpass'  %}selected{% endif %}>Low Pass</option>
+      <option value="highpass" {% if request.form.get('filter_type')=='highpass' %}selected{% endif %}>High Pass</option>
+      <option value="bandpass" {% if request.form.get('filter_type')=='bandpass' %}selected{% endif %}>Band Pass</option>
+      <option value="bandstop" {% if request.form.get('filter_type')=='bandstop' %}selected{% endif %}>Band Stop</option>
+    </select>
+    <p class="hint">Select a topology. Low/high pass use one cut-off, band pass/stop use a lower and upper bound.</p>
+  </div>
 
-  <label for="order">Filter Order:</label>
-  <input type="number" name="order" id="order"
-         value="{{ request.form.get('order','4') }}" min="1" max="5" required>
-  <br>
-  <small>The filter order (1–5) determines how steep the transition is. Higher order means a sharper cutoff.</small>
-  <br><br>
+  <div>
+    <label for="order">Filter Order</label>
+    <input type="number" name="order" id="order"
+           value="{{ request.form.get('order','4') }}" min="1" max="5" required>
+    <p class="hint">Orders 1–5 control the slope of the transition band. Higher order tightens the roll-off.</p>
+  </div>
 
   <!-- Cut‑off Frequency -->
-  <label for="cutoff">Cutoff Frequency&nbsp;(Hz):</label>
-  <div style="position:relative;">
-    <input type="text" name="cutoff" id="cutoff"
-           value="{{ request.form.get('cutoff','100') }}"
-           pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
-           title="Single value for low/high‑pass or two comma‑separated values for band filters"
-           required style="width:100%;padding-right:30px;">
-    <a href="{{ url_for('info.bandpass_order') }}" target="_blank"
-       class="info-button"
-       style="position:absolute;right:5px;top:50%;transform:translateY(-50%);
-              background:#007acc;color:#fff;border-radius:50%;width:20px;height:20px;
-              line-height:20px;font-size:12px;text-align:center;">i</a>
+  <div>
+    <label for="cutoff">Cutoff Frequency&nbsp;(Hz)</label>
+    <div class="input-with-info">
+      <input type="text" name="cutoff" id="cutoff"
+             value="{{ request.form.get('cutoff','100') }}"
+             pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
+             title="Single value for low/high‑pass or two comma‑separated values for band filters"
+             required>
+      <a href="{{ url_for('info.bandpass_order') }}" target="_blank" class="info-button">i</a>
+    </div>
+    <p class="hint">Enter one value (≤ 90 kHz) for low/high pass or two comma-separated values such as “100,400”.</p>
   </div>
-  <br>
-  <small>For low/high pass, enter one value (≤ 90 kHz). For band pass/stop, enter two values like “100,400”.</small>
-  <br><br>
 
-  <label for="sample_rate">Sample Rate&nbsp;fs&nbsp;(Hz):</label>
-  <input type="number" name="sample_rate" id="sample_rate"
-         value="{{ request.form.get('sample_rate','1000') }}" min="1" max="900000" required>
-  <br>
-  <small>The sample‑rate must be at least twice the highest frequency (Nyquist) and ≤ 900 kHz.</small>
-  <br><br>
+  <div>
+    <label for="sample_rate">Sample Rate&nbsp;fs&nbsp;(Hz)</label>
+    <input type="number" name="sample_rate" id="sample_rate"
+           value="{{ request.form.get('sample_rate','1000') }}" min="1" max="900000" required>
+    <p class="hint">Keep the sampling frequency at least twice the highest signal component (Nyquist) and ≤ 900 kHz.</p>
+  </div>
 
-  <label for="noise_amplitude">Noise Amplitude:</label>
-  <input type="number" name="noise_amplitude" id="noise_amplitude"
-         value="{{ request.form.get('noise_amplitude','1') }}" step="0.1" min="0" max="10" required>
-  <br>
-  <small>Controls the intensity of the generated white noise (0 – 10).</small>
-  <br><br>
+  <div>
+    <label for="noise_amplitude">Noise Amplitude</label>
+    <input type="number" name="noise_amplitude" id="noise_amplitude"
+           value="{{ request.form.get('noise_amplitude','1') }}" step="0.1" min="0" max="10" required>
+    <p class="hint">Scales the strength of the generated white noise from 0 (silent) to 10 (very loud).</p>
+  </div>
 
   <!-- Number of Samples -->
-  <label for="num_samples">Number of Samples:</label>
-  <div style="position:relative;">
-    <input type="number" name="num_samples" id="num_samples"
-           value="{{ request.form.get('num_samples','1000') }}" min="100" max="10000" required
-           style="width:100%;padding-right:30px;">
-    <a href="{{ url_for('info.sampling') }}" target="_blank"
-       class="info-button"
-       style="position:absolute;right:5px;top:50%;transform:translateY(-50%);
-              background:#007acc;color:#fff;border-radius:50%;width:20px;height:20px;
-              line-height:20px;font-size:12px;text-align:center;">i</a>
+  <div>
+    <label for="num_samples">Number of Samples</label>
+    <div class="input-with-info">
+      <input type="number" name="num_samples" id="num_samples"
+             value="{{ request.form.get('num_samples','1000') }}" min="100" max="10000" required>
+      <a href="{{ url_for('info.sampling') }}" target="_blank" class="info-button">i</a>
+    </div>
+    <p class="hint">Sets the length of the noise window (up to 10 000 samples).</p>
   </div>
-  <br>
-  <small>Total data points in the noise signal (max 10 000).</small>
-  <br><br>
 
   <!-- ───────────── Action buttons ───────────── -->
-  <button type="submit"
-          style="background:#007acc;color:#fff;padding:6px 12px;border:none;border-radius:4px;">
-    Design Filter &amp; Apply Noise
-  </button>
+  <div class="actions">
+    <button type="submit" class="primary-button">Design Filter &amp; Apply Noise</button>
 
     <select id="fmt">
-    <option value="matlab">Export .M</option>
-    <option value="python">Export .PY</option>
-    <option value="arduino">Export .INO</option>
-  </select>
-  <button type="button" onclick="downloadFilter()">⬇︎ Export</button>
-
-  <!-- NEW button → Image‑Filter Lab -->
-  <button type="submit" name="go_image_filter" value="1"
-          style="background:#10b981;color:#fff;padding:6px 12px;border:none;border-radius:4px;margin-left:8px;">
-    &rarr;&nbsp;Try on an image
-  </button>
+      <option value="matlab">Export .M</option>
+      <option value="python">Export .PY</option>
+      <option value="arduino">Export .INO</option>
+    </select>
+    <button type="button" onclick="downloadFilter()">⬇︎ Export</button>
+    <button type="submit" name="go_image_filter" value="1" class="secondary-button">&rarr;&nbsp;Try on an image</button>
+  </div>
 </form>
 
 {% if plot_url %}
