@@ -1,232 +1,272 @@
-# pages/filter_design.py
-from flask import Blueprint, render_template, request, redirect, url_for, send_file, abort
-import numpy as np
-from scipy.signal import butter, filtfilt, freqz
-import matplotlib.pyplot as plt
-from io import BytesIO
+# flake8: noqa
+from flask import Blueprint, render_template, request, send_file, abort, jsonify
 import io
-import base64
+import numpy as np
+from scipy.signal import butter, cheby1, cheby2, ellip, iirdesign, freqz, group_delay, lfilter, filtfilt
 from datetime import datetime
-from utils.exporters import matlab_script, python_script, arduino_ino
+from io import BytesIO
+# import matplotlib.pyplot as plt
 
 filter_design_bp = Blueprint(
     "filter_design",
     __name__,
     template_folder="../templates",
-    url_prefix="/filter_design",
 )
-@filter_design_bp.route("/", methods=["GET", "POST"])
-def filter_design():
-    plot_url = None
-    error = None
-    if request.form.get("go_image_filter") == "1":
-        return redirect(url_for("image_filter.home"))
-    if request.method == "POST":
-        try:
-            # Get form data with default values
-            filter_type = request.form.get("filter_type", "lowpass")
-            order = int(request.form.get("order", 4))
-            cutoff_str = request.form.get("cutoff", "100")
-            sample_rate = float(request.form.get("sample_rate", 1000))
-            noise_amplitude = float(request.form.get("noise_amplitude", 1))
-            num_samples = int(request.form.get("num_samples", 1000))
-            
-            # Process cutoff frequency values.
-            # For band filters, expect two comma-separated values.
-            cutoff_vals = [float(x.strip()) for x in cutoff_str.split(",")]
-            nyquist = sample_rate / 2
-            normalized_cutoffs = [f / nyquist for f in cutoff_vals]
-            
-            if filter_type in ["bandpass", "bandstop"]:
-                if len(normalized_cutoffs) != 2:
-                    raise ValueError("For bandpass and bandstop filters, provide two cutoff frequencies separated by a comma.")
-                normalized_cutoffs = sorted(normalized_cutoffs)
-            else:
-                if len(normalized_cutoffs) != 1:
-                    raise ValueError("For lowpass and highpass filters, please provide a single cutoff frequency.")
-                normalized_cutoffs = normalized_cutoffs[0]
-            
-            # Design a Butterworth filter
-            b, a = butter(order, normalized_cutoffs, btype=filter_type)
-            
-            # Compute the filter's frequency response for plotting.
-            w, h = freqz(b, a, worN=8000, fs=sample_rate)
-            h_db = 20 * np.log10(np.maximum(np.abs(h), 1e-10))
-            
-            # Generate a white noise signal
-            noise = noise_amplitude * np.random.randn(num_samples)
-            
-            # Apply the filter to the noise signal
-            filtered_signal = filtfilt(b, a, noise)
-            
-            # Compute FFT of the original noise signal (frequency domain)
-            freqs = np.fft.rfftfreq(num_samples, 1/sample_rate)
-            orig_fft = np.abs(np.fft.rfft(noise))
-            orig_fft_db = 20 * np.log10(np.maximum(orig_fft, 1e-10))
-            
-            # Compute FFT of the filtered noise signal (frequency domain)
-            fft_vals = np.abs(np.fft.rfft(filtered_signal))
-            fft_db = 20 * np.log10(np.maximum(fft_vals, 1e-10))
-            
-            # Create a figure with three subplots:
-            # 1) Spectrum of original noise; 2) Spectrum of filtered noise; 3) Filter frequency response.
-            fig, ax = plt.subplots(3, 1, figsize=(8, 12), layout="constrained")
-            
-            # Plot 1: FFT Spectrum of Original Noise Signal
-            ax[0].plot(freqs, orig_fft_db)
-            # ── FIXED SCALE ────────────────────────────────────────
-            ax[0].set_xlim(0, sample_rate/2)
-            ax[0].set_ylim(-80,  80)    # set your desired dB‐range here
-            ax[0].set_title("Spectrum of Original Noise Signal")
-            ax[0].set_xlabel("Frequency (Hz)")
-            ax[0].set_ylabel("Magnitude (dB)")
-            ax[0].grid(True)
-            
-            # Plot 2: FFT Spectrum of Filtered Noise Signal
-            ax[1].plot(freqs, fft_db, color="orange")
-            # ── FIXED SCALE ────────────────────────────────────────
-            ax[1].set_xlim(0, sample_rate/2)
-            ax[1].set_ylim(-80,  80)    # same y‐range for consistency
-            ax[1].set_title("Spectrum of Filtered Noise Signal")
-            ax[1].set_xlabel("Frequency (Hz)")
-            ax[1].set_ylabel("Magnitude (dB)")
-            ax[1].grid(True)
-            
-            # Plot 3: Filter Frequency Response
-            ax[2].plot(w, h_db, color="green")
-            # ── FIXED SCALE ────────────────────────────────────────
-            ax[2].set_xlim(0, sample_rate/2)
-            ax[2].set_ylim(-60,  5)     # adjust to cover your filter’s pass/stop‐band
-            ax[2].set_title("Filter Frequency Response")
-            ax[2].set_xlabel("Frequency (Hz)")
-            ax[2].set_ylabel("Magnitude (dB)")
-            ax[2].grid(True)
-                        
-            # Save plot to a BytesIO buffer and encode as Base64.
-            buf = BytesIO()
-            plt.savefig(buf, format="png", dpi=100)
-            plot_data = buf.getvalue()
-            plot_url = base64.b64encode(plot_data).decode("utf-8")
-            plt.close(fig)
-        except Exception as e:
-            error = f"Error: {e}"
-    
-    return render_template("filter_design.html", plot_url=plot_url, error=error)
 
-@filter_design_bp.route("/export")
+# --------------------------- Helpers: inline exporters ---------------------------
+
+def _matlab_script(name, b, a, order, filter_type, cutoff, sample_rate):
+    b_list = ", ".join(f"{x:.17g}" for x in b)
+    a_list = ", ".join(f"{x:.17g}" for x in a)
+    return f"""
+% Auto-generated by SPT-FilterWizard
+% Name: {name}
+Fs = {sample_rate:.9g};
+% Coefficients (Direct-Form IIR)
+b = [{b_list}];
+a = [{a_list}];
+
+% Example usage: frequency response
+[H, w] = freqz(b, a, 2048, Fs);
+plot(w, 20*log10(abs(H))); grid on; xlabel('Hz'); ylabel('dB'); title('{name} — {filter_type} (N={order}, Fc={cutoff})');
+""".strip()
+
+
+def _python_script(name, b, a):
+    b_list = ", ".join(f"{x:.17g}" for x in b)
+    a_list = ", ".join(f"{x:.17g}" for x in a)
+    return f"""
+# Auto-generated by SPT-FilterWizard
+import numpy as np
+from scipy.signal import freqz
+import matplotlib.pyplot as plt
+b = np.array([{b_list}], dtype=float)
+a = np.array([{a_list}], dtype=float)
+w, H = freqz(b, a, worN=2048)
+plt.plot(w, 20*np.log10(np.maximum(np.abs(H), 1e-12)))
+plt.xlabel('rad/sample'); plt.ylabel('dB'); plt.grid(True); plt.title('{name}')
+plt.show()
+""".strip()
+
+
+def _arduino_ino(name, b, a):
+    bl = ", ".join(f"{x:.9g}" for x in b)
+    al = ", ".join(f"{x:.9g}" for x in a)
+    return f"""
+// Auto-generated by SPT-FilterWizard
+// Name: {name}
+// Coefficients for Direct-Form IIR (float)
+const int NB = {len(b)}; const int NA = {len(a)};
+float B[NB] = {{ {bl} }};
+float A[NA] = {{ {al} }}; // A[0] should be 1.0
+
+// TODO: implement a Direct-Form I/II filter using these coefficients.
+""".strip()
+
+
+@filter_design_bp.route("/", methods=["GET"]) 
+@filter_design_bp.route("", methods=["GET"]) 
+def filter_design():
+    return render_template("filter_design.html")
+
+# ───────────────────────────── API JSON design ─────────────────────────────
+@filter_design_bp.route("/api", methods=["GET"])
+def api():
+    try:
+        mode   = request.args.get("mode", "order")            # 'order' | 'specs'
+        family = request.args.get("family", "butter")          # butter|cheby1|cheb2|ellip
+        ftype  = request.args.get("ftype",  "lowpass")         # lowpass|highpass|bandpass|bandstp
+        fs     = float(request.args.get("fs", 48000))
+        N      = int(request.args.get("N", 4096))
+        order  = int(request.args.get("order", 6))
+        rp     = float(request.args.get("rp", 1))
+        rs     = float(request.args.get("rs", 60))
+        fc     = request.args.get("fc", "4000")
+        fp     = request.args.get("fp", "4000")
+        fsb    = request.args.get("fsb", "6000")
+        gpass  = float(request.args.get("gpass", 1))
+        gstop  = float(request.args.get("gstop", 60))
+
+        def parse_pair(s):
+            vals = [float(x.strip()) for x in s.split(",") if x.strip()]
+            return vals
+
+        nyq = fs/2.0
+        if mode == "order":
+            c = parse_pair(fc)
+            if ftype in ("bandpass","bandstop"):
+                if len(c) != 2: raise ValueError("Band filters need two cutoffs (Hz)")
+                c = [v/nyq for v in sorted(c)]
+            else:
+                if len(c) != 1: raise ValueError("Single cutoff (Hz) for low/high pass")
+                c = c[0]/nyq
+            if family == "butter":
+                b,a = butter(order, c, btype=ftype)
+            elif family == "cheby1":
+                b,a = cheby1(order, rp, c, btype=ftype)
+            elif family == "cheby2":
+                b,a = cheby2(order, rs, c, btype=ftype)
+            elif family == "ellip":
+                b,a = ellip(order, rp, rs, c, btype=ftype)
+            else:
+                raise ValueError("Unsupported family")
+        else:  
+            wp = parse_pair(fp)
+            ws = parse_pair(fsb)
+            if ftype in ("lowpass","highpass"):
+                if len(wp)!=1 or len(ws)!=1:
+                    raise ValueError("Use single fp and fs for low/high pass (Hz)")
+                wp, ws = wp[0]/nyq, ws[0]/nyq
+            else:
+                if len(wp)!=2 or len(ws)!=2:
+                    raise ValueError("Use two fp & fs values for band filters (Hz)")
+                wp, ws = [v/nyq for v in sorted(wp)], [v/nyq for v in sorted(ws)]
+            b,a = iirdesign(wp=wp, ws=ws, gpass=gpass, gstop=gstop, ftype=family, output='ba')
+            order = max(len(a), len(b)) - 1
+
+        # Frequency response
+        worN = 4096
+        w, H = freqz(b, a, worN=worN)
+        f = (w * fs) / (2*np.pi)  # Hz
+        H_db = 20*np.log10(np.maximum(np.abs(H), 1e-12))
+
+        # Phase and group delay
+        phase = np.unwrap(np.angle(H))
+        phase_deg = np.rad2deg(phase)
+        try:
+            wg, gd = group_delay((b, a), fs=fs)
+            f_gd = wg
+            gd_sec = gd  
+        except TypeError:
+            wg, gd = group_delay((b, a))            # rad/sample,
+            f_gd = (wg * fs) / (2*np.pi)           # Hz
+            gd_sec = gd / fs                        # seconds
+
+        # Impulse / step response (N samples)
+        imp = np.zeros(N); imp[0] = 1.0
+        h = lfilter(b, a, imp)
+        step = np.ones(N)
+        s = lfilter(b, a, step)
+        t = np.arange(N)/fs
+
+        # Poles/zeros
+        p = np.roots(a); z = np.roots(b)
+        stable = bool(np.all(np.abs(p) < 1.0))
+
+        # Spec check 
+        spec_ok = True
+        if mode == 'specs':
+            if ftype in ("lowpass","highpass"):
+                fp_hz = parse_pair(fp)[0]; fs_hz = parse_pair(fsb)[0]
+                if ftype=='lowpass':
+                    passband = f <= fp_hz; stopband = f >= fs_hz
+                else:
+                    passband = f >= fp_hz; stopband = f <= fs_hz
+            else:
+                fp1,fp2 = sorted(parse_pair(fp)); fs1,fs2 = sorted(parse_pair(fsb))
+                passband = (f>=fp1) & (f<=fp2)
+                stopband = (f<=fs1) | (f>=fs2)
+            if np.any(passband):
+                pb_ripple = np.max(H_db[passband]) - np.min(H_db[passband])
+                spec_ok &= (pb_ripple <= gpass + 1e-6)
+            if np.any(stopband):
+                sb_level = np.max(H_db[stopband])
+                spec_ok &= (sb_level <= -gstop + 1e-6)
+            spec_ok &= stable
+        else:
+            spec_ok = stable
+
+        return jsonify({
+            "family": family,
+            "order": int(order),
+            "stable": bool(stable),
+            "spec_ok": bool(spec_ok),
+            "f": f.tolist(),
+            "H_db": H_db.tolist(),
+            "phase_deg": phase_deg.tolist(),
+            "f_gd": f_gd.tolist(),
+            "gd": gd_sec.tolist(),
+            "t": t.tolist(),
+            "h": h.tolist(),
+            "s": s.tolist(),
+            "p_re": p.real.tolist(), "p_im": p.imag.tolist(),
+            "z_re": z.real.tolist(), "z_im": z.imag.tolist(),
+        })
+    except Exception as e:
+        return (str(e), 400)
+
+# ─────────────────────────── Export ──────────────────────────
+@filter_design_bp.route("/export", methods=["GET"])
 def export():
     fmt = request.args.get("fmt", "matlab")
     name = request.args.get("name") or f"myFilter_{datetime.utcnow().strftime('%Y%m%d')}"
     filter_type = request.args.get("filter_type", "lowpass")
     order = int(request.args.get("order", 4))
-    cutoff_str = request.args.get("cutoff", "100")
-    sample_rate = float(request.args.get("sample_rate", 1000))
-
+    cutoff_str = request.args.get("cutoff", "1000")
+    sample_rate = float(request.args.get("sample_rate", 48000))
     try:
-        cutoff_vals = [float(x.strip()) for x in cutoff_str.split(",")]
-        nyquist = sample_rate / 2
-        normalized_cutoffs = [f / nyquist for f in cutoff_vals]
-        if filter_type in ["bandpass", "bandstop"]:
-            if len(normalized_cutoffs) != 2:
-                raise ValueError("Need two cutoff frequencies for band filters")
-            normalized_cutoffs = sorted(normalized_cutoffs)
+        def parse_pair(s):
+            vals=[float(x.strip()) for x in s.split(',') if x.strip()]
+            return vals
+        nyq = sample_rate/2
+        c = parse_pair(cutoff_str)
+        if filter_type in ("bandpass","bandstop"):
+            if len(c)!=2: raise ValueError("Need two cutoff frequencies for band filters (Hz)")
+            c = [v/nyq for v in sorted(c)]
         else:
-            if len(normalized_cutoffs) != 1:
-                raise ValueError("Single cutoff required for low/high pass")
-            normalized_cutoffs = normalized_cutoffs[0]
-
-        b, a = butter(order, normalized_cutoffs, btype=filter_type)
+            if len(c)!=1: raise ValueError("Single cutoff required for low/high pass (Hz)")
+            c = c[0]/nyq
+        b,a = butter(order, c, btype=filter_type)
     except Exception as e:
         abort(400, str(e))
 
     if fmt == "matlab":
-        payload = matlab_script(
-        name, b, a,
-        order=order,
-        filter_type=filter_type,
-        cutoff=cutoff_str,          # same string you got from the query
-        sample_rate=sample_rate
-    )
-        mimetype = "text/x-matlab"
-        ext = "m"
+        payload = _matlab_script(name, b, a, order=order, filter_type=filter_type, cutoff=cutoff_str, sample_rate=sample_rate)
+        mimetype = "text/x-matlab"; ext="m"
     elif fmt == "python":
-        payload = python_script(name, b, a)
-        mimetype = "text/x-python"
-        ext = "py"
+        payload = _python_script(name, b, a)
+        mimetype = "text/x-python"; ext="py"
     elif fmt == "arduino":
-        payload = arduino_ino(name, b, a)
-        mimetype = "text/plain"
-        ext = "ino"
+        payload = _arduino_ino(name, b, a)
+        mimetype = "text/plain"; ext="ino"
     else:
         abort(400, "invalid format")
 
-    return send_file(
-        io.BytesIO(payload.encode()),
-        mimetype=mimetype,
-        as_attachment=True,
-        download_name=f"{name}.{ext}"
-    )
+    return send_file(io.BytesIO(payload.encode()), mimetype=mimetype, as_attachment=True, download_name=f"{name}.{ext}")
 
-@filter_design_bp.route("/live")
+# ─────────────────────────── Live ────────────────────────────────
+@filter_design_bp.route("/live", methods=["GET"])
 def live_plot():
     try:
-        # Use query parameters to customize the live plot, falling back to default values
-        filter_type = request.args.get("filter_type", "lowpass")
+        ftype = request.args.get("filter_type", "lowpass")
         order = int(request.args.get("order", 4))
-        cutoff_str = request.args.get("cutoff", "100")
-        sample_rate = float(request.args.get("sample_rate", 1000))
-        noise_amplitude = float(request.args.get("noise_amplitude", 1))
-        num_samples = int(request.args.get("num_samples", 1000))
-        
-        cutoff_vals = [float(x.strip()) for x in cutoff_str.split(",")]
-        nyquist = sample_rate / 2
-        normalized_cutoffs = [f / nyquist for f in cutoff_vals]
-        if filter_type in ["bandpass", "bandstop"]:
-            if len(normalized_cutoffs) != 2:
-                raise ValueError("For bandpass and bandstop filters, provide two cutoff frequencies separated by a comma.")
-            normalized_cutoffs = sorted(normalized_cutoffs)
+        cutoff_str = request.args.get("cutoff", "1000")
+        fs = float(request.args.get("sample_rate", 48000))
+        N = int(request.args.get("num_samples", 2000))
+        noise_amp = float(request.args.get("noise_amplitude", 1))
+        def parse_pair(s):
+            vals=[float(x.strip()) for x in s.split(',') if x.strip()]
+            return vals
+        nyq = fs/2
+        c = parse_pair(cutoff_str)
+        if ftype in ("bandpass","bandstop"):
+            if len(c)!=2: raise ValueError("For band filters, provide two cutoff frequencies (Hz)")
+            c = [v/nyq for v in sorted(c)]
         else:
-            if len(normalized_cutoffs) != 1:
-                raise ValueError("For lowpass and highpass filters, please provide a single cutoff frequency.")
-            normalized_cutoffs = normalized_cutoffs[0]
-        
-        b, a = butter(order, normalized_cutoffs, btype=filter_type)
-        w, h = freqz(b, a, worN=8000, fs=sample_rate)
-        h_db = 20 * np.log10(np.maximum(np.abs(h), 1e-10))
-        
-        noise = noise_amplitude * np.random.randn(num_samples)
-        filtered_signal = filtfilt(b, a, noise)
-        
-        freqs = np.fft.rfftfreq(num_samples, 1/sample_rate)
-        orig_fft = np.abs(np.fft.rfft(noise))
-        orig_fft_db = 20 * np.log10(np.maximum(orig_fft, 1e-10))
-        
-        fft_vals = np.abs(np.fft.rfft(filtered_signal))
-        fft_db = 20 * np.log10(np.maximum(fft_vals, 1e-10))
-        
-        fig, ax = plt.subplots(3, 1, figsize=(6, 9), layout="constrained")
-        
-        ax[0].plot(freqs, orig_fft_db)
-        ax[0].set_title("Spectrum of Original Noise Signal")
-        ax[0].set_xlabel("Frequency (Hz)")
-        ax[0].set_ylabel("Magnitude (dB)")
-        ax[0].grid(True)
-        
-        ax[1].plot(freqs, fft_db, color="orange")
-        ax[1].set_title("Spectrum of Filtered Noise Signal")
-        ax[1].set_xlabel("Frequency (Hz)")
-        ax[1].set_ylabel("Magnitude (dB)")
-        ax[1].grid(True)
-        
-        ax[2].plot(w, h_db, color="green")
-        ax[2].set_title("Filter Frequency Response")
-        ax[2].set_xlabel("Frequency (Hz)")
-        ax[2].set_ylabel("Magnitude (dB)")
-        ax[2].grid(True)
-        
-        buf = BytesIO()
-        plt.savefig(buf, format="png", dpi=100)
-        plt.close(fig)
-        return buf.getvalue(), 200, {'Content-Type': 'image/png'}
+            if len(c)!=1: raise ValueError("Single cutoff for low/high pass (Hz)")
+            c = c[0]/nyq
+        b,a = butter(order, c, btype=ftype)
+        w, H = freqz(b, a, worN=4096)
+        F = (w * fs) / (2*np.pi)
+        H_db = 20*np.log10(np.maximum(np.abs(H), 1e-12))
+        noise = noise_amp*np.random.randn(N)
+        y = filtfilt(b, a, noise)
+        Fr = np.fft.rfftfreq(N, 1/fs)
+        YdB = 20*np.log10(np.maximum(np.abs(np.fft.rfft(y)), 1e-12))
+        fig, ax = plt.subplots(2,1, figsize=(7,6), layout='constrained')
+        ax[0].plot(Fr, YdB); ax[0].set_title('Filtered noise spectrum'); ax[0].set_xlabel('Hz'); ax[0].set_ylabel('dB'); ax[0].grid(True)
+        ax[1].plot(F, H_db); ax[1].set_title('H(f)'); ax[1].set_xlabel('Hz'); ax[1].set_ylabel('dB'); ax[1].grid(True)
+        buf = BytesIO(); plt.savefig(buf, format='png', dpi=110); plt.close(fig)
+        return buf.getvalue(), 200, {'Content-Type':'image/png'}
     except Exception as e:
         return f"Error: {e}", 400

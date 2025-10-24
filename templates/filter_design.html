@@ -1,233 +1,245 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  .filter-form {
-    max-width: 640px;
-    display: grid;
-    gap: 14px;
-  }
-  .filter-form label {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 4px;
-  }
-  .filter-form input,
-  .filter-form select {
-    width: 100%;
-    padding: 6px 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-  }
-  .filter-form .hint {
-    margin-top: 4px;
-    color: #4b5563;
-    font-size: 0.9rem;
-  }
-  .filter-form .input-with-info {
-    position: relative;
-  }
-  .filter-form .input-with-info input {
-    padding-right: 34px;
-  }
-  .filter-form .info-button {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #007acc;
-    color: #fff;
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    line-height: 22px;
-    font-size: 12px;
-    text-align: center;
-    text-decoration: none;
-  }
-  .filter-form .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-  .filter-form .actions button,
-  .filter-form .actions select {
-    width: auto;
-  }
-  .filter-form .primary-button {
-    background: #007acc;
-    color: #fff;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-  }
-  .filter-form .secondary-button {
-    background: #10b981;
-    color: #fff;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-  }
-  .page-intro {
-    max-width: 720px;
-    color: #374151;
-    line-height: 1.6;
-    margin-bottom: 18px;
-  }
+  .wizard-grid{display:grid;grid-template-columns:1fr;gap:16px;align-items:start;max-width:1200px;margin-inline:auto}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card h3{margin:0;padding:14px 16px;border-bottom:1px solid #f3f4f6;font-size:1rem;font-weight:700}
+  .card .body{padding:14px 16px}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-weight:600;margin-bottom:4px}
+  .field input,.field select{width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px}
+  .row{display:flex;gap:8px}
+  .hint{color:#6b7280;font-size:.9rem;margin-top:4px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:.8rem;font-weight:600}
+  .ok{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+  .warn{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+  .danger{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  .btn{border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer}
+  .btn.primary{background:#1f6feb;color:#fff}
+  .btn.secondary{background:#10b981;color:#fff}
+  .btn.ghost{background:#f3f4f6}
+  .plot{height:340px}
+  .plots{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:1000px){.plots{grid-template-columns:1fr}}
 </style>
 
-<h2>Filter Design &amp; Experimentation</h2>
-<p class="page-intro">
-  Configure a digital filter, then compare its effect on noisy audio in real time. Adjust the type,
-  order, and cut-off parameters to see how the response reshapes the signal spectrum, while the plots
-  below provide a side-by-side view of the original noise, the filtered result, and the filter’s
-  frequency response.
-</p>
+<h2>Filter Wizard (Digital) — Design & Exploration</h2>
+<p class="hint">Spec‑driven IIR design (Butterworth/Chebyshev I/II/Elliptic) with magnitude/phase, group delay, impulse & step response, and pole–zero map.
+  You can still <em>Export</em> MATLAB/Python/Arduino and try the filter on an image.</p>
 
-{% if error %}
-  <div style="color:red;">{{ error }}</div>
-{% endif %}
+<div class="wizard-grid">
+  <div class="card">
+    <h3>Specifications</h3>
+    <div class="body">
+      <div class="field">
+        <label>Design mode</label>
+        <select id="mode">
+          <option value="order">By order</option>
+          <option value="specs">By specs (auto‑order)</option>
+        </select>
+      </div>
 
-<form method="post" class="filter-form">
-  <!-- ───────────── Filter parameters ───────────── -->
-  <div>
-    <label for="filter_type">Filter Type</label>
-    <select name="filter_type" id="filter_type">
-      <option value="lowpass"  {% if request.form.get('filter_type','lowpass')=='lowpass'  %}selected{% endif %}>Low Pass</option>
-      <option value="highpass" {% if request.form.get('filter_type')=='highpass' %}selected{% endif %}>High Pass</option>
-      <option value="bandpass" {% if request.form.get('filter_type')=='bandpass' %}selected{% endif %}>Band Pass</option>
-      <option value="bandstop" {% if request.form.get('filter_type')=='bandstop' %}selected{% endif %}>Band Stop</option>
-    </select>
-    <p class="hint">Select a topology. Low/high pass use one cut-off, band pass/stop use a lower and upper bound.</p>
-  </div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label>Family</label>
+          <select id="family">
+            <option value="butter">Butterworth</option>
+            <option value="cheby1">Chebyshev I</option>
+            <option value="cheby2">Chebyshev II</option>
+            <option value="ellip">Elliptic</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1">
+          <label>Type</label>
+          <select id="ftype">
+            <option value="lowpass">Low‑pass</option>
+            <option value="highpass">High‑pass</option>
+            <option value="bandpass">Band‑pass</option>
+            <option value="bandstop">Band‑stop</option>
+          </select>
+        </div>
+      </div>
 
-  <div>
-    <label for="order">Filter Order</label>
-    <input type="number" name="order" id="order"
-           value="{{ request.form.get('order','4') }}" min="1" max="5" required>
-    <p class="hint">Orders 1–5 control the slope of the transition band. Higher order tightens the roll-off.</p>
-  </div>
+      <div class="row" id="orderRow">
+        <div class="field" style="flex:1">
+          <label>Order</label>
+          <input id="order" type="number" min="1" max="12" value="6">
+          <div class="hint">Used only in <b>By order</b> mode.</div>
+        </div>
+        <div class="field" style="flex:1">
+          <label>Ripple / Atten (dB)</label>
+          <div class="row">
+            <input id="rp" type="number" step="0.1" value="1" title="Passband ripple (Cheby1/Ellip)">
+            <input id="rs" type="number" step="1" value="60" title="Stopband attenuation (Cheby2/Ellip)">
+          </div>
+          <div class="hint">rp applies to Cheby I/Ellip; rs applies to Cheby II/Ellip.</div>
+        </div>
+      </div>
 
-  <!-- Cut‑off Frequency -->
-  <div>
-    <label for="cutoff">Cutoff Frequency&nbsp;(Hz)</label>
-    <div class="input-with-info">
-      <input type="text" name="cutoff" id="cutoff"
-             value="{{ request.form.get('cutoff','100') }}"
-             pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)?$"
-             title="Single value for low/high‑pass or two comma‑separated values for band filters"
-             required>
-      <a href="{{ url_for('info.bandpass_order') }}" target="_blank" class="info-button">i</a>
+      <div class="card" style="border:none;background:transparent;padding:0">
+        <div class="grid2">
+          <div class="field">
+            <label>fs (Hz)</label>
+            <input id="fs" type="number" min="10" max="1000000" value="48000">
+          </div>
+          <div class="field">
+            <label>Samples (time‑domain)</label>
+            <input id="N" type="number" min="128" max="32768" value="4096">
+          </div>
+          <div class="field" id="cutSingle">
+            <label>Cutoff fc (Hz)</label>
+            <input id="fc" type="text" value="4000">
+            <div class="hint">Comma‑separate for band filters, e.g. <code>1000, 6000</code></div>
+          </div>
+          <div id="specsBox" style="display:none">
+            <div class="field">
+              <label>Passband fp (Hz)</label>
+              <input id="fp" type="text" value="4000">
+            </div>
+            <div class="field">
+              <label>Stopband fs (Hz)</label>
+              <input id="fsb" type="text" value="6000">
+            </div>
+            <div class="field">
+              <label>g<sub>pass</sub> (dB)</label>
+              <input id="gpass" type="number" step="0.1" value="1">
+            </div>
+            <div class="field">
+              <label>g<sub>stop</sub> (dB)</label>
+              <input id="gstop" type="number" step="1" value="60">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn primary" id="designBtn">Design / Update</button>
+        <span id="badge" class="badge warn">Ready</span>
+        <select id="fmt">
+          <option value="matlab">Export .M</option>
+          <option value="python">Export .PY</option>
+          <option value="arduino">Export .INO</option>
+        </select>
+        <button type="button" class="btn ghost" id="dlBtn">⬇︎ Export</button>
+        
+      </div>
+      <div class="hint">Info: Specify pass/stop bands and ripple/attenuation; the badge will tell you if specs are met.</div>
     </div>
-    <p class="hint">Enter one value (≤ 90 kHz) for low/high pass or two comma-separated values such as “100,400”.</p>
   </div>
 
-  <div>
-    <label for="sample_rate">Sample Rate&nbsp;fs&nbsp;(Hz)</label>
-    <input type="number" name="sample_rate" id="sample_rate"
-           value="{{ request.form.get('sample_rate','1000') }}" min="1" max="900000" required>
-    <p class="hint">Keep the sampling frequency at least twice the highest signal component (Nyquist) and ≤ 900 kHz.</p>
-  </div>
-
-  <div>
-    <label for="noise_amplitude">Noise Amplitude</label>
-    <input type="number" name="noise_amplitude" id="noise_amplitude"
-           value="{{ request.form.get('noise_amplitude','1') }}" step="0.1" min="0" max="10" required>
-    <p class="hint">Scales the strength of the generated white noise from 0 (silent) to 10 (very loud).</p>
-  </div>
-
-  <!-- Number of Samples -->
-  <div>
-    <label for="num_samples">Number of Samples</label>
-    <div class="input-with-info">
-      <input type="number" name="num_samples" id="num_samples"
-             value="{{ request.form.get('num_samples','1000') }}" min="100" max="10000" required>
-      <a href="{{ url_for('info.sampling') }}" target="_blank" class="info-button">i</a>
+  <div class="card">
+    <h3>Responses</h3>
+    <div class="body">
+      <div class="plots">
+        <div id="magPlot" class="plot"></div>
+        <div id="phasePlot" class="plot"></div>
+        <div id="gdPlot" class="plot"></div>
+        <div id="pzPlot" class="plot"></div>
+        <div id="impPlot" class="plot"></div>
+        <div id="stepPlot" class="plot"></div>
+      </div>
     </div>
-    <p class="hint">Sets the length of the noise window (up to 10 000 samples).</p>
   </div>
+</div>
 
-  <!-- ───────────── Action buttons ───────────── -->
-  <div class="actions">
-    <button type="submit" class="primary-button">Design Filter &amp; Apply Noise</button>
-
-    <select id="fmt">
-      <option value="matlab">Export .M</option>
-      <option value="python">Export .PY</option>
-      <option value="arduino">Export .INO</option>
-    </select>
-    <button type="button" onclick="downloadFilter()">⬇︎ Export</button>
-    <button type="submit" name="go_image_filter" value="1" class="secondary-button">&rarr;&nbsp;Try on an image</button>
+<div class="card" style="margin-top:12px">
+  <h3>Live Filtering Simulation</h3>
+  <div class="body">
+    <p class="hint">The image below simulates filtering of white noise with current parameters.</p>
+    <img id="livePlot" src="{{ url_for('filter_design.live_plot') }}" alt="Live Filter Plot" style="max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px">
+    <div class="actions"><button type="button" id="toggleLive" class="btn ghost">Start Live</button></div>
   </div>
-</form>
+</div>
 
-{% if plot_url %}
-  <h3>Resulting Plots</h3>
-  <img src="data:image/png;base64,{{ plot_url }}" alt="Filter Design Plots"
-       style="max-width:800px;height:auto;border:1px solid #ccc;border-radius:4px;">
-{% endif %}
-
-<!-- ───────────── Live filtering demo ───────────── -->
-<h3>Live Filtering Simulation</h3>
-<p>
-  The image below simulates a live filtering process, reflecting your current parameters.
-  It updates about every 1 s.
-</p>
-<img id="livePlot" src="{{ url_for('filter_design.live_plot') }}"
-     alt="Live Filter Plot"
-     style="max-width:800px;height:auto;">
-<br>
-<button id="toggleLiveButton">Start Live</button>
-
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js" defer></script>
 <script>
-function buildLivePlotURL() {
-  const base = "{{ url_for('filter_design.live_plot') }}";
-  const params = new URLSearchParams({
-    filter_type:      document.getElementById("filter_type").value,
-    order:            document.getElementById("order").value,
-    cutoff:           document.getElementById("cutoff").value,
-    sample_rate:      document.getElementById("sample_rate").value,
-    noise_amplitude:  document.getElementById("noise_amplitude").value,
-    num_samples:      document.getElementById("num_samples").value,
-    t:                Date.now()
-  });
-  return base + "?" + params.toString();
+const $ = (id)=>document.getElementById(id);
+const modeEl=$('mode'), famEl=$('family'), typeEl=$('ftype'), fsEl=$('fs'), orderEl=$('order'),
+      rpEl=$('rp'), rsEl=$('rs'), NEl=$('N'), fcEl=$('fc'), fpEl=$('fp'), fsbEl=$('fsb'),
+      gpassEl=$('gpass'), gstopEl=$('gstop');
+
+function uiMode(){
+  const specs=(modeEl.value==='specs');
+  $('specsBox').style.display=specs?'block':'none';
+  $('cutSingle').style.display=specs?'none':'block';
+}
+modeEl.addEventListener('change', uiMode); uiMode();
+
+function params(){
+  return {
+    mode: modeEl.value,
+    family: famEl.value,
+    ftype: typeEl.value,
+    fs: parseFloat(fsEl.value||48000),
+    N: parseInt(NEl.value||4096),
+    order: parseInt(orderEl.value||4),
+    rp: parseFloat(rpEl.value||1),
+    rs: parseFloat(rsEl.value||60),
+    fc: fcEl.value,
+    fp: fpEl.value,
+    fsb: fsbEl.value,
+    gpass: parseFloat(gpassEl.value||1),
+    gstop: parseFloat(gstopEl.value||60)
+  };
 }
 
-function refreshLivePlot() {
-  document.getElementById("livePlot").src = buildLivePlotURL();
+function layout(title,x,dby=false){
+  return {title,margin:{l:50,r:10,t:28,b:40},xaxis:{title:x},yaxis:{title:dby?'Magnitude (dB)':'Amplitude'},height:340};
 }
 
-let timerId = null;
-document.getElementById("toggleLiveButton").addEventListener("click", function () {
-  if (timerId) {
-    clearInterval(timerId);
-    timerId = null;
-    this.textContent = "Start Live";
-  } else {
-    timerId = setInterval(refreshLivePlot, 1000);
-    this.textContent = "Stop Live";
-    refreshLivePlot();
+function pzLayout(){
+  return {title:'Pole–Zero Map',margin:{l:40,r:10,t:28,b:40},xaxis:{title:'Re',scaleanchor:'y',constrain:'domain'},yaxis:{title:'Im'},shapes:[{type:'circle',xref:'x',yref:'y',x0:-1,y0:-1,x1:1,y1:1,line:{dash:'dot'}}],height:340};
+}
+
+async function design(){
+  const badge=$('badge'); badge.textContent='Designing…'; badge.className='badge warn';
+  const q=new URLSearchParams(params());
+  const res=await fetch(`{{ url_for('filter_design.api') }}?`+q.toString());
+  if(!res.ok){
+    badge.textContent='Error'; badge.className='badge danger';
+    const tx=await res.text(); alert(tx); return;
   }
+  const d=await res.json();
+  badge.textContent = (d.spec_ok? 'Meets specs' : 'Specs not met') + ` • N=${d.order} • ${d.family}`;
+  badge.className = 'badge '+(d.spec_ok?'ok':'warn');
+
+  Plotly.react('magPlot', [{x:d.f, y:d.H_db, mode:'lines', name:'|H| dB'}], layout('Magnitude', 'Frequency (Hz)', true));
+  Plotly.react('phasePlot', [{x:d.f, y:d.phase_deg, mode:'lines', name:'Phase (°)'}], layout('Phase', 'Frequency (Hz)'));
+  Plotly.react('gdPlot', [{x:d.f_gd, y:d.gd, mode:'lines', name:'τ (s)'}], layout('Group delay', 'Frequency (Hz)'));
+  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]'}], layout('Impulse response', 'Time (s)'));
+  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]'}], layout('Step response', 'Time (s)'));
+  Plotly.react('pzPlot', [
+    {x:d.z_re, y:d.z_im, mode:'markers', name:'zeros', marker:{symbol:'circle-open'}},
+    {x:d.p_re, y:d.p_im, mode:'markers', name:'poles', marker:{symbol:'x', size:10}}
+  ], pzLayout());
+}
+
+$('designBtn').addEventListener('click', ev=>{ev.preventDefault(); design();});
+
+$('dlBtn').addEventListener('click', ev=>{
+  ev.preventDefault();
+  const p=params();
+  const qs = new URLSearchParams({fmt: $('fmt').value, filter_type: p.ftype, order: p.order, cutoff: (p.mode==='specs'? (p.fp): p.fc), sample_rate: p.fs});
+  window.location = `{{ url_for('filter_design.export') }}?`+qs.toString();
 });
 
-// Auto‑start live mode when a static plot exists.
-{% if plot_url %}
-  timerId = setInterval(refreshLivePlot, 1000);
-  document.getElementById("toggleLiveButton").textContent = "Stop Live";
-{% endif %}
-</script>
-<script>
-  function downloadFilter() {
-    const base = "{{ url_for('filter_design.export') }}";
-    const qs = new URLSearchParams({
-      fmt:         document.getElementById('fmt').value,
-      filter_type: document.getElementById('filter_type').value,
-      order:       document.getElementById('order').value,
-      cutoff:      document.getElementById('cutoff').value,
-      sample_rate: document.getElementById('sample_rate').value
-    });
-    window.location = base + "?" + qs.toString();
-  }
+// Live demo 
+let timer=null; const live=$('livePlot');
+$('toggleLive').addEventListener('click', ()=>{
+  if(timer){ clearInterval(timer); timer=null; $('toggleLive').textContent='Start Live'; return; }
+  const tick=()=>{
+    const p=params();
+    const cutoff = (p.mode==='specs'? p.fp : p.fc);
+    const liveURL = `{{ url_for('filter_design.live_plot') }}?filter_type=${p.ftype}&order=${p.order}&cutoff=${encodeURIComponent(cutoff)}&sample_rate=${p.fs}&num_samples=${p.N}`;
+    live.src = liveURL + `&t=${Date.now()}`;
+  };
+  timer=setInterval(tick,1000); tick(); $('toggleLive').textContent='Stop Live';
+});
+
+// initial render
+window.addEventListener('load', design);
+window.addEventListener('resize', ()=>['magPlot','phasePlot','gdPlot','pzPlot','impPlot','stepPlot'].forEach(id=>{const el=$(id); if(el&&el.data) Plotly.Plots.resize(el);}));
 </script>
 {% endblock %}
