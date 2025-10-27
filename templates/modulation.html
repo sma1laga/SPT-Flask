@@ -147,11 +147,21 @@
       <div class="row">
         <label>AM mode
           <select id="am_carrier">
-            <option value="with" selected>with carrier</option>
-            <option value="without">without carrier (ZSB / DSB-SC)</option>
-            <option value="ssb_regel">single-sideband EM (Regellage)</option>
-            <option value="ssb_kehr">single-sideband EM (Kehrlage)</option>
+            <option value="with" selected>AM with carrier (DSB-TC)</option>
+            <option value="dsb_sc">DSB-SC (suppressed carrier)</option>
+            <option value="ssb_upper">SSB (upper sideband)</option>
+            <option value="ssb_lower">SSB (lower sideband)</option>
+            <option value="vsb">VSB (vestigial)</option>
           </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>AM detector
+          <select id="am_detector">
+            <option value="envelope" selected>Envelope (rectifier)</option>
+            <option value="sync">Synchronous (coherent)</option>
+          </select>
+          <small class="muted" id="am_detector_hint">Envelope works only with carrier present.</small>
         </label>
       </div>
       <label>m (mod depth)

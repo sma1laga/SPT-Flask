@@ -7,6 +7,9 @@ mod_bp = Blueprint('modulation', __name__)
 
 # ---------- helpers ----------
 
+MAX_PLOT_POINTS = 20000
+
+
 def make_time(t_end=1.0, fs=1000):
     N = int(max(8, fs * t_end))
     return np.linspace(0.0, t_end, N, endpoint=False)
@@ -26,6 +29,81 @@ def analytic_signal(x: np.ndarray) -> np.ndarray:
     else:
         h[1:(N+1)//2] = 2.0
     return np.fft.ifft(X * h)
+
+
+def _normalize_carrier_mode(mode: str) -> str:
+    mapping = {
+        'with': 'with',
+        'with_carrier': 'with',
+        'carrier': 'with',
+        'dsb_sc': 'dsb_sc',
+        'dsb-sc': 'dsb_sc',
+        'without': 'dsb_sc',
+        'zsb': 'dsb_sc',
+        'ssb_regel': 'ssb_upper',
+        'ssb_upper': 'ssb_upper',
+        'upper': 'ssb_upper',
+        'ssb_kehr': 'ssb_lower',
+        'ssb_lower': 'ssb_lower',
+        'lower': 'ssb_lower',
+        'vsb': 'vsb',
+    }
+    return mapping.get((mode or 'with').lower(), 'with')
+
+
+def _carrier_mode_label(mode: str) -> str:
+    labels = {
+        'with': 'AM with carrier (DSB-TC)',
+        'dsb_sc': 'DSB-SC (suppressed carrier)',
+        'ssb_upper': 'SSB (upper sideband)',
+        'ssb_lower': 'SSB (lower sideband)',
+        'vsb': 'VSB (vestigial sideband)',
+    }
+    return labels.get(mode, mode)
+
+
+def _downsample_bundle(arrays, max_points=MAX_PLOT_POINTS):
+    processed = []
+    lengths = []
+    for arr in arrays:
+        if arr is None:
+            processed.append(None)
+            continue
+        arr_np = np.asarray(arr)
+        processed.append(arr_np)
+        if arr_np.size:
+            lengths.append(arr_np.size)
+    if not lengths:
+        return processed, 1
+    step = max(1, int(np.ceil(max(lengths) / max_points)))
+    if step <= 1:
+        return processed, 1
+    downsampled = []
+    for arr in processed:
+        if arr is None:
+            downsampled.append(None)
+        elif arr.size == 0:
+            downsampled.append(arr)
+        else:
+            downsampled.append(arr[::step])
+    return downsampled, step
+
+
+def _to_list(arr):
+    if arr is None:
+        return None
+    return np.asarray(arr).tolist()
+
+
+def _lowpass_fft(x: np.ndarray, fs: float, cutoff_hz: float) -> np.ndarray:
+    if cutoff_hz <= 0:
+        return np.real(x)
+    X = np.fft.fft(x)
+    freqs = np.fft.fftfreq(x.size, d=1.0/fs)
+    cutoff = min(cutoff_hz, fs / 2.0)
+    mask = np.abs(freqs) <= cutoff
+    return np.real(np.fft.ifft(X * mask))
+
 
 def spectrum_db(x: np.ndarray, fs: float):
     N = x.size
@@ -113,7 +191,7 @@ def snr_summary_am(m: float, snr_db, active_mode: str):
             1.0,
             1.0,
             requires_sync=True,
-            active=(active_mode == 'without')
+            active=(active_mode == 'dsb_sc')
         ),
         entry(
             'AM m.Tr. (with carrier)',
@@ -143,8 +221,18 @@ def snr_summary_am(m: float, snr_db, active_mode: str):
             1.0,
             1.0,
             requires_sync=True,
-            active=(active_mode in ('ssb_regel', 'ssb_kehr'))
-        )
+            active=(active_mode in ('ssb_upper', 'ssb_lower'))
+        ),
+        entry(
+            'VSB (vestigial)',
+            r"\(\mathrm{SNR}_{\text{out}} \approx \mathrm{SNR}_{\text{in}}\)",
+            r"\(NF \approx 1\)",
+            r"\(\eta \approx 1\)",
+            1.0,
+            1.0,
+            requires_sync=True,
+            active=(active_mode == 'vsb')
+            )
     ]
 
     return summary
@@ -186,7 +274,6 @@ def modulate_api():
     fs    = float(params.get('fs', 1000))
     t_end = float(params.get('t_end', 1.0))
     snr_db = _to_float_or_inf(params.get('snr_db', None))
-    carrier_mode = (params.get('carrier_mode') or 'with').lower()
 
 
     # apply preset
@@ -198,7 +285,7 @@ def modulate_api():
         fs    = float(PRESETS[preset].get('fs', fs))
         t_end = float(PRESETS[preset].get('t_end', t_end))
         snr_db = _to_float_or_inf(PRESETS[preset].get('snr_db', snr_db))
-        carrier_mode = (PRESETS[preset].get('carrier_mode', carrier_mode) or carrier_mode).lower()
+    carrier_mode = _normalize_carrier_mode(params.get('carrier_mode'))
 
 
     t = make_time(t_end=t_end, fs=fs)
@@ -210,8 +297,6 @@ def modulate_api():
     i_msg = None
     q_msg = None
     info = {'type': kind, 'fs': fs, 'duration_s': t_end}
-    if kind == 'AM':
-        info['carrier_mode'] = carrier_mode
     # —— Analog —— #
     if kind == 'AM':
         fc = float(params.get('fc', 100))
@@ -221,47 +306,38 @@ def modulate_api():
         carrier   = np.cos(2*np.pi*fc*t)
         sin_carrier = np.sin(2*np.pi*fc*t)
         baseband = m * message
-        if carrier_mode == 'without':
+        if carrier_mode in ('ssb_upper', 'ssb_lower', 'vsb'):
+            hilbert_msg = np.imag(analytic_signal(baseband))
+        else:
+            hilbert_msg = None
+
+        if carrier_mode == 'dsb_sc':
             modulated = baseband * carrier
-            info.update({
-                'fc': fc,
-                'fm': fm,
-                'm': m,
-                'carrier_mode_label': 'DSB-SC (without carrier)'
-            })
-        elif carrier_mode == 'ssb_regel':
-            analytic_msg = analytic_signal(baseband)
-            hilbert_msg = np.imag(analytic_msg)
+        elif carrier_mode == 'ssb_upper':
+
             modulated = baseband * carrier - hilbert_msg * sin_carrier
-            info.update({
-                'fc': fc,
-                'fm': fm,
-                'm': m,
-                'carrier_mode_label': 'EM (Regellage, upper SSB)',
-                'ssb_sideband': 'upper',
-                'badge': 'BW halves, SNR_out≈SNR_in'
-            })
-        elif carrier_mode == 'ssb_kehr':
-            analytic_msg = analytic_signal(baseband)
-            hilbert_msg = np.imag(analytic_msg)
+            info['ssb_sideband'] = 'upper'
+            info['badge'] = 'BW halves, SNR_out≈SNR_in'
+        elif carrier_mode == 'ssb_lower':
             modulated = baseband * carrier + hilbert_msg * sin_carrier
-            info.update({
-                'fc': fc,
-                'fm': fm,
-                'm': m,
-                'carrier_mode_label': 'EM (Kehrlage, lower SSB)',
-                'ssb_sideband': 'lower',
-                'badge': 'BW halves, SNR_out≈SNR_in'
-            })
+            info['ssb_sideband'] = 'lower'
+            info['badge'] = 'BW halves, SNR_out≈SNR_in'
+        elif carrier_mode == 'vsb':
+            dsb = baseband * carrier
+            ssb_upper = baseband * carrier - hilbert_msg * sin_carrier
+            modulated = 0.5 * dsb + 0.5 * ssb_upper
+            info['badge'] = 'Vestigial: ≈¾ BW'
         else:
             modulated = (1.0 + m*message) * carrier
-            info.update({
-                'fc': fc,
-                'fm': fm,
-                'm': m,
-                'overmod': m>1.0,
-                'carrier_mode_label': 'AM with carrier'
-            })
+            info['overmod'] = m > 1.0
+
+        info.update({
+            'fc': fc,
+            'fm': fm,
+            'm': m,
+            'carrier_mode': carrier_mode,
+            'carrier_mode_label': _carrier_mode_label(carrier_mode)
+        })
         info['snr_summary'] = snr_summary_am(m, snr_db, carrier_mode)
 
     elif kind == 'FM':
@@ -313,15 +389,25 @@ def modulate_api():
         info['snr_db'] = None
     f_mod, Pdb_mod = spectrum_db(mod_noisy, fs)
 
+
+    plot_arrays, plot_step = _downsample_bundle([t, message, carrier, mod_noisy, i_msg, q_msg])
+    t_plot, msg_plot, carrier_plot, mod_plot, i_plot, q_plot = plot_arrays
+    spec_arrays, spec_step = _downsample_bundle([f_mod, Pdb_mod])
+    f_plot, Pdb_plot = spec_arrays
+
+    info['samples'] = int(t.size)
+    info['plot_decimation'] = int(plot_step)
+    info['spectrum_decimation'] = int(spec_step)
+
     return jsonify({
-        't': t.tolist(),
-        'message': message.tolist(),
-        'carrier': carrier.tolist(),
-        'modulated': mod_noisy.tolist(),
-        'message_i': i_msg.tolist() if i_msg is not None else None,
-        'message_q': q_msg.tolist() if q_msg is not None else None,
-        'f': f_mod.tolist(),
-        'P_db': Pdb_mod.tolist(),
+        't': _to_list(t_plot),
+        'message': _to_list(msg_plot),
+        'carrier': _to_list(carrier_plot),
+        'modulated': _to_list(mod_plot),
+        'message_i': _to_list(i_plot),
+        'message_q': _to_list(q_plot),
+        'f': _to_list(f_plot),
+        'P_db': _to_list(Pdb_plot),
         'info': info
     })
 
@@ -339,34 +425,47 @@ def demodulate_api():
         fc = float(params.get('fc',100))
         fm = float(params.get('fm',5))
         m  = float(params.get('m',0.5))
-        carrier_mode = (params.get('carrier_mode') or 'with').lower()
+        carrier_mode = _normalize_carrier_mode(params.get('carrier_mode'))
+        detector = (params.get('detector') or 'envelope').lower()
         msg = np.sin(2*np.pi*fm*t)
         carrier = np.cos(2*np.pi*fc*t)
         sin_car = np.sin(2*np.pi*fc*t)
-        if carrier_mode == 'without':
-            tx = (m * msg) * carrier
-            analytic = analytic_signal(tx)
-            baseband = analytic * np.exp(-1j*2*np.pi*fc*t)
-            demod = np.real(baseband)
-        elif carrier_mode == 'ssb_regel':
-            baseband = m * msg
+        baseband = m * msg
+        hilbert_msg = None
+        if carrier_mode in ('ssb_upper', 'ssb_lower', 'vsb'):
             hilbert_msg = np.imag(analytic_signal(baseband))
+
+        if carrier_mode == 'dsb_sc':
+            tx = baseband * carrier
+        elif carrier_mode == 'ssb_upper':
             tx = baseband * carrier - hilbert_msg * sin_car
-            analytic = analytic_signal(tx)
-            bb = analytic * np.exp(-1j*2*np.pi*fc*t)
-            demod = np.real(bb)
-        elif carrier_mode == 'ssb_kehr':
-            baseband = m * msg
-            hilbert_msg = np.imag(analytic_signal(baseband))
+        elif carrier_mode == 'ssb_lower':
+
             tx = baseband * carrier + hilbert_msg * sin_car
-            analytic = analytic_signal(tx)
-            bb = analytic * np.exp(1j*2*np.pi*fc*t)
-            demod = np.real(bb)
+        elif carrier_mode == 'vsb':
+            dsb = baseband * carrier
+            ssb_upper = baseband * carrier - hilbert_msg * sin_car
+            tx = 0.5 * dsb + 0.5 * ssb_upper
         else:
-            tx  = (1 + m*msg) * carrier
-            analytic = analytic_signal(tx)
+            tx  = (1 + baseband) * carrier
+
+        analytic = analytic_signal(tx)
+        if carrier_mode != 'with':
+            detector = 'sync'
+
+        if carrier_mode == 'with' and detector == 'envelope':
             env = np.abs(analytic)
             demod = env - np.mean(env)
+        else:
+            bb = analytic * np.exp(-1j*2*np.pi*fc*t)
+            bb_real = np.real(bb)
+            if carrier_mode == 'with':
+                demod = bb_real - np.mean(bb_real)
+            elif carrier_mode == 'vsb':
+                cutoff = max(fm * 1.5, fm + 2.0)
+                demod = _lowpass_fft(bb_real, fs, cutoff)
+            else:
+                demod = bb_real
 
     elif kind == 'FM':
         fc   = float(params.get('fc',100))
@@ -413,35 +512,59 @@ def demodulate_api():
         phase = np.unwrap(np.angle(bb_rec))
         mix_i = tx_noisy * np.cos(2*np.pi*fc*t + phase_error)
         mix_q = tx_noisy * np.sin(2*np.pi*fc*t + phase_error)
-        response = {
-            't': t.tolist(),
-            'modulated': tx_noisy.tolist(),
-            'baseband_i': i_rec.tolist(),
-            'baseband_q': q_rec.tolist(),
-            'magnitude': mag.tolist(),
-            'phase_deg': np.degrees(phase).tolist(),
-            'mix_i': mix_i.tolist(),
-            'mix_q': mix_q.tolist(),
-            'lo_cos': np.cos(2*np.pi*fc*t + phase_error).tolist(),
-            'lo_sin': np.sin(2*np.pi*fc*t + phase_error).tolist(),
-            'message_i': i_msg.tolist(),
-            'message_q': q_msg.tolist(),
-            'phase_error_deg': float(params.get('phase_error_deg', 0.0))
-        }
+        phase_deg = np.degrees(phase)
+        lo_cos = np.cos(2*np.pi*fc*t + phase_error)
+        lo_sin = np.sin(2*np.pi*fc*t + phase_error)
         f_rx, Pdb_rx = spectrum_db(i_rec, fs)
-        response['f'] = f_rx.tolist()
-        response['P_db'] = Pdb_rx.tolist()
-        return jsonify(response)
+
+        plot_arrays, plot_step = _downsample_bundle([
+            t, tx_noisy, i_rec, q_rec, mag, phase_deg,
+            mix_i, mix_q, lo_cos, lo_sin, i_msg, q_msg
+        ])
+        (
+            t_plot, tx_plot, i_plot, q_plot, mag_plot, phase_plot,
+            mix_i_plot, mix_q_plot, lo_cos_plot, lo_sin_plot,
+            i_msg_plot, q_msg_plot
+        ) = plot_arrays
+        spec_arrays, spec_step = _downsample_bundle([f_rx, Pdb_rx])
+        f_plot, Pdb_plot = spec_arrays
+
+        return jsonify({
+            't': _to_list(t_plot),
+            'modulated': _to_list(tx_plot),
+            'baseband_i': _to_list(i_plot),
+            'baseband_q': _to_list(q_plot),
+            'magnitude': _to_list(mag_plot),
+            'phase_deg': _to_list(phase_plot),
+            'mix_i': _to_list(mix_i_plot),
+            'mix_q': _to_list(mix_q_plot),
+            'lo_cos': _to_list(lo_cos_plot),
+            'lo_sin': _to_list(lo_sin_plot),
+            'message_i': _to_list(i_msg_plot),
+            'message_q': _to_list(q_msg_plot),
+            'phase_error_deg': float(params.get('phase_error_deg', 0.0)),
+            'f': _to_list(f_plot),
+            'P_db': _to_list(Pdb_plot),
+            'plot_decimation': int(plot_step),
+            'spectrum_decimation': int(spec_step)
+        })
 
     else:
         return jsonify(error="Unknown demodulation type"), 400
 
     f_rx, Pdb_rx = spectrum_db(demod, fs)
+    plot_arrays, plot_step = _downsample_bundle([t, tx, demod])
+    t_plot, tx_plot, demod_plot = plot_arrays
+    spec_arrays, spec_step = _downsample_bundle([f_rx, Pdb_rx])
+    f_plot, Pdb_plot = spec_arrays
+
 
     return jsonify({
-        't': t.tolist(),
-        'modulated': tx.tolist(),
-        'demodulated': demod.tolist(),
-        'f': f_rx.tolist(),
-        'P_db': Pdb_rx.tolist()
+        't': _to_list(t_plot),
+        'modulated': _to_list(tx_plot),
+        'demodulated': _to_list(demod_plot),
+        'f': _to_list(f_plot),
+        'P_db': _to_list(Pdb_plot),
+        'plot_decimation': int(plot_step),
+        'spectrum_decimation': int(spec_step)
     })

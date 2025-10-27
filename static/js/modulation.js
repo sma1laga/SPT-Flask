@@ -25,7 +25,10 @@ function updateModControls() {
     const e = $(i); if (e) e.style.display = 'none';
   });
 
-  if (type === 'AM') $('am_controls').style.display = '';
+  if (type === 'AM') {
+    $('am_controls').style.display = '';
+    updateAmDetectorState();
+  }
   else if (type === 'FM' || type === 'PM') {
     $('fm_controls').style.display = '';
     $('fm_header').innerText = `${type} Modulation`;
@@ -44,6 +47,29 @@ function updateModControls() {
   ].forEach(setLabel);
 }
 
+function updateAmDetectorState() {
+  const detectorSel = $('am_detector');
+  if (!detectorSel) return;
+  const mode = $('am_carrier')?.value || 'with';
+  const hint = $('am_detector_hint');
+  if (mode === 'with') {
+    detectorSel.disabled = false;
+    if (detectorSel.value === 'sync') {
+      detectorSel.value = 'envelope';
+    }
+    if (hint) {
+      hint.textContent = 'Envelope works only with carrier present.';
+    }
+  } else {
+    detectorSel.value = 'sync';
+    detectorSel.disabled = true;
+    if (hint) {
+      hint.textContent = 'Synchronous detection required for this mode.';
+    }
+  }
+}
+
+
 function renderFacts(info){
   if (!info) return;
   const wrap = $('facts');
@@ -55,7 +81,15 @@ function renderFacts(info){
     if (info.carrier_mode_label){
       parts.push(info.carrier_mode_label);
     } else if (info.carrier_mode){
-      parts.push(info.carrier_mode === 'without' ? 'mode: without carrier' : `mode: ${info.carrier_mode}`);
+      const mode = String(info.carrier_mode).toLowerCase();
+      const modeLabels = {
+        with: 'AM with carrier (DSB-TC)',
+        dsb_sc: 'DSB-SC (suppressed carrier)',
+        ssb_upper: 'SSB (upper sideband)',
+        ssb_lower: 'SSB (lower sideband)',
+        vsb: 'VSB (vestigial sideband)'
+      };
+      parts.push(modeLabels[mode] || `mode: ${mode}`);
     }
   } else if (info.type==='FM'){
     parts.push(`β = ${(+info.beta).toFixed(2)}, fc = ${info.fc} Hz, fm = ${info.fm} Hz`);
@@ -75,6 +109,9 @@ function renderFacts(info){
     } else if (typeof info.snr_db === 'string' && info.snr_db.toLowerCase() === 'inf') {
       parts.push('SNR = ∞ dB');
     }
+  }
+  if (info.plot_decimation && Number(info.plot_decimation) > 1) {
+    parts.push(`plot decimation ×${info.plot_decimation}`);
   }
   const text = parts.join('  •  ');
   const textSpan = text ? `<span class="fact-text">${text}</span>` : '';
@@ -225,6 +262,7 @@ async function plotDemod() {
   if (type === 'AM') {
     params.fc = +$('am_fc').value; params.fm = +$('am_fm').value; params.m = +$('am_m').value;
     params.carrier_mode = $('am_carrier').value;
+    params.detector = $('am_detector')?.value || 'envelope';
   } else if (type==='FM' || type==='PM') {
     params.fc = +$('fm_fc').value; params.fm = +$('fm_fm').value;
     if (type==='FM') params.beta = +$('fm_beta').value; else params.m = +$('fm_beta').value;
@@ -375,7 +413,13 @@ async function applyPreset(){
     if (I.m!=null)    $('am_m').value = I.m;
     if (I.phase_index!=null) $('fm_beta').value = I.phase_index;
     if (I.beta!=null) $('fm_beta').value = I.beta;
-    if (I.carrier_mode){ $('am_carrier').value = I.carrier_mode; }
+    if (I.carrier_mode){
+      $('am_carrier').value = I.carrier_mode;
+      const detSel = $('am_detector');
+      if (detSel) {
+        detSel.value = I.carrier_mode === 'with' ? 'envelope' : 'sync';
+      }
+    }
     updateModControls();
   }
   plotMod(); plotDemod();
@@ -398,7 +442,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const amCarrier = $('am_carrier');
   if (amCarrier){
-    amCarrier.addEventListener('change', ()=>{ plotMod(); plotDemod(); });
+    amCarrier.addEventListener('change', ()=>{
+      updateAmDetectorState();
+      plotMod();
+      plotDemod();
+    });
+  }
+
+  const amDetector = $('am_detector');
+  if (amDetector) {
+    amDetector.addEventListener('change', ()=>{ plotDemod(); });
   }
 
   const qamPhase = $('qam_phase_error');
