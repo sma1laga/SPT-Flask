@@ -942,105 +942,17 @@ def _draw_hard_diagram_split_modulation(
     filter_x = 10.55
     output_x = 11.95
 
-    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
-        info = dict(info)
-        info["centre"] = centre
-        info["y"] = y_pos
-        if info["shape"] == "circle":
-            radius = info["radius"]
-            info["left"] = centre - radius
-            info["right"] = centre + radius
-            info["top"] = y_pos + radius
-            info["bottom"] = y_pos - radius
-        else:
-            width = info["width"]
-            height = info["height"]
-            info["left"] = centre - width / 2.0
-            info["right"] = centre + width / 2.0
-            info["top"] = y_pos + height / 2.0
-            info["bottom"] = y_pos - height / 2.0
-        return info
-
-    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
-    hilbert_block = prepare_block(_block_render_info("Hilbert", None), top_hilbert_x, top_y)
-    derivative_block = prepare_block(_block_render_info("Derivative", None), top_derivative_x, top_y)
-    bottom_block = prepare_block(_block_render_info("Multiplication", branch_param), bottom_mul_x, bot_y)
-    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
-    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+    mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    hilbert_block = _prepare_block_geometry(_block_render_info("Hilbert", None), top_hilbert_x, top_y)
+    derivative_block = _prepare_block_geometry(_block_render_info("Derivative", None), top_derivative_x, top_y)
+    bottom_block = _prepare_block_geometry(_block_render_info("Multiplication", branch_param), bottom_mul_x, bot_y)
+    adder_block = _prepare_block_geometry(_block_render_info("Addition", None), adder_x, y_mid)
+    filter_block = _prepare_block_geometry(_block_render_info("Filter", filter_param), filter_x, y_mid)
 
     blocks = [mul_block, hilbert_block, derivative_block, bottom_block, adder_block, filter_block]
 
-    def draw_block(block: Dict[str, object]) -> None:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"],
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 16),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.annotate(
-                    param_label,
-                    xy=(block["centre"], block["y"] + block["radius"] * 0.35),
-                    xytext=(block["centre"], block["y"] + block["radius"] + 0.6),
-                    ha="center",
-                    va="bottom",
-                    fontsize=11,
-                    arrowprops=_arrow_props(),
-                )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], block["bottom"]),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"] + block.get("label_y_offset", 0.18),
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 11),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(
-                    block["centre"],
-                    block["y"] - block.get("param_y_offset", 0.18),
-                    param_label,
-                    ha="center",
-                    va="center",
-                    fontsize=10,
-                )
-
     for block in blocks:
-        draw_block(block)
+        _render_block(ax, block, arrow_props=arrow_props)
 
     # Input to multiplier
     ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
@@ -2184,34 +2096,15 @@ def _draw_hard_diagram_real_imag(
     filter_x = 14.8
     output_x = 16.4
 
-    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
-        info = dict(info)
-        info["centre"] = centre
-        info["y"] = y_pos
-        if info["shape"] == "circle":
-            radius = info["radius"]
-            info["left"] = centre - radius
-            info["right"] = centre + radius
-            info["top"] = y_pos + radius
-            info["bottom"] = y_pos - radius
-        else:
-            width = info["width"]
-            height = info["height"]
-            info["left"] = centre - width / 2.0
-            info["right"] = centre + width / 2.0
-            info["top"] = y_pos + height / 2.0
-            info["bottom"] = y_pos - height / 2.0
-        return info
-
-    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
-    sample_block = prepare_block(_block_render_info("Sampling", sample_param), top_sample_x, top_y)
-    real_block = prepare_block(_block_render_info("Real", None), top_real_x, top_y)
-    top_mul_block = prepare_block(_block_render_info("Multiplication", top_mul_param), top_mul_x, top_y)
-    hilbert_block = prepare_block(_block_render_info("Hilbert", None), bottom_hilbert_x, bot_y)
-    imag_block = prepare_block(_block_render_info("Imag", None), bottom_imag_x, bot_y)
-    bottom_mul_block = prepare_block(_block_render_info("Multiplication", bottom_mul_param), bottom_mul_x, bot_y)
-    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
-    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+    mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    sample_block = _prepare_block_geometry(_block_render_info("Sampling", sample_param), top_sample_x, top_y)
+    real_block = _prepare_block_geometry(_block_render_info("Real", None), top_real_x, top_y)
+    top_mul_block = _prepare_block_geometry(_block_render_info("Multiplication", top_mul_param), top_mul_x, top_y)
+    hilbert_block = _prepare_block_geometry(_block_render_info("Hilbert", None), bottom_hilbert_x, bot_y)
+    imag_block = _prepare_block_geometry(_block_render_info("Imag", None), bottom_imag_x, bot_y)
+    bottom_mul_block = _prepare_block_geometry(_block_render_info("Multiplication", bottom_mul_param), bottom_mul_x, bot_y)
+    adder_block = _prepare_block_geometry(_block_render_info("Addition", None), adder_x, y_mid)
+    filter_block = _prepare_block_geometry(_block_render_info("Filter", filter_param), filter_x, y_mid)
 
     blocks = [
         mul_block,
@@ -2225,86 +2118,9 @@ def _draw_hard_diagram_real_imag(
         filter_block,
     ]
 
-    def draw_block(block: Dict[str, object]) -> None:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"],
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 16),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                param_text_y = block["y"] + block["radius"] + 0.55
-                ax.text(
-                    block["centre"],
-                    param_text_y,
-                    param_label,
-                    ha="center",
-                    va="bottom",
-                    fontsize=10.5,
-                )
-                if block.get("param_connector") == "top":
-                    arrow_tail_y = param_text_y - 0.18
-                    arrow_head_y = block["y"] + block["radius"] * 0.98
-                    ax.annotate(
-                        "",
-                        xy=(block["centre"], arrow_head_y),
-                        xytext=(block["centre"], arrow_tail_y),
-                        arrowprops=arrow_props,
-                    )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], block["bottom"]),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"] + block.get("label_y_offset", 0.18),
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 11),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(
-                    block["centre"],
-                    block["y"] - block.get("param_y_offset", 0.18),
-                    param_label,
-                    ha="center",
-                    va="center",
-                    fontsize=10,
-                )
 
     for block in blocks:
-        draw_block(block)
+        _render_block(ax, block, arrow_props=arrow_props)
 
     # Input to multiplier
     ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
@@ -2423,33 +2239,14 @@ def _draw_hard_diagram_complex_split_sampling(
     filter_x = 13.2
     output_x = 15.0
 
-    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
-        info = dict(info)
-        info["centre"] = centre
-        info["y"] = y_pos
-        if info["shape"] == "circle":
-            radius = info["radius"]
-            info["left"] = centre - radius
-            info["right"] = centre + radius
-            info["top"] = y_pos + radius
-            info["bottom"] = y_pos - radius
-        else:
-            width = info["width"]
-            height = info["height"]
-            info["left"] = centre - width / 2.0
-            info["right"] = centre + width / 2.0
-            info["top"] = y_pos + height / 2.0
-            info["bottom"] = y_pos - height / 2.0
-        return info
-
-    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
-    transform_block = prepare_block(_block_render_info(transform_name, None), transform_x, y_mid)
-    second_mul_block = prepare_block(_block_render_info("Multiplication", mul_secondary), second_mul_x, y_mid)
-    real_block = prepare_block(_block_render_info("Real", None), real_x, top_y)
-    imag_block = prepare_block(_block_render_info("Imag", None), imag_x, bot_y)
-    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
-    sampling_block = prepare_block(_block_render_info("Sampling", sample_param), sampling_x, y_mid)
-    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+    mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    transform_block = _prepare_block_geometry(_block_render_info(transform_name, None), transform_x, y_mid)
+    second_mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_secondary), second_mul_x, y_mid)
+    real_block = _prepare_block_geometry(_block_render_info("Real", None), real_x, top_y)
+    imag_block = _prepare_block_geometry(_block_render_info("Imag", None), imag_x, bot_y)
+    adder_block = _prepare_block_geometry(_block_render_info("Addition", None), adder_x, y_mid)
+    sampling_block = _prepare_block_geometry(_block_render_info("Sampling", sample_param), sampling_x, y_mid)
+    filter_block = _prepare_block_geometry(_block_render_info("Filter", filter_param), filter_x, y_mid)
 
     blocks = [
         mul_block,
@@ -2462,86 +2259,8 @@ def _draw_hard_diagram_complex_split_sampling(
         filter_block,
     ]
 
-    def draw_block(block: Dict[str, object]) -> None:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"],
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 16),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                param_text_y = block["y"] + block["radius"] + 0.55
-                ax.text(
-                    block["centre"],
-                    param_text_y,
-                    param_label,
-                    ha="center",
-                    va="bottom",
-                    fontsize=10.5,
-                )
-                if block.get("param_connector") == "top":
-                    arrow_tail_y = param_text_y - 0.18
-                    arrow_head_y = block["y"] + block["radius"] * 0.98
-                    ax.annotate(
-                        "",
-                        xy=(block["centre"], arrow_head_y),
-                        xytext=(block["centre"], arrow_tail_y),
-                        arrowprops=arrow_props,
-                    )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], block["bottom"]),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"] + block.get("label_y_offset", 0.18),
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 11),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(
-                    block["centre"],
-                    block["y"] - block.get("param_y_offset", 0.18),
-                    param_label,
-                    ha="center",
-                    va="center",
-                    fontsize=10,
-                )
-
     for block in blocks:
-        draw_block(block)
+        _render_block(ax, block, arrow_props=arrow_props)
 
     # Input to first multiplier
     ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
@@ -2664,33 +2383,14 @@ def _draw_hard_diagram_real_imag_sampling(
     filter_x = 13.6
     output_x = 15.0
 
-    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
-        info = dict(info)
-        info["centre"] = centre
-        info["y"] = y_pos
-        if info["shape"] == "circle":
-            radius = info["radius"]
-            info["left"] = centre - radius
-            info["right"] = centre + radius
-            info["top"] = y_pos + radius
-            info["bottom"] = y_pos - radius
-        else:
-            width = info["width"]
-            height = info["height"]
-            info["left"] = centre - width / 2.0
-            info["right"] = centre + width / 2.0
-            info["top"] = y_pos + height / 2.0
-            info["bottom"] = y_pos - height / 2.0
-        return info
-
-    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
-    real_block = prepare_block(_block_render_info("Real", None), top_real_x, top_y)
-    top_mul_block = prepare_block(_block_render_info("Multiplication", top_mul_param), top_mul_x, top_y)
-    imag_block = prepare_block(_block_render_info("Imag", None), bottom_imag_x, bot_y)
-    bottom_mul_block = prepare_block(_block_render_info("Multiplication", bottom_mul_param), bottom_mul_x, bot_y)
-    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
-    sampling_block = prepare_block(_block_render_info("Sampling", sample_param), sampling_x, y_mid)
-    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+    mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    real_block = _prepare_block_geometry(_block_render_info("Real", None), top_real_x, top_y)
+    top_mul_block = _prepare_block_geometry(_block_render_info("Multiplication", top_mul_param), top_mul_x, top_y)
+    imag_block = _prepare_block_geometry(_block_render_info("Imag", None), bottom_imag_x, bot_y)
+    bottom_mul_block = _prepare_block_geometry(_block_render_info("Multiplication", bottom_mul_param), bottom_mul_x, bot_y)
+    adder_block = _prepare_block_geometry(_block_render_info("Addition", None), adder_x, y_mid)
+    sampling_block = _prepare_block_geometry(_block_render_info("Sampling", sample_param), sampling_x, y_mid)
+    filter_block = _prepare_block_geometry(_block_render_info("Filter", filter_param), filter_x, y_mid)
 
     blocks = [
         mul_block,
@@ -2703,86 +2403,8 @@ def _draw_hard_diagram_real_imag_sampling(
         filter_block,
     ]
 
-    def draw_block(block: Dict[str, object]) -> None:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"] * 1.0, fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"],
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 16),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                param_text_y = block["y"] + block["radius"] + 0.5
-                ax.text(
-                    block["centre"],
-                    param_text_y,
-                    param_label,
-                    ha="center",
-                    va="bottom",
-                    fontsize=10.5,
-                )
-                if block.get("param_connector") == "top":
-                    arrow_tail_y = param_text_y - 0.18
-                    arrow_head_y = block["y"] + block["radius"] * 0.98
-                    ax.annotate(
-                        "",
-                        xy=(block["centre"], arrow_head_y),
-                        xytext=(block["centre"], arrow_tail_y),
-                        arrowprops=arrow_props,
-                    )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], block["bottom"]),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"] + block.get("label_y_offset", 0.18),
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 11),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(
-                    block["centre"],
-                    block["y"] - block.get("param_y_offset", 0.18),
-                    param_label,
-                    ha="center",
-                    va="center",
-                    fontsize=10,
-                )
-
     for block in blocks:
-        draw_block(block)
+        _render_block(ax, block, arrow_props=arrow_props)
 
     ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
     ax.text((input_x + mul_block["left"]) / 2.0, y_mid + 0.5, "$x(t)$", ha="center", va="center", fontsize=12)
@@ -2892,16 +2514,9 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
     block_geometries = []
     for centre, op_name in zip(block_centres, sequence):
         op_params = params.get(op_name)
-        block_info = _block_render_info(op_name, op_params)
-        block_info["centre"] = centre
-        if block_info["shape"] == "circle":
-            radius = block_info["radius"]
-            block_info["left"] = centre - radius
-            block_info["right"] = centre + radius
-        else:
-            half_width = block_info["width"] / 2.0
-            block_info["left"] = centre - half_width
-            block_info["right"] = centre + half_width
+        block_info = _prepare_block_geometry(
+            _block_render_info(op_name, op_params), centre, y_pos
+        )
         block_geometries.append(block_info)
 
     input_x = block_geometries[0]["left"] - 0.9
@@ -2909,82 +2524,7 @@ def _draw_diagram(sequence: Tuple[str, str, str], params: Dict[str, str | None])
     ax.text((input_x + block_geometries[0]["left"]) / 2.0, y_pos + 0.5, f"${signal_labels[0]}$", ha="center", va="center", fontsize=12)
 
     for block in block_geometries:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], y_pos), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                y_pos,
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 16),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                param_text_y = y_pos + block["radius"] + 0.5
-                ax.text(
-                    block["centre"],
-                    param_text_y,
-                    param_label,
-                    ha="center",
-                    va="bottom",
-                    fontsize=10.5,
-                )
-                if block.get("param_connector") == "top":
-                    arrow_tail_y = param_text_y - 0.18
-                    arrow_head_y = y_pos + block["radius"] * 0.98
-                    ax.annotate(
-                        "",
-                        xy=(block["centre"], arrow_head_y),
-                        xytext=(block["centre"], arrow_tail_y),
-                        arrowprops=arrow_props,
-                    )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], y_pos - block["height"] / 2.0),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                y_pos + block.get("label_y_offset", 0.18),
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 11),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(
-                    block["centre"],
-                    y_pos - block.get("param_y_offset", 0.18),
-                    param_label,
-                    ha="center",
-                    va="center",
-                    fontsize=10,
-                )
+        _render_block(ax, block, arrow_props=arrow_props)
 
     for idx in range(len(block_geometries) - 1):
         left_block = block_geometries[idx]
@@ -3041,112 +2581,16 @@ def _draw_medium_diagram_sampling(
     filter_x = 10.1
     output_x = 11.5
 
-    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
-        info = dict(info)
-        info["centre"] = centre
-        info["y"] = y_pos
-        if info["shape"] == "circle":
-            radius = info["radius"]
-            info["left"] = centre - radius
-            info["right"] = centre + radius
-            info["top"] = y_pos + radius
-            info["bottom"] = y_pos - radius
-        else:
-            width = info["width"]
-            height = info["height"]
-            info["left"] = centre - width / 2.0
-            info["right"] = centre + width / 2.0
-            info["top"] = y_pos + height / 2.0
-            info["bottom"] = y_pos - height / 2.0
-        return info
-
-    top_block = prepare_block(_block_render_info(*branch_ops[0]), branch_x, top_y)
-    bot_block = prepare_block(_block_render_info(*branch_ops[1]), branch_x, bot_y)
-    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
-    post_block = prepare_block(_block_render_info(post_op, post_param), post_x, y_mid)
-    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+    top_block = _prepare_block_geometry(_block_render_info(*branch_ops[0]), branch_x, top_y)
+    bot_block = _prepare_block_geometry(_block_render_info(*branch_ops[1]), branch_x, bot_y)
+    adder_block = _prepare_block_geometry(_block_render_info("Addition", None), adder_x, y_mid)
+    post_block = _prepare_block_geometry(_block_render_info(post_op, post_param), post_x, y_mid)
+    filter_block = _prepare_block_geometry(_block_render_info("Filter", filter_param), filter_x, y_mid)
 
     blocks = [top_block, bot_block, adder_block, post_block, filter_block]
 
-    def draw_block(block: Dict[str, object]) -> None:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"],
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 16),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                param_text_y = block["y"] + block["radius"] + 0.5
-                ax.text(
-                    block["centre"],
-                    param_text_y,
-                    param_label,
-                    ha="center",
-                    va="bottom",
-                    fontsize=10.5,
-                )
-                if block.get("param_connector") == "top":
-                    arrow_tail_y = param_text_y - 0.18
-                    arrow_head_y = block["y"] + block["radius"] * 0.98
-                    ax.annotate(
-                        "",
-                        xy=(block["centre"], arrow_head_y),
-                        xytext=(block["centre"], arrow_tail_y),
-                        arrowprops=arrow_props,
-                    )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], block["bottom"]),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(
-                block["centre"],
-                block["y"] + block.get("label_y_offset", 0.18),
-                label,
-                ha="center",
-                va="center",
-                fontsize=block.get("label_fontsize", 11),
-                fontweight="bold",
-            )
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(
-                    block["centre"],
-                    block["y"] - block.get("param_y_offset", 0.18),
-                    param_label,
-                    ha="center",
-                    va="center",
-                    fontsize=10,
-                )
     for block in blocks:
-        draw_block(block)
+        _render_block(ax, block, arrow_props=arrow_props)
 
     # Input and splitter
     ax.annotate("", xy=(split_x, y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
@@ -3251,90 +2695,17 @@ def _draw_medium_diagram_multiplication_split(
     filter_x = 9.9
     output_x = 11.3
 
-    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
-        info = dict(info)
-        info["centre"] = centre
-        info["y"] = y_pos
-        if info["shape"] == "circle":
-            radius = info["radius"]
-            info["left"] = centre - radius
-            info["right"] = centre + radius
-            info["top"] = y_pos + radius
-            info["bottom"] = y_pos - radius
-        else:
-            width = info["width"]
-            height = info["height"]
-            info["left"] = centre - width / 2.0
-            info["right"] = centre + width / 2.0
-            info["top"] = y_pos + height / 2.0
-            info["bottom"] = y_pos - height / 2.0
-        return info
-
-    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
-    top_block = prepare_block(_block_render_info(*branch_ops[0]), branch_x, top_y)
-    bot_block = prepare_block(_block_render_info(*branch_ops[1]), branch_x, bot_y)
-    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
-    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+    mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    top_block = _prepare_block_geometry(_block_render_info(*branch_ops[0]), branch_x, top_y)
+    bot_block = _prepare_block_geometry(_block_render_info(*branch_ops[1]), branch_x, bot_y)
+    adder_block = _prepare_block_geometry(_block_render_info("Addition", None), adder_x, y_mid)
+    filter_block = _prepare_block_geometry(_block_render_info("Filter", filter_param), filter_x, y_mid)
 
     blocks = [mul_block, top_block, bot_block, adder_block, filter_block]
 
-    def draw_block(block: Dict[str, object]) -> None:
-        if block["shape"] == "circle":
-            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
-            ax.add_patch(circle)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(block["centre"], block["y"], label, ha="center", va="center", fontsize=16, fontweight="bold")
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                param_text_y = block["y"] + block["radius"] + 0.5
-                ax.text(
-                    block["centre"],
-                    param_text_y,
-                    param_label,
-                    ha="center",
-                    va="bottom",
-                    fontsize=10.5,
-                )
-                if block.get("param_connector") == "top":
-                    arrow_tail_y = param_text_y - 0.18
-                    arrow_head_y = block["y"] + block["radius"] * 0.98
-                    ax.annotate(
-                        "",
-                        xy=(block["centre"], arrow_head_y),
-                        xytext=(block["centre"], arrow_tail_y),
-                        arrowprops=arrow_props,
-                    )
-        else:
-            rect = plt.Rectangle(
-                (block["left"], block["bottom"]),
-                block["width"],
-                block["height"],
-                fill=False,
-                lw=_BLOCK_LINEWIDTH,
-                color=_EDGE_COLOR,
-                joinstyle="round",
-            )
-            ax.add_patch(rect)
-            label = block.get("label_latex") or block.get("label")
-            if block.get("label_latex"):
-                label = f"${label}$"
-            ax.text(block["centre"], block["y"] + 0.18, label, ha="center", va="center", fontsize=11, fontweight="bold")
-            param_label = None
-            if block.get("param_latex"):
-                param_label = f"${block['param_latex']}$"
-            elif block.get("param"):
-                param_label = block["param"]
-            if param_label:
-                ax.text(block["centre"], block["y"] - 0.18, param_label, ha="center", va="center", fontsize=10)
 
     for block in blocks:
-        draw_block(block)
+        _render_block(ax, block, arrow_props=arrow_props)
 
     # Input to multiplication
     ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
@@ -3415,6 +2786,117 @@ def _draw_medium_diagram_multiplication_split(
     fig.savefig(buf, format="png", dpi=220, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+def _prepare_block_geometry(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
+    """Return a copy of ``info`` annotated with positional geometry."""
+
+    block = dict(info)
+    block["centre"] = centre
+    block["y"] = y_pos
+    if block.get("shape") == "circle":
+        radius = block["radius"]
+        block["left"] = centre - radius
+        block["right"] = centre + radius
+        block["top"] = y_pos + radius
+        block["bottom"] = y_pos - radius
+    else:
+        width = block["width"]
+        height = block["height"]
+        block["left"] = centre - width / 2.0
+        block["right"] = centre + width / 2.0
+        block["top"] = y_pos + height / 2.0
+        block["bottom"] = y_pos - height / 2.0
+    return block
+
+
+def _render_block(
+    ax: plt.Axes, block: Dict[str, object], *, arrow_props: Dict[str, object]
+) -> None:
+    """Draw a single block using the common styling used across difficulties."""
+
+    if block.get("shape") == "circle":
+        circle = plt.Circle(
+            (block["centre"], block["y"]),
+            block["radius"],
+            fill=False,
+            lw=_BLOCK_LINEWIDTH,
+            color=_EDGE_COLOR,
+        )
+        ax.add_patch(circle)
+        label = block.get("label_latex") or block.get("label")
+        if block.get("label_latex"):
+            label = f"${label}$"
+        ax.text(
+            block["centre"],
+            block["y"],
+            label,
+            ha="center",
+            va="center",
+            fontsize=block.get("label_fontsize", 16),
+            fontweight="bold",
+        )
+        param_label = None
+        if block.get("param_latex"):
+            param_label = f"${block['param_latex']}$"
+        elif block.get("param"):
+            param_label = block["param"]
+        if param_label:
+            param_text_y = block["y"] + block["radius"] + 0.5
+            ax.text(
+                block["centre"],
+                param_text_y,
+                param_label,
+                ha="center",
+                va="bottom",
+                fontsize=10.5,
+            )
+            if block.get("param_connector") == "top":
+                arrow_tail_y = param_text_y - 0.18
+                arrow_head_y = block["y"] + block["radius"] * 0.98
+                ax.annotate(
+                    "",
+                    xy=(block["centre"], arrow_head_y),
+                    xytext=(block["centre"], arrow_tail_y),
+                    arrowprops=arrow_props,
+                )
+        return
+
+    rect = plt.Rectangle(
+        (block["left"], block["bottom"]),
+        block["width"],
+        block["height"],
+        fill=False,
+        lw=_BLOCK_LINEWIDTH,
+        color=_EDGE_COLOR,
+        joinstyle="round",
+    )
+    ax.add_patch(rect)
+    label = block.get("label_latex") or block.get("label")
+    if block.get("label_latex"):
+        label = f"${label}$"
+    ax.text(
+        block["centre"],
+        block["y"] + block.get("label_y_offset", 0.18),
+        label,
+        ha="center",
+        va="center",
+        fontsize=block.get("label_fontsize", 11),
+        fontweight="bold",
+    )
+    param_label = None
+    if block.get("param_latex"):
+        param_label = f"${block['param_latex']}$"
+    elif block.get("param"):
+        param_label = block["param"]
+    if param_label:
+        ax.text(
+            block["centre"],
+            block["y"] - block.get("param_y_offset", 0.18),
+            param_label,
+            ha="center",
+            va="center",
+            fontsize=10,
+        )
 
 
 
