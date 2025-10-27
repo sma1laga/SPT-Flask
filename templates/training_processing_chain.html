@@ -65,6 +65,13 @@ let currentProblem = null;
 let answeredLetters = 0;
 let currentProblemDifficulty = null;
 
+// Prefetch pipeline state (mirrors the convolution training module behaviour)
+let cachedProblem = null;
+let cachedProblemDifficulty = null;
+let prefetchController = null;
+let prefetchInFlight = false;
+let answeredThisProblem = false;
+
 const memoryStore = {};
 let storageAvailable = true;
 try {
@@ -103,12 +110,16 @@ function getDifficulty() {
 }
 
 // Helper to send POST requests
-function postJson(url, payload) {
-  return fetch(url, {
+function postJson(url, payload, signal) {
+  const options = {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload)
-  }).then(r => r.json());
+  };
+  if (signal) {
+    options.signal = signal;
+  }
+  return fetch(url, options).then(r => r.json());
 }
 
 function resetProblemUI(options = {}) {
@@ -132,17 +143,26 @@ function resetProblemUI(options = {}) {
   }
   answeredLetters = 0;
   currentProblem = null;
+  answeredThisProblem = false;
 }
 
 function requestProblem(diff) {
   const difficulty = diff || getDifficulty();
   currentProblemDifficulty = difficulty;
+  if (cachedProblem && cachedProblemDifficulty === difficulty) {
+    const warm = cachedProblem;
+    cachedProblem = null;
+    cachedProblemDifficulty = null;
+    renderProblem(warm, difficulty);
+    prefetchNextProblem();
+    return;
+  }
   document.getElementById('feedback').textContent = 'Generating problem…';
+  destroyPrefetch();
   postJson("{{ url_for('training_processing_chain.generate_problem') }}", {
     difficulty: difficulty
   }).then(data => {
-    currentProblem = data;
-    renderProblem();
+    renderProblem(data, difficulty);
   }).catch(() => {
     document.getElementById('feedback').textContent = 'Error generating problem.';
   });
@@ -150,17 +170,21 @@ function requestProblem(diff) {
 
 
 // Render the problem to the DOM
-function renderProblem() {
-  if (!currentProblem || currentProblem.error) {
-    const msg = currentProblem ? currentProblem.error : 'No problem data.';
+function renderProblem(problemData, difficultyTag) {
+  const data = problemData || currentProblem;
+  if (!data || data.error) {
+    const msg = data ? data.error : 'No problem data.';
     document.getElementById('feedback').textContent = msg;
+    currentProblem = null;
     return;
   }
+  currentProblem = data;
   // reset answered count
   answeredLetters = 0;
+  answeredThisProblem = false;
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('feedback').textContent = 'Problem generated. Select the correct outputs.';
-  currentProblemDifficulty = currentProblemDifficulty || getDifficulty();
+  currentProblemDifficulty = difficultyTag || currentProblemDifficulty || getDifficulty();
   const selected = getDifficulty();
   refreshStatsUI(selected);
   refreshStreakUI(selected);
@@ -310,6 +334,10 @@ function onOptionClick(evt) {
     answeredLetters += 1;
     if (answeredLetters === currentProblem.letters.length) {
       document.getElementById('nextBtn').style.display = 'inline-block';
+      if (!answeredThisProblem) {
+        answeredThisProblem = true;
+        prefetchNextProblem();
+      }
     }
   });
 }
@@ -331,6 +359,7 @@ document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
   radio.addEventListener('change', () => {
     resetProblemUI();
     currentProblemDifficulty = null;
+    destroyPrefetch();
     const diff = getDifficulty();
     refreshStatsUI(diff);
     refreshStreakUI(diff);
@@ -469,6 +498,50 @@ document.getElementById('streakReset').addEventListener('click', () => {
 const initialDiff = getDifficulty();
 refreshStatsUI(initialDiff);
 refreshStreakUI(initialDiff);
+
+function prefetchNextProblem() {
+  const diff = currentProblemDifficulty || getDifficulty();
+  if (!diff) return;
+  if (prefetchInFlight) return;
+  if (cachedProblem && cachedProblemDifficulty === diff) return;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  if (controller) {
+    prefetchController = controller;
+  } else {
+    prefetchController = null;
+  }
+  prefetchInFlight = true;
+  postJson(
+    "{{ url_for('training_processing_chain.generate_problem') }}",
+    { difficulty: diff },
+    controller ? controller.signal : undefined
+  ).then(data => {
+    if (data && !data.error) {
+      const activeDiff = currentProblemDifficulty || getDifficulty();
+      if (activeDiff === diff) {
+        cachedProblem = data;
+        cachedProblemDifficulty = diff;
+      }
+    }
+  }).catch(() => {
+    // Ignore errors during background prefetch
+  }).finally(() => {
+    prefetchInFlight = false;
+    prefetchController = null;
+  });
+}
+
+function destroyPrefetch(abort = true, clearCache = true) {
+  if (abort && prefetchController) {
+    try { prefetchController.abort(); } catch (err) {}
+  }
+  prefetchController = null;
+  prefetchInFlight = false;
+  if (clearCache) {
+    cachedProblem = null;
+    cachedProblemDifficulty = null;
+  }
+}
 </script>
 <style>
   .radio-group { display: flex; gap: 15px; }
