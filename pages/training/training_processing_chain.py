@@ -48,6 +48,17 @@ _CONNECTOR_LINEWIDTH = 1.55
 _ARROW_LINEWIDTH = 1.65
 _SPLITTER_RADIUS = 0.08
 
+# Number of samples in the frequency grid for each difficulty.  These values
+# balance visual fidelity with the time required to synthesise spectra.
+_EASY_NUM_SAMPLES = 768
+_MEDIUM_NUM_SAMPLES = 1536
+_HARD_NUM_SAMPLES = 3072
+
+# Limit the number of points rendered in each Matplotlib plot; rendering fewer
+# points dramatically reduces base64 generation time while preserving the shape
+# of the curves.  The underlying signals keep their original resolution.
+_PLOT_MAX_POINTS = 600
+
 
 def _arrow_props() -> Dict[str, object]:
     """Return a consistent arrow style for block diagrams."""
@@ -89,6 +100,21 @@ def _draw_connector(
     final_props.setdefault("lw", line_width)
     ax.annotate("", xy=final_end, xytext=final_start, arrowprops=final_props)
 
+def _downsample_for_plot(
+    w: np.ndarray, sig: np.ndarray, max_points: int = _PLOT_MAX_POINTS
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return downsampled ``w``/``sig`` pairs suitable for plotting.
+
+    Matplotlib spends a significant amount of time rasterising long line plots.
+    Reducing the number of points rendered keeps the visual appearance similar
+    while shortening the PNG generation time.  The caller can still use the
+    full-resolution arrays for any calculations before invoking this helper.
+    """
+
+    if max_points <= 0 or w.size <= max_points:
+        return w, sig
+    step = int(np.ceil(w.size / max_points))
+    return w[::step], sig[::step]
 
 
 # Define a blueprint for the processing chain training.  Do not specify a URL
@@ -190,7 +216,7 @@ def _create_easy_problem() -> Dict[str, object]:
     """
     # freq. grid for evaluating spectra
     W = 10.0
-    n_points = 1024
+    n_points = _EASY_NUM_SAMPLES
     w = np.linspace(-W, W, n_points)
 
     # 1) Choose input spectrum
@@ -338,7 +364,7 @@ def _create_medium_problem() -> Dict[str, object]:
     """Construct a MEDIUM difficulty processing chain problem."""
 
     W = 10.0
-    n_points = 2048
+    n_points = _MEDIUM_NUM_SAMPLES
     w = np.linspace(-W, W, n_points)
 
     # Input spectrum identical to EASY mode for consistency
@@ -378,7 +404,7 @@ def _create_hard_problem() -> Dict[str, object]:
     """Construct a HARD difficulty processing chain problem."""
 
     W = 12.0
-    n_points = 4096
+    n_points = _HARD_NUM_SAMPLES
     w = np.linspace(-W, W, n_points)
 
     input_shape = random.choice(["rect", "tri"])
@@ -1367,10 +1393,19 @@ def _plot_spectrum(w: np.ndarray, sig: np.ndarray, title: str) -> str:
     base64 encoded PNG.  Axis limits are chosen based on the maximum
     amplitude in the visible range +-5 for readability.
     """
+    w_plot, sig_plot = _downsample_for_plot(w, sig)
+
     fig, ax = plt.subplots(figsize=(4, 3))
-    ax.plot(w, np.real(sig), label="Re", color="tab:blue", lw=1.5)
+    ax.plot(w_plot, np.real(sig_plot), label="Re", color="tab:blue", lw=1.5)
     if np.any(np.abs(np.imag(sig)) > 1e-10):
-        ax.plot(w, np.imag(sig), linestyle="dotted", label="Im", color="tab:orange", lw=1.5)
+        ax.plot(
+            w_plot,
+            np.imag(sig_plot),
+            linestyle="dotted",
+            label="Im",
+            color="tab:orange",
+            lw=1.5,
+        )
     ax.set_xlabel(r"Frequency $\omega$")
     ax.set_title(title)
     ax.axhline(0, color="gray", lw=0.5)
@@ -1380,6 +1415,8 @@ def _plot_spectrum(w: np.ndarray, sig: np.ndarray, title: str) -> str:
     mask = np.abs(w) <= 5
     # compute y limits based on visible region
     visible = sig[mask]
+    if visible.size == 0:
+        visible = sig
     y_abs_max = np.max(np.abs(np.concatenate([np.real(visible), np.imag(visible)])))
     ylim = max(y_abs_max * 1.2, 0.5)
     ax.set_xlim(-5, 5)
