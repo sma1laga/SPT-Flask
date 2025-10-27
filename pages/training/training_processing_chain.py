@@ -364,6 +364,7 @@ def _create_hard_problem() -> Dict[str, object]:
             lambda: _build_hard_layout_split_modulation(w, x_sig),
             lambda: _build_hard_layout_real_imag_mixer(w, x_sig),
             lambda: _build_hard_layout_real_imag_sampling_chain(w, x_sig),
+            lambda: _build_hard_layout_complex_split_sampling(w, x_sig),
         ]
     )
     layout_data = layout_builder()
@@ -1893,6 +1894,217 @@ def _build_hard_layout_real_imag_sampling_chain(
     }
 
 
+def _build_hard_layout_complex_split_sampling(
+    w: np.ndarray, x_sig: np.ndarray
+) -> Dict[str, object]:
+    """Hard layout with dual multiplications, a Hilbert/derivative stage and sampling."""
+
+    mul_primary = _random_multiplication_param()
+    sig_a = _apply_operation(x_sig, "Multiplication", mul_primary, w)
+
+    transform = random.choice(["Hilbert", "Derivative"])
+    sig_b = _apply_operation(sig_a, transform, None, w)
+
+    mul_secondary = _random_multiplication_param()
+    sig_c = _apply_operation(sig_b, "Multiplication", mul_secondary, w)
+
+    sig_d = _apply_operation(sig_c, "Real", None, w)
+    sig_e = _apply_operation(sig_c, "Imag", None, w)
+    sum_sig = sig_d + sig_e
+
+    sample_param = _random_sampling_param()
+    sig_g = _apply_operation(sum_sig, "Sampling", sample_param, w)
+
+    filter_param = _random_filter_param()
+    sig_h = _apply_operation(sig_g, "Filter", filter_param, w)
+
+    freq_titles = {
+        "A": r"$A(j\omega)$",
+        "B": r"$B(j\omega)$",
+        "C": r"$C(j\omega)$",
+        "D": r"$D(j\omega)$",
+        "E": r"$E(j\omega)$",
+        "F": r"$F(j\omega)$",
+        "G": r"$G(j\omega)$",
+        "H": r"$Y(j\omega)$",
+    }
+
+    letter_specs = [
+        ("A", "a(t)", "a(t)", sig_a),
+        ("B", "b(t)", "b(t)", sig_b),
+        ("C", "c(t)", "c(t)", sig_c),
+        ("D", "d(t)", "d(t)", sig_d),
+        ("E", "e(t)", "e(t)", sig_e),
+        ("F", "f(t)", "f(t)", sum_sig),
+        ("G", "g(t)", "g(t)", sig_g),
+        ("H", "y(t)", "y(t)", sig_h),
+    ]
+
+    letter_results: List[Dict[str, object]] = []
+    for letter, label, label_latex, correct_sig in letter_specs:
+        if letter == "A":
+            distractors = []
+            for _ in range(2):
+                alt_param = _random_multiplication_param(exclude=mul_primary)
+                distractors.append(_apply_operation(x_sig, "Multiplication", alt_param, w))
+        elif letter == "B":
+            if transform == "Hilbert":
+                distractors = [sig_a.copy(), _apply_incorrect_hilbert(sig_a, w)]
+            else:
+                distractors = [1j * sig_a, -1j * w * sig_a]
+        elif letter == "C":
+            distractors = []
+            for _ in range(2):
+                alt_param = _random_multiplication_param(exclude=mul_secondary)
+                distractors.append(_apply_operation(sig_b, "Multiplication", alt_param, w))
+        elif letter == "D":
+            distractors = [sig_c.copy(), np.imag(sig_c)]
+        elif letter == "E":
+            distractors = [sig_c.copy(), np.real(sig_c)]
+        elif letter == "F":
+            distractors = [sig_d - sig_e, 0.5 * (sig_d + sig_e)]
+        elif letter == "G":
+            distractors = []
+            for _ in range(2):
+                alt_param = _random_sampling_param(exclude=sample_param)
+                distractors.append(_apply_operation(sum_sig, "Sampling", alt_param, w))
+        else:  # letter == "H"
+            distractors = []
+            for _ in range(2):
+                alt_param = _random_filter_param(exclude=filter_param)
+                distractors.append(_apply_operation(sig_g, "Filter", alt_param, w))
+
+        options = _ensure_option_diversity([correct_sig] + distractors, w)
+        indices = list(range(len(options)))
+        random.shuffle(indices)
+        shuffled = [options[i] for i in indices]
+        correct_index = indices.index(0)
+
+        encoded_imgs = [
+            _plot_spectrum(w, sig, title=freq_titles.get(letter, r"$S(j\omega)$"))
+            for sig in shuffled
+        ]
+        letter_results.append(
+            {
+                "letter": letter,
+                "signalLabel": label,
+                "signalLabelLatex": label_latex,
+                "images": encoded_imgs,
+                "correctIndex": correct_index,
+            }
+        )
+
+    diagram_ops = [
+        {
+            "letter": "A",
+            "signal": "a(t)",
+            "name": "Multiplication",
+            "parameter": _operation_parameter_label("Multiplication", mul_primary),
+            "signalLatex": "a(t)",
+            "nameLatex": _operation_name_latex("Multiplication"),
+            "parameterLatex": _operation_parameter_label_latex("Multiplication", mul_primary),
+            "summaryLatex": _build_summary_latex("A", "a(t)", "Multiplication", mul_primary),
+        },
+        {
+            "letter": "B",
+            "signal": "b(t)",
+            "name": transform,
+            "parameter": None,
+            "signalLatex": "b(t)",
+            "nameLatex": _operation_name_latex(transform),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("B", "b(t)", transform, None),
+        },
+        {
+            "letter": "C",
+            "signal": "c(t)",
+            "name": "Multiplication",
+            "parameter": _operation_parameter_label("Multiplication", mul_secondary),
+            "signalLatex": "c(t)",
+            "nameLatex": _operation_name_latex("Multiplication"),
+            "parameterLatex": _operation_parameter_label_latex("Multiplication", mul_secondary),
+            "summaryLatex": _build_summary_latex("C", "c(t)", "Multiplication", mul_secondary),
+        },
+        {
+            "letter": "D",
+            "signal": "d(t)",
+            "name": "Real",
+            "parameter": None,
+            "signalLatex": "d(t)",
+            "nameLatex": _operation_name_latex("Real"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("D", "d(t)", "Real", None),
+        },
+        {
+            "letter": "E",
+            "signal": "e(t)",
+            "name": "Imag",
+            "parameter": None,
+            "signalLatex": "e(t)",
+            "nameLatex": _operation_name_latex("Imag"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("E", "e(t)", "Imag", None),
+        },
+        {
+            "letter": "F",
+            "signal": "f(t)",
+            "name": "Addition",
+            "parameter": None,
+            "signalLatex": "f(t)",
+            "nameLatex": _operation_name_latex("Addition"),
+            "parameterLatex": None,
+            "summaryLatex": _build_summary_latex("F", "f(t)", "Addition", None),
+        },
+        {
+            "letter": "G",
+            "signal": "g(t)",
+            "name": "Sampling",
+            "parameter": _operation_parameter_label("Sampling", sample_param),
+            "signalLatex": "g(t)",
+            "nameLatex": _operation_name_latex("Sampling"),
+            "parameterLatex": _operation_parameter_label_latex("Sampling", sample_param),
+            "summaryLatex": _build_summary_latex("G", "g(t)", "Sampling", sample_param),
+        },
+        {
+            "letter": "H",
+            "signal": "y(t)",
+            "name": "Filter",
+            "parameter": _operation_parameter_label("Filter", filter_param),
+            "signalLatex": "y(t)",
+            "nameLatex": _operation_name_latex("Filter"),
+            "parameterLatex": _operation_parameter_label_latex("Filter", filter_param),
+            "summaryLatex": _build_summary_latex("H", "y(t)", "Filter", filter_param),
+        },
+    ]
+
+    diagram_img = _draw_hard_diagram_complex_split_sampling(
+        mul_primary,
+        transform,
+        mul_secondary,
+        sample_param,
+        filter_param,
+    )
+
+    operations = [
+        {"type": "Multiplication", "param": mul_primary},
+        {"type": transform, "param": None},
+        {"type": "Multiplication", "param": mul_secondary},
+        {"type": "Real", "param": None},
+        {"type": "Imag", "param": None},
+        {"type": "Addition", "param": None},
+        {"type": "Sampling", "param": sample_param},
+        {"type": "Filter", "param": filter_param},
+    ]
+
+    return {
+        "diagram": diagram_img,
+        "diagramOperations": diagram_ops,
+        "operations": operations,
+        "letters": letter_results,
+    }
+
+
+
 
 def _draw_hard_diagram_real_imag(
     mul_param: str | None,
@@ -2138,6 +2350,241 @@ def _draw_hard_diagram_real_imag(
     ax.text(output_x + 0.75, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
 
     ax.set_xlim(0.3, output_x + 1.0)
+    ax.set_ylim(bot_y - 0.7, top_y + 0.8)
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=230, bbox_inches="tight", pad_inches=0.2)
+    plt.close(fig)
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+def _draw_hard_diagram_complex_split_sampling(
+    mul_param: str | None,
+    transform_name: str,
+    mul_secondary: str | None,
+    sample_param: str | None,
+    filter_param: str | None,
+) -> str:
+    """Draw the HARD layout with a transform and real/imag split before sampling."""
+
+    fig, ax = plt.subplots(figsize=(13.2, 4.6))
+    ax.axis("off")
+
+    arrow_props = _arrow_props()
+
+    y_mid = 1.75
+    top_y = 3.0
+    bot_y = 0.6
+    input_x = 0.8
+    mul_x = 2.2
+    transform_x = 3.7
+    second_mul_x = 5.2
+    split_x = 6.3
+    real_x = 7.8
+    imag_x = 7.8
+    adder_x = 9.4
+    sampling_x = 10.95
+    filter_x = 13.2
+    output_x = 15.0
+
+    def prepare_block(info: Dict[str, object], centre: float, y_pos: float) -> Dict[str, object]:
+        info = dict(info)
+        info["centre"] = centre
+        info["y"] = y_pos
+        if info["shape"] == "circle":
+            radius = info["radius"]
+            info["left"] = centre - radius
+            info["right"] = centre + radius
+            info["top"] = y_pos + radius
+            info["bottom"] = y_pos - radius
+        else:
+            width = info["width"]
+            height = info["height"]
+            info["left"] = centre - width / 2.0
+            info["right"] = centre + width / 2.0
+            info["top"] = y_pos + height / 2.0
+            info["bottom"] = y_pos - height / 2.0
+        return info
+
+    mul_block = prepare_block(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
+    transform_block = prepare_block(_block_render_info(transform_name, None), transform_x, y_mid)
+    second_mul_block = prepare_block(_block_render_info("Multiplication", mul_secondary), second_mul_x, y_mid)
+    real_block = prepare_block(_block_render_info("Real", None), real_x, top_y)
+    imag_block = prepare_block(_block_render_info("Imag", None), imag_x, bot_y)
+    adder_block = prepare_block(_block_render_info("Addition", None), adder_x, y_mid)
+    sampling_block = prepare_block(_block_render_info("Sampling", sample_param), sampling_x, y_mid)
+    filter_block = prepare_block(_block_render_info("Filter", filter_param), filter_x, y_mid)
+
+    blocks = [
+        mul_block,
+        transform_block,
+        second_mul_block,
+        real_block,
+        imag_block,
+        adder_block,
+        sampling_block,
+        filter_block,
+    ]
+
+    def draw_block(block: Dict[str, object]) -> None:
+        if block["shape"] == "circle":
+            circle = plt.Circle((block["centre"], block["y"]), block["radius"], fill=False, lw=_BLOCK_LINEWIDTH, color=_EDGE_COLOR)
+            ax.add_patch(circle)
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(
+                block["centre"],
+                block["y"],
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 16),
+                fontweight="bold",
+            )
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
+                param_text_y = block["y"] + block["radius"] + 0.55
+                ax.text(
+                    block["centre"],
+                    param_text_y,
+                    param_label,
+                    ha="center",
+                    va="bottom",
+                    fontsize=10.5,
+                )
+                if block.get("param_connector") == "top":
+                    arrow_tail_y = param_text_y - 0.18
+                    arrow_head_y = block["y"] + block["radius"] * 0.98
+                    ax.annotate(
+                        "",
+                        xy=(block["centre"], arrow_head_y),
+                        xytext=(block["centre"], arrow_tail_y),
+                        arrowprops=arrow_props,
+                    )
+        else:
+            rect = plt.Rectangle(
+                (block["left"], block["bottom"]),
+                block["width"],
+                block["height"],
+                fill=False,
+                lw=_BLOCK_LINEWIDTH,
+                color=_EDGE_COLOR,
+                joinstyle="round",
+            )
+            ax.add_patch(rect)
+            label = block.get("label_latex") or block.get("label")
+            if block.get("label_latex"):
+                label = f"${label}$"
+            ax.text(
+                block["centre"],
+                block["y"] + block.get("label_y_offset", 0.18),
+                label,
+                ha="center",
+                va="center",
+                fontsize=block.get("label_fontsize", 11),
+                fontweight="bold",
+            )
+            param_label = None
+            if block.get("param_latex"):
+                param_label = f"${block['param_latex']}$"
+            elif block.get("param"):
+                param_label = block["param"]
+            if param_label:
+                ax.text(
+                    block["centre"],
+                    block["y"] - block.get("param_y_offset", 0.18),
+                    param_label,
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                )
+
+    for block in blocks:
+        draw_block(block)
+
+    # Input to first multiplier
+    ax.annotate("", xy=(mul_block["left"], y_mid), xytext=(input_x, y_mid), arrowprops=arrow_props)
+    ax.text((input_x + mul_block["left"]) / 2.0, y_mid + 0.45, "$x(t)$", ha="center", va="center", fontsize=12)
+
+    # Multiplier to transform (letter A)
+    ax.annotate("", xy=(transform_block["left"], y_mid), xytext=(mul_block["right"], y_mid), arrowprops=arrow_props)
+    mid_a_x = (mul_block["right"] + transform_block["left"]) / 2.0
+    ax.text(mid_a_x, y_mid + 0.45, "A", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_a_x, y_mid - 0.55, "$a(t)$", ha="center", va="center", fontsize=11)
+
+    # Transform to second multiplier (letter B)
+    ax.annotate("", xy=(second_mul_block["left"], y_mid), xytext=(transform_block["right"], y_mid), arrowprops=arrow_props)
+    mid_b_x = (transform_block["right"] + second_mul_block["left"]) / 2.0
+    ax.text(mid_b_x, y_mid + 0.45, "B", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_b_x, y_mid - 0.55, "$b(t)$", ha="center", va="center", fontsize=11)
+
+    # Second multiplier to splitter (letter C)
+    ax.annotate("", xy=(split_x, y_mid), xytext=(second_mul_block["right"], y_mid), arrowprops=arrow_props)
+    mid_c_x = (second_mul_block["right"] + split_x) / 2.0
+    ax.text(mid_c_x, y_mid + 0.45, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, y_mid - 0.55, "$c(t)$", ha="center", va="center", fontsize=11)
+
+    split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
+    ax.add_patch(split_circle)
+
+    # Top branch: splitter to real block
+    ax.plot([split_x, split_x], [y_mid, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.annotate("", xy=(real_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
+
+    # Bottom branch: splitter to imag block
+    ax.plot([split_x, split_x], [y_mid, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.annotate("", xy=(imag_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
+
+    # Real block to adder (letter D)
+    adder_radius = adder_block.get("radius", 0.36)
+    ax.annotate(
+        "",
+        xy=(adder_block["centre"], y_mid + adder_radius * 0.95),
+        xytext=(real_block["right"], top_y),
+        arrowprops=arrow_props,
+    )
+    mid_d_x = (real_block["right"] + adder_block["centre"]) / 2.0
+    mid_d_y = (top_y + (y_mid + adder_radius)) / 2.0
+    ax.text(mid_d_x, mid_d_y + 0.3, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, mid_d_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
+
+    # Imag block to adder (letter E)
+    ax.annotate(
+        "",
+        xy=(adder_block["centre"], y_mid - adder_radius * 0.95),
+        xytext=(imag_block["right"], bot_y),
+        arrowprops=arrow_props,
+    )
+    mid_e_x = (imag_block["right"] + adder_block["centre"]) / 2.0
+    mid_e_y = (bot_y + (y_mid - adder_radius)) / 2.0
+    ax.text(mid_e_x, mid_e_y + 0.35, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, mid_e_y - 0.35, "$e(t)$", ha="center", va="center", fontsize=11)
+
+    # Adder to sampling (letter F)
+    ax.annotate("", xy=(sampling_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
+    mid_f_x = (adder_block["right"] + sampling_block["left"]) / 2.0
+    ax.text(mid_f_x, y_mid + 0.45, "F", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_f_x, y_mid - 0.55, "$f(t)$", ha="center", va="center", fontsize=11)
+
+    # Sampling to filter (letter G)
+    ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(sampling_block["right"], y_mid), arrowprops=arrow_props)
+    mid_g_x = (sampling_block["right"] + filter_block["left"]) / 2.0
+    ax.text(mid_g_x, y_mid + 0.45, "G", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_g_x, y_mid - 0.55, "$g(t)$", ha="center", va="center", fontsize=11)
+
+    # Filter to output (letter H)
+    ax.annotate("", xy=(output_x, y_mid), xytext=(filter_block["right"], y_mid), arrowprops=arrow_props)
+    mid_h_x = (filter_block["right"] + output_x) / 2.0
+    ax.text(mid_h_x, y_mid + 0.45, "H", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_h_x, y_mid - 0.55, "$y(t)$", ha="center", va="center", fontsize=11)
+
+    ax.text(output_x + 0.75, y_mid, "$y(t)$", ha="center", va="center", fontsize=12)
+
+    ax.set_xlim(0.3, output_x + 0.9)
     ax.set_ylim(bot_y - 0.7, top_y + 0.8)
 
     buf = io.BytesIO()
