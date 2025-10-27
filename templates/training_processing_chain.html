@@ -111,6 +111,44 @@ function postJson(url, payload) {
   }).then(r => r.json());
 }
 
+function resetProblemUI(options = {}) {
+  const { clearFeedback = true } = options;
+  document.getElementById('diagram_image').style.display = 'none';
+  document.getElementById('diagram_image').removeAttribute('src');
+  document.getElementById('diagramSummary').style.display = 'none';
+  document.getElementById('diagramSummaryList').innerHTML = '';
+  const inputSection = document.getElementById('inputSection');
+  const inputExpr = document.getElementById('input_expression');
+  const inputPlot = document.getElementById('input_plot');
+  inputSection.style.display = 'none';
+  inputExpr.textContent = '';
+  inputExpr.innerHTML = '';
+  inputPlot.removeAttribute('src');
+  inputPlot.style.display = 'none';
+  document.getElementById('lettersContainer').innerHTML = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  if (clearFeedback) {
+    document.getElementById('feedback').textContent = '';
+  }
+  answeredLetters = 0;
+  currentProblem = null;
+}
+
+function requestProblem(diff) {
+  const difficulty = diff || getDifficulty();
+  currentProblemDifficulty = difficulty;
+  document.getElementById('feedback').textContent = 'Generating problem…';
+  postJson("{{ url_for('training_processing_chain.generate_problem') }}", {
+    difficulty: difficulty
+  }).then(data => {
+    currentProblem = data;
+    renderProblem();
+  }).catch(() => {
+    document.getElementById('feedback').textContent = 'Error generating problem.';
+  });
+}
+
+
 // Render the problem to the DOM
 function renderProblem() {
   if (!currentProblem || currentProblem.error) {
@@ -278,42 +316,20 @@ function onOptionClick(evt) {
 
 // Generate button handler
 document.getElementById('generateBtn').addEventListener('click', () => {
-  // clear any previous problem state
-  currentProblem = null;
-  document.getElementById('diagram_image').style.display = 'none';
-  document.getElementById('diagramSummary').style.display = 'none';
-  document.getElementById('diagramSummaryList').innerHTML = '';
-  document.getElementById('inputSection').style.display = 'none';
-  document.getElementById('lettersContainer').innerHTML = '';
-  document.getElementById('feedback').textContent = 'Generating problem…';
-  // Use url_for to resolve the generate endpoint.  See comment above.
-  const selectedDifficulty = getDifficulty();
-  postJson("{{ url_for('training_processing_chain.generate_problem') }}", {
-    difficulty: selectedDifficulty
-  }).then(data => {
-    currentProblemDifficulty = selectedDifficulty;
-    currentProblem = data;
-    renderProblem();
-  }).catch(() => {
-    document.getElementById('feedback').textContent = 'Error generating problem.';
-  });
+  resetProblemUI({ clearFeedback: false });
+  requestProblem(getDifficulty());
 });
 
 // Next Problem button handler
 document.getElementById('nextBtn').addEventListener('click', () => {
-  document.getElementById('nextBtn').style.display = 'none';
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('diagram_image').style.display = 'none';
-  document.getElementById('diagramSummary').style.display = 'none';
-  document.getElementById('diagramSummaryList').innerHTML = '';
-  document.getElementById('inputSection').style.display = 'none';
-  document.getElementById('lettersContainer').innerHTML = '';
-  currentProblem = null;
-  currentProblemDifficulty = null;
+  const diff = currentProblemDifficulty || getDifficulty();
+  resetProblemUI({ clearFeedback: false });
+  requestProblem(diff);
 });
 
 document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
   radio.addEventListener('change', () => {
+    resetProblemUI();
     currentProblemDifficulty = null;
     const diff = getDifficulty();
     refreshStatsUI(diff);
