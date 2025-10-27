@@ -46,10 +46,57 @@
 <!-- Feedback -->
 <div id="feedback" style="text-align:center;font-size:1.1em;color:var(--text-color);min-height:1.2em;margin-top:10px;"></div>
 
+<!-- Score and streak panels -->
+<div id="scorePanel" style="max-width:420px;margin:24px auto 10px;padding:14px 18px;border:1px solid var(--border-color,#ccd0d5);border-radius:8px;background-color:var(--panel-bg,#f8f9fb);text-align:center;">
+  <div style="font-size:1.05em;color:var(--text-color);">Correct answers: <strong id="scoreCorrect">0</strong><span style="opacity:.8;"> / <span id="scoreTotal">0</span></span></div>
+  <div id="accuracyRow" style="margin-top:6px;font-size:0.95em;color:var(--subtext-color);">Accuracy: <strong id="scoreAccuracy">0%</strong></div>
+</div>
+
+<div id="streakPanel" style="max-width:420px;margin:0 auto 0;padding:10px 16px;border:1px solid var(--border-color,#ccd0d5);border-radius:8px;background-color:var(--panel-bg,#f8f9fb);display:flex;justify-content:center;gap:12px;align-items:center;">
+  <div>Streak: <strong id="streakCur">0</strong></div>
+  <div style="opacity:.8;">Best: <strong id="streakBest">0</strong></div>
+  <button id="streakReset" class="action-btn" style="padding:6px 12px;background:#555;">Reset</button>
+</div>
+
+
 <script>
 // Store current problem data
 let currentProblem = null;
 let answeredLetters = 0;
+let currentProblemDifficulty = null;
+
+const memoryStore = {};
+let storageAvailable = true;
+try {
+  const testKey = "procchain:test";
+  window.localStorage.setItem(testKey, "1");
+  window.localStorage.removeItem(testKey);
+} catch (err) {
+  storageAvailable = false;
+}
+
+function safeGetItem(key) {
+  if (storageAvailable) {
+    const value = window.localStorage.getItem(key);
+    if (value !== null) {
+      return value;
+    }
+  }
+  return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+}
+
+function safeSetItem(key, value) {
+  if (storageAvailable) {
+    try {
+      window.localStorage.setItem(key, value);
+      memoryStore[key] = value;
+      return;
+    } catch (err) {
+      storageAvailable = false;
+    }
+  }
+  memoryStore[key] = value;
+}
 
 function getDifficulty() {
   return document.querySelector('input[name="difficulty"]:checked').value;
@@ -75,6 +122,10 @@ function renderProblem() {
   answeredLetters = 0;
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('feedback').textContent = 'Problem generated. Select the correct outputs.';
+  currentProblemDifficulty = currentProblemDifficulty || getDifficulty();
+  const selected = getDifficulty();
+  refreshStatsUI(selected);
+  refreshStreakUI(selected);
   // show input details
   const inputSection = document.getElementById('inputSection');
   const inputExpr = document.getElementById('input_expression');
@@ -199,6 +250,7 @@ function onOptionClick(evt) {
     selectedIndex: optionIndex,
     correctIndex: letterObj.correctIndex
   }).then(res => {
+    const isCorrect = optionIndex === letterObj.correctIndex;
     // mark images
     const siblings = wrapper.parentElement.children;
     for (let i = 0; i < siblings.length; i++) {
@@ -214,6 +266,8 @@ function onOptionClick(evt) {
     section.dataset.answered = 'true';
     // update feedback text
     document.getElementById('feedback').textContent = res.feedback;
+    recordAnswer(isCorrect);
+    bumpStreak(isCorrect);
     // increase answered count
     answeredLetters += 1;
     if (answeredLetters === currentProblem.letters.length) {
@@ -233,9 +287,11 @@ document.getElementById('generateBtn').addEventListener('click', () => {
   document.getElementById('lettersContainer').innerHTML = '';
   document.getElementById('feedback').textContent = 'Generating problem…';
   // Use url_for to resolve the generate endpoint.  See comment above.
+  const selectedDifficulty = getDifficulty();
   postJson("{{ url_for('training_processing_chain.generate_problem') }}", {
-    difficulty: getDifficulty()
+    difficulty: selectedDifficulty
   }).then(data => {
+    currentProblemDifficulty = selectedDifficulty;
     currentProblem = data;
     renderProblem();
   }).catch(() => {
@@ -253,6 +309,182 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   document.getElementById('inputSection').style.display = 'none';
   document.getElementById('lettersContainer').innerHTML = '';
   currentProblem = null;
+  currentProblemDifficulty = null;
 });
+
+document.querySelectorAll('input[name="difficulty"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    currentProblemDifficulty = null;
+    const diff = getDifficulty();
+    refreshStatsUI(diff);
+    refreshStreakUI(diff);
+  });
+});
+
+function statsKey(diff) { return `procchain:stats:${diff}`; }
+function streakKey(diff) { return `procchain:streak:${diff}`; }
+function bestKey(diff) { return `procchain:best:${diff}`; }
+
+function sanitiseCount(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return Math.round(num);
+}
+
+function readStats(diff) {
+  const raw = safeGetItem(statsKey(diff));
+  if (!raw) return {correct: 0, total: 0};
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      correct: sanitiseCount(parsed.correct),
+      total: sanitiseCount(parsed.total)
+    };
+  } catch (err) {
+    return {correct: 0, total: 0};
+  }
+}
+
+function writeStats(diff, stats) {
+  const payload = JSON.stringify({
+    correct: sanitiseCount(stats.correct),
+    total: sanitiseCount(stats.total)
+  });
+  safeSetItem(statsKey(diff), payload);
+}
+
+function readInt(key) {
+  const raw = safeGetItem(key);
+  if (!raw) return 0;
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function writeInt(key, value) {
+  const normalised = sanitiseCount(value);
+  safeSetItem(key, String(normalised));
+}
+
+function refreshStatsUI(diffOverride) {
+  const diff = diffOverride || getDifficulty();
+  const stats = readStats(diff);
+  const correct = sanitiseCount(stats.correct);
+  const total = sanitiseCount(stats.total);
+  document.getElementById('scoreCorrect').textContent = correct;
+  document.getElementById('scoreTotal').textContent = total;
+  const accuracy = total > 0 ? (correct / total) * 100 : 0;
+  let accuracyText = accuracy.toFixed(1);
+  if (Math.abs(accuracy - Math.round(accuracy)) < 0.05) {
+    accuracyText = Math.round(accuracy).toString();
+  }
+  document.getElementById('scoreAccuracy').textContent = `${accuracyText}%`;
+}
+
+function recordAnswer(isCorrect) {
+  const diff = currentProblemDifficulty || getDifficulty();
+  const stats = readStats(diff);
+  const totalBefore = sanitiseCount(stats.total);
+  const correctBefore = sanitiseCount(stats.correct);
+  const totalAfter = totalBefore + 1;
+  const correctAfter = isCorrect ? correctBefore + 1 : correctBefore;
+  writeStats(diff, { correct: correctAfter, total: totalAfter });
+  const selected = getDifficulty();
+  refreshStatsUI(selected);
+  if (isCorrect && selected === diff) {
+    flashScorePanel();
+  }
+}
+
+function getStreak(diff) { return readInt(streakKey(diff)); }
+function setStreak(diff, value) { writeInt(streakKey(diff), value); }
+function getBest(diff) { return readInt(bestKey(diff)); }
+function setBest(diff, value) { writeInt(bestKey(diff), value); }
+
+function refreshStreakUI(diffOverride) {
+  const diff = diffOverride || getDifficulty();
+  document.getElementById('streakCur').textContent = getStreak(diff);
+  document.getElementById('streakBest').textContent = getBest(diff);
+}
+
+function bumpStreak(isCorrect) {
+  const diff = currentProblemDifficulty || getDifficulty();
+  if (isCorrect) {
+    const cur = getStreak(diff) + 1;
+    setStreak(diff, cur);
+    if (cur > getBest(diff)) {
+      setBest(diff, cur);
+    }
+  } else {
+    setStreak(diff, 0);
+  }
+  const selected = getDifficulty();
+  refreshStreakUI(selected);
+  if (isCorrect && selected === diff) {
+    flashStreak();
+  }
+}
+
+function flashStreak() {
+  const el = document.getElementById('streakPanel');
+  if (!el) return;
+  el.style.transition = 'transform 0.2s ease';
+  el.style.transform = 'scale(1.05)';
+  setTimeout(() => {
+    el.style.transform = 'scale(1)';
+  }, 200);
+}
+
+function flashScorePanel() {
+  const el = document.getElementById('scorePanel');
+  if (!el) return;
+  el.style.transition = 'transform 0.2s ease';
+  el.style.transform = 'scale(1.05)';
+  setTimeout(() => {
+    el.style.transform = 'scale(1)';
+  }, 200);
+}
+
+document.getElementById('streakReset').addEventListener('click', () => {
+  const diff = getDifficulty();
+  setStreak(diff, 0);
+  refreshStreakUI(diff);
+});
+
+const initialDiff = getDifficulty();
+refreshStatsUI(initialDiff);
+refreshStreakUI(initialDiff);
 </script>
+<style>
+  .radio-group { display: flex; gap: 15px; }
+  .radio-label { font-size: 1em; }
+  .radio-label input { margin-right: 6px; }
+  .action-btn {
+    padding: 10px 20px;
+    background-color: #007acc;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+  .action-btn:hover { background-color: #005fa3; }
+  #nextBtn {
+    background-color: #3CB371;
+  }
+  #nextBtn:hover { background-color: #2E8B57; }
+  #scorePanel strong {
+    color: var(--text-color);
+  }
+  #streakPanel {
+    margin-top: 12px;
+  }
+  #streakPanel .action-btn {
+    font-size: 0.9em;
+    background-color: #555;
+  }
+  #streakPanel .action-btn:hover {
+    background-color: #333;
+  }
+</style>
 {% endblock %}
