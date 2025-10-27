@@ -54,6 +54,42 @@ def _arrow_props() -> Dict[str, object]:
 
     return dict(arrowstyle="->", lw=_ARROW_LINEWIDTH, color=_EDGE_COLOR, shrinkA=0, shrinkB=0)
 
+def _draw_connector(
+    ax: plt.Axes,
+    points: List[Tuple[float, float]],
+    *,
+    arrow_props: Dict[str, object],
+    linewidth: float | None = None,
+) -> None:
+    """Draw a polyline connector that terminates in an arrow.
+
+    The connector is defined by ``points`` representing the successive
+    waypoints of the path.  Straight line segments are drawn between each
+    waypoint using :func:`matplotlib.axes.Axes.plot`, while the final segment
+    is rendered with :func:`matplotlib.axes.Axes.annotate` so that an arrow
+    head is placed at the end of the path.  This helper keeps arrows aligned
+    to horizontal/vertical segments which makes block diagrams easier to
+    follow than the previous diagonal arrows.
+    """
+
+    if len(points) < 2:
+        return
+
+    line_width = linewidth if linewidth is not None else _CONNECTOR_LINEWIDTH
+    for start, end in zip(points[:-2], points[1:-1]):
+        ax.plot(
+            [start[0], end[0]],
+            [start[1], end[1]],
+            color=_EDGE_COLOR,
+            lw=line_width,
+        )
+
+    final_start, final_end = points[-2], points[-1]
+    final_props = dict(arrow_props)
+    final_props.setdefault("lw", line_width)
+    ax.annotate("", xy=final_end, xytext=final_start, arrowprops=final_props)
+
+
 
 # Define a blueprint for the processing chain training.  Do not specify a URL
 # prefix here – the main application registers this blueprint with a
@@ -1030,22 +1066,34 @@ def _draw_hard_diagram_split_modulation(
     ax.text(mid_b_x, top_y - 0.55, "$b(t)$", ha="center", va="center", fontsize=11)
 
     # Derivative to adder (letter C)
-    ax.annotate("", xy=(adder_block["left"], y_mid + 0.55), xytext=(derivative_block["right"], top_y), arrowprops=arrow_props)
-    mid_c_x = (derivative_block["right"] + adder_block["left"]) / 2.0
-    mid_c_y = (top_y + (y_mid + 0.55)) / 2.0
-    ax.text(mid_c_x, mid_c_y + 0.4, "C", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_c_x, mid_c_y - 0.35, "$c(t)$", ha="center", va="center", fontsize=11)
+    top_route_x = derivative_block["right"] + 0.6
+    connector_points = [
+        (derivative_block["right"], top_y),
+        (top_route_x, top_y),
+        (top_route_x, y_mid + 0.55),
+        (adder_block["left"], y_mid + 0.55),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_c_x = (top_route_x + adder_block["left"]) / 2.0
+    ax.text(mid_c_x, y_mid + 0.9, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, y_mid + 0.25, "$c(t)$", ha="center", va="center", fontsize=11)
 
     # Branch to bottom multiplier
     ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(bottom_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
 
     # Bottom multiplier to adder (letter D)
-    ax.annotate("", xy=(adder_block["left"], y_mid - 0.55), xytext=(bottom_block["right"], bot_y), arrowprops=arrow_props)
-    mid_d_x = (bottom_block["right"] + adder_block["left"]) / 2.0
-    mid_d_y = (bot_y + (y_mid - 0.55)) / 2.0
-    ax.text(mid_d_x, mid_d_y + 0.35, "D", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_d_x, mid_d_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
+    bottom_route_x = bottom_block["right"] + 0.6
+    connector_points = [
+        (bottom_block["right"], bot_y),
+        (bottom_route_x, bot_y),
+        (bottom_route_x, y_mid - 0.55),
+        (adder_block["left"], y_mid - 0.55),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_d_x = (bottom_route_x + adder_block["left"]) / 2.0
+    ax.text(mid_d_x, y_mid - 0.95, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, y_mid - 1.45, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Adder to filter (letter E)
     ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
@@ -2285,23 +2333,18 @@ def _draw_hard_diagram_real_imag(
     ax.text(mid_c_x, top_y - 0.6, "$c(t)$", ha="center", va="center", fontsize=11)
 
     join_top_y = y_mid + 1.05
-    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.5], [top_y, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot(
-        [top_mul_block["right"] + 0.5, top_mul_block["right"] + 0.5],
-        [top_y, join_top_y],
-        color=_EDGE_COLOR,
-        lw=_CONNECTOR_LINEWIDTH,
-    )
-    ax.annotate(
-        "",
-        xy=(adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
-        xytext=(top_mul_block["right"] + 0.5, join_top_y),
-        arrowprops=arrow_props,
-    )
-    mid_d_x = (top_mul_block["right"] + adder_block["centre"]) / 2.0
-    mid_d_y = (join_top_y + top_y) / 2.0
-    ax.text(mid_d_x, mid_d_y + 0.35, "D", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_d_x, mid_d_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
+    top_branch_x = top_mul_block["right"] + 0.6
+    connector_points = [
+        (top_mul_block["right"], top_y),
+        (top_branch_x, top_y),
+        (top_branch_x, join_top_y),
+        (adder_block["centre"], join_top_y),
+        (adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_d_x = (top_branch_x + adder_block["centre"]) / 2.0
+    ax.text(mid_d_x, join_top_y + 0.35, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, join_top_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Bottom branch connections
     ax.plot([split_x, split_x], [y_mid, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
@@ -2316,24 +2359,18 @@ def _draw_hard_diagram_real_imag(
     ax.text(mid_f_x, bot_y + 0.6, "F", ha="center", va="center", fontsize=12, fontweight="bold")
     ax.text(mid_f_x, bot_y - 0.35, "$f(t)$", ha="center", va="center", fontsize=11)
     join_bot_y = y_mid - 1.05
-    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.5], [bot_y, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot(
-        [bottom_mul_block["right"] + 0.5, bottom_mul_block["right"] + 0.5],
-        [bot_y, join_bot_y],
-        color=_EDGE_COLOR,
-        lw=_CONNECTOR_LINEWIDTH,
-    )
-
-    ax.annotate(
-        "",
-        xy=(adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
-        xytext=(bottom_mul_block["right"] + 0.5, join_bot_y),
-        arrowprops=arrow_props,
-    )
-    mid_g_x = (bottom_mul_block["right"] + adder_block["centre"]) / 2.0
-    mid_g_y = (join_bot_y + bot_y) / 2.0
-    ax.text(mid_g_x, mid_g_y + 0.35, "G", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_g_x, mid_g_y - 0.35, "$g(t)$", ha="center", va="center", fontsize=11)
+    bottom_branch_x = bottom_mul_block["right"] + 0.6
+    connector_points = [
+        (bottom_mul_block["right"], bot_y),
+        (bottom_branch_x, bot_y),
+        (bottom_branch_x, join_bot_y),
+        (adder_block["centre"], join_bot_y),
+        (adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_g_x = (bottom_branch_x + adder_block["centre"]) / 2.0
+    ax.text(mid_g_x, join_bot_y + 0.4, "G", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_g_x, join_bot_y - 0.35, "$g(t)$", ha="center", va="center", fontsize=11)
 
     # Addition to filter (letter H)
     ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
@@ -2541,28 +2578,32 @@ def _draw_hard_diagram_complex_split_sampling(
 
     # Real block to adder (letter D)
     adder_radius = adder_block.get("radius", 0.36)
-    ax.annotate(
-        "",
-        xy=(adder_block["centre"], y_mid + adder_radius * 0.95),
-        xytext=(real_block["right"], top_y),
-        arrowprops=arrow_props,
-    )
-    mid_d_x = (real_block["right"] + adder_block["centre"]) / 2.0
-    mid_d_y = (top_y + (y_mid + adder_radius)) / 2.0
-    ax.text(mid_d_x, mid_d_y + 0.3, "D", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_d_x, mid_d_y - 0.35, "$d(t)$", ha="center", va="center", fontsize=11)
+    real_route_x = real_block["right"] + 0.6
+    connector_points = [
+        (real_block["right"], top_y),
+        (real_route_x, top_y),
+        (real_route_x, y_mid + adder_radius + 0.12),
+        (adder_block["centre"], y_mid + adder_radius + 0.12),
+        (adder_block["centre"], y_mid + adder_radius * 0.95),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_d_x = (real_route_x + adder_block["centre"]) / 2.0
+    ax.text(mid_d_x, y_mid + adder_radius + 0.45, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, y_mid + adder_radius - 0.2, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Imag block to adder (letter E)
-    ax.annotate(
-        "",
-        xy=(adder_block["centre"], y_mid - adder_radius * 0.95),
-        xytext=(imag_block["right"], bot_y),
-        arrowprops=arrow_props,
-    )
-    mid_e_x = (imag_block["right"] + adder_block["centre"]) / 2.0
-    mid_e_y = (bot_y + (y_mid - adder_radius)) / 2.0
-    ax.text(mid_e_x, mid_e_y + 0.35, "E", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_e_x, mid_e_y - 0.35, "$e(t)$", ha="center", va="center", fontsize=11)
+    imag_route_x = imag_block["right"] + 0.6
+    connector_points = [
+        (imag_block["right"], bot_y),
+        (imag_route_x, bot_y),
+        (imag_route_x, y_mid - adder_radius - 0.12),
+        (adder_block["centre"], y_mid - adder_radius - 0.12),
+        (adder_block["centre"], y_mid - adder_radius * 0.95),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_e_x = (imag_route_x + adder_block["centre"]) / 2.0
+    ax.text(mid_e_x, y_mid - adder_radius - 0.45, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, y_mid - adder_radius - 1.0, "$e(t)$", ha="center", va="center", fontsize=11)
 
     # Adder to sampling (letter F)
     ax.annotate("", xy=(sampling_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
@@ -2773,41 +2814,31 @@ def _draw_hard_diagram_real_imag_sampling(
     join_top_y = y_mid + 0.95
     join_bot_y = y_mid - 0.95
 
-    ax.plot([top_mul_block["right"], top_mul_block["right"] + 0.45], [top_y, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot(
-        [top_mul_block["right"] + 0.45, top_mul_block["right"] + 0.45],
-        [top_y, join_top_y],
-        color=_EDGE_COLOR,
-        lw=_CONNECTOR_LINEWIDTH,
-    )
-    ax.annotate(
-        "",
-        xy=(adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
-        xytext=(top_mul_block["right"] + 0.45, join_top_y),
-        arrowprops=arrow_props,
-    )
-    mid_c_x = (top_mul_block["right"] + adder_block["centre"]) / 2.0
-    mid_c_y = (join_top_y + top_y) / 2.0
-    ax.text(mid_c_x, mid_c_y + 0.33, "C", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_c_x, mid_c_y - 0.38, "$c(t)$", ha="center", va="center", fontsize=11)
+    top_route_x = top_mul_block["right"] + 0.55
+    connector_points = [
+        (top_mul_block["right"], top_y),
+        (top_route_x, top_y),
+        (top_route_x, join_top_y),
+        (adder_block["centre"], join_top_y),
+        (adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_c_x = (top_route_x + adder_block["centre"]) / 2.0
+    ax.text(mid_c_x, join_top_y + 0.32, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, join_top_y - 0.38, "$c(t)$", ha="center", va="center", fontsize=11)
 
-    ax.plot([bottom_mul_block["right"], bottom_mul_block["right"] + 0.45], [bot_y, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot(
-        [bottom_mul_block["right"] + 0.45, bottom_mul_block["right"] + 0.45],
-        [bot_y, join_bot_y],
-        color=_EDGE_COLOR,
-        lw=_CONNECTOR_LINEWIDTH,
-    )
-    ax.annotate(
-        "",
-        xy=(adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
-        xytext=(bottom_mul_block["right"] + 0.45, join_bot_y),
-        arrowprops=arrow_props,
-    )
-    mid_e_x = (bottom_mul_block["right"] + adder_block["centre"]) / 2.0
-    mid_e_y = (join_bot_y + bot_y) / 2.0
-    ax.text(mid_e_x, mid_e_y + 0.33, "E", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_e_x, mid_e_y - 0.38, "$e(t)$", ha="center", va="center", fontsize=11)
+    bottom_route_x = bottom_mul_block["right"] + 0.55
+    connector_points = [
+        (bottom_mul_block["right"], bot_y),
+        (bottom_route_x, bot_y),
+        (bottom_route_x, join_bot_y),
+        (adder_block["centre"], join_bot_y),
+        (adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
+    ]
+    _draw_connector(ax, connector_points, arrow_props=arrow_props)
+    mid_e_x = (bottom_route_x + adder_block["centre"]) / 2.0
+    ax.text(mid_e_x, join_bot_y + 0.33, "E", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_e_x, join_bot_y - 0.38, "$e(t)$", ha="center", va="center", fontsize=11)
 
     ax.annotate("", xy=(sampling_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
     mid_f_x = (adder_block["right"] + sampling_block["left"]) / 2.0
@@ -3140,13 +3171,23 @@ def _draw_medium_diagram_sampling(
     join_top_y = y_mid + 1.0
     join_bot_y = y_mid - 1.0
 
-    ax.plot([top_block["right"], top_knee_x], [top_block["y"] - 0.0, top_block["y"] - 0.0], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.annotate("", xy=top_target, xytext=(top_knee_x, join_top_y), arrowprops=arrow_props)
+    top_connector = [
+        (top_block["right"], top_block["y"]),
+        (top_knee_x, top_block["y"]),
+        (top_knee_x, join_top_y),
+        (adder_block["centre"], join_top_y),
+        top_target,
+    ]
+    _draw_connector(ax, top_connector, arrow_props=arrow_props)
 
-    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, join_bot_y), arrowprops=arrow_props)
+    bottom_connector = [
+        (bot_block["right"], bot_block["y"]),
+        (bot_knee_x, bot_block["y"]),
+        (bot_knee_x, join_bot_y),
+        (adder_block["centre"], join_bot_y),
+        bot_target,
+    ]
+    _draw_connector(ax, bottom_connector, arrow_props=arrow_props)
 
     # Labels for branches
     mid_top_x = (top_knee_x + top_target[0]) / 2.0
@@ -3325,13 +3366,23 @@ def _draw_medium_diagram_multiplication_split(
     join_top_y = y_mid + 1.0
     join_bot_y = y_mid - 1.0
 
-    ax.plot([top_block["right"], top_knee_x], [top_block["y"], top_block["y"]], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([top_knee_x, top_knee_x], [top_block["y"], join_top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.annotate("", xy=top_target, xytext=(top_knee_x, join_top_y), arrowprops=arrow_props)
+    top_connector = [
+        (top_block["right"], top_block["y"]),
+        (top_knee_x, top_block["y"]),
+        (top_knee_x, join_top_y),
+        (adder_block["centre"], join_top_y),
+        top_target,
+    ]
+    _draw_connector(ax, top_connector, arrow_props=arrow_props)
 
-    ax.plot([bot_block["right"], bot_knee_x], [bot_block["y"], bot_block["y"]], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([bot_knee_x, bot_knee_x], [bot_block["y"], join_bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.annotate("", xy=bot_target, xytext=(bot_knee_x, join_bot_y), arrowprops=arrow_props)
+    bottom_connector = [
+        (bot_block["right"], bot_block["y"]),
+        (bot_knee_x, bot_block["y"]),
+        (bot_knee_x, join_bot_y),
+        (adder_block["centre"], join_bot_y),
+        bot_target,
+    ]
+    _draw_connector(ax, bottom_connector, arrow_props=arrow_props)
 
     # Labels for branches
     mid_top_x = (top_knee_x + top_target[0]) / 2.0
