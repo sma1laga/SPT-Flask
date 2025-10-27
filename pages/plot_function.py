@@ -50,7 +50,7 @@ def plot_function_update():
 
     func1_str, func2_str = data.get("func1", ""), data.get("func2", "")
 
-    if func1_str.strip() == "t+l" or func2_str.strip() == "t+l":
+    if func1_str.strip() == "tarik+lea" or func2_str.strip() == "tarik+lea" or func1_str.strip() == "lea+tarik":
         func1_str = "np.sqrt(1 - (np.abs(t) - 1)**2)"
         func2_str = "np.arccos(1 - np.abs(t)) - np.pi"
 
