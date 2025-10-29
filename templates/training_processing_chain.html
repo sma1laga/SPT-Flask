@@ -48,8 +48,8 @@
 
 <!-- Score and streak panels -->
 <div id="scorePanel" style="max-width:420px;margin:24px auto 10px;padding:14px 18px;border:1px solid var(--border-color,#ccd0d5);border-radius:8px;background-color:var(--panel-bg,#f8f9fb);text-align:center;">
-  <div style="font-size:1.05em;color:var(--text-color);">Correct answers: <strong id="scoreCorrect">0</strong><span style="opacity:.8;"> / <span id="scoreTotal">0</span></span></div>
-  <div id="accuracyRow" style="margin-top:6px;font-size:0.95em;color:var(--subtext-color);">Accuracy: <strong id="scoreAccuracy">0%</strong></div>
+  <div id="problemScoreRow" style="font-size:1.05em;color:var(--text-color);margin-bottom:6px;">Current problem: <strong id="problemScoreCorrect">0</strong><span style="opacity:.8;"> / <span id="problemScoreTotal">0</span></span></div>
+  <div id="overallScoreRow" style="font-size:1.05em;color:var(--text-color);">Overall correct: <strong id="scoreCorrect">0</strong><span style="opacity:.8;"> / <span id="scoreTotal">0</span></span></div>  <div id="accuracyRow" style="margin-top:6px;font-size:0.95em;color:var(--subtext-color);">Accuracy: <strong id="scoreAccuracy">0%</strong></div>
 </div>
 
 <div id="streakPanel" style="max-width:420px;margin:0 auto 0;padding:10px 16px;border:1px solid var(--border-color,#ccd0d5);border-radius:8px;background-color:var(--panel-bg,#f8f9fb);display:flex;justify-content:center;gap:12px;align-items:center;">
@@ -63,6 +63,8 @@
 // Store current problem data
 let currentProblem = null;
 let answeredLetters = 0;
+let currentProblemCorrect = 0;
+let currentProblemTotal = 0;
 let currentProblemDifficulty = null;
 
 // Prefetch pipeline state (mirrors the convolution training module behaviour)
@@ -142,6 +144,9 @@ function resetProblemUI(options = {}) {
     document.getElementById('feedback').textContent = '';
   }
   answeredLetters = 0;
+  currentProblemCorrect = 0;
+  currentProblemTotal = 0;
+  refreshProblemScoreUI();
   currentProblem = null;
   answeredThisProblem = false;
 }
@@ -181,6 +186,7 @@ function renderProblem(problemData, difficultyTag) {
   currentProblem = data;
   // reset answered count
   answeredLetters = 0;
+  currentProblemCorrect = 0;
   answeredThisProblem = false;
   document.getElementById('nextBtn').style.display = 'none';
   document.getElementById('feedback').textContent = 'Problem generated. Select the correct outputs.';
@@ -188,6 +194,8 @@ function renderProblem(problemData, difficultyTag) {
   const selected = getDifficulty();
   refreshStatsUI(selected);
   refreshStreakUI(selected);
+  currentProblemTotal = Array.isArray(currentProblem.letters) ? currentProblem.letters.length : 0;
+  refreshProblemScoreUI();
   // show input details
   const inputSection = document.getElementById('inputSection');
   const inputExpr = document.getElementById('input_expression');
@@ -331,6 +339,10 @@ function onOptionClick(evt) {
     recordAnswer(isCorrect);
     bumpStreak(isCorrect);
     // increase answered count
+    if (isCorrect) {
+      currentProblemCorrect += 1;
+    }
+    refreshProblemScoreUI();
     answeredLetters += 1;
     if (answeredLetters === currentProblem.letters.length) {
       document.getElementById('nextBtn').style.display = 'inline-block';
@@ -423,6 +435,32 @@ function refreshStatsUI(diffOverride) {
     accuracyText = Math.round(accuracy).toString();
   }
   document.getElementById('scoreAccuracy').textContent = `${accuracyText}%`;
+  applyAccuracyColor(accuracy);
+}
+
+function refreshProblemScoreUI() {
+  const total = currentProblemTotal || (currentProblem && Array.isArray(currentProblem.letters) ? currentProblem.letters.length : 0) || 0;
+  document.getElementById('problemScoreCorrect').textContent = currentProblemCorrect;
+  document.getElementById('problemScoreTotal').textContent = total;
+}
+
+function applyAccuracyColor(accuracy) {
+  const overallRow = document.getElementById('overallScoreRow');
+  const accuracyRow = document.getElementById('accuracyRow');
+  let color = '#d9534f'; // red
+  if (accuracy >= 90) {
+    color = '#1b5e20'; // dark green
+  } else if (accuracy >= 75) {
+    color = '#7cb342'; // light green
+  } else if (accuracy >= 40) {
+    color = '#f0ad4e'; // yellow
+  }
+  if (overallRow) {
+    overallRow.style.color = color;
+  }
+  if (accuracyRow) {
+    accuracyRow.style.color = color;
+  }
 }
 
 function recordAnswer(isCorrect) {
@@ -496,6 +534,7 @@ document.getElementById('streakReset').addEventListener('click', () => {
 });
 
 const initialDiff = getDifficulty();
+refreshProblemScoreUI();
 refreshStatsUI(initialDiff);
 refreshStreakUI(initialDiff);
 
@@ -563,7 +602,7 @@ function destroyPrefetch(abort = true, clearCache = true) {
   }
   #nextBtn:hover { background-color: #2E8B57; }
   #scorePanel strong {
-    color: var(--text-color);
+    color: inherit;
   }
   #streakPanel {
     margin-top: 12px;
