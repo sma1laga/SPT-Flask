@@ -14,9 +14,10 @@ demos_fouriertransformation_bp = Blueprint(
 )
 
 RC_PARAMS = {
-    "axes.titlesize": 14,
-    "axes.labelsize": 13,
-    "font.size": 11,
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "font.size": 12,
+    "mathtext.fontset": "cm",
 }
 
 NUM_TIMEPOINTS = 2048
@@ -75,7 +76,7 @@ def generate_x(t, x_type, x_displacement, x_width, x_height):
         return si_squared((t - x_displacement) / x_width) * x_height
     raise ValueError("Unknown x_type")
 
-def generate_abs(w, x_type, x_displacement, x_width, x_height):
+def generate_abs(w, x_type, x_width, x_height):
     if x_type == "rect":
         return np.abs(si(w / (2.0 / x_width))) * (x_height * x_width)
     elif x_type == "si":
@@ -114,7 +115,7 @@ def generate_phi(w, x_type, x_displacement, x_width, x_height):
     raise ValueError("Unknown x_type")
 
 # ===== Plot formatting =====
-def _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
+def _set_axis_formatting(x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
     # Time
     x_ax.set_xlim(t_start, t_end)
     x_ax.set_ylim(-2.1, 2.1)
@@ -129,7 +130,7 @@ def _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
     x_ax.grid()
     x_ax.set_xlabel(r"$t$")
     x_ax.set_ylabel(r"$x(t)$")
-    x_ax.set_title("Time signal")
+    x_ax.set_title("Time Signal")
 
     # Magnitude
     abs_ax.set_xlim(OMEGA_START, OMEGA_END)
@@ -165,7 +166,7 @@ def _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end):
     phi_ax.set_xticks(ticks, [fr"${k}\pi$" for k in range(k0, k1 + 1)])
     phi_ax.grid()
     phi_ax.set_xlabel(r"$\omega$")
-    phi_ax.set_ylabel(r"$\phi(\mathrm{j}\omega)$")
+    phi_ax.set_ylabel(r"$\varphi(\mathrm{j}\omega)$")
     phi_ax.set_title("Phase")
 
 def _render_plot(x_type, x_displacement, x_width, x_height):
@@ -173,16 +174,16 @@ def _render_plot(x_type, x_displacement, x_width, x_height):
     w = OMEGA_POINTS
 
     x = generate_x(t, x_type, x_displacement, x_width, x_height)
-    Xabs = generate_abs(w, x_type, x_displacement, x_width, x_height)
+    Xabs = generate_abs(w, x_type, x_width, x_height)
     Xphi = generate_phi(w, x_type, x_displacement, x_width, x_height)
 
     fig, (x_ax, abs_ax, phi_ax) = plt.subplots(3, 1, figsize=(9, 6), layout="constrained")
 
-    _set_axis_formatting(fig, x_ax, abs_ax, phi_ax, x_type, t_start, t_end)
+    _set_axis_formatting(x_ax, abs_ax, phi_ax, x_type, t_start, t_end)
 
-    x_ax.plot(t, x, linewidth=1.2, color="C3")
-    abs_ax.plot(w, Xabs, linewidth=1.2, color="C0")
-    phi_ax.plot(w, Xphi, linewidth=1.2, color="C2")
+    x_ax.plot(t, x, linewidth=1.2, color="tab:red")
+    abs_ax.plot(w, Xabs, linewidth=1.2, color="tab:blue")
+    phi_ax.plot(w, Xphi, linewidth=1.2, color="tab:green")
 
     return fig
 

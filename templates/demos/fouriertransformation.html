@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Fourier Transform</h1>
-<p>This interactive page draws the continuous-time signal \(x(t)\) and its Fourier transform \(X(j\omega)\): magnitude \(|X(j\omega)|\) and phase \(\phi(j\omega)\). Choose the signal, displacement, time-scale (width), and amplitude.</p>
+<h1>Fourier Transform (L3)</h1>
+<p>This demo shows the Fourier&nbsp;transform \(\mathcal{F}\{x(t)\}=X(\mathrm j\omega)\) of a signal \(x(t)\), split up into magnitude \(|X(\mathrm j\omega)|\) and phase \(\varphi(\mathrm j\omega)\). Choose the signal type, shift, width, and amplitude.</p>
 
 <style>
   .page-wrap {
@@ -60,20 +60,20 @@
 </style>
 
 <div class="page-wrap">
-  <div class="card">
+  <div class="card" style="margin-top:12px">
     <div class="toolbar">
       <div>
-        <label for="x_type">x(t)</label>
+        <label for="x_type">\(x(t)\)</label>
         <select id="x_type">
-          <option value="rect" {% if defaults.x_type=='rect' %}selected{% endif %}>rectangle</option>
-          <option value="triangle" {% if defaults.x_type=='triangle' %}selected{% endif %}>triangle</option>
+          <option value="rect" {% if defaults.x_type=='rect' %}selected{% endif %}>rect</option>
           <option value="si" {% if defaults.x_type=='si' %}selected{% endif %}>si</option>
+          <option value="triangle" {% if defaults.x_type=='triangle' %}selected{% endif %}>triangle</option>
           <option value="si squared" {% if defaults.x_type=='si squared' %}selected{% endif %}>si²</option>
         </select>
       </div>
 
       <div>
-        <label for="x_displacement">Displacement t₀</label>
+        <label for="x_displacement">Shift</label>
         <input id="x_displacement" type="number"
                step="{{ defaults.step_displacement }}"
                min="{{ defaults.min_displacement }}" max="{{ defaults.max_displacement }}"
@@ -81,7 +81,7 @@
       </div>
 
       <div>
-        <label for="x_width">Time-scale / width</label>
+        <label for="x_width">Width</label>
         <input id="x_width" type="number"
                step="{{ defaults.step_width }}"
                min="{{ defaults.min_width }}" max="{{ defaults.max_width }}"
