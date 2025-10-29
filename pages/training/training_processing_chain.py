@@ -994,7 +994,7 @@ def _draw_hard_diagram_split_modulation(
     ax.add_patch(split_circle)
 
     # Branch to top Hilbert
-    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(hilbert_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
 
     # Hilbert to derivative (letter B)
@@ -1004,34 +1004,39 @@ def _draw_hard_diagram_split_modulation(
     ax.text(mid_b_x, top_y - 0.55, "$b(t)$", ha="center", va="center", fontsize=11)
 
     # Derivative to adder (letter C)
+    adder_radius = adder_block.get("radius", 0.45)
     top_route_x = derivative_block["right"] + 0.6
+    top_join_y = y_mid + adder_radius + 0.15
     connector_points = [
         (derivative_block["right"], top_y),
         (top_route_x, top_y),
-        (top_route_x, y_mid + 0.55),
-        (adder_block["left"], y_mid + 0.55),
+        (top_route_x, top_join_y),
+        (adder_block["centre"], top_join_y),
+        (adder_block["centre"], y_mid + adder_radius * 0.95),
     ]
     _draw_connector(ax, connector_points, arrow_props=arrow_props)
-    mid_c_x = (top_route_x + adder_block["left"]) / 2.0
-    ax.text(mid_c_x, y_mid + 0.9, "C", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_c_x, y_mid + 0.25, "$c(t)$", ha="center", va="center", fontsize=11)
+    mid_c_x = (top_route_x + adder_block["centre"]) / 2.0
+    ax.text(mid_c_x, top_join_y + 0.3, "C", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_c_x, top_join_y - 0.45, "$c(t)$", ha="center", va="center", fontsize=11)
 
     # Branch to bottom multiplier
-    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
     ax.annotate("", xy=(bottom_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
 
     # Bottom multiplier to adder (letter D)
     bottom_route_x = bottom_block["right"] + 0.6
+    bottom_join_y = y_mid - adder_radius - 0.15
     connector_points = [
         (bottom_block["right"], bot_y),
         (bottom_route_x, bot_y),
-        (bottom_route_x, y_mid - 0.55),
-        (adder_block["left"], y_mid - 0.55),
+        (bottom_route_x, bottom_join_y),
+        (adder_block["centre"], bottom_join_y),
+        (adder_block["centre"], y_mid - adder_radius * 0.95),
     ]
     _draw_connector(ax, connector_points, arrow_props=arrow_props)
-    mid_d_x = (bottom_route_x + adder_block["left"]) / 2.0
-    ax.text(mid_d_x, y_mid - 0.95, "D", ha="center", va="center", fontsize=12, fontweight="bold")
-    ax.text(mid_d_x, y_mid - 1.45, "$d(t)$", ha="center", va="center", fontsize=11)
+    mid_d_x = (bottom_route_x + adder_block["centre"]) / 2.0
+    ax.text(mid_d_x, bottom_join_y - 0.35, "D", ha="center", va="center", fontsize=12, fontweight="bold")
+    ax.text(mid_d_x, bottom_join_y - 1.0, "$d(t)$", ha="center", va="center", fontsize=11)
 
     # Adder to filter (letter E)
     ax.annotate("", xy=(filter_block["left"], y_mid), xytext=(adder_block["right"], y_mid), arrowprops=arrow_props)
