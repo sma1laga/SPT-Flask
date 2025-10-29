@@ -2340,12 +2340,13 @@ def _draw_hard_diagram_complex_split_sampling(
     # Real block to adder (letter D)
     adder_radius = adder_block.get("radius", 0.36)
     real_route_x = real_block["right"] + 0.6
+    adder_top_target = (adder_block["centre"], adder_block["top"] - 0.02)
     connector_points = [
         (real_block["right"], top_y),
         (real_route_x, top_y),
         (real_route_x, y_mid + adder_radius + 0.12),
         (adder_block["centre"], y_mid + adder_radius + 0.12),
-        (adder_block["centre"], y_mid + adder_radius * 0.95),
+        adder_top_target,
     ]
     _draw_connector(ax, connector_points, arrow_props=arrow_props)
     mid_d_x = (real_route_x + adder_block["centre"]) / 2.0
@@ -2354,12 +2355,13 @@ def _draw_hard_diagram_complex_split_sampling(
 
     # Imag block to adder (letter E)
     imag_route_x = imag_block["right"] + 0.6
+    adder_bottom_target = (adder_block["centre"], adder_block["bottom"] + 0.02)
     connector_points = [
         (imag_block["right"], bot_y),
         (imag_route_x, bot_y),
         (imag_route_x, y_mid - adder_radius - 0.12),
         (adder_block["centre"], y_mid - adder_radius - 0.12),
-        (adder_block["centre"], y_mid - adder_radius * 0.95),
+        adder_bottom_target,
     ]
     _draw_connector(ax, connector_points, arrow_props=arrow_props)
     mid_e_x = (imag_route_x + adder_block["centre"]) / 2.0
@@ -2405,7 +2407,7 @@ def _draw_hard_diagram_real_imag_sampling(
 ) -> str:
     """Draw the additional HARD layout with real/imag branches followed by sampling."""
 
-    fig, ax = plt.subplots(figsize=(13.0, 4.9))
+    fig, ax = plt.subplots(figsize=(13.6, 4.9))
     ax.axis("off")
 
     arrow_props = _arrow_props()
@@ -2421,9 +2423,9 @@ def _draw_hard_diagram_real_imag_sampling(
     bottom_imag_x = 5.3
     bottom_mul_x = 7.3
     adder_x = 9.6
-    sampling_x = 11.6
-    filter_x = 13.6
-    output_x = 15.0
+    sampling_x = 11.4
+    filter_x = 14.1
+    output_x = 15.8
 
     mul_block = _prepare_block_geometry(_block_render_info("Multiplication", mul_param), mul_x, y_mid)
     real_block = _prepare_block_geometry(_block_render_info("Real", None), top_real_x, top_y)
@@ -2459,8 +2461,8 @@ def _draw_hard_diagram_real_imag_sampling(
     split_circle = plt.Circle((split_x, y_mid), _SPLITTER_RADIUS, color=_EDGE_COLOR)
     ax.add_patch(split_circle)
 
-    ax.plot([split_x, split_x], [y_mid, top_y - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([split_x, split_x], [y_mid, bot_y + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, top_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
+    ax.plot([split_x, split_x], [y_mid, bot_y], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
 
     ax.annotate("", xy=(real_block["left"], top_y), xytext=(split_x, top_y), arrowprops=arrow_props)
     ax.annotate("", xy=(imag_block["left"], bot_y), xytext=(split_x, bot_y), arrowprops=arrow_props)
@@ -2479,12 +2481,13 @@ def _draw_hard_diagram_real_imag_sampling(
     join_bot_y = y_mid - 0.95
 
     top_route_x = top_mul_block["right"] + 0.55
+    adder_top_target = (adder_block["centre"], adder_block["top"] - 0.02)
     connector_points = [
         (top_mul_block["right"], top_y),
         (top_route_x, top_y),
         (top_route_x, join_top_y),
         (adder_block["centre"], join_top_y),
-        (adder_block["centre"], y_mid + adder_block["radius"] * 0.95),
+        adder_top_target,
     ]
     _draw_connector(ax, connector_points, arrow_props=arrow_props)
     mid_c_x = (top_route_x + adder_block["centre"]) / 2.0
@@ -2492,12 +2495,13 @@ def _draw_hard_diagram_real_imag_sampling(
     ax.text(mid_c_x, join_top_y - 0.38, "$c(t)$", ha="center", va="center", fontsize=11)
 
     bottom_route_x = bottom_mul_block["right"] + 0.55
+    adder_bottom_target = (adder_block["centre"], adder_block["bottom"] + 0.02)
     connector_points = [
         (bottom_mul_block["right"], bot_y),
         (bottom_route_x, bot_y),
         (bottom_route_x, join_bot_y),
         (adder_block["centre"], join_bot_y),
-        (adder_block["centre"], y_mid - adder_block["radius"] * 0.95),
+        adder_bottom_target,
     ]
     _draw_connector(ax, connector_points, arrow_props=arrow_props)
     mid_e_x = (bottom_route_x + adder_block["centre"]) / 2.0
@@ -2641,10 +2645,18 @@ def _draw_medium_diagram_sampling(
     ax.add_patch(split_circle)
 
     # Branch connections
-    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
-    ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
+    upper_branch = [
+        (split_x, y_mid),
+        (split_x, top_block["y"]),
+        (top_block["left"], top_block["y"]),
+    ]
+    lower_branch = [
+        (split_x, y_mid),
+        (split_x, bot_block["y"]),
+        (bot_block["left"], bot_block["y"]),
+    ]
+    _draw_connector(ax, upper_branch, arrow_props=arrow_props)
+    _draw_connector(ax, lower_branch, arrow_props=arrow_props)
 
     # Branch outputs into adder
     adder_radius = adder_block.get("radius", 0.45)
@@ -2763,10 +2775,18 @@ def _draw_medium_diagram_multiplication_split(
     ax.add_patch(split_circle)
 
     # Branch connections
-    ax.plot([split_x, split_x], [y_mid, top_block["y"] - 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.plot([split_x, split_x], [y_mid, bot_block["y"] + 0.25], color=_EDGE_COLOR, lw=_CONNECTOR_LINEWIDTH)
-    ax.annotate("", xy=(top_block["left"], top_block["y"]), xytext=(split_x, top_block["y"]), arrowprops=arrow_props)
-    ax.annotate("", xy=(bot_block["left"], bot_block["y"]), xytext=(split_x, bot_block["y"]), arrowprops=arrow_props)
+    upper_branch = [
+        (split_x, y_mid),
+        (split_x, top_block["y"]),
+        (top_block["left"], top_block["y"]),
+    ]
+    lower_branch = [
+        (split_x, y_mid),
+        (split_x, bot_block["y"]),
+        (bot_block["left"], bot_block["y"]),
+    ]
+    _draw_connector(ax, upper_branch, arrow_props=arrow_props)
+    _draw_connector(ax, lower_branch, arrow_props=arrow_props)
 
     # Branch outputs into adder
     adder_radius = adder_block.get("radius", 0.45)
