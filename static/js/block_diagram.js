@@ -538,8 +538,15 @@ function uploadDiagram(ev){
 
 
 /* ---------------- helper fns ------------------------------------------ */
-function mouse(ev){const r=canvas.getBoundingClientRect();
-  return {x:ev.clientX - r.left, y:ev.clientY - r.top};}
+function mouse(ev){
+  const r = canvas.getBoundingClientRect();
+  const scaleX = canvas.width  / (r.width  || canvas.width);
+  const scaleY = canvas.height / (r.height || canvas.height);
+  return {
+    x: (ev.clientX - r.left) * scaleX,
+    y: (ev.clientY - r.top)  * scaleY
+  };
+}
 function nodeAt(x,y){return nodes.find(n=>x>=n.x&&x<=n.x+n.w &&
                                          y>=n.y&&y<=n.y+n.h);}
 function toggleConnect(){connectMode=!connectMode;

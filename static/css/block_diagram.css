@@ -145,18 +145,65 @@ canvas {
   background: #fff;
 }
 
-#resultsBox.results {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+.results-panel {
+  border: 1px solid #dfe4ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.results-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
+  border-bottom: 1px solid #e7ecf5;
+}
+
+.results-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.results-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1b1f3b;
+}
+
+.results-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.results-action {
+  margin-left: auto;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.results-body {
+  padding: 24px;
   font-family: var(--bs-font-sans-serif);
-  overflow: visible;
+  color: #1f2937;
+  line-height: 1.6;
   white-space: normal;
 }
 
-#resultsBox .kx {
+.results-body .kx {
   font-size: 1.05rem;
   overflow-x: auto;
+}
+
+.results-sim-canvas {
+  margin-top: 18px;
 }
 
 #srcCustom {
@@ -257,12 +304,39 @@ body.dark-mode .diagram-shell,
 body.dark-mode .block-palette,
 body.dark-mode .toolbar,
 body.dark-mode .scene-controls,
-body.dark-mode #resultsBox.results,
 body.dark-mode .scope-window {
   background: #1f1f1f;
   border-color: #444;
   box-shadow: none;
 }
+
+body.dark-mode .results-panel {
+  background: #151515;
+  border-color: #333;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+body.dark-mode .results-header {
+  background: linear-gradient(135deg, rgba(63, 76, 119, 0.4) 0%, rgba(32, 40, 62, 0.6) 100%);
+  border-bottom-color: #333;
+}
+
+body.dark-mode .results-title {
+  color: #f3f4f6;
+}
+
+body.dark-mode .results-subtitle {
+  color: #a5b4fc;
+}
+
+body.dark-mode .results-body {
+  color: #e5e7eb;
+}
+
+body.dark-mode .results-action {
+  box-shadow: none;
+}
+
 
 body.dark-mode .block-palette input,
 body.dark-mode input[type="text"],

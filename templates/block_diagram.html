@@ -207,17 +207,22 @@
         </div>
 
 
-        <h3>Results</h3>
-        <div id="resultsBox" class="results card p-3">(nothing compiled yet)</div>
-        <!-- Simulate step response -->
-        <div class="mt-3">
-          <button id="btnSimulate"
-                  class="btn btn-sm btn-secondary"
-                  style="display:none">
-            Simulate Step Response
-          </button>
+        <div class="results-panel" aria-live="polite">
+          <div class="results-header">
+            <div class="results-heading">
+              <h3 class="results-title">Results</h3>
+              <p class="results-subtitle">Transfer function, state-space and differential form</p>
+            </div>
+            <button id="btnSimulate"
+                    class="btn btn-sm btn-primary results-action"
+                    style="display:none">
+              Simulate Step Response
+            </button>
+          </div>
+          <div id="resultsBox" class="results-body">(nothing compiled yet)</div>
         </div>
         <canvas id="simCanvas" width="600" height="240"
+                class="results-sim-canvas"
                 style="display:none">
         </canvas>
         <div id="scopeWindow" class="scope-window" style="display:none;">
