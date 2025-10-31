@@ -716,19 +716,24 @@ function renderLatex(node, expr) {
 
   katex.render(expr, node.latexEl, { throwOnError: false });
 
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width / canvas.width || 1;
+  const scaleY = canvasRect.height / canvas.height || 1;
+
   const rect = node.latexEl.getBoundingClientRect();
   const minW = 90, minH = 45;
-  const newW = Math.max(minW, rect.width + 20);
-  const newH = Math.max(minH, rect.height + 10);
-  const changed = newW !== node.w || newH !== node.h;
+  const prevW = node.w;
+  const prevH = node.h;
+  const newW = Math.max(minW, (rect.width + 20) / scaleX);
+  const newH = Math.max(minH, (rect.height + 10) / scaleY);
+  const changed = newW !== prevW || newH !== prevH;
   node.w = newW;
   node.h = newH;
-  const canvasRect = canvas.getBoundingClientRect();
 
   node.latexEl.style.left =
-    canvasRect.left + window.scrollX + node.x + node.w / 2 + "px";
+    canvasRect.left + window.scrollX + (node.x + node.w / 2) * scaleX + "px";
   node.latexEl.style.top =
-    canvasRect.top + window.scrollY + node.y + node.h / 2 + "px";
+    canvasRect.top + window.scrollY + (node.y + node.h / 2) * scaleY + "px";
   node.latexEl.style.display = "block";
   
   return changed;
