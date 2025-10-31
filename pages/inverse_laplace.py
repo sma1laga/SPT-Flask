@@ -38,7 +38,9 @@ inverse_laplace_bp = Blueprint("inverse_laplace", __name__)
 def inverse_laplace():
     num_txt = request.form.get("numerator", "[1]")
     den_txt = request.form.get("denominator", "[1, 1]")
-    response_type = request.form.get("response_type", "step")
+    response_type = request.form.get("response_type") or "impulse"
+    if response_type not in {"impulse", "step"}:
+        response_type = "impulse"
     time_signal_ltx = None
     plot_url = None
     title = None
@@ -167,4 +169,5 @@ def inverse_laplace():
         error=error,
         num_error=num_error,
         den_error=den_error,
+        response_type=response_type,
     )

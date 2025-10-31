@@ -37,8 +37,8 @@
 
     <fieldset class="radio-group">
       <legend class="font-medium mb-2">Output Type</legend>
-      <label><input type="radio" name="response_type" value="impulse" checked> Impulse response</label>
-      <label><input type="radio" name="response_type" value="step"> Step response</label>
+      <label><input type="radio" name="response_type" value="impulse" {% if response_type != 'step' %}checked{% endif %}> Impulse response</label>
+      <label><input type="radio" name="response_type" value="step" {% if response_type == 'step' %}checked{% endif %}> Step response</label>
     </fieldset>
 
     <div class="button-group">
