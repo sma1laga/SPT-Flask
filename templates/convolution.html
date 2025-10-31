@@ -129,6 +129,15 @@
   }
 
   document.getElementById("computeBtn").addEventListener("click", updatePlots);
+  const convForm = document.getElementById("convForm");
+  if (convForm) {
+    convForm.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        updatePlots();
+      }
+    });
+  }
   document.getElementById("clearBtn").addEventListener("click", () => {
     func1.value = "";
     func2.value = "";

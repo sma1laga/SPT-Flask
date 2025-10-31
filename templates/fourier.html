@@ -134,6 +134,15 @@ function updatePlots(){
 }
 
 document.getElementById("computeBtn").addEventListener("click", updatePlots);
+const fourierForm = document.getElementById("fourierForm");
+if (fourierForm) {
+  fourierForm.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      updatePlots();
+    }
+  });
+}
 document.getElementById("phase").addEventListener("input", updatePlots);
 document.getElementById("clearBtn").addEventListener("click", ()=>{
   document.getElementById("func").value="";

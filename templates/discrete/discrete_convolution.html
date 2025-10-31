@@ -149,6 +149,15 @@ function updatePlots(){
 
 /* buttons -------------------------------------------------------- */
 computeBtn.onclick = updatePlots;
+const convForm = document.getElementById("convForm");
+if (convForm) {
+  convForm.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      updatePlots();
+    }
+  });
+}
 clearBtn.onclick = ()=>{
   func1.value=func2.value="";
   clearErrors();

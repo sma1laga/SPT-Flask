@@ -106,6 +106,15 @@ function updatePlots(){
   .catch(console.error);
 }
 computeBtn.onclick = updatePlots;
+const acorrForm = document.getElementById("acorrForm");
+if (acorrForm) {
+  acorrForm.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      updatePlots();
+    }
+  });
+}
 clearBtn.onclick = ()=>{
   func.value='';
   ['plot1','plotAuto'].forEach(id=>Plotly.purge(id));

@@ -205,6 +205,15 @@
 
   /* buttons */
   computeBtn.onclick = updatePlots;
+  const plotForm = document.getElementById("plotForm");
+  if (plotForm) {
+    plotForm.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        updatePlots();
+      }
+    });
+  }
   clearBtn.onclick = ()=> {
     func1.value = func2.value = "";
     sliderIds.forEach(id=>{

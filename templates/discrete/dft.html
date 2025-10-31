@@ -190,6 +190,15 @@ function updatePlots(){
 
 /* buttons ------------------------------------------------------- */
 computeBtn.onclick = updatePlots;
+const dftForm = document.getElementById("dftForm");
+if (dftForm) {
+  dftForm.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      updatePlots();
+    }
+  });
+}
 clearBtn.onclick = ()=>{
   func.value=""; L.value=8; M.value=8;
   ["shift","amp","width"].forEach(id=>{

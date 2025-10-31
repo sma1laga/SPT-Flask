@@ -252,6 +252,15 @@
 
   /* buttons */
   document.getElementById("computeBtn").addEventListener("click", updatePlots);
+  const plotForm = document.getElementById("plotForm");
+  if (plotForm) {
+    plotForm.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        updatePlots();
+      }
+    });
+  }
   document.getElementById("clearBtn").addEventListener("click", ()=>{
     ["func1","func2"].forEach(id=>document.getElementById(id).value="");
     sliderIds.forEach(id=>{

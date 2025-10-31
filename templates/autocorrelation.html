@@ -110,6 +110,15 @@
     }
 
     document.getElementById("computeBtn").addEventListener("click", updatePlots);
+    const acorrForm = document.getElementById("acorrForm");
+    if (acorrForm) {
+      acorrForm.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          updatePlots();
+        }
+      });
+    }
     document.getElementById("clearBtn").addEventListener("click", () => {
       document.getElementById("func").value = "";
       Plotly.purge("plotSignal");
