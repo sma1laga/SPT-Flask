@@ -33,7 +33,8 @@ const scopeHold   = document.getElementById("scopeHold");
 const cursorAButton = document.getElementById("scopeCursorA");
 const cursorBButton = document.getElementById("scopeCursorB");
 const cursorReadout = document.getElementById("cursorReadout");
-const scopeStats = document.getElementById("scopeStats");
+const simSummary = document.getElementById("simSummary");
+const scopeSummary = document.getElementById("scopeSummary");
 
 /* -----------  side selection & geometry helpers  ------------------- */
 const DIRS = {E:[1,0], W:[-1,0], N:[0,-1], S:[0,1]};
@@ -96,7 +97,7 @@ const BLOCK_LIBRARY = [
   { name: 'Integrator',  type: 'Integrator', label: '1/s',   kx: '\\dfrac{1}{s}' },
   { name: 'Derivative',  type: 'Derivative', label: 's',     kx: 's' },
   { name: 'Saturation',  type: 'Saturation', label: 'Sat',   kx: 'Sat' },
-  { name: 'Delay',       type: 'Delay',      label: 'Delay', kx: 'Delay' },
+  { name: 'Delay',       type: 'Delay',      label: 'e^{-τs}', kx: '\\mathrm e^{-\\tau s}' },
   { name: 'Scope',       type: 'Scope',      label: 'Scope', kx: 'Scope' },
   { name: 'Sum',         type: 'Adder',      label: 'Σ',     kx: '\\Sigma' },
   { name: 'Mux',         type: 'Mux',        label: 'Mux',   kx: 'Mux' },
@@ -432,6 +433,7 @@ scopeClose.onclick = () => {
   scopeWindow.style.display = "none";
   if (scopeChart) scopeChart.destroy();
   if (scopeInterval) { clearInterval(scopeInterval); scopeInterval = null; }
+  updateSummary(scopeSummary, null, null);
 
 };
 
@@ -555,6 +557,10 @@ function toggleConnect(){connectMode=!connectMode;
 function clearScene(){nodes=[];edges=[];nextId=1;selectedNode = selectedEdge = null;
   if (simChart) { simChart.destroy(); simChart = null; }
   simCanvas.style.display = "none";
+  if (simSummary) {
+    simSummary.innerHTML = "";
+    simSummary.style.display = "none";
+  }
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
   (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
         addNode("Output","Y(s)",canvas.width-120,canvas.height/2-60);})();
@@ -578,6 +584,83 @@ function loadSelectedPre(sel){
       sel.value = "";              // reset drop-down text
     })
     .catch(() => alert("Could not load example diagram."));
+}
+
+function formatNumber(value, digits = 3) {
+  if (!Number.isFinite(value)) return "—";
+  const abs = Math.abs(value);
+  if (abs !== 0 && (abs < 1e-3 || abs >= 1e4)) {
+    return Number(value).toExponential(2);
+  }
+  const fixed = Number(value).toFixed(digits);
+  if (fixed.includes('.')) {
+    let trimmed = fixed.replace(/0+$/, '');
+    if (trimmed.endsWith('.')) {
+      trimmed = trimmed.slice(0, -1);
+    }
+    return trimmed;
+  }
+  return fixed;
+}
+
+function formatPercent(value, digits = 1) {
+  const base = formatNumber(value, digits);
+  if (base === "—") return base;
+  return `${base}%`;
+}
+
+function createSummaryCard(title, rows) {
+  const items = rows
+    .map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`)
+    .join("\n");
+  return `<section class="summary-card"><h6>${title}</h6><dl>${items}</dl></section>`;
+}
+
+function buildSummaryContent(stats, metrics) {
+  const cards = [];
+  if (stats) {
+    cards.push(createSummaryCard("Signal stats", [
+      ["Min", formatNumber(stats.min)],
+      ["Max", formatNumber(stats.max)],
+      ["Mean", formatNumber(stats.mean)],
+      ["RMS", formatNumber(stats.rms)]
+    ]));
+  }
+  if (metrics) {
+    cards.push(createSummaryCard("Step metrics", [
+      ["Rise time (s)", formatNumber(metrics.rise_time)],
+      ["Settling time (s)", formatNumber(metrics.settling_time)],
+      ["Overshoot", formatPercent(metrics.overshoot)],
+      ["Peak time (s)", formatNumber(metrics.peak_time)],
+      ["Final value", formatNumber(metrics.final_value)]
+    ]));
+  }
+  return cards.join("\n");
+}
+
+function computeStatsFromSeries(series) {
+  if (!Array.isArray(series) || !series.length) return null;
+  const min = Math.min(...series);
+  const max = Math.max(...series);
+  const sum = series.reduce((acc, val) => acc + val, 0);
+  const mean = sum / series.length;
+  const rms = Math.sqrt(series.reduce((acc, val) => acc + val * val, 0) / series.length);
+  return { min, max, mean, rms };
+}
+
+function updateSummary(container, stats, metrics, series) {
+  if (!container) return;
+  if (!stats && series) {
+    stats = computeStatsFromSeries(series);
+  }
+  const html = buildSummaryContent(stats, metrics);
+  if (html) {
+    container.innerHTML = html;
+    container.style.display = "grid";
+  } else {
+    container.innerHTML = "";
+    container.style.display = "none";
+  }
 }
 
 /* ---------------- drawing --------------------------------------------- */
@@ -624,6 +707,16 @@ function drawAll(){
         expr = parts.join(" + ");
       } else {
         expr = "PID";
+      }
+    } else if (n.type === "Delay") {
+      const tau = Number(n.params.tau);
+      if (Number.isFinite(tau)) {
+        const tauAbs = Math.abs(tau);
+        const tauStr = formatNumber(tauAbs, 3);
+        const sign = tau >= 0 ? "-" : "+";
+        expr = `\\mathrm e^{${sign}${tauStr}\\,s}`;
+      } else {
+        expr = `\\mathrm e^{-\\tau\\,s}`;
       }
     } else if (n.type === "Mux") {
       const m = n.params.inputs;
@@ -902,12 +995,29 @@ document.getElementById("btnDelete").onclick =
 document.getElementById("btnSimulate").onclick = async () => {
   if (!lastOutputTf) return alert("Nothing to simulate!");
 
-  const resp = await fetch("/block_diagram/simulate", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(lastOutputTf)
-  });
-  const sim = await resp.json();
+  let sim = null;
+  try {
+    const resp = await fetch("/block_diagram/simulate", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(lastOutputTf)
+    });
+    try {
+      sim = await resp.json();
+    } catch {
+      sim = {};
+    }
+    if (!resp.ok || (sim && sim.error)) {
+      const message = (sim && sim.error) || "Simulation failed";
+      throw new Error(message);
+    }
+  } catch (err) {
+    updateSummary(simSummary, null, null);
+    simCanvas.style.display = "none";
+    if (simChart) { simChart.destroy(); simChart = null; }
+    alert(err.message || "Simulation failed");
+    return;
+  }
 
   simCanvas.style.display = "block";
   if (simChart) simChart.destroy();
@@ -930,6 +1040,8 @@ document.getElementById("btnSimulate").onclick = async () => {
       }
     }
   });
+  updateSummary(simSummary, sim.stats, sim.metrics, sim.y);
+
 };
 
 async function fetchScopeData(id){
@@ -958,14 +1070,6 @@ async function fetchScopeData(id){
   }
 }
 
-
-function updateStats(data){
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const mean = data.reduce((a,b)=>a+b,0)/data.length;
-  const rms = Math.sqrt(data.reduce((a,b)=>a+b*b,0)/data.length);
-  scopeStats.textContent = `min:${min.toFixed(3)} max:${max.toFixed(3)} mean:${mean.toFixed(3)} RMS:${rms.toFixed(3)}`;
-}
 
 function updateCursorReadout(){
   const fmt = v => (v==null ? "\u2013" : Number(v).toFixed(3));
@@ -1013,6 +1117,7 @@ async function runScope(){
     if (scopeChart) scopeChart.destroy();
     const g = scopeCanvas.getContext("2d");
     g.clearRect(0,0,scopeCanvas.width,scopeCanvas.height);
+    updateSummary(scopeSummary, null, null);
     g.fillStyle = "#e66";
     g.font = "14px sans-serif"
     let msg;
@@ -1065,7 +1170,7 @@ async function runScope(){
   scopeChart.options.scales.y.max = undefined;
   scopeChart.update();
 
-  updateStats(sim.y);
+  updateSummary(scopeSummary, sim.stats, sim.metrics, sim.y);
 
   // Store both time nd y when Hold is active
   holdData = scopeHold.classList.contains('active')

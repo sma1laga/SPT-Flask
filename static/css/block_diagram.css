@@ -206,6 +206,47 @@ canvas {
   margin-top: 18px;
 }
 
+.summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 16px;
+}
+
+.summary-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.summary-card h6 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.summary-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.summary-card dt {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.summary-card dd {
+  margin: 0;
+  color: #111827;
+}
+
+
 #srcCustom {
   display: none;
 }
@@ -267,8 +308,24 @@ body.dark-mode .latexNode {
 }
 
 .scope-readouts {
-  font: 12px monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 4px;
+}
+
+.cursor-line {
+  font: 12px monospace;
+}
+
+.scope-readouts .summary-grid {
+  margin-top: 0;
+  box-shadow: none;
+}
+
+.scope-readouts .summary-card {
+  box-shadow: none;
+  padding: 10px 12px;
 }
 
 @media (max-width: 992px) {
@@ -335,6 +392,24 @@ body.dark-mode .results-body {
 
 body.dark-mode .results-action {
   box-shadow: none;
+}
+
+body.dark-mode .summary-card {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: none;
+}
+
+body.dark-mode .summary-card h6 {
+  color: #f3f4f6;
+}
+
+body.dark-mode .summary-card dt {
+  color: #d1d5db;
+}
+
+body.dark-mode .summary-card dd {
+  color: #f9fafb;
 }
 
 

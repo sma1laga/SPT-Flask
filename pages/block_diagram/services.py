@@ -44,13 +44,6 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
         return [float(c) for c in Poly(n, var).all_coeffs()], \
             [float(c) for c in Poly(d, var).all_coeffs()]
 
-    # Properness guard on loop TF
-    # Properness guard and coeffs for H(s)
-    var = s if domain == "s" else z
-    def expr_to_coeffs(e):
-        n, d = sp.fraction(sp.together(e))
-        return [float(c) for c in Poly(n, var).all_coeffs()], \
-            [float(c) for c in Poly(d, var).all_coeffs()]
 
     numH, denH = expr_to_coeffs(H_expr)
     if len(numH) - 1 > len(denH) - 1:
