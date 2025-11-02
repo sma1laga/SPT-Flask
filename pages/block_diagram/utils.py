@@ -204,7 +204,9 @@ def chain_to_coeffs(graph: dict):
 
 
 # ───────── Mason-ready helpers  (add BELOW the existing imports) ───────
-import re, networkx as nx, sympy as sp
+import re, itertools
+import networkx as nx
+import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from control import tf2ss, TransferFunction
 
@@ -284,27 +286,72 @@ def build_sfg(graph: dict):
 # ---- Mason’s gain formula --------------------------------------------
 def mason_gain(G: nx.DiGraph, src, dst):
     """Return SymPy expr of overall TF from src → dst."""
-    all_paths  = list(nx.all_simple_paths(G, src, dst))
-    loops      = list(nx.simple_cycles(G))
+
 
     def path_gain(path):
-        g = 1
-        for i in range(len(path)-1):
-            g *= G[path[i]][path[i+1]]["gain"]
-        return sp.simplify(g)
+        gain = sp.Integer(1)
+        for idx in range(len(path) - 1):
+            gain *= G[path[idx]][path[idx + 1]]["gain"]
+        return sp.simplify(gain)
 
     def loop_gain(loop):
-        g = 1
-        for i in range(len(loop)):
-            g *= G[loop[i]][loop[(i+1) % len(loop)] ]["gain"]
-        return sp.simplify(g)
+        gain = sp.Integer(1)
+        for idx in range(len(loop)):
+            gain *= G[loop[idx]][loop[(idx + 1) % len(loop)]]["gain"]
+        return sp.simplify(gain)
 
-    P = [path_gain(p) for p in all_paths]
-    L = [loop_gain(l) for l in loops]
+    all_paths = list(nx.all_simple_paths(G, src, dst))
+    if not all_paths:
+        raise ValueError("No forward path from source to sink in diagram.")
 
-    Δ = 1 - sum(L)                          # first-order; non-touching loops ignored
-    T = sum(P) / Δ
-    return sp.simplify(T)
+    loops = list(nx.simple_cycles(G))
+    loop_info = [
+        {
+            "nodes": set(loop),
+            "gain": loop_gain(loop),
+        }
+        for loop in loops
+    ]
+
+    def _non_touching_products(loops_subset):
+        terms_by_order = {}
+        n = len(loops_subset)
+        for r in range(1, n + 1):
+            products = []
+            for combo in itertools.combinations(range(n), r):
+                sets = [loops_subset[i]["nodes"] for i in combo]
+                if any(sets[i] & sets[j] for i in range(len(sets)) for j in range(i + 1, len(sets))):
+                    continue
+                prod = sp.Integer(1)
+                for i in combo:
+                    prod *= loops_subset[i]["gain"]
+                products.append(sp.simplify(prod))
+            if products:
+                terms_by_order[r] = products
+        return terms_by_order
+
+    def _delta(loops_subset):
+        delta = sp.Integer(1)
+        combos = _non_touching_products(loops_subset)
+        for order, products in combos.items():
+            term_sum = sum(products)
+            delta += ((-1) ** order) * term_sum
+        return sp.simplify(delta)
+
+    Δ = _delta(loop_info)
+    if sp.simplify(Δ) == 0:
+        raise ValueError("Ill-posed diagram: algebraic loop without dynamics.")
+
+    total = sp.Integer(0)
+    for path in all_paths:
+        gain = path_gain(path)
+        path_nodes = set(path)
+        loops_disjoint = [loop for loop in loop_info if loop["nodes"].isdisjoint(path_nodes)]
+        Δ_path = _delta(loops_disjoint)
+        total += gain * Δ_path
+
+    T = sp.simplify(total / Δ)
+    return T
 # ----------------------------------------------------------------------
 
 
