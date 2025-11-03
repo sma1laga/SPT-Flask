@@ -9,6 +9,21 @@ import csv
 import io
 import control
 from itertools import zip_longest
+from typing import Optional
+
+
+def _evaluate_transfer(num, den, s_values):
+    """Safely evaluate the transfer function ``num/den`` at the complex points ``s_values``."""
+    s_array = np.atleast_1d(s_values).astype(complex)
+    num_vals = np.polyval(num, s_array)
+    den_vals = np.polyval(den, s_array)
+
+    response = np.full_like(num_vals, np.nan, dtype=complex)
+    valid = den_vals != 0
+    response[valid] = num_vals[valid] / den_vals[valid]
+    if np.isscalar(s_values):
+        return response.item()
+    return response
 
 bode_plot_bp = Blueprint('bode_plot', __name__, template_folder='templates')
 
@@ -150,7 +165,193 @@ def format_complex(val: complex) -> str:
     else:
         content = f"{real_str} {imag_str}"
 
-    return f"\\({content}\)"
+    return rf"\({content}\)"
+
+
+def _format_real_text(value: float, unit: Optional[str] = None) -> str:
+    """Format a real value into a concise human-readable string."""
+    if value is None or not np.isfinite(value):
+        return "—"
+
+    abs_val = abs(value)
+    if abs_val != 0 and (abs_val >= 1e4 or abs_val <= 1e-3):
+        formatted = f"{value:.3e}"
+    else:
+        formatted = f"{value:.4f}".rstrip('0').rstrip('.')
+
+    return f"{formatted} {unit}" if unit else formatted
+
+
+def _format_latex_real(value: float, unit: Optional[str] = None) -> str:
+    """Return a LaTeX inline string for a real number with an optional unit."""
+    if value is None or not np.isfinite(value):
+        return "—"
+    content = _format_real_latex(value)
+    if unit:
+        return rf"\({content}\;{unit}\)"
+    return rf"\({content}\)"
+
+
+def _analysis_item(title: str, value: str, detail: str, level: str = "info") -> dict:
+    return {"title": title, "value": value, "detail": detail, "level": level}
+
+
+def _make_nyquist_data(num, den, poles, gm_db, pm):
+    """Compute Nyquist contour samples and qualitative analysis information."""
+    base_w = _make_freq_vector(num, den)
+    w_positive = np.concatenate(([0.0], base_w))
+    s_positive = 1j * w_positive
+    resp_positive = _evaluate_transfer(num, den, s_positive)
+
+    # Mirror the contour for negative frequencies.
+    w_negative = -w_positive[-2::-1]
+    s_negative = 1j * w_negative
+    resp_negative = _evaluate_transfer(num, den, s_negative)
+
+    nyquist_data = {
+        "positive": {
+            "frequencies": w_positive.tolist(),
+            "real": np.real(resp_positive).tolist(),
+            "imag": np.imag(resp_positive).tolist(),
+        },
+        "negative": {
+            "frequencies": w_negative.tolist(),
+            "real": np.real(resp_negative).tolist(),
+            "imag": np.imag(resp_negative).tolist(),
+        },
+        "critical_point": {"real": -1.0, "imag": 0.0},
+    }
+
+    low_freq = resp_positive[0]
+    high_freq = resp_positive[-1]
+
+    def _complex_dict(value: complex, frequency: float) -> dict:
+        if value is None or not np.isfinite(value):
+            return {"frequency": float(frequency), "real": None, "imag": None}
+        return {
+            "frequency": float(frequency),
+            "real": float(np.real(value)),
+            "imag": float(np.imag(value)),
+        }
+
+    nyquist_data["low_freq"] = _complex_dict(low_freq, w_positive[0])
+    nyquist_data["high_freq"] = _complex_dict(high_freq, w_positive[-1])
+
+    analysis_items = []
+
+    # Open-loop pole information
+    rhp_poles = sum(1 for p in poles if np.real(p) > 0)
+    if rhp_poles == 0:
+        analysis_items.append(
+            _analysis_item(
+                "Open-loop pole distribution",
+                "Stable (no RHP poles)",
+                "All open-loop poles lie in the left half-plane, so the Nyquist contour is not required to encircle the critical point for unity-feedback stability.",
+                level="success",
+            )
+        )
+    else:
+        analysis_items.append(
+            _analysis_item(
+                "Open-loop pole distribution",
+                f"{rhp_poles} pole(s) in RHP",
+                r"Right-half-plane poles demand the Nyquist contour encircle \((-1,0\mathrm{j})\) the same number of times for closed-loop stability.",
+                level="warning",
+            )
+        )
+
+    # Minimum distance to -1+j0 (critical point)
+    distances = np.abs(resp_positive + 1)
+    with np.errstate(invalid='ignore'):
+        finite_mask = np.isfinite(distances)
+    if np.any(finite_mask):
+        idx_min = np.nanargmin(distances)
+        d_min = distances[idx_min]
+        w_at_min = w_positive[idx_min]
+        analysis_items.append(
+            _analysis_item(
+                "Distance to critical point",
+                _format_latex_real(d_min),
+                (
+                    r"The Nyquist locus comes closest to the critical point at {freq} with \(|L(j\omega)+1| = {distance}\)."
+                ).format(freq=_format_latex_real(w_at_min, 'rad/s'), distance=_format_latex_real(d_min)),
+                level="info" if d_min > 0.2 else "warning",
+            )
+        )
+
+    # Real-axis crossings for ω > 0
+    crossings = []
+    imag_vals = np.imag(resp_positive)
+    real_vals = np.real(resp_positive)
+    for i in range(len(imag_vals) - 1):
+        y1, y2 = imag_vals[i], imag_vals[i + 1]
+        if not (np.isfinite(y1) and np.isfinite(y2)):
+            continue
+        if y1 == 0:
+            crossings.append((w_positive[i], real_vals[i]))
+        if y1 * y2 < 0:
+            # Linear interpolation for the crossing
+            t = -y1 / (y2 - y1)
+            if 0 <= t <= 1:
+                w_cross = w_positive[i] + t * (w_positive[i + 1] - w_positive[i])
+                real_cross = real_vals[i] + t * (real_vals[i + 1] - real_vals[i])
+                crossings.append((w_cross, real_cross))
+    if crossings:
+        crossings.sort(key=lambda pair: pair[0])
+        crossing_text = ", ".join(
+            f"{_format_latex_real(rc, 'rad/s')} → {_format_latex_real(rr)}"
+            for rc, rr in crossings
+        )
+        detail = (
+            r"Real-axis crossings (\(\Im\{{L(j\omega)\}}=0\)) occur at: {points}. Real parts to the left of \(-1\) typically imply additional phase margin."
+        ).format(points=crossing_text)
+    else:
+        detail = r"The Nyquist locus does not cross the real axis for positive frequencies, indicating the phase never reaches \(\pm180^\circ\)."
+    analysis_items.append(
+        _analysis_item(
+            "Real-axis intercepts",
+            f"{len(crossings)} crossing(s)",
+            detail,
+            level="info",
+        )
+    )
+
+    # Unity-feedback closed-loop pole estimate
+    closed_loop_den = np.polyadd(den, num)
+    closed_loop_poles = np.roots(closed_loop_den)
+    unstable_closed = sum(1 for p in closed_loop_poles if np.real(p) >= 0)
+    if unstable_closed == 0:
+        cl_value = "Predicted stable"
+        cl_detail = "Closed-loop poles (assuming unity feedback) lie in the left half-plane, consistent with zero Nyquist encirclements of the critical point."
+        level = "success"
+    else:
+        cl_value = "Predicted unstable"
+        cl_detail = (
+            r"{count} closed-loop pole(s) fall in the right half-plane for unity feedback. The Nyquist contour must encircle \((-1,0\mathrm{j})\) appropriately to recover stability."
+        ).format(count=unstable_closed)
+        level = "warning"
+    analysis_items.append(
+        _analysis_item(
+            "Unity-feedback verdict",
+            cl_value,
+            cl_detail,
+            level=level,
+        )
+    )
+
+    # Gain/phase margin recap
+    gm_text = _format_latex_real(gm_db, 'dB') if gm_db is not None else "—"
+    pm_text = _format_latex_real(pm, r'^\circ') if pm is not None else "—"
+    analysis_items.append(
+        _analysis_item(
+            "Classical margins",
+            f"GM: {gm_text} / PM: {pm_text}",
+            r"Margins read from the Bode plot appear here as a reminder of how far the Nyquist locus stays from the critical point along the real axis (gain margin) and around \(-1\) (phase margin).",
+            level="info",
+        )
+    )
+
+    return nyquist_data, analysis_items
 
 def _make_freq_vector(num, den, override=None):
     """Return frequency vector for Bode plot.
@@ -211,6 +412,14 @@ def bode_plot():
     # Build the transfer function string using LaTeX fraction command
     function_str = f"H(s) = \\frac{{{num_disp}}}{{{den_disp}}}"
     
+
+    if request.method == 'POST':
+        submit_action = request.form.get('submit_action', 'bode')
+    else:
+        submit_action = request.args.get('view', 'bode') or 'bode'
+    show_nyquist = submit_action == 'nyquist'
+
+    
     if request.method == 'GET':
         return render_template(
             "bode_plot.html",
@@ -228,6 +437,10 @@ def bode_plot():
             wg=None,
             wp=None,
             pz_plot=None,
+            nyquist_data=None,
+            nyquist_analysis=None,
+            show_nyquist=show_nyquist,
+            active_action=submit_action,
         )
     
     if request.method == 'POST':
@@ -268,6 +481,10 @@ def bode_plot():
                 wg=None,
                 wp=None,
                 pz_plot=None,
+                nyquist_data=None,
+                nyquist_analysis=None,
+                show_nyquist=show_nyquist,
+                active_action=submit_action,
             )
     
     # Allow manual frequency range via optional form fields
@@ -359,6 +576,12 @@ def bode_plot():
     pole_list = [format_complex(p) for p in poles]
     pz_pairs = list(zip_longest(zero_list, pole_list, fillvalue=""))
 
+    nyquist_plot = None
+    nyquist_analysis = None
+    if show_nyquist:
+        nyquist_plot, nyquist_analysis = _make_nyquist_data(num, den, poles, gm_db, pm)
+
+
     return render_template(
         "bode_plot.html",
         bode_data=bode_data,
@@ -375,6 +598,10 @@ def bode_plot():
         wg=wg,
         wp=wp,
         pz_plot=pz_plot,
+        nyquist_data=nyquist_plot,
+        nyquist_analysis=nyquist_analysis,
+        show_nyquist=show_nyquist,
+        active_action=submit_action,
     )
 
     

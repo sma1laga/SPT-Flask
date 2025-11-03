@@ -2,6 +2,8 @@
   const plotlyAvailable = typeof window !== 'undefined' && typeof window.Plotly !== 'undefined';
   const bodeData = window.bodeData || null;
   const pzData = window.pzData || null;
+  const nyquistData = window.nyquistData || null;
+
 
   const basePlotConfig = { responsive: true, displaylogo: false };
 
@@ -28,6 +30,11 @@
     const formatted = formatNumber(value, digits);
     return formatted === '—' ? '—' : `${formatted} ${unit}`;
   }
+  function formatFrequency(value) {
+    if (!isFiniteNumber(value)) return '—';
+    return `${formatNumber(value, 3)} rad/s`;
+  }
+
 
   function formatMargin(value, freq, valueUnit, freqUnit) {
     const main = formatWithUnit(value, valueUnit, 2);
@@ -247,6 +254,161 @@
     Plotly.react(el, traces, layout, basePlotConfig);
   }
 
+  function renderNyquistPlot(data) {
+    if (!plotlyAvailable || !data) return;
+    const el = document.getElementById('nyquistPlot');
+    if (!el) return;
+
+    const sanitize = arr =>
+      Array.isArray(arr)
+        ? arr.map(v => {
+            if (typeof v === 'number') return v;
+            if (v === null || typeof v === 'undefined') return Number.NaN;
+            const numeric = Number(v);
+            return Number.isFinite(numeric) ? numeric : Number.NaN;
+          })
+        : [];
+    const positive = data.positive || {};
+    const negative = data.negative || {};
+
+    const posReal = sanitize(positive.real);
+    const posImag = sanitize(positive.imag);
+    const posFreq = sanitize(positive.frequencies);
+    const negReal = sanitize(negative.real);
+    const negImag = sanitize(negative.imag);
+    const negFreq = sanitize(negative.frequencies);
+
+    const freqToHover = value => formatFrequency(value);
+
+    const positiveTrace = {
+      x: posReal,
+      y: posImag,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'ω ≥ 0',
+      line: { color: '#2563eb', width: 3 },
+      hovertemplate: 'Re: %{x:.4f}<br>Im: %{y:.4f}<br>ω: %{customdata}<extra></extra>',
+      customdata: posFreq.map(freqToHover)
+    };
+
+    const traces = [positiveTrace];
+
+    if (negReal.length) {
+      traces.push({
+        x: negReal,
+        y: negImag,
+        type: 'scatter',
+        mode: 'lines',
+        name: 'ω ≤ 0',
+        line: { color: '#7c3aed', width: 2, dash: 'dot' },
+        hovertemplate: 'Re: %{x:.4f}<br>Im: %{y:.4f}<br>ω: %{customdata}<extra></extra>',
+        customdata: negFreq.map(freqToHover)
+      });
+    }
+
+    const critical = data.critical_point || { real: -1, imag: 0 };
+    traces.push({
+      x: [Number(critical.real) || -1],
+      y: [Number(critical.imag) || 0],
+      type: 'scatter',
+      mode: 'markers',
+      name: 'Critical point',
+      marker: { color: '#ef4444', size: 10, symbol: 'x' },
+      hovertemplate: 'Critical point (-1 + j0)<extra></extra>'
+    });
+
+    const low = data.low_freq || null;
+    if (low && isFiniteNumber(low.real) && isFiniteNumber(low.imag)) {
+      traces.push({
+        x: [low.real],
+        y: [low.imag],
+        type: 'scatter',
+        mode: 'markers+text',
+        name: 'ω → 0',
+        marker: { color: '#10b981', size: 10, symbol: 'circle' },
+        text: ['ω → 0'],
+        textposition: 'top right',
+        hovertemplate: `Re: %{x:.4f}<br>Im: %{y:.4f}<br>ω: ${freqToHover(low.frequency)}<extra></extra>`
+      });
+    }
+
+    const high = data.high_freq || null;
+    if (high && isFiniteNumber(high.real) && isFiniteNumber(high.imag)) {
+      traces.push({
+        x: [high.real],
+        y: [high.imag],
+        type: 'scatter',
+        mode: 'markers+text',
+        name: 'ω → ∞',
+        marker: { color: '#fbbf24', size: 10, symbol: 'square' },
+        text: ['ω → ∞'],
+        textposition: 'bottom left',
+        hovertemplate: `Re: %{x:.4f}<br>Im: %{y:.4f}<br>ω: ${freqToHover(high.frequency)}<extra></extra>`
+      });
+    }
+
+    const allReal = posReal.concat(negReal);
+    const allImag = posImag.concat(negImag);
+    const finiteReal = allReal.filter(isFiniteNumber);
+    const finiteImag = allImag.filter(isFiniteNumber);
+    const maxReal = finiteReal.length ? Math.max(...finiteReal.map(Math.abs)) : 0;
+    const maxImag = finiteImag.length ? Math.max(...finiteImag.map(Math.abs)) : 0;
+    const extent = Math.max(1, maxReal, maxImag);
+    const pad = extent * 0.15;
+    const limit = extent + pad;
+    const circleRadius = Math.min(limit * 0.12, 1.5);
+
+    const layout = {
+      margin: { l: 60, r: 30, t: 30, b: 60 },
+      hovermode: 'closest',
+      showlegend: false,
+      xaxis: {
+        title: 'Re{L(jω)}',
+        showgrid: true,
+        gridcolor: '#e5e7eb',
+        zeroline: false,
+        range: [-limit, limit]
+      },
+      yaxis: {
+        title: 'Im{L(jω)}',
+        showgrid: true,
+        gridcolor: '#e5e7eb',
+        zeroline: false,
+        scaleanchor: 'x',
+        scaleratio: 1,
+        range: [-limit, limit]
+      },
+      shapes: [
+        { type: 'line', x0: -limit, x1: limit, y0: 0, y1: 0, line: { color: '#9ca3af', width: 1 } },
+        { type: 'line', x0: 0, x1: 0, y0: -limit, y1: limit, line: { color: '#9ca3af', width: 1 } },
+        {
+          type: 'circle',
+          xref: 'x',
+          yref: 'y',
+          x0: -1 - circleRadius,
+          x1: -1 + circleRadius,
+          y0: -circleRadius,
+          y1: circleRadius,
+          line: { color: 'rgba(239,68,68,0.45)', dash: 'dot', width: 1 }
+        }
+      ],
+      annotations: [
+        {
+          x: -1,
+          y: 0,
+          text: '-1',
+          showarrow: false,
+          font: { size: 12, color: '#ef4444' },
+          xanchor: 'left',
+          yanchor: 'top'
+        }
+      ]
+    };
+
+    Plotly.react(el, traces, layout, basePlotConfig);
+  }
+
+
   document.addEventListener('DOMContentLoaded', () => {
     if (bodeData) {
       renderBodePlot(bodeData);
@@ -254,6 +416,9 @@
     }
     if (pzData) {
       renderPoleZeroPlot(pzData);
+    }
+    if (nyquistData) {
+      renderNyquistPlot(nyquistData);
     }
   });
 })();
