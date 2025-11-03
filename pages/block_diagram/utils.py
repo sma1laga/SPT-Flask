@@ -150,7 +150,12 @@ def tf_from_block(node):
         tau = float(p.get("tau", 0) or 0)
         if tau == 0:
             return TransferFunction([1], [1])
-        num, den = control.pade(tau, 1)
+        try:
+            order = int(p.get("pade_order", 1) or 1)
+        except (TypeError, ValueError):
+            order = 1
+        order = max(order, 1)
+        num, den = control.pade(tau, order)
         return TransferFunction(num, den)
 
     if t == "ZeroPole":
@@ -213,7 +218,7 @@ from control import tf2ss, TransferFunction
 s, z = sp.symbols("s z", complex=True)
 
 # ---- block → SymPy gain ----------------------------------------------
-def gain_expr(node, domain="s"):
+def gain_expr(node, domain="s", *, delay_model="pade"):
     t, p = node["type"], node.get("params", {})
     var  = s if domain == "s" else z
 
@@ -229,7 +234,14 @@ def gain_expr(node, domain="s"):
         tau = float(p.get("tau", 0) or 0)
         if tau == 0:
             return 1
-        num, den = control.pade(tau, 1)
+        if delay_model == "exact":
+            return sp.exp(-tau * var)
+        try:
+            order = int(p.get("pade_order", 1) or 1)
+        except (TypeError, ValueError):
+            order = 1
+        order = max(order, 1)
+        num, den = control.pade(tau, order)
         num_expr = sum(num[i] * var**(len(num)-1-i) for i in range(len(num)))
         den_expr = sum(den[i] * var**(len(den)-1-i) for i in range(len(den)))
         return num_expr/den_expr
@@ -262,7 +274,7 @@ def gain_expr(node, domain="s"):
 
 
 # ---- build directed signal-flow graph --------------------------------
-def build_sfg(graph: dict):
+def build_sfg(graph: dict, *, delay_model="pade"):
     """Return (G, src_id, dst_id, domain)"""
     blocks = {n["id"]: n for n in graph["nodes"]}
     domain = graph.get("domain", "s")
@@ -273,7 +285,7 @@ def build_sfg(graph: dict):
 
     for e in graph["edges"]:
         sign = 1 if e.get("sign", "+") == "+" else -1
-        gain = gain_expr(blocks[e["from"]], domain) * sign
+        gain = gain_expr(blocks[e["from"]], domain, delay_model=delay_model) * sign
         G.add_edge(e["from"], e["to"], gain=gain)
 
     src = next(n["id"] for n in graph["nodes"]
@@ -356,9 +368,9 @@ def mason_gain(G: nx.DiGraph, src, dst):
 
 
 # ---- new top-level helper, replaces chain_to_coeffs -------------------
-def sfg_to_coeffs(graph: dict):
+def sfg_to_coeffs(graph: dict, *, delay_model="pade"):
     """Full SFG → (num, den) lists using Mason (handles ± adders & loops)."""
-    G, src, dst, domain = build_sfg(graph)
+    G, src, dst, domain = build_sfg(graph, delay_model=delay_model)
     tf_expr = mason_gain(G, src, dst)
 
     var = s if domain == "s" else z

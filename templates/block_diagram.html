@@ -169,6 +169,16 @@
                   <label class="form-label">Delay \(\tau\)</label>
                   <input id="delayInput" type="number" step="any"
                          class="form-control" placeholder="1">
+                  <label class="form-label mt-2">Padé order (simulation)</label>
+                  <select id="delayApprox" class="form-select">
+                    <option value="1">Padé (1,1)</option>
+                    <option value="2">Padé (2,2)</option>
+                    <option value="3">Padé (3,3)</option>
+                    <option value="4">Padé (4,4)</option>
+                    <option value="5">Padé (5,5)</option>
+                    <option value="6">Padé (6,6)</option>
+                  </select>
+                  <div class="form-text">Bode &amp; Nyquist plots use the exact \(e^{-\tau s}\) delay.</div>
                 </div>
                 <!-- --- Saturation fields --- -->
                 <div id="satFields">

@@ -40,6 +40,7 @@ const stabilityBadge = document.getElementById("stabilityBadge");
 const bodeMetricsBox = document.getElementById("bodeMetrics");
 const rootGainSlider = document.getElementById("rootGain");
 const rootGainValue = document.getElementById("rootGainValue");
+const delayApproxSelect = document.getElementById("delayApprox");
 
 /* -----------  side selection & geometry helpers  ------------------- */
 const DIRS = {E:[1,0], W:[-1,0], N:[0,-1], S:[0,1]};
@@ -151,6 +152,7 @@ function addNode(type, label, x = 120, y = 80) {
   };
   if(type === "Mux")   node.params.inputs  = 2;
   if(type === "Demux") node.params.outputs = 2;
+  if(type === "Delay") node.params.pade_order = 1;
   nodes.push(node);
   drawAll();
   return node;
@@ -372,6 +374,22 @@ if (isInput) {
     document.getElementById("demuxInput").value = node.params.outputs ?? "";
   } else if (isDelay) {
     document.getElementById("delayInput").value = node.params.tau ?? "";
+    const rawOrder = parseInt(node.params.pade_order ?? 1, 10);
+    const order = Number.isFinite(rawOrder) && rawOrder >= 1 ? rawOrder : 1;
+    let hasOption = false;
+    for (const opt of delayApproxSelect.options) {
+      if (parseInt(opt.value, 10) === order) {
+        hasOption = true;
+        break;
+      }
+    }
+    if (!hasOption) {
+      const opt = document.createElement("option");
+      opt.value = String(order);
+      opt.textContent = `Padé (${order},${order})`;
+      delayApproxSelect.appendChild(opt);
+    }
+    delayApproxSelect.value = String(order);
   } else if (isSaturation) {
     document.getElementById("satLower").value = node.params.lower ?? "";
     document.getElementById("satUpper").value = node.params.upper ?? "";
@@ -413,6 +431,9 @@ document.getElementById("btnModalSave").onclick = () => {
     editTarget.params.outputs = parseInt(document.getElementById("demuxInput").value);
   } else if (editTarget.type === "Delay") {
     editTarget.params.tau = parseFloat(document.getElementById("delayInput").value);
+    let order = parseInt(delayApproxSelect.value, 10);
+    if (!Number.isFinite(order) || order < 1) order = 1;
+    editTarget.params.pade_order = order;
   } else if (editTarget.type === "Saturation") {
     editTarget.params.lower = parseFloat(document.getElementById("satLower").value);
     editTarget.params.upper = parseFloat(document.getElementById("satUpper").value);

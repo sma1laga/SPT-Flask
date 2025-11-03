@@ -26,18 +26,22 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
 
     # 1) build the directed graph + locate source & sink
     G, src_id, dst_id, domain = build_sfg(graph_json)
+    G_exact, _, _, _ = build_sfg(graph_json, delay_model="exact")
 
     # 2) overall loop TF Y(s)/X(s)
     loop_tf_expr = mason_gain(G, src_id, dst_id)
+    loop_tf_exact_expr = mason_gain(G_exact, src_id, dst_id)
 
     # 3) source TF X(s)
     src_node = next(n for n in graph_json["nodes"] if n["id"] == src_id)
     X_expr = gain_expr(src_node, domain)
+    X_exact_expr = gain_expr(src_node, domain, delay_model="exact")
 
     # 4) output TF H(s) and display-only Y(s)
     H_unsimplified = sp.together(loop_tf_expr / X_expr)
     H_expr = sp.simplify(H_unsimplified)   # <-- divide out the source block
     Y_expr = sp.simplify(H_expr * X_expr)     # for LaTeX display only
+    H_exact_expr = sp.simplify(loop_tf_exact_expr / X_exact_expr)
 
     # Use the canonical symbol from utils (s or z) and coeff helper
     var = s if domain == "s" else z
@@ -120,8 +124,14 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
                 continue
             scope_tfs[str(sid)] = {"num": sn, "den": sd, "latex": sp.latex(scope_expr)}
 
-    analysis = compute_analysis(out_num, out_den, raw_num=raw_num, raw_den=raw_den)
-
+    analysis = compute_analysis(
+        out_num,
+        out_den,
+        raw_num=raw_num,
+        raw_den=raw_den,
+        freq_expr=H_exact_expr,
+        domain=domain,
+    )
     return {
         "loop_tf":   {"num": loop_num, "den": loop_den, "latex": sp.latex(loop_tf_expr)},
         "input_tf":  {"num": in_num,   "den": in_den,   "latex": sp.latex(X_expr)},
@@ -142,7 +152,7 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
      }
 
 
-def compute_analysis(num, den, raw_num=None, raw_den=None):
+def compute_analysis(num, den, raw_num=None, raw_den=None, freq_expr=None, domain="s"):
     """Return pole/zero, bode, Nyquist, Nichols and root-locus data."""
 
     try:
@@ -194,9 +204,34 @@ def compute_analysis(num, den, raw_num=None, raw_den=None):
 
     omega = np.logspace(np.log10(w_min), np.log10(w_max), 600)
 
-    mag, phase, _ = control.bode(sys, omega, plot=False)
-    mag = np.squeeze(mag)
-    phase = np.squeeze(phase)
+    use_exact_delay = freq_expr is not None and domain == "s"
+    response = None
+    if use_exact_delay:
+        try:
+            var_symbol = s if domain == "s" else z
+            freq_func = sp.lambdify(var_symbol, freq_expr, modules=["numpy"])
+            s_vals = 1j * omega
+            response = np.asarray(freq_func(s_vals), dtype=complex)
+        except Exception:
+            response = None
+            use_exact_delay = False
+
+    if response is None:
+        mag, phase, _ = control.bode(sys, omega, plot=False)
+        mag = np.squeeze(mag)
+        phase = np.squeeze(phase)
+        mag = np.atleast_1d(mag)
+        phase = np.atleast_1d(phase)
+        response = mag * np.exp(1j * phase)
+    else:
+        response = np.atleast_1d(response)
+        mag = np.abs(response)
+        phase = np.unwrap(np.angle(response))
+
+    mag = np.asarray(mag, dtype=float)
+    phase = np.asarray(phase, dtype=float)
+    response = np.asarray(response, dtype=complex)
+
     mag_db = 20 * np.log10(np.maximum(mag, np.finfo(float).tiny))
     phase_deg = np.degrees(phase)
 
@@ -226,7 +261,6 @@ def compute_analysis(num, den, raw_num=None, raw_den=None):
         bandwidth = None
 
     # Nyquist curve using bode response
-    response = mag * np.exp(1j * phase)
     conj_segment = np.conjugate(response[:-1][::-1])
     nyquist_curve = np.concatenate([response, conj_segment])
 
