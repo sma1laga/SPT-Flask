@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, request, Response
 import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO, StringIO
-import base64
 from ast import literal_eval
 import re
 import sympy as sp
@@ -141,7 +140,7 @@ def _make_freq_vector(num, den, override=None):
     return np.logspace(np.log10(w_min), np.log10(w_max), 500)
 
 
-@bode_plot_bp.route('/bode_plot', methods=['GET', 'POST'])
+@bode_plot_bp.route('/', methods=['GET', 'POST'])
 def bode_plot():
     error = ""
     warning = ""
@@ -165,7 +164,7 @@ def bode_plot():
     if request.method == 'GET':
         return render_template(
             "bode_plot.html",
-            plot_url=None,
+            bode_data=None,
             error=None,
             warning=None,
             default_num=default_num,
@@ -178,6 +177,7 @@ def bode_plot():
             pm=None,
             wg=None,
             wp=None,
+            pz_plot=None,
         )
     
     if request.method == 'POST':
@@ -206,7 +206,7 @@ def bode_plot():
             return render_template(
                 "bode_plot.html",
                 error=error,
-                plot_url=None,
+                bode_data=None,
                 default_num=user_num,
                 default_den=user_den,
                 function_str=None,
@@ -217,6 +217,7 @@ def bode_plot():
                 pm=None,
                 wg=None,
                 wp=None,
+                pz_plot=None,
             )
     
     # Allow manual frequency range via optional form fields
@@ -235,8 +236,10 @@ def bode_plot():
     s = 1j * w
     H = np.polyval(num, s) / np.polyval(den, s)
     
-    magnitude = 20 * np.log10(np.abs(H))
-    phase = np.angle(H, deg=True)
+    mag = np.abs(H)
+    magnitude_db = 20 * np.log10(np.maximum(mag, np.finfo(float).tiny))
+    phase = np.unwrap(np.angle(H))
+    phase_deg = np.degrees(phase)
     
     # Poles and zeros
     # Poles and zeros
@@ -256,58 +259,50 @@ def bode_plot():
 
     # Gain and phase margins
     sys = control.TransferFunction(num, den)
-    gm, pm, wg, wp = control.margin(sys)
+    def finite_or_none(value):
+        if value is None:
+            return None
+        if isinstance(value, (list, tuple, np.ndarray)):
+            return [finite_or_none(v) for v in value]
+        if np.isnan(value) or np.isinf(value):
+            return None
+        return float(value)
+    try:
+        gm, pm, wg, wp = control.margin(sys)
+    except Exception:
+        gm = pm = wg = wp = None
+    gm_db = None
+    if gm is not None and gm > 0 and np.isfinite(gm):
+        gm_db = 20 * np.log10(gm)
 
-    # (7) Pole–Zero map (mini plot)
-    figpz, axpz = plt.subplots(figsize=(3, 3), layout="constrained")
-    axpz.axhline(0, color='#cccccc'); axpz.axvline(0, color='#cccccc')
-    if zeros.size:
-        axpz.scatter(np.real(zeros), np.imag(zeros), marker='o', label='zeros')
-    if poles.size:
-        axpz.scatter(np.real(poles), np.imag(poles), marker='x', label='poles')
-    axpz.set_xlabel('Re{s}'); axpz.set_ylabel('Im{s}')
-    axpz.set_title('Pole–Zero Map')
-    axpz.grid(True, linestyle='--', alpha=0.4)
+    try:
+        bandwidth = control.bandwidth(sys)
+        if np.isnan(bandwidth) or np.isinf(bandwidth):
+            bandwidth = None
+    except Exception:
+        bandwidth = None
 
-    bufpz = BytesIO()
-    figpz.savefig(bufpz, format='png', dpi=150)
-    pz_img = base64.b64encode(bufpz.getvalue()).decode('utf-8')
-    plt.close(figpz)
+    bode_data = {
+        "omega": w.tolist(),
+        "magnitude_db": magnitude_db.tolist(),
+        "phase_deg": phase_deg.tolist(),
+        "gain_margin_db": finite_or_none(gm_db),
+        "phase_margin_deg": finite_or_none(pm),
+        "gain_cross_freq": finite_or_none(wg),
+        "phase_cross_freq": finite_or_none(wp),
+        "bandwidth": finite_or_none(bandwidth),
+    }
 
-
-    
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True, layout="constrained")
-    ax1.semilogx(w, magnitude)
-    ax1.set_title("Bode Plot - Magnitude")
-    ax1.set_ylabel("Magnitude (dB)")
-    ax1.grid(True, which="both", linestyle="--")
-    
-    ax2.semilogx(w, phase)
-    ax2.set_title("Bode Plot - Phase")
-    ax2.set_xlabel("Frequency (rad/s)")
-    ax2.set_ylabel("Phase (degrees)")
-    ax2.grid(True, which="both", linestyle="--")
-    
-    # Annotate crossover frequencies on the plots
-    legend_lines = []
-    legend_labels = []
-    if np.isfinite(wp):
-        phase_line = ax1.axvline(wp, color="r", linestyle="--")
-        ax2.axvline(wp, color="r", linestyle="--")
-        legend_lines.append(phase_line)
-        legend_labels.append("Phase crossover")
-    if np.isfinite(wg):
-        gain_line = ax1.axvline(wg, color="orange", linestyle="--")
-        ax2.axvline(wg, color="orange", linestyle="--")
-        legend_lines.append(gain_line)
-        legend_labels.append("Gain crossover")
-    if legend_lines:
-        ax1.legend(legend_lines, legend_labels, loc="best")
-    
-    buf = BytesIO()
-    plt.savefig(buf, format="png")
-    image_base64 = base64.b64encode(buf.getvalue()).decode("utf8")
-    plt.close(fig)
+    pz_plot = {
+        "zeros": [
+            {"re": float(np.real(z)), "im": float(np.imag(z))}
+            for z in zeros if np.isfinite(z)
+        ],
+        "poles": [
+            {"re": float(np.real(p)), "im": float(np.imag(p))}
+            for p in poles if np.isfinite(p)
+        ],
+    }
     
     # Prepare pole/zero strings for display
     zero_list = [format_complex(z) for z in zeros]
@@ -316,7 +311,7 @@ def bode_plot():
 
     return render_template(
         "bode_plot.html",
-        plot_url=image_base64,
+        bode_data=bode_data,
         error=error,
         warning=(warning if warning else None),
         default_num=user_num,
@@ -325,11 +320,11 @@ def bode_plot():
         zeros=zero_list,
         poles=pole_list,
         pz_pairs=pz_pairs,
-        pz_img=pz_img,
         gm=gm,
         pm=pm,
         wg=wg,
         wp=wp,
+        pz_plot=pz_plot,
     )
 
     

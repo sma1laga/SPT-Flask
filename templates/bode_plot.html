@@ -1,41 +1,171 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Bode Plot</h1>
-<p>
-  <strong>How to Enter Your Transfer Function H(s):</strong>
-</p>
-<ul>
-  <li>
-    <strong>Coefficient List:</strong>  
-    Enter the coefficients as a Python list using square brackets.
-    <br>
-    <em>Example:</em>
-    <br>
-    Numerator: <code>[1, 2, 3]</code>
-    <br>
-    Denominator: <code>[1, 0, 2]</code>
-    <br>
-    In this mode, the system automatically expands the polynomial and displays the transfer function in its standard form.
-  </li>
-  <br>
-  <li>
-    <strong>Factorized Expression:</strong>  
-    Enter the function in a factorized form using parentheses.
-    <br>
-    <em>Example:</em>
-    <br>
-    Numerator: <code>(s+3+2*j)(s+3-2*j)</code>
-    <br>
-    (The denominator can be entered as a coefficient list or as a factorized expression if desired.)
-    <br>
-    When you use parentheses, your expression is displayed exactly as you typed it, even though the program expands it internally to compute the Bode plot.
-  </li>
-</ul>
-<p>
-  When you click "Plot Bode", your transfer function is shown below and the Bode plot is generated.
-</p>
+<div class="bode-page">
+  <h1>Bode Plot</h1>
+  <style>
+    .bode-page ul {
+      padding-left: 1.4rem;
+    }
+    .bode-page .plotly-chart {
+      width: 100%;
+      min-height: 320px;
+    }
+    .bode-form {
+      margin-bottom: 1.5rem;
+    }
+    .bode-form label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+    .bode-form input[type="text"] {
+      width: min(100%, 420px);
+      padding: 0.45rem 0.6rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .bode-form button {
+      margin-top: 0.8rem;
+      padding: 0.5rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+    }
+    .bode-form button:hover {
+      background: #1d4ed8;
+    }
+    .bode-warning {
+      color: #8a6d3b;
+      background: #fcf8e3;
+      border: 1px solid #faebcc;
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+      max-width: 780px;
+    }
+    .bode-results {
+      margin-top: 1.5rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      background: #f9fafb;
+    }
+    .bode-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+    }
+    .bode-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.4rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .bode-metrics span strong {
+      display: block;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+    }
+    .bode-downloads {
+      display: flex;
+      gap: 0.75rem;
+    }
+    .bode-downloads a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid #2563eb;
+      color: #1d4ed8;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .bode-downloads a:hover {
+      background: rgba(37, 99, 235, 0.08);
+    }
+    .bode-layout {
+      margin-top: 1.6rem;
+      display: grid;
+      grid-template-columns: minmax(0, 2.5fr) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+    .bode-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e5e7eb;
+    }
+    .bode-card h3 {
+      margin-top: 0;
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+      color: #1f2937;
+    }
+    .pz-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.75rem;
+      font-size: 0.95rem;
+    }
+    .pz-table th,
+    .pz-table td {
+      border: 1px solid #d1d5db;
+      padding: 0.45rem 0.6rem;
+      text-align: center;
+    }
+    .pz-table th {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    @media (max-width: 1024px) {
+      .bode-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 
-<form method="POST">
+  <p><strong>How to Enter Your Transfer Function H(s):</strong></p>
+  <ul>
+    <li>
+      <strong>Coefficient List:</strong>
+      Enter the coefficients as a Python list using square brackets.
+      <br>
+      <em>Example:</em>
+      <br>
+      Numerator: <code>[1, 2, 3]</code>
+      <br>
+      Denominator: <code>[1, 0, 2]</code>
+      <br>
+      In this mode, the system automatically expands the polynomial and displays the transfer function in its standard form.
+    </li>
+    <br>
+    <li>
+      <strong>Factorized Expression:</strong>
+      Enter the function in a factorized form using parentheses.
+      <br>
+      <em>Example:</em>
+      <br>
+      Numerator: <code>(s+3+2*j)(s+3-2*j)</code>
+      <br>
+      (The denominator can be entered as a coefficient list or as a factorized expression if desired.)
+      <br>
+      When you use parentheses, your expression is displayed exactly as you typed it, even though the program expands it internally to compute the Bode plot.
+    </li>
+  </ul>
+  <p>When you click "Plot Bode", your transfer function is shown below and the Bode plot is generated.</p>
+
+  <form method="POST" class="bode-form">
     <div>
       <label for="numerator">Numerator:</label>
       <input type="text" id="numerator" name="numerator" value="{{ default_num }}" required>
@@ -45,7 +175,6 @@
       <label for="denominator">Denominator:</label>
       <input type="text" id="denominator" name="denominator" value="{{ default_den }}" required>
     </div>
-    <br>
     <button type="submit">Plot Bode</button>
   </form>
   
@@ -54,64 +183,66 @@
   {% endif %}
   
   {% if warning %}
-    <p style="color:#8a6d3b;background:#fcf8e3;border:1px solid #faebcc;padding:8px;border-radius:4px;">
+    <div class="bode-warning">
       {{ warning|replace('\n','<br>')|safe }}
-    </p>
+    </div>
   {% endif %}
 
   {% if function_str %}
     <h2>Your Transfer Function</h2>
     <p style="font-size:1.2em;">$$ {{ function_str }} $$</p>
   {% endif %}
-  
-  {% if plot_url %}
-    <div style="text-align:center; margin-top:20px;">
-      <!-- Embed the plot -->
-      <img src="data:image/png;base64,{{ plot_url }}" alt="Bode Plot">
-      <br><br>
-  
-      <!-- Download buttons -->
-      <a
-        href="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
-        class="button"
-        download="bode_plot.png"
-      >Download PNG</a>
-  
-      <a
-        href="{{ url_for('bode_plot.download_csv') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
-        class="button"
-        download="bode_data.csv"
-      >Download CSV</a>
-    </div>
-  {% endif %}
-  {% if pz_img %}
-    <div style="text-align:center; margin:10px 0;">
-      <img src="data:image/png;base64,{{ pz_img }}" alt="Pole–Zero Map">
-    </div>
-  {% endif %}
 
-  {% if pz_pairs %}
-    <div style="max-width:300px;margin:20px auto;">
-      <h3 style="text-align:center;">Poles &amp; Zeros</h3>
-      <table style="width:100%;border-collapse:collapse;text-align:center;border:1px solid #ccc;">
-        <tr>
-          <th style="border:1px solid #ccc;">Zero</th>
-          <th style="border:1px solid #ccc;">Pole</th>
-        </tr>
-        {% for z,p in pz_pairs %}
-          <tr>
-            <td style="border:1px solid #ccc;">{{ z }}</td>
-            <td style="border:1px solid #ccc;">{{ p }}</td>
-          </tr>        {% endfor %}
-      </table>
+  {% if bode_data %}
+    <div class="bode-results">
+      <div class="bode-toolbar">
+        <div id="bodeMetrics" class="bode-metrics"></div>
+        <div class="bode-downloads">
+          <a
+            href="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+            download="bode_plot.png"
+          >Download PNG</a>
+          <a
+            href="{{ url_for('bode_plot.download_csv') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+            download="bode_data.csv"
+          >Download CSV</a>
+        </div>
+      </div>
+
+      <div class="bode-layout">
+        <div class="bode-card">
+          <h3>Bode Diagram</h3>
+          <div id="bodePlot" class="plotly-chart"></div>
+        </div>
+        <div class="bode-card">
+          <h3>Pole–Zero Map</h3>
+          <div id="pzPlot" class="plotly-chart"></div>
+          {% if pz_pairs %}
+            <table class="pz-table">
+              <tr>
+                <th>Zero</th>
+                <th>Pole</th>
+              </tr>
+              {% for z, p in pz_pairs %}
+                <tr>
+                  <td>{{ z }}</td>
+                  <td>{{ p }}</td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% endif %}
+        </div>
+      </div>
     </div>
   {% endif %}
+</div>
+{% endblock %}
 
-  {% if gm is not none and pm is not none %}
-    <div style="text-align:center; margin-top:10px;">
-      <p style="color:orange;">Gain margin (orange line): {{ '%.3g'|format(gm) }} at ω = {{ '%.3g'|format(wg) }} rad/s</p>
-      <p style="color:red;">Phase margin (red line): {{ '%.3g'|format(pm) }}° at ω = {{ '%.3g'|format(wp) }} rad/s</p>
-    </div>
-  {% endif %}
-  {% endblock %}
-
+{% block scripts %}
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script>
+    window.bodeData = {{ bode_data|tojson|safe }};
+    window.pzData = {{ pz_plot|tojson|safe }};
+  </script>
+  <script src="{{ url_for('static', filename='js/bode_plot.js') }}"></script>
+{% endblock %}
