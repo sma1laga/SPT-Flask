@@ -202,6 +202,106 @@ canvas {
   overflow-x: auto;
 }
 
+.analysis-suite {
+  margin-top: 20px;
+  border: 1px solid #dfe4ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  padding: 20px 24px;
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.analysis-content {
+  margin-top: 18px;
+}
+
+.analysis-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.analysis-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analysis-caption {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.analysis-export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.analysis-export button {
+  box-shadow: none;
+}
+
+.analysis-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.analysis-metrics span {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.analysis-metrics strong {
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.plotly-chart {
+  width: 100%;
+  min-height: 320px;
+}
+
+.rootlocus-toolbar {
+  gap: 16px;
+}
+
+.rootlocus-toolbar .form-range {
+  flex: 1 1 220px;
+  min-width: 160px;
+}
+
+@media (max-width: 768px) {
+  .analysis-suite {
+    padding: 16px 18px;
+  }
+  .plotly-chart {
+    min-height: 260px;
+  }
+}
+
 .results-sim-canvas {
   margin-top: 18px;
 }

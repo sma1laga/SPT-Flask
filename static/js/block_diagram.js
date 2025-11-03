@@ -35,6 +35,11 @@ const cursorBButton = document.getElementById("scopeCursorB");
 const cursorReadout = document.getElementById("cursorReadout");
 const simSummary = document.getElementById("simSummary");
 const scopeSummary = document.getElementById("scopeSummary");
+const analysisSection = document.getElementById("analysisSuite");
+const stabilityBadge = document.getElementById("stabilityBadge");
+const bodeMetricsBox = document.getElementById("bodeMetrics");
+const rootGainSlider = document.getElementById("rootGain");
+const rootGainValue = document.getElementById("rootGainValue");
 
 /* -----------  side selection & geometry helpers  ------------------- */
 const DIRS = {E:[1,0], W:[-1,0], N:[0,-1], S:[0,1]};
@@ -428,6 +433,10 @@ let holdData = null;
 let activeCursor = null;
 let cursorA = null;
 let cursorB = null;
+let analysisExportsReady = false;
+const basePlotConfig = { responsive: true, displaylogo: false };
+let rootLocusMarkerIndex = null;
+let rootLocusState = null;
 
 scopeClose.onclick = () => {
   scopeWindow.style.display = "none";
@@ -438,7 +447,7 @@ scopeClose.onclick = () => {
 };
 
 function compileDiagram(){
-  const domain = "s";          
+  const domain = "s";
   const serial = { nodes: nodes.map(n => { let c={...n}; delete c.latexEl; return c; }),
                  edges,
                  domain };
@@ -453,6 +462,7 @@ function compileDiagram(){
     const box = document.getElementById("resultsBox");
     if(js.error){
       box.textContent = "Error: " + js.error;
+      renderAnalysis(null);
       return;
     }
 
@@ -494,10 +504,386 @@ function compileDiagram(){
     katex.render(js.ode_latex,     document.getElementById("odeOut"),
                  {displayMode:false});
 
+    renderAnalysis(js.analysis || null);
+
     // show simulate button
     document.getElementById("btnSimulate").style.display = "inline-block";
   })
   .catch(err => alert(err));
+}
+
+/* ── Analysis Suite ---------------------------------------------------- */
+function setupAnalysisExports(){
+  if (analysisExportsReady) return;
+  const buttons = document.querySelectorAll('[data-export-target][data-export-format]');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!window.Plotly) return;
+      const targetId = btn.getAttribute('data-export-target');
+      const format = btn.getAttribute('data-export-format') || 'png';
+      const node = document.getElementById(targetId);
+      if (!node) return;
+      const filename = `analysis-${targetId}-${format}`;
+      Plotly.downloadImage(node, { format, filename }).catch(()=>{});
+    });
+  });
+  analysisExportsReady = true;
+}
+
+function renderAnalysis(data){
+  if (!analysisSection) return;
+  setupAnalysisExports();
+
+  if (!data){
+    analysisSection.style.display = 'none';
+    if (window.Plotly){
+      ['pzPlot','bodePlot','nyquistPlot','nicholsPlot','rootLocusPlot'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) Plotly.purge(el);
+      });
+    }
+    if (rootGainSlider) {
+      rootGainSlider.disabled = true;
+      rootGainSlider.value = 0;
+    }
+    if (rootGainValue) rootGainValue.textContent = '—';
+    rootLocusState = null;
+    rootLocusMarkerIndex = null;
+    return;
+  }
+
+  analysisSection.style.display = 'block';
+
+  updateStabilityBadge(data.pz);
+  renderPolesZeros(data.pz || {});
+  renderBodePlot(data.bode || {});
+  renderNyquistPlot(data.nyquist || {});
+  renderNicholsPlot(data.nichols || {});
+  renderRootLocus(data.root_locus || {});
+}
+
+function updateStabilityBadge(pz){
+  if (!stabilityBadge) return;
+  const status = (pz && pz.stability) ? String(pz.stability).toLowerCase() : 'unknown';
+  const mapping = {
+    stable: 'bg-success',
+    unstable: 'bg-danger',
+    marginal: 'bg-warning text-dark',
+    unknown: 'bg-secondary'
+  };
+  const base = 'badge rounded-pill ';
+  stabilityBadge.className = base + (mapping[status] || mapping.unknown);
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
+  stabilityBadge.textContent = label;
+}
+
+function renderPolesZeros(pz){
+  if (!window.Plotly) return;
+  const el = document.getElementById('pzPlot');
+  if (!el) return;
+  const zeros = (pz.zeros || []).map(z => ({x: z.re || 0, y: z.im || 0}));
+  const poles = (pz.poles || []).map(p => ({x: p.re || 0, y: p.im || 0}));
+
+  const realVals = zeros.map(z => z.x).concat(poles.map(p => p.x));
+  const imagVals = zeros.map(z => z.y).concat(poles.map(p => p.y));
+  const maxRe = realVals.length ? Math.max(...realVals.map(v => Math.abs(v))) : 1;
+  const maxIm = imagVals.length ? Math.max(...imagVals.map(v => Math.abs(v))) : 1;
+  const xRange = maxRe === 0 ? 1 : maxRe * 1.2;
+  const yRange = maxIm === 0 ? 1 : maxIm * 1.2;
+
+  const traces = [
+    {
+      x: zeros.map(z => z.x),
+      y: zeros.map(z => z.y),
+      type: 'scatter',
+      mode: zeros.length ? 'markers' : 'text',
+      name: 'Zeros',
+      marker: {
+        symbol: 'circle-open',
+        size: 14,
+        color: '#0ea5e9',
+        line: { width: 2 }
+      },
+      text: zeros.length ? undefined : ['No zeros'],
+      textposition: 'top center'
+    },
+    {
+      x: poles.map(p => p.x),
+      y: poles.map(p => p.y),
+      type: 'scatter',
+      mode: poles.length ? 'markers' : 'text',
+      name: 'Poles',
+      marker: {
+        symbol: 'x',
+        size: 14,
+        color: '#ef4444',
+        line: { width: 2 }
+      },
+      text: poles.length ? undefined : ['No poles'],
+      textposition: 'bottom center'
+    }
+  ];
+
+  const layout = {
+    margin: { l: 60, r: 20, t: 30, b: 40 },
+    xaxis: {
+      title: 'Real',
+      range: [-xRange, xRange],
+      zeroline: false,
+      showgrid: true,
+      gridcolor: '#e5e7eb'
+    },
+    yaxis: {
+      title: 'Imaginary',
+      range: [-yRange, yRange],
+      zeroline: false,
+      showgrid: true,
+      gridcolor: '#e5e7eb'
+    },
+    shapes: [
+      { type: 'line', x0: -xRange, x1: xRange, y0: 0, y1: 0, line: { color: '#9ca3af', width: 1 } },
+      { type: 'line', x0: 0, x1: 0, y0: -yRange, y1: yRange, line: { color: '#9ca3af', width: 1 } }
+    ],
+    legend: { orientation: 'h', y: -0.2 }
+  };
+
+  Plotly.react(el, traces, layout, basePlotConfig);
+}
+
+function renderBodePlot(bode){
+  if (!window.Plotly) return;
+  const el = document.getElementById('bodePlot');
+  if (!el) return;
+  const freq = bode.omega || [];
+  const mag = bode.magnitude_db || [];
+  const phase = bode.phase_deg || [];
+
+  const traces = [
+    {
+      x: freq,
+      y: mag,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Magnitude (dB)',
+      xaxis: 'x',
+      yaxis: 'y'
+    },
+    {
+      x: freq,
+      y: phase,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Phase (°)',
+      xaxis: 'x2',
+      yaxis: 'y2'
+    }
+  ];
+
+  const layout = {
+    grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
+    margin: { l: 70, r: 20, t: 30, b: 40 },
+    hovermode: 'x unified',
+    xaxis: { type: 'log', title: 'Frequency (rad/s)', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: 'Magnitude (dB)', showgrid: true, gridcolor: '#e5e7eb' },
+    xaxis2: { type: 'log', title: 'Frequency (rad/s)', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis2: { title: 'Phase (°)', showgrid: true, gridcolor: '#e5e7eb' },
+    legend: { orientation: 'h', x: 0, y: -0.25 }
+  };
+
+  Plotly.react(el, traces, layout, basePlotConfig);
+
+  if (bodeMetricsBox){
+    const gmText = formatMargin(bode.gain_margin_db, bode.gain_cross_freq, 'dB', 'rad/s');
+    const pmText = formatMargin(bode.phase_margin_deg, bode.phase_cross_freq, '°', 'rad/s');
+    const bwText = formatWithUnit(bode.bandwidth, 'rad/s', 3);
+    bodeMetricsBox.innerHTML = `
+      <span><strong>Gain margin</strong>${gmText}</span>
+      <span><strong>Phase margin</strong>${pmText}</span>
+      <span><strong>Bandwidth</strong>${bwText}</span>
+    `;
+  }
+}
+
+function renderNyquistPlot(nyquist){
+  if (!window.Plotly) return;
+  const el = document.getElementById('nyquistPlot');
+  if (!el) return;
+  const real = nyquist.real || [];
+  const imag = nyquist.imag || [];
+
+  const traces = [
+    {
+      x: real,
+      y: imag,
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Nyquist',
+      line: { width: 2 }
+    },
+    {
+      x: [-1],
+      y: [0],
+      type: 'scatter',
+      mode: 'markers',
+      name: '-1 + j0',
+      marker: { size: 10, color: '#ef4444' }
+    }
+  ];
+
+  const layout = {
+    margin: { l: 60, r: 20, t: 30, b: 40 },
+    xaxis: { title: 'Real', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: 'Imaginary', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    legend: { orientation: 'h', y: -0.2 }
+  };
+
+  Plotly.react(el, traces, layout, basePlotConfig);
+}
+
+function renderNicholsPlot(nichols){
+  if (!window.Plotly) return;
+  const el = document.getElementById('nicholsPlot');
+  if (!el) return;
+  const phase = nichols.phase_deg || [];
+  const mag = nichols.magnitude_db || [];
+
+  const trace = {
+    x: phase,
+    y: mag,
+    type: 'scatter',
+    mode: 'lines',
+    name: 'Nichols',
+    line: { width: 2 }
+  };
+
+  const layout = {
+    margin: { l: 70, r: 20, t: 30, b: 40 },
+    xaxis: { title: 'Phase (°)', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: 'Magnitude (dB)', showgrid: true, gridcolor: '#e5e7eb' },
+    hovermode: 'closest'
+  };
+
+  Plotly.react(el, [trace], layout, basePlotConfig);
+}
+
+function renderRootLocus(data){
+  if (!window.Plotly) return;
+  const el = document.getElementById('rootLocusPlot');
+  if (!el) return;
+
+  const branches = data.branches || [];
+  const traces = branches.map((branch, idx) => ({
+    x: branch.x,
+    y: branch.y,
+    type: 'scatter',
+    mode: 'lines',
+    name: `Branch ${idx + 1}`,
+    line: { width: 2 }
+  }));
+
+  const zeros = data.zeros || [];
+  traces.push({
+    x: zeros.map(z => z.re || 0),
+    y: zeros.map(z => z.im || 0),
+    type: 'scatter',
+    mode: 'markers',
+    name: 'Zeros',
+    marker: { symbol: 'circle-open', size: 12, color: '#0ea5e9', line: { width: 2 } }
+  });
+
+  rootLocusMarkerIndex = traces.length;
+  traces.push({
+    x: [],
+    y: [],
+    type: 'scatter',
+    mode: 'markers',
+    name: 'Closed-loop poles',
+    marker: { symbol: 'x', size: 14, color: '#ef4444', line: { width: 2 } }
+  });
+
+  const layout = {
+    margin: { l: 60, r: 20, t: 30, b: 40 },
+    xaxis: { title: 'Real', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: 'Imaginary', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    legend: { orientation: 'h', y: -0.2 },
+    hovermode: 'closest'
+  };
+
+  Plotly.react(el, traces, layout, basePlotConfig);
+
+  rootLocusState = data;
+
+  if (rootGainSlider){
+    const kValues = Array.isArray(data.k) ? data.k : [];
+    if (!kValues.length){
+      rootGainSlider.disabled = true;
+      rootGainSlider.value = 0;
+      if (rootGainValue) rootGainValue.textContent = '—';
+      updateRootLocusGain(null);
+    } else {
+      rootGainSlider.disabled = false;
+      rootGainSlider.max = kValues.length - 1;
+      let defaultIndex = 0;
+      const positiveIdx = kValues.findIndex(v => typeof v === 'number' && v >= 1);
+      if (positiveIdx > 0) defaultIndex = positiveIdx;
+      else if (kValues.length > 1) defaultIndex = Math.floor(kValues.length / 3);
+      rootGainSlider.value = defaultIndex;
+      updateRootLocusGain(defaultIndex);
+    }
+  }
+}
+
+function updateRootLocusGain(index){
+  if (!window.Plotly) return;
+  const el = document.getElementById('rootLocusPlot');
+  if (!el || rootLocusMarkerIndex === null) return;
+
+  const snapshots = rootLocusState && rootLocusState.snapshots ? rootLocusState.snapshots : [];
+  if (!snapshots.length || index === null){
+    Plotly.restyle(el, { x: [[]], y: [[]] }, [rootLocusMarkerIndex]);
+    if (rootGainValue) rootGainValue.textContent = '—';
+    return;
+  }
+
+  const idx = Math.max(0, Math.min(snapshots.length - 1, Number(index)));
+  const poles = snapshots[idx] || [];
+  const xs = [];
+  const ys = [];
+  poles.forEach(p => {
+    if (p && typeof p.re === 'number' && typeof p.im === 'number'){
+      xs.push(p.re);
+      ys.push(p.im);
+    } else {
+      xs.push(null);
+      ys.push(null);
+    }
+  });
+
+  Plotly.restyle(el, { x: [xs], y: [ys] }, [rootLocusMarkerIndex]);
+
+  if (rootGainValue){
+    const kValues = rootLocusState && Array.isArray(rootLocusState.k) ? rootLocusState.k : [];
+    const k = kValues[idx];
+    rootGainValue.textContent = formatNumber(k, 3);
+  }
+}
+
+function formatWithUnit(value, unit, digits){
+  const formatted = formatNumber(value, digits);
+  return formatted === '—' ? '—' : `${formatted} ${unit}`;
+}
+
+function formatMargin(value, freq, valueUnit, freqUnit){
+  const main = formatWithUnit(value, valueUnit, 2);
+  const freqText = formatWithUnit(freq, freqUnit, 3);
+  if (main === '—') return '—';
+  return freqText === '—' ? main : `${main} @ ${freqText}`;
+}
+
+if (rootGainSlider){
+  rootGainSlider.addEventListener('input', ev => {
+    updateRootLocusGain(Number(ev.target.value));
+  });
 }
 
 
@@ -561,6 +947,7 @@ function clearScene(){nodes=[];edges=[];nextId=1;selectedNode = selectedEdge = n
     simSummary.innerHTML = "";
     simSummary.style.display = "none";
   }
+  renderAnalysis(null);
   document.querySelectorAll(".latexNode").forEach(el=>el.remove());
   (()=>{addNode("Input","X(s)",40,canvas.height/2-60);
         addNode("Output","Y(s)",canvas.width-120,canvas.height/2-60);})();

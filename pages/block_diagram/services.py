@@ -18,6 +18,7 @@ from sympy import Matrix, Poly
 import re
 import control
 import networkx as nx
+import numpy as np
 
 
 
@@ -34,7 +35,8 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
     X_expr = gain_expr(src_node, domain)
 
     # 4) output TF H(s) and display-only Y(s)
-    H_expr = sp.simplify(loop_tf_expr / X_expr)   # <-- divide out the source block
+    H_unsimplified = sp.together(loop_tf_expr / X_expr)
+    H_expr = sp.simplify(H_unsimplified)   # <-- divide out the source block
     Y_expr = sp.simplify(H_expr * X_expr)     # for LaTeX display only
 
     # Use the canonical symbol from utils (s or z) and coeff helper
@@ -44,7 +46,7 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
         return [float(c) for c in Poly(n, var).all_coeffs()], \
             [float(c) for c in Poly(d, var).all_coeffs()]
 
-
+    raw_num, raw_den = expr_to_coeffs(H_unsimplified)
     numH, denH = expr_to_coeffs(H_expr)
     if len(numH) - 1 > len(denH) - 1:
         raise ValueError("Non-proper loop-TF; adjust diagram.")
@@ -118,6 +120,8 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
                 continue
             scope_tfs[str(sid)] = {"num": sn, "den": sd, "latex": sp.latex(scope_expr)}
 
+    analysis = compute_analysis(out_num, out_den, raw_num=raw_num, raw_den=raw_den)
+
     return {
         "loop_tf":   {"num": loop_num, "den": loop_den, "latex": sp.latex(loop_tf_expr)},
         "input_tf":  {"num": in_num,   "den": in_den,   "latex": sp.latex(X_expr)},
@@ -134,4 +138,171 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
         "ode_latex": ode_latex,
         "saturation": saturation,
         "scopes": scope_tfs,
+        "analysis": analysis,
      }
+
+
+def compute_analysis(num, den, raw_num=None, raw_den=None):
+    """Return pole/zero, bode, Nyquist, Nichols and root-locus data."""
+
+    try:
+        sys = control.TransferFunction(num, den)
+    except Exception:
+        return {
+            "pz": {"poles": [], "zeros": [], "stability": "unknown"},
+            "bode": {},
+            "nyquist": {},
+            "nichols": {},
+            "root_locus": {"branches": [], "k": [], "snapshots": [], "zeros": []},
+        }
+
+    analysis_num = raw_num if raw_num is not None else num
+    analysis_den = raw_den if raw_den is not None else den
+    try:
+        analysis_sys = control.TransferFunction(analysis_num, analysis_den)
+    except Exception:
+        analysis_sys = sys
+
+    def complex_pairs(values):
+        return [
+            {"re": float(np.real(v)), "im": float(np.imag(v))}
+            for v in values
+        ]
+
+    poles = control.poles(analysis_sys)
+    zeros = control.zeros(analysis_sys)
+
+    if np.any(np.real(poles) > 1e-8):
+        stability = "unstable"
+    elif np.any(np.isclose(np.real(poles), 0.0, atol=1e-8)):
+        stability = "marginal"
+    else:
+        stability = "stable"
+
+    # shared logarithmic grid for frequency-domain plots
+    w_min = 1e-3
+    w_max = 1e3
+    try:
+        # attempt to broaden frequency range based on pole/zero magnitudes
+        magnitudes = np.abs(np.concatenate([poles, zeros]))
+        finite = magnitudes[np.isfinite(magnitudes) & (magnitudes > 0)]
+        if finite.size:
+            w_min = max(min(finite) / 100, 1e-4)
+            w_max = max(max(finite) * 100, 1e1)
+    except Exception:
+        pass
+
+    omega = np.logspace(np.log10(w_min), np.log10(w_max), 600)
+
+    mag, phase, _ = control.bode(sys, omega, plot=False)
+    mag = np.squeeze(mag)
+    phase = np.squeeze(phase)
+    mag_db = 20 * np.log10(np.maximum(mag, np.finfo(float).tiny))
+    phase_deg = np.degrees(phase)
+
+    def finite_or_none(value):
+        if value is None:
+            return None
+        if isinstance(value, (list, tuple, np.ndarray)):
+            return [finite_or_none(v) for v in value]
+        if np.isnan(value) or np.isinf(value):
+            return None
+        return float(value)
+
+    try:
+        gm, pm, wg, wp = control.margin(sys)
+    except Exception:
+        gm = pm = wg = wp = None
+
+    gm_db = None
+    if gm is not None and gm > 0 and np.isfinite(gm):
+        gm_db = 20 * np.log10(gm)
+
+    try:
+        bandwidth = control.bandwidth(sys)
+        if np.isnan(bandwidth) or np.isinf(bandwidth):
+            bandwidth = None
+    except Exception:
+        bandwidth = None
+
+    # Nyquist curve using bode response
+    response = mag * np.exp(1j * phase)
+    conj_segment = np.conjugate(response[:-1][::-1])
+    nyquist_curve = np.concatenate([response, conj_segment])
+
+    # Nichols chart data (phase vs mag in dB)
+    nichols_phase = phase_deg
+    nichols_mag = mag_db
+
+    # Root-locus data
+    try:
+        rlist, klist = control.root_locus(analysis_sys, plot=False)
+        rlist = np.squeeze(rlist)
+        if rlist.ndim == 1:
+            rlist = rlist[:, np.newaxis]
+    except Exception:
+        rlist = np.empty((0, 0), dtype=complex)
+        klist = np.array([])
+
+    branches = []
+    for col in range(rlist.shape[1]):
+        branch_vals = []
+        for val in rlist[:, col]:
+            if np.isfinite(val):
+                branch_vals.append((float(np.real(val)), float(np.imag(val))))
+            else:
+                branch_vals.append(None)
+        xs = []
+        ys = []
+        for item in branch_vals:
+            if item is None:
+                xs.append(None)
+                ys.append(None)
+            else:
+                xs.append(item[0])
+                ys.append(item[1])
+        branches.append({"x": xs, "y": ys})
+
+    snapshots = []
+    for row in range(rlist.shape[0]):
+        poles_row = []
+        for val in rlist[row, :] if rlist.size else []:
+            if np.isfinite(val):
+                poles_row.append({"re": float(np.real(val)), "im": float(np.imag(val))})
+            else:
+                poles_row.append(None)
+        snapshots.append(poles_row)
+
+    analysis = {
+        "pz": {
+            "poles": complex_pairs(poles),
+            "zeros": complex_pairs(zeros),
+            "stability": stability,
+        },
+        "bode": {
+            "omega": omega.tolist(),
+            "magnitude_db": mag_db.tolist(),
+            "phase_deg": phase_deg.tolist(),
+            "gain_margin_db": finite_or_none(gm_db),
+            "phase_margin_deg": finite_or_none(pm),
+            "gain_cross_freq": finite_or_none(wg),
+            "phase_cross_freq": finite_or_none(wp),
+            "bandwidth": finite_or_none(bandwidth),
+        },
+        "nyquist": {
+            "real": nyquist_curve.real.tolist(),
+            "imag": nyquist_curve.imag.tolist(),
+        },
+        "nichols": {
+            "phase_deg": nichols_phase.tolist(),
+            "magnitude_db": nichols_mag.tolist(),
+        },
+        "root_locus": {
+            "branches": branches,
+            "k": finite_or_none(klist.tolist()),
+            "snapshots": snapshots,
+            "zeros": complex_pairs(zeros),
+        },
+    }
+
+    return analysis
