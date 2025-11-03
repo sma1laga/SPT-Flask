@@ -1354,6 +1354,18 @@ document.getElementById("btnClear").onclick=clearScene;
 document.getElementById("btnCompile").onclick=compileDiagram;
 
 document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape") {
+    if (connectMode) {
+      connectMode = false;
+      connectFrom = null;
+      connectEdge = null;
+      document.getElementById("btnConnect").classList.remove("active");
+      drawAll();
+      ev.preventDefault();
+    }
+    return;
+  }
+
   if (ev.key !== "Delete" && ev.key !== "Backspace") return;
 
   // dot delete anything while the edit modal is openn

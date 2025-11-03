@@ -7,6 +7,7 @@ POST /block_diagram/compile   → JSON API: graph-in, TF/SS/ODE-out
 from flask import render_template, request, jsonify, current_app
 from . import block_diagram_bp as bp
 from .services import compile_diagram
+from .models import validate_graph
 from .scope import decimate, quick_stats, control_metrics, simulate_tf
 import control
 import numpy as np
@@ -28,6 +29,10 @@ def diagram_page():
 def compile_diagram_api():
     """Take a JSON graph → return TF, state-space and ODE/difference eqn."""
     graph = request.get_json(force=True)
+    try:
+        validate_graph(graph)
+    except Exception as exc:
+        return jsonify({"error": f"invalid diagram: {exc}"}), 400
     # future-proof: allow ?domain=z or ?domain=s in query string
     domain = request.args.get("domain", graph.get("domain", "s"))
     try:
