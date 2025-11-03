@@ -45,9 +45,8 @@ def compile_diagram_api():
 def simulate():
     tf_json = request.get_json()
     num, den = tf_json["num"], tf_json["den"]
-    T = np.linspace(0, 10, 500)
     try:
-        sys, t, y = simulate_tf(num, den, T)
+        sys, t, y = simulate_tf(num, den)
     except Exception as exc:
         return jsonify({"error": f"simulation failed: {exc}"}), 400
     sat = tf_json.get("saturation")
@@ -73,7 +72,7 @@ def simulate():
     scopes_data = {}
     for sid, tf in tf_json.get("scopes", {}).items():
         try:
-            ssys, st, sy = simulate_tf(tf["num"], tf["den"], T)
+            ssys, st, sy = simulate_tf(tf["num"], tf["den"])
         except Exception as exc:
             scopes_data[str(sid)] = {"error": f"simulation failed: {exc}"}
             continue

@@ -113,6 +113,16 @@ const BLOCK_LIBRARY = [
 
 let ghostBlock = null;
 
+let redrawPending = false;
+function scheduleDrawAll(){
+  if (redrawPending) return;
+  redrawPending = true;
+  requestAnimationFrame(() => {
+    redrawPending = false;
+    drawAll();
+  });
+}
+
 function initPalette(){
   const list = document.getElementById('blockList');
   BLOCK_LIBRARY.forEach(b => {
@@ -1672,3 +1682,5 @@ scopeCanvas.onclick = (evt) => {
 initPalette();
 document.querySelectorAll('.kx-btn').forEach(el=>katex.render(el.textContent, el));
 drawAll();
+window.addEventListener('resize', scheduleDrawAll);
+window.addEventListener('scroll', scheduleDrawAll, { passive: true });
