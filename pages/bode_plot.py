@@ -95,12 +95,62 @@ def format_polynomial(coeffs, var="s"):
             poly_str += "+" + term
     return poly_str
 
+def _format_real_latex(value: float) -> str:
+    """Return a LaTeX-friendly string for a real number."""
+    if abs(value) < 1e-12:
+        return "0"
+
+    sign = "-" if value < 0 else ""
+    magnitude = abs(value)
+    exponent = int(np.floor(np.log10(magnitude))) if magnitude != 0 else 0
+
+    if exponent >= 3 or exponent <= -3:
+        scaled = magnitude / (10 ** exponent)
+        # Avoid printing 1.0 × 10^n when the mantissa is effectively one.
+        if abs(scaled - 1) < 1e-9:
+            mantissa_part = ""
+        else:
+            mantissa_part = f"{scaled:.3g}\\times"
+        return f"{sign}{mantissa_part}10^{{{exponent}}}"
+
+    return f"{sign}{magnitude:.6g}"
+
+
 def format_complex(val: complex) -> str:
-    """Format a complex number with a small imaginary threshold."""
-    if abs(val.imag) < 1e-6:
-        return f"{val.real:.3g}"
-    sign = "+" if val.imag >= 0 else "-"
-    return f"{val.real:.3g}{sign}{abs(val.imag):.3g}j"
+    """Format a complex number as an inline LaTeX string."""
+    real_part = val.real
+    imag_part = val.imag
+
+    real_str = None
+    if abs(real_part) >= 1e-6:
+        real_str = _format_real_latex(real_part)
+
+    imag_str = None
+    if abs(imag_part) >= 1e-6:
+        imag_abs = _format_real_latex(abs(imag_part))
+        if imag_abs in {"0", "1"}:
+            imag_abs = ""
+        imag_unit = "\\mathrm{j}"
+        if real_str is None:
+            sign = "-" if imag_part < 0 else ""
+            imag_str = f"{sign}{imag_abs}{imag_unit}" if imag_abs else f"{sign}{imag_unit}"
+        else:
+            sign = "-" if imag_part < 0 else "+"
+            if imag_abs:
+                imag_str = f"{sign} {imag_abs}{imag_unit}"
+            else:
+                imag_str = f"{sign} {imag_unit}"
+
+    if real_str is None and imag_str is None:
+        content = "0"
+    elif real_str is None:
+        content = imag_str
+    elif imag_str is None:
+        content = real_str
+    else:
+        content = f"{real_str} {imag_str}"
+
+    return f"\\({content}\)"
 
 def _make_freq_vector(num, den, override=None):
     """Return frequency vector for Bode plot.

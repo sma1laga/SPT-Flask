@@ -178,6 +178,17 @@
       <br>
       When you use parentheses, your expression is displayed exactly as you typed it, even though the program expands it internally to compute the Bode plot.
     </li>
+    <br>
+    <li>
+      <strong>Notation Tips:</strong>
+      You can combine constants, powers, and complex numbers just like in Python or SymPy.
+      <ul>
+        <li>Powers may be written as <code>s^2</code> or <code>s**2</code>. Scalars such as <code>10^5</code>, <code>1e5</code>, or <code>2.5e-3</code> multiply your factors in the usual way, e.g. <code>10^5*(s+1)</code>.</li>
+        <li>Complex numbers can be entered with <code>j</code> (or <code>1j</code>) inside either brackets or parentheses, for example <code>[1, 1+0.5j, 2]</code> or <code>(s+2+0.5*j)</code>.</li>
+        <li>Round brackets <code>( )</code> are treated as factors, while square brackets <code>[ ]</code> indicate a plain coefficient list. Mix them as needed for numerator and denominator.</li>
+        <li>Use additional parentheses to make the intended order of operations explicit, such as <code>(s+1)*(s+4)/(s^2+5*s+6)</code>.</li>
+      </ul>
+    </li>
   </ul>
   <p>When you click "Plot Bode", your transfer function is shown below and the Bode plot is generated.</p>
 
@@ -248,8 +259,8 @@
               </tr>
               {% for z, p in pz_pairs %}
                 <tr>
-                  <td>{{ z }}</td>
-                  <td>{{ p }}</td>
+                  <td>{{ z|safe }}</td>
+                  <td>{{ p|safe }}</td>
                 </tr>
               {% endfor %}
             </table>
