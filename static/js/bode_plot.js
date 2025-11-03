@@ -51,35 +51,7 @@
     `;
   }
 
-  function renderBodePlot(data) {
-    if (!plotlyAvailable) return;
-    const el = document.getElementById('bodePlot');
-    if (!el) return;
-
-    const freq = Array.isArray(data.omega) ? data.omega : [];
-    const mag = Array.isArray(data.magnitude_db) ? data.magnitude_db : [];
-    const phase = Array.isArray(data.phase_deg) ? data.phase_deg : [];
-
-    const traces = [
-      {
-        x: freq,
-        y: mag,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Magnitude (dB)',
-        xaxis: 'x',
-        yaxis: 'y'
-      },
-      {
-        x: freq,
-        y: phase,
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Phase (°)',
-        xaxis: 'x2',
-        yaxis: 'y2'
-      }
-    ];
+  function buildCrossingLines(data) {
 
     const shapes = [];
     if (isFiniteNumber(data.phase_cross_freq)) {
@@ -106,20 +78,96 @@
         line: { color: '#f97316', dash: 'dash', width: 2 }
       });
     }
+    return shapes;
+  }
+
+  function renderBodeMagnitude(data) {
+    if (!plotlyAvailable) return;
+    const el = document.getElementById('bodeMagnitudePlot');
+    if (!el) return;
+
+    const freq = Array.isArray(data.omega) ? data.omega : [];
+    const mag = Array.isArray(data.magnitude_db) ? data.magnitude_db : [];
 
     const layout = {
-      grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
-      margin: { l: 70, r: 20, t: 24, b: 40 },
+      margin: { l: 70, r: 20, t: 10, b: 40 },
       hovermode: 'x unified',
-      shapes,
-      xaxis: { type: 'log', title: 'Frequency (rad/s)', showgrid: true, gridcolor: '#e5e7eb' },
-      yaxis: { title: 'Magnitude (dB)', showgrid: true, gridcolor: '#e5e7eb' },
-      xaxis2: { type: 'log', title: 'Frequency (rad/s)', showgrid: true, gridcolor: '#e5e7eb' },
-      yaxis2: { title: 'Phase (°)', showgrid: true, gridcolor: '#e5e7eb' },
-      legend: { orientation: 'h', x: 0, y: -0.25 }
+      shapes: buildCrossingLines(data),
+      xaxis: {
+        type: 'log',
+        title: 'Frequency (rad/s)',
+        showgrid: true,
+        gridcolor: '#e5e7eb'
+      },
+      yaxis: {
+        title: 'Magnitude (dB)',
+        showgrid: true,
+        gridcolor: '#e5e7eb'
+      },
+      showlegend: false
     };
 
-    Plotly.react(el, traces, layout, basePlotConfig);
+    Plotly.react(
+      el,
+      [
+        {
+          x: freq,
+          y: mag,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Magnitude (dB)'
+        }
+      ],
+      layout,
+      basePlotConfig
+    );
+  }
+
+  function renderBodePhase(data) {
+    if (!plotlyAvailable) return;
+    const el = document.getElementById('bodePhasePlot');
+    if (!el) return;
+
+    const freq = Array.isArray(data.omega) ? data.omega : [];
+    const phase = Array.isArray(data.phase_deg) ? data.phase_deg : [];
+
+    const layout = {
+      margin: { l: 70, r: 20, t: 10, b: 40 },
+      hovermode: 'x unified',
+      shapes: buildCrossingLines(data),
+      xaxis: {
+        type: 'log',
+        title: 'Frequency (rad/s)',
+        showgrid: true,
+        gridcolor: '#e5e7eb'
+      },
+      yaxis: {
+        title: 'Phase (°)',
+        showgrid: true,
+        gridcolor: '#e5e7eb'
+      },
+      showlegend: false
+    };
+
+    Plotly.react(
+      el,
+      [
+        {
+          x: freq,
+          y: phase,
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Phase (°)'
+        }
+      ],
+      layout,
+      basePlotConfig
+    );
+  }
+
+  function renderBodePlot(data) {
+    renderBodeMagnitude(data);
+    renderBodePhase(data);
   }
 
   function renderPoleZeroPlot(data) {

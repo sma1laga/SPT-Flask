@@ -95,8 +95,8 @@
     }
     .bode-layout {
       margin-top: 1.6rem;
-      display: grid;
-      grid-template-columns: minmax(0, 2.5fr) minmax(0, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 1.5rem;
     }
     .bode-card {
@@ -106,10 +106,28 @@
       box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
       border: 1px solid #e5e7eb;
     }
+    .bode-card--bode {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
     .bode-card h3 {
       margin-top: 0;
       margin-bottom: 0.75rem;
       font-size: 1.1rem;
+      color: #1f2937;
+    }
+    .bode-card--bode > h3 {
+      margin-bottom: 0;
+    }
+    .bode-subplot {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .bode-subplot h4 {
+      margin: 0;
+      font-size: 1rem;
       color: #1f2937;
     }
     .pz-table {
@@ -128,10 +146,8 @@
       background: #eff6ff;
       color: #1d4ed8;
     }
-    @media (max-width: 1024px) {
-      .bode-layout {
-        grid-template-columns: 1fr;
-      }
+    .bode-subplot .plotly-chart {
+      min-height: 280px;
     }
   </style>
 
@@ -210,9 +226,16 @@
       </div>
 
       <div class="bode-layout">
-        <div class="bode-card">
+        <div class="bode-card bode-card--bode">
           <h3>Bode Diagram</h3>
-          <div id="bodePlot" class="plotly-chart"></div>
+          <div class="bode-subplot">
+            <h4>Magnitude (dB)</h4>
+            <div id="bodeMagnitudePlot" class="plotly-chart"></div>
+          </div>
+          <div class="bode-subplot">
+            <h4>Phase (°)</h4>
+            <div id="bodePhasePlot" class="plotly-chart"></div>
+          </div>
         </div>
         <div class="bode-card">
           <h3>Pole–Zero Map</h3>
