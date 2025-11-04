@@ -9,6 +9,7 @@ from .utils import (
     mason_gain,
     coeffs_to_state_space,
     coeffs_to_ode_str,
+    coeffs_to_ode_latex,
     gain_expr,
     s,
     z,
@@ -85,7 +86,7 @@ def compile_diagram(graph_json: dict, *, domain: str = "s") -> dict:
         r"y = "      + latex(C_mat) + r" \,x + " + latex(D_mat) + r" \,u"
     )
 
-    ode_latex = coeffs_to_ode_str(out_num, out_den, domain)  # ideally wrap with proper braces
+    ode_latex = coeffs_to_ode_latex(out_num, out_den, domain)
 
     # Detect a saturation block along a path from source to sink. The
     # scope block is linear (unity gain) so it does not influence the

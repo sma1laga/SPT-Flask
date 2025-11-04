@@ -6,7 +6,7 @@ Utility helpers for the Block-Diagram module
 • coeffs_to_state_space()   – lists → (A,B,C,D)
 • coeffs_to_ode_str()       – pretty differential / difference equation
 """
-from typing import List, Tuple
+from typing import List
 
 import sympy as sp
 import control  
@@ -95,10 +95,8 @@ def coeffs_to_state_space(num: List[float], den: List[float]):
 
 # ────────────────────────────────────────────────────────────────────────
 def coeffs_to_ode_str(num: List[float], den: List[float], domain: str = "s") -> str:
-    """
-    Format a human-readable differential   (domain='s')
-    or difference equation                (domain='z').
-    """
+    """Return a textual differential/difference equation (non-latex)."""
+
     def poly_str(coeffs, var_symbol):
         deg = len(coeffs) - 1
         terms = []
@@ -118,6 +116,88 @@ def coeffs_to_ode_str(num: List[float], den: List[float], domain: str = "s") -> 
     left = poly_str(den, var) + " · y(t)"
     right = poly_str(num, var) + " · u(t)"
     return f"{left} = {right}"
+
+
+def _format_coefficient(coef: float) -> sp.Expr:
+    """Return a simplified SymPy expression for a numeric coefficient."""
+    return sp.nsimplify(coef, rational=True)
+
+
+def _term_sign_and_body(expr: sp.Expr, body: str, first: bool) -> str:
+    """Combine a coefficient expression with its symbolic body."""
+    if expr == 0:
+        return ""
+
+    sign = "-" if expr.is_negative else "+"
+    magnitude = -expr if expr.is_negative else expr
+    mag_str = "" if magnitude == 1 else sp.latex(magnitude)
+
+    term_core = f"{mag_str}{body}" if mag_str else body
+    if first:
+        return term_core if sign == "+" else f"-{term_core}"
+    return f" + {term_core}" if sign == "+" else f" - {term_core}"
+
+
+def _derivative_symbol(var: str, order: int) -> str:
+    """Return a variable marked with over-dot notation for its derivative."""
+
+    if order == 0:
+        return var
+
+    combining_marks = {
+        1: "\u0307",   # combining dot above → ẋ
+        2: "\u0308",   # combining diaeresis → ẍ
+        3: "\u20DB",  # combining three dots above → x⃛
+        4: "\u20DC",  # combining four dots above → x⃜
+    }
+
+    mark = combining_marks.get(order)
+    if mark is not None:
+        return f"{var}{mark}"
+
+    return rf"{var}^{{({order})}}"
+
+
+def _difference_symbol(var: str, shift: int) -> str:
+    index = "n" if shift == 0 else (f"n-{shift}" if shift > 0 else f"n+{-shift}")
+    return rf"{var}[{index}]"
+
+
+def _format_latex_sum(coeffs: List[float], *, domain: str, var: str) -> str:
+    terms: List[str] = []
+    if domain == "s":
+        order = len(coeffs) - 1
+        for idx, coef in enumerate(coeffs):
+            expr = _format_coefficient(coef)
+            if expr == 0:
+                continue
+            deriv_order = order - idx
+            body = _derivative_symbol(var, deriv_order)
+            term = _term_sign_and_body(expr, body, first=not terms)
+            if term:
+                terms.append(term)
+    else:
+        for shift, coef in enumerate(coeffs):
+            expr = _format_coefficient(coef)
+            if expr == 0:
+                continue
+            body = _difference_symbol(var, shift)
+            term = _term_sign_and_body(expr, body, first=not terms)
+            if term:
+                terms.append(term)
+
+    if not terms:
+        return "0"
+    result = "".join(terms)
+    return result.strip()
+
+
+def coeffs_to_ode_latex(num: List[float], den: List[float], domain: str = "s") -> str:
+    """Return a LaTeX equation for the differential/difference form."""
+
+    left = _format_latex_sum(den, domain=domain, var="y")
+    right = _format_latex_sum(num, domain=domain, var="u")
+    return rf"{left} = {right}"
 
 # ────────────────────────────────────────────────────────────────────
 #  Feed-forward chain helper  (Milestone M1)
