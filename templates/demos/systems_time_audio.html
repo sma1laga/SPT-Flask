@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Systems — Time Domain (Audio)</h1>
+<h1>Systems – Time Domain (Audio, L5-9)</h1>
 <p>
-  Exact UI as in the notebook: select the input signal \(x(t)\) and the impulse response \(h(t)\).
-  The page shows \(x(t)\), \(h(t)\), and the output \(y(t) = x(t) * h(t)\), plus audio players for each.
+  This demo shows the impulse response \(h(t)\) of an LTI-system as well as the input signal \(x(t)\) and the output signal \(y(t) = x(t) \ast h(t)\).
+  Select the input signal and impulse response to hear how the listening experience is affected by the system for different audio signals.
 </p>
 
 <style>
@@ -25,7 +25,8 @@
     display: grid;
     grid-template-columns: repeat(6, minmax(120px, 1fr));
     gap: 10px;
-    align-items: end;
+    align-items: start;
+    text-align: center;
   }
   @media (max-width: 1200px) {
     .toolbar { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
@@ -48,10 +49,10 @@
   #plot { width: 100%; height: auto; display: block; }
 </style>
 
-<div class="card">
+<div class="card" style="margin-top:12px">
   <div class="toolbar">
     <div>
-      <label for="x_choice">x(t):</label>
+      <label for="x_choice">\(x(t)\)</label>
       <select id="x_choice">
         {% for opt in x_options %}
           <option value="{{ opt }}" {% if opt == defaults.x_choice %}selected{% endif %}>{{ opt }}</option>
@@ -60,7 +61,7 @@
     </div>
 
     <div>
-      <label for="h_choice">h(t):</label>
+      <label for="h_choice">\(h(t)\)</label>
       <select id="h_choice">
         {% for opt in h_options %}
           <option value="{{ opt }}" {% if opt == defaults.h_choice %}selected{% endif %}>{{ opt }}</option>
@@ -69,7 +70,7 @@
     </div>
 
     <div>
-      <label style="opacity:0;">run</label>
+      <label class="visually-hidden">&nbsp;</label>
       <button id="run">Update</button>
     </div>
   </div>
@@ -80,7 +81,6 @@
 </div>
 
 <div class="card">
-  <h3>Listen</h3>
   <div style="margin-bottom:8px">
     <div><strong>Input signal</strong></div>
     <audio id="audio_x" controls style="width:100%"></audio>

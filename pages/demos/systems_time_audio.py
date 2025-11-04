@@ -1,21 +1,16 @@
 # pages/demos/systems_time_audio.py
 from __future__ import annotations
-import os, io, base64
+import os, base64
 import numpy as np
 from flask import Blueprint, render_template, request, jsonify, current_app
 import matplotlib
 matplotlib.use("Agg")
 matplotlib.style.use("fast")
 import matplotlib.pyplot as plt
+from scipy.io import wavfile
+from scipy.signal import convolve
 from utils.img import fig_to_base64
 
-# SciPy
-try:
-    from scipy.io import wavfile
-    from scipy.signal import convolve
-    SCIPY_OK = True
-except Exception:
-    SCIPY_OK = False
 
 demos_systems_time_audio_bp = Blueprint(
     "demos_systems_time_audio", __name__, template_folder="../../templates"
@@ -23,8 +18,9 @@ demos_systems_time_audio_bp = Blueprint(
 
 RC_PARAMS = {
     "axes.titlesize": 18,
-    "axes.labelsize": 15,
-    "font.size": 14,
+    "axes.labelsize": 18,
+    "font.size": 15,
+    "mathtext.fontset": "cm",
 }
 
 # --- Exact notebook options ----------------------------------------------------
@@ -75,8 +71,6 @@ def _read_wav_like_notebook(path):
       diff = max(mono) - min(mono)
       return (sr, mono / (diff/2))
     """
-    if not SCIPY_OK:
-        raise RuntimeError("SciPy is required (scipy.io.wavfile, scipy.signal.convolve).")
     sr, x = wavfile.read(path)
     # Convert to mono float64
     if x.ndim == 2:
@@ -148,9 +142,6 @@ def page():
 
 @demos_systems_time_audio_bp.route("/compute", methods=["POST"])
 def compute():
-    if not SCIPY_OK:
-        return jsonify({"error": "SciPy required (scipy.io.wavfile, scipy.signal.convolve)."}), 500
-
     data = request.get_json(force=True) or {}
     x_choice = data.get("x_choice", "Elise")
     h_choice = data.get("h_choice", "Office")
