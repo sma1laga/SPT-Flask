@@ -4,7 +4,7 @@
   <h1 style="font-size:2.5em;">Fourier Transform Visualizer</h1>
   <p style="font-size:1.1em;color:var(--subtext-color); max-width:600px; margin:0 auto;">
     Enter a time function, shift the phase, and visualize the result interactively.
-    $$ X(j\omega)=\mathcal{F}\{x(t)\}=\int_{-\infty}^{\infty} x(t)\,e^{-j\omega t}\,dt $$
+    $$ X(\mathrm{j}\omega)=\mathcal{F}\{x(t)\}=\int_{-\infty}^{\infty} x(t)\,e^{-\mathrm{j}\omega t}\,dt $$
   </p>
   <a href="{{ url_for('static', filename='docs/continuous_fourier.pdf') }}" target="_blank" class="subtle-btn">Fourier Correspondence Table</a>
 </div>
@@ -26,7 +26,7 @@
       <button type="button" onclick="insertOperand('inv_t(t)')">\(\frac{1}{t}\)</button>
       <button type="button" onclick="insertOperand('si(t)')">\(\mathrm{si}\)</button>
       <button type="button" onclick="insertOperand('si(t)**2')">\(\mathrm{si}^2\)</button>
-      <button type="button" onclick="insertOperand('exp_iwt(t)')">\(\mathrm{e}^{i\omega t}\)</button>
+      <button type="button" onclick="insertOperand('exp_iwt(t)')">\(\mathrm{e}^{\mathrm{j}\omega t}\)</button>
       <button type="button" onclick="insertOperand('exp(t)')">\(\mathrm{e}^t\)</button>
       </div>
   <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">

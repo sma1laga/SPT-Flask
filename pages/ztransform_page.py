@@ -103,11 +103,11 @@ def ztransform():
 
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,4), layout="constrained")
             ax1.plot(ω, mag)
-            ax1.set_title(r'|X(e^{j\omega})| (normalized)')
+            ax1.set_title(r'|X(e^{\mathrm{j}\omega})| (normalized)')
             ax1.set_xlabel(r'$\omega$ (rad/sample)'); ax1.grid(True)
 
             ax2.plot(ω, phase)
-            ax2.set_title(r'∠X(e^{j\omega})')
+            ax2.set_title(r'∠X(e^{\mathrm{j}\omega})')
             ax2.set_xlabel(r'$\omega$ (rad/sample)'); ax2.grid(True)
 
             buf = io.BytesIO()

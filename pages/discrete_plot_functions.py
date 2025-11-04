@@ -116,12 +116,11 @@ def discrete_plot_functions_update():
     k_end = center + MAX_N
     k = np.arange(int(round(k_start)), int(round(k_end)) + 1)
 
-    ctx = dict(
-        n=_adjust_k1(k), k=_adjust_k1(k), np=np,
-        pi=np.pi, e=np.e,
-        rect=rect_N, tri=tri_N, step=step, delta=delta_n,
-        sin=sin, cos=cos, sign=sign, si=si,
-    )
+    ctx = ctx_broad.copy()
+    ctx.update({
+        "n": _adjust_k1(k),
+        "k": _adjust_k1(k),
+    })
 
     try:
         y1 = a1 * eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(k)

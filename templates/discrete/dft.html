@@ -12,7 +12,7 @@
 </p>
 <p style="max-width:720px;margin:8px auto 0;color:var(--subtext-color);font-size:1em;">
   The DFT of length \(M\) is defined as
-  $$ \mathrm{DFT}_M\{x[k]\} = X[\mu] = \sum_{k=0}^{M-1} x[k] \omega_M^{\mu k},\quad \omega_M=\mathrm e^{-\mathrm j\frac{2\pi}{M}},\quad \mu=0,\dots,M-1,$$
+  $$ \mathrm{DFT}_M\{x[k]\} = X[\mu] = \sum_{k=0}^{M-1} x[k] \omega_M^{\mu k},\quad \omega_M=\mathrm e^{-\mathrm{j}\frac{2\pi}{M}},\quad \mu=0,\dots,M-1,$$
   with twiddle factor \(\omega_M\) and discrete frequency \(\mu\).
   <!-- The DFT can be computed efficiently using the
   <a href="{{ url_for('fft.fft') }}">Fast Fourier Transform (FFT)</a>. -->
@@ -41,22 +41,21 @@
   </div>
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
-  <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
-    {% for lbl, ltx in [
-      ('rect_L/2[k]', '\mathrm{rect}_{L/2}'),
-      ('tri_L/2[k-L/2]', '\mathrm{tri}_{L/2}'),
-      ('delta[k]', '\mathrm{delta}'),
-      ('sign[k-L/2]', '\mathrm{sign}'),
-      ('sin[2*pi*k/L]', '\sin'),
-      ('cos[2*pi*k/L]', '\cos'),
-      ('si[(k-L/2)/2]', '\mathrm{si}'),
-      ('exp[j*2*pi/L*k]*step[k]', '\mathrm{exp}'),
-      ('0.5**k * step[k]', '0.5^k'),
-      ] %}
-      <button type="button" onclick="insertOperand('{{ lbl }}')">
-        \( {{ ltx }} \)
-      </button>
-    {% endfor %}
+  <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
+    <button type="button" onclick="insertOperand('rect_L/2[k]')">\(\mathrm{rect}_{L/2}\)</button>
+    <button type="button" onclick="insertOperand('tri_L/2[k-L/2]')">\(\mathrm{tri}_{L/2}\)</button>
+    <button type="button" onclick="insertOperand('delta[k]')">\(\mathrm{delta}\)</button>
+    <button type="button" onclick="insertOperand('sign[k-L/2]')">\(\mathrm{sign}\)</button>
+    <button type="button" onclick="insertOperand('sin[2*pi*k/L]')">\(\sin\)</button>
+    <button type="button" onclick="insertOperand('cos[2*pi*k/L]')">\(\cos\)</button>
+    <button type="button" onclick="insertOperand('exp[j*2*pi/L*k]*step[k]')">\(\mathrm{e}^{\mathrm{j}\frac{2\pi}{L}k}\)</button>
+    <button type="button" onclick="insertOperand('0.5**k * step[k]')">\(\left(\frac{1}{2}\right)^k\)</button>
+    <button type="button" onclick="insertOperand('(-0.5)**k * step[k]')">\(\left(-\frac{1}{2}\right)^k\)</button>
+    <button type="button" onclick="insertOperand('si[pi/2*(k-L/2)]')">\(\mathrm{si}\)</button>
+    <button type="button" onclick="insertOperand('si[pi/2*(k-L/2)]**2')">\(\mathrm{si}^2\)</button>
+  </div>
+  <div class="quick-buttons"
+       style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
     <button type="button" onclick="insertOperand('+')">\(+\)</button>
     <button type="button" onclick="insertOperand('-')">\(-\)</button>
     <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>

@@ -2,12 +2,12 @@
 {% block content %}
 <h1>Chapter 11: Noise Analysis</h1>
 <p>
-  This demo shows the Autocorrelation Function&nbsp;(ACF) \(\varphi_{xx}[\kappa]\) and the Power Spectral Density&nbsp;(PSD) \(\Phi_{xx}(\mathrm e^{\mathrm j\Omega})\) of a random process \(x[k]\).  
+  This demo shows the Autocorrelation Function&nbsp;(ACF) \(\varphi_{xx}[\kappa]\) and the Power Spectral Density&nbsp;(PSD) \(\Phi_{xx}(\mathrm e^{\mathrm{j}\Omega})\) of a random process \(x[k]\).  
   For a single realization \(x_i[k]\) of \(x[k]\), the ACF and PSD can be calculated as:
 
   $$\varphi_{xx}[\kappa] = \sum_{k=-\infty}^\infty x_i[k+\kappa]x_i^\ast[k]$$
   and
-  $$\Phi_{xx}(\mathrm e^{\mathrm j\Omega}) = \mathcal F_\ast\{\varphi_{xx}[\kappa]\} = \sum_{\kappa=-\infty}^\infty \varphi_{xx}[\kappa]\mathrm e^{-\mathrm jk\Omega},$$
+  $$\Phi_{xx}(\mathrm e^{\mathrm{j}\Omega}) = \mathcal F_\ast\{\varphi_{xx}[\kappa]\} = \sum_{\kappa=-\infty}^\infty \varphi_{xx}[\kappa]\mathrm e^{-\mathrm{j}k\Omega},$$
 
   with the normalized frequency \(\Omega=\omega T\) with sampling interval \(T=\frac{1}{f_\mathrm s}\).
 </p>

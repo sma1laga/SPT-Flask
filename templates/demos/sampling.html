@@ -9,11 +9,11 @@
   \]
   with spectrum
   \[
-    X(j\omega) = \Lambda\!\left(\frac{\omega}{\omega_g}\right)
+    X(\mathrm{j}\omega) = \Lambda\!\left(\frac{\omega}{\omega_g}\right)
     = \frac{1}{\omega_g}\,\mathrm{rect}\!\left(\frac{\omega}{\omega_g}\right) * \mathrm{rect}\!\left(\frac{\omega}{\omega_g}\right).
   \]
   The input is sampled to obtain \(x_a(t)\) (slides&nbsp;11-13 to&nbsp;11-14) and reconstructed ideally to obtain \(y(t)\) (slides&nbsp;11-16 to&nbsp;11-18\)).
-  You can view \(x_a(t)\) and \(y(t)\) and their spectra \(X_a(j\omega)\) and \(Y(j\omega)\) in time and frequency domains, and optionally display the individual \(\mathrm{si}\)-functions that sum to \(y(t)\).
+  You can view \(x_a(t)\) and \(y(t)\) and their spectra \(X_a(\mathrm{j}\omega)\) and \(Y(\mathrm{j}\omega)\) in time and frequency domains, and optionally display the individual \(\mathrm{si}\)-functions that sum to \(y(t)\).
   Adjust the sampling frequency \(\omega_a\) and the cutoff \(\omega_g\).
 </p>
 
@@ -60,9 +60,9 @@
              value="{{ defaults.w_a_over_pi }}">
     </div>
     <div class="checks">
-      <label><input id="show_X"  type="checkbox" {% if defaults.show_X %}checked{% endif %}> show \(X(j\omega)\)</label>
-      <label><input id="show_Xa" type="checkbox" {% if defaults.show_Xa %}checked{% endif %}> show \(X_a(j\omega)\)</label>
-      <label><input id="show_Y"  type="checkbox" {% if defaults.show_Y %}checked{% endif %}> show \(Y(j\omega)\)</label>
+      <label><input id="show_X"  type="checkbox" {% if defaults.show_X %}checked{% endif %}> show \(X(\mathrm{j}\omega)\)</label>
+      <label><input id="show_Xa" type="checkbox" {% if defaults.show_Xa %}checked{% endif %}> show \(X_a(\mathrm{j}\omega)\)</label>
+      <label><input id="show_Y"  type="checkbox" {% if defaults.show_Y %}checked{% endif %}> show \(Y(\mathrm{j}\omega)\)</label>
     </div>
   </div>
 </div>

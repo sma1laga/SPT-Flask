@@ -177,7 +177,7 @@ def _format_time_axis(ax: matplotlib.axes.Axes, t: np.ndarray):
 def _format_mag_axis(ax: matplotlib.axes.Axes, omega: np.ndarray):
     ax.set_xlim(omega[0], omega[-1])
     ax.grid(True, alpha=0.35)
-    ax.set_title(r"$|Y(j\omega)|$", fontsize=11)
+    ax.set_title(r"$|Y(\mathrm{j}\omega)|$", fontsize=11)
     # show ticks as w/pi
     xt = np.array([-2*math.pi, -math.pi, 0, math.pi, 2*math.pi])
     ax.set_xticks(xt)
@@ -187,7 +187,7 @@ def _format_mag_axis(ax: matplotlib.axes.Axes, omega: np.ndarray):
 def _format_phase_axis(ax: matplotlib.axes.Axes, omega: np.ndarray):
     ax.set_xlim(omega[0], omega[-1])
     ax.grid(True, alpha=0.35)
-    ax.set_title(r"$\varphi(j\omega)$", fontsize=11)
+    ax.set_title(r"$\varphi(\mathrm{j}\omega)$", fontsize=11)
     ax.set_ylim(-math.pi*1.1, math.pi*1.1)
     # reference dashed lines at +-pi and 0
     ax.axhline(math.pi, color="k", ls="--", lw=0.7, alpha=0.4)
@@ -423,7 +423,7 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
         X = scale * width * sig.freq_fn(omega * width) * np.exp(-1j * omega * shift)
 
         latex_time = fr"{scale:.2f}\,{sig.latex_time}\Big((t-{shift:.2f})/{width:.2f}\Big)"
-        latex_freq = fr"{scale*width:.2f}\,{sig.latex_freq}\big(\omega\,{width:.2f}\big)e^{{-j\omega {shift:.2f}}}"
+        latex_freq = fr"{scale*width:.2f}\,{sig.latex_freq}\big(\omega\,{width:.2f}\big)e^{{-\mathrm{j}\omega {shift:.2f}}}"
 
         # Build options (correct + 3 distractors)
         true_spec = X
@@ -463,8 +463,8 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
             _format_mag_axis(ax_mag_g, omega)
             _format_phase_axis(ax_ph_g, omega)
             ax_t_g.axis("off")
-            ax_mag_g.set_title(r"given $|Y(j\omega)|$", fontsize=11)
-            ax_ph_g.set_title(r"given $\varphi(j\omega)$", fontsize=11)
+            ax_mag_g.set_title(r"given $|Y(\mathrm{j}\omega)|$", fontsize=11)
+            ax_ph_g.set_title(r"given $\varphi(\mathrm{j}\omega)$", fontsize=11)
 
         # rows 1..4: answer options in GREEN
         hit_box_axes: List[Tuple[matplotlib.axes.Axes, ...]] = []

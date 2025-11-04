@@ -39,21 +39,24 @@
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
   <div class="quick-buttons"
-       style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:22px;">
-    {% for lbl, ltx in [
-      ('rect_4[k]', '\mathrm{rect}_4'),
-      ('tri_3[k]', '\mathrm{tri}_3'),
-      ('step[k]', '\mathrm{step}'),
-      ('delta[k]', '\delta'),
-      ('sin[pi/4*k]', '\sin'),
-      ('cos[pi/4*k]', '\cos'),
-      ('sign[k]', '\mathrm{sign}'),
-      ('si[k/2]', '\mathrm{si}'),
-    ] %}
-      <button type="button" onclick="insertOperand('{{ lbl }}')">
-        \({{ ltx }}\)
-      </button>
-    {% endfor %}
+       style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
+    <button type="button" onclick="insertOperand('rect_4[k]')">\(\mathrm{rect}_4\)</button>
+    <button type="button" onclick="insertOperand('tri_3[k]')">\(\mathrm{tri}_3\)</button>
+    <button type="button" onclick="insertOperand('sin[pi/4*k]')">\(\sin\)</button>
+    <button type="button" onclick="insertOperand('cos[pi/4*k]')">\(\cos\)</button>
+    <button type="button" onclick="insertOperand('delta[k]')">\(\delta\)</button>
+    <button type="button" onclick="insertOperand('step[k]')">\(\mathrm{step}\)</button>
+    <button type="button" onclick="insertOperand('sign[k]')">\(\mathrm{sign}\)</button>
+    <button type="button" onclick="insertOperand('exp[k]*step[-k]')">\(\mathrm{e}^k\)</button>
+    <button type="button" onclick="insertOperand('exp[-k]*step[k]')">\(\mathrm{e}^{-k}\)</button>
+    <button type="button" onclick="insertOperand('0.5**k*step[k]')">\(\left(\frac{1}{2}\right)^{k}\)</button>
+    <button type="button" onclick="insertOperand('(-0.5)**k*step[k]')"> \(\left(-\frac{1}{2}\right)^{k}\)</button>
+    <button type="button" onclick="insertOperand('inv_k[k]')">\(\frac{1}{k}\)</button>
+    <button type="button" onclick="insertOperand('si[pi/2*k]')">\(\mathrm{si}\)</button>
+    <button type="button" onclick="insertOperand('si[pi/2*k]**2')">\(\mathrm{si}^2\)</button>
+  </div>
+  <div class="quick-buttons"
+       style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px;">
     <button type="button" onclick="insertOperand('+')">\(+\)</button>
     <button type="button" onclick="insertOperand('-')">\(-\)</button>
     <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>

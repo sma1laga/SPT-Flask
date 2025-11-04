@@ -49,29 +49,29 @@
   <p id="inlineError" style="color:#d00;text-align:center;font-weight:bold;margin-top:-12px;margin-bottom:12px;"></p>
 
   <!-- QUICK BUTTONS ---------------------------------------------- -->
-  <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:24px;">
-    {% for lbl, ltx in [
-      ('rect(t)', '\mathrm{rect}'),
-      ('tri(t)', '\mathrm{tri}'),
-      ('sin(t)', '\sin'),
-      ('cos(t)', '\cos'),
-      ('step(t)', '\mathrm{step}'),
-      ('delta(t)', '\delta'),
-      ('sign(t)', '\mathrm{sign}'),
-      ('exp_iwt(t)', '\mathrm e^{i\omega t}'),
-      ('exp(t)', '\mathrm e^t'),
-      ('si(t)', '\mathrm{si}'),
-      ] %}
-      <button type="button" onclick="insertOperand('{{ lbl }}')">\({{ ltx }}\)</button>
-    {% endfor %}
+  <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
+    <button type="button" onclick="insertOperand('rect(t)')">\(\mathrm{rect}\)</button>
+    <button type="button" onclick="insertOperand('tri(t)')">\(\mathrm{tri}\)</button>
+    <button type="button" onclick="insertOperand('sin(t)')">\(\sin\)</button>
+    <button type="button" onclick="insertOperand('cos(t)')">\(\cos\)</button>
+    <button type="button" onclick="insertOperand('step(t)')">\(\mathrm{step}\)</button>
+    <button type="button" onclick="insertOperand('delta(t)')">\(\delta\)</button>
+    <button type="button" onclick="insertOperand('sign(t)')">\(\mathrm{sign}\)</button>
+    <button type="button" onclick="insertOperand('exp_iwt(t)')">\(\mathrm{e}^{\mathrm{j}\omega t}\)</button>
+    <button type="button" onclick="insertOperand('exp(t)')">\(\mathrm{e}^{t}\)</button>
+    <button type="button" onclick="insertOperand('si(pi*t)')">\(\mathrm{si}\)</button>
+    <button type="button" onclick="insertOperand('si(pi*t)**2')">\(\mathrm{si}^2\)</button>
     <button type="button" onclick="insertOperand('inv_t(t)')">\(\frac 1 t\)</button> <!-- \frac not rendering in loop -->
+  </div>
+  <!-- Operator-Buttons in der nächsten Zeile -->
+  <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:20px;">
     <button type="button" onclick="insertOperand('+')">\(+\)</button>
     <button type="button" onclick="insertOperand('-')">\(-\)</button>
     <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
     <button type="button" onclick="insertOperand('/')">\(/\)</button>
   </div>
 
-    <!-- SPECIAL FUNCTIONS DROPDOWN -->
+  <!-- SPECIAL FUNCTIONS DROPDOWN -->
   <div style="text-align:center;margin-bottom:24px;">
     <select id="specialDropdown" style="padding:6px 10px;font-size:0.9em;">
       <option value="">Special functions…</option>

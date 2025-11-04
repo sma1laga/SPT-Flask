@@ -20,19 +20,18 @@
   </div>
 
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
-    {% for val, ltx in [
-      ('rect_4[k]', '\mathrm{rect}_4'),
-      ('tri_3[k]',  '\mathrm{tri}_3'),
-      ('delta[k]',  '\delta'),
-      ('sin[pi/4*k]*rect_33[k+16]',  '\sin'),
-      ('cos[pi/4*k]*rect_33[k+16]',  '\cos'),
-      ('sign[k]*rect_11[k+5]',   '\mathrm{sign}'),
-      ('exp[-k]*step[k]',    '\exp'),
-      ('0.5**k*step[k]',    '0.5^{k}'),
-      ('(-0.5)**k*step[k]',    '(-0.5)^{k}'),
-    ] %}
-      <button type="button" onclick="insertOperand('{{ val }}')">\({{ ltx }}\)</button>
-    {% endfor %}
+    <button type="button" onclick="insertOperand('rect_4[k]')">\(\mathrm{rect}_4\)</button>
+    <button type="button" onclick="insertOperand('tri_3[k]')">\(\mathrm{tri}_3\)</button>
+    <button type="button" onclick="insertOperand('sin[pi/4*k]*rect_33[k+16]')">\(\sin\)</button>
+    <button type="button" onclick="insertOperand('cos[pi/4*k]*rect_33[k+16]')">\(\cos\)</button>
+    <button type="button" onclick="insertOperand('delta[k]')">\(\delta\)</button>
+    <button type="button" onclick="insertOperand('sign[k]*rect_11[k+5]')">\(\mathrm{sign}\)</button>
+    <button type="button" onclick="insertOperand('exp[k]*step[-k]')">\(\mathrm{e}^{k}\)</button>
+    <button type="button" onclick="insertOperand('exp[-k]*step[k]')">\(\mathrm{e}^{-k}\)</button>
+    <button type="button" onclick="insertOperand('0.5**k*step[k]')">\(\left(\frac{1}{2}\right)^{k}\)</button>
+    <button type="button" onclick="insertOperand('(-0.5)**k*step[k]')">\(\left(-\frac{1}{2}\right)^{k}\)</button>
+    <button type="button" onclick="insertOperand('si[pi/2*k]')">\(\mathrm{si}\)</button>
+    <button type="button" onclick="insertOperand('si[pi/2*k]**2')">\(\mathrm{si}^2\)</button>
   </div>
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:20px;">
     <button type="button" onclick="insertOperand('+')">\(+\)</button>

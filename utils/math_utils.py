@@ -53,11 +53,11 @@ def inv_t(t):
     return np.where(t != 0, 1 / t, 0.0)
 
 def si(t):
-    return np.sinc(t)
-
-def dsi(t):
     """Un-normalized sinc: sin(t)/t, with si(0)=1."""
     return np.where(t == 0, 1.0, np.sin(t) / t)
+
+def sinc(t):
+    return np.sinc(t)
 
 def delta_n(n):
     """Kronecker delta: 1 when n==0 else 0."""

@@ -188,7 +188,7 @@ def _render_cached(
     # Frequency domain
     axF.set_title("Frequency Domain")
     axF.set_xlabel(r"$\omega$")
-    axF.set_ylabel(r"$X(j\omega),\,X_a(j\omega),\,Y(j\omega)$")
+    axF.set_ylabel(r"$X(\mathrm{j}\omega),\,X_a(\mathrm{j}\omega),\,Y(\mathrm{j}\omega)$")
     axF.set_xlim(W_MIN, W_MAX)
     ymax = 1.0
     for arr in (Xw, Xaw, Yw):
@@ -203,11 +203,11 @@ def _render_cached(
     axF.grid(True)
 
     if show_X:
-        axF.plot(w_grid, Xw, color="black", lw=1.5, label=r"$X(j\omega)$")
+        axF.plot(w_grid, Xw, color="black", lw=1.5, label=r"$X(\mathrm{j}\omega)$")
     if show_Xa:
-        axF.plot(w_grid, Xaw, color="C0", lw=1.2, label=r"$X_a(j\omega)$")
+        axF.plot(w_grid, Xaw, color="C0", lw=1.2, label=r"$X_a(\mathrm{j}\omega)$")
     if show_Y:
-        axF.plot(w_grid, Yw, color="C3", lw=1.6, ls="--", label=r"$Y(j\omega)$")
+        axF.plot(w_grid, Yw, color="C3", lw=1.6, ls="--", label=r"$Y(\mathrm{j}\omega)$")
     if any([show_X, show_Xa, show_Y]):
         axF.legend(loc="upper right")
 

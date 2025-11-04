@@ -15,13 +15,15 @@ def dynamic_convolution():
         ("rect(t)", "rect(t)"),
         ("tri(t)", "tri(t)"),
         ("step(t)", "step(t)"),
-        ("step(t)\u22c5sin(\u03c0t)", "step(t)*sin(t)"),
-        ("step(t)\u22c5cos(\u03c0t)", "step(t)*cos(t)"),
+        ("sin(\u03c0t)\u22c5step(t)", "sin(t)*step(t)"),
+        ("cos(\u03c0t)\u22c5step(t)", "cos(t)*step(t)"),
         ("delta(t)", "delta(t)"),
-        ("step(t)\u22c5delta_train(t)", "step(t+0.1)*delta_train(t)"), # shift +0.1 to avoid half delta at t=0
-        ("step(t)\u22c5exp(t)", "step(t)*exp(t)"),
+        ("delta_train(t)\u22c5step(t)", "delta_train(t)*step(t+0.1)"), # shift +0.1 to avoid half delta at t=0
+        ("exp(t)\u22c5step(-t)", "exp(t)*step(-t)"),
+        ("exp(-t)\u22c5step(t)", "exp(-t)*step(t)"),
         ("inv_t(t)", "inv_t(t)"),
-        ("si(\u03c0t)", "si(t)")
+        ("si(\u03c0t)", "si(pi*t)"),
+        ("si^2(\u03c0t)", "si(pi*t)**2"),
     ]
     return render_template("dynamic_convolution.html", functions=functions)
 
@@ -45,7 +47,7 @@ def dynamic_data():
     
     # safe eval context on the wider grid
     local = {
-        "t": t_calc, "np": np,
+        "t": t_calc, "np": np, "pi": np.pi, "e": np.e,
         "rect": rect, "tri": tri, "step": step,
         "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi),
         "delta": delta, "delta_train": delta_train, "exp_iwt": exp_iwt,

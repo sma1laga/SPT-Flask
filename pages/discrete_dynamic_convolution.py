@@ -16,19 +16,22 @@ discrete_dynamic_convolution_bp = Blueprint(
 @discrete_dynamic_convolution_bp.route("/", methods=["GET"])
 def index():
     # Provide available discrete functions
-    functions = [
+    functions = [# put function with step before step
         ("rect_4[k]", "rect_4(k)"),
         ("tri_3[k]", "tri_3(k)"),
-        ("step[k]", "step(k)"),
-        ("step[k]\u22c5sin[\u03c0/4\u22c5k]", "step(k)*sin(np.pi/4*k)"),
-        ("step[k]\u22c5cos[\u03c0/4\u22c5k]", "step(k)*cos(np.pi/4*k)"),
-        ("sign[k]", "sign(k)"),
+        ("sin[\u03c0/4\u22c5k]\u22c5step[k]", "sin(np.pi/4*k)*step(k)"),
+        ("cos[\u03c0/4\u22c5k]\u22c5step[k]", "cos(np.pi/4*k)*step(k)"),
         ("delta[k]", "delta(k)"),
-        ("step[k]\u22c5delta_train_6[k]", "step(k)*delta_train(k)"),
+        ("delta_train_6[k]\u22c5step[k]", "delta_train(k)*step(k)"),
+        ("step[k]", "step(k)"),
+        ("sign[k]", "sign(k)"),
+        ("exp[k]\u22c5step[-k]", "exp(k)*step(-k)"),
+        ("exp[-k]\u22c5step[k]", "exp(-k)*step(k)"),
+        ("0.5^k\u22c5step[k]", "0.5**k*step(k)"),
+        ("(-0.5)^k\u22c5step[k]", "(-0.5)**k*step(k)"),
         ("inv_k[k]", "inv_k(k)"),
-        ("si[\u03c0/2\u22c5k]", "si(k/2)"),
-        ("step[k]\u22c50.5^k", "step(k)*0.5**k"),
-        ("step[k]\u22c5(-0.5)^k", "step(k)*(-0.5)**k")
+        ("si[\u03c0/2\u22c5k]", "si(np.pi*k/2)"),
+        ("si²[\u03c0/2\u22c5k]", "si(np.pi*k/2)**2"),
     ]
     return render_template(
         "discrete_dynamic_convolution.html",

@@ -273,7 +273,7 @@ def _make_nyquist_data(num, den, poles, gm_db, pm):
                 "Distance to critical point",
                 _format_latex_real(d_min),
                 (
-                    r"The Nyquist locus comes closest to the critical point at {freq} with \(|L(j\omega)+1| = {distance}\)."
+                    r"The Nyquist locus comes closest to the critical point at {freq} with \(|L(\mathrm{j}\omega)+1| = {distance}\)."
                 ).format(freq=_format_latex_real(w_at_min, 'rad/s'), distance=_format_latex_real(d_min)),
                 level="info" if d_min > 0.2 else "warning",
             )
@@ -303,7 +303,7 @@ def _make_nyquist_data(num, den, poles, gm_db, pm):
             for rc, rr in crossings
         )
         detail = (
-            r"Real-axis crossings (\(\Im\{{L(j\omega)\}}=0\)) occur at: {points}. Real parts to the left of \(-1\) typically imply additional phase margin."
+            r"Real-axis crossings (\(\Im\{{L(\mathrm{j}\omega)\}}=0\)) occur at: {points}. Real parts to the left of \(-1\) typically imply additional phase margin."
         ).format(points=crossing_text)
     else:
         detail = r"The Nyquist locus does not cross the real axis for positive frequencies, indicating the phase never reaches \(\pm180^\circ\)."
