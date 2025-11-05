@@ -147,8 +147,6 @@ def _derivative_symbol(var: str, order: int) -> str:
     combining_marks = {
         1: "\u0307",   # combining dot above → ẋ
         2: "\u0308",   # combining diaeresis → ẍ
-        3: "\u20DB",  # combining three dots above → x⃛
-        4: "\u20DC",  # combining four dots above → x⃜
     }
 
     mark = combining_marks.get(order)
