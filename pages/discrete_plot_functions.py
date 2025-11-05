@@ -33,7 +33,7 @@ def _rewrite_expr(expr: str) -> str:
 
 def _adjust_k(k: np.ndarray, shift: float, width: float) -> np.ndarray:
     """Adjust k values based on shift and width (1/width * k - shift)."""
-    return k / width - shift
+    return (k - shift) / width
 
 # -------------------------------------------------------------------- #
 # page
@@ -55,8 +55,12 @@ def discrete_plot_functions_update():
     func2_str = _rewrite_expr(data.get("func2", ""))
 
     # sliders (per-function)
-    s1  = float(data.get("shift1", 0)); a1 = float(data.get("amp1",   1)); w1 = float(data.get("width1", 1))
-    s2  = float(data.get("shift2", 0)); a2 = float(data.get("amp2",   1)); w2 = float(data.get("width2", 1))
+    s1  = float(data.get("shift1", 0))
+    a1 = float(data.get("amp1",   1))
+    w1 = float(data.get("width1", 1))
+    s2  = float(data.get("shift2", 0))
+    a2 = float(data.get("amp2",   1))
+    w2 = float(data.get("width2", 1))
 
     _adjust_k1 = partial(_adjust_k, shift=s1, width=w1)
     _adjust_k2 = partial(_adjust_k, shift=s2, width=w2)

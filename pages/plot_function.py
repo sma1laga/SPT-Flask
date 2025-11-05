@@ -31,9 +31,9 @@ def gauss(t):
     """Standard normal PDF."""
     return np.exp(-t**2 / 2) / np.sqrt(2 * np.pi)
 
-def _adjust_k(k: np.ndarray, shift: float, width: float) -> np.ndarray:
-    """Adjust k values based on shift and width (1/width * k - shift)."""
-    return k / width - shift
+def _adjust_t(t: np.ndarray, shift: float, width: float) -> np.ndarray:
+    """Adjust time values based on shift and width (1/width * (t - shift))."""
+    return (t - shift) / width
 
 plot_function_bp = Blueprint("plot_function", __name__,
                              template_folder="templates")
@@ -48,9 +48,9 @@ def plot_function():
 def plot_function_update():
     data = request.get_json(force=True) or {}
 
-    func1_str, func2_str = data.get("func1", ""), data.get("func2", "")
+    func1_str, func2_str = data.get("func1", "").strip(), data.get("func2", "").strip()
 
-    if func1_str.strip() == "tarik+lea" or func2_str.strip() == "tarik+lea" or func1_str.strip() == "lea+tarik":
+    if  func1_str == "heartcoded" or func2_str == "heartcoded" or func1_str == "tarik+lea" or func2_str == "tarik+lea" or func1_str == "lea+tarik":
         func1_str = "np.sqrt(1 - (np.abs(t) - 1)**2)"
         func2_str = "np.arccos(1 - np.abs(t)) - np.pi"
 
@@ -64,14 +64,14 @@ def plot_function_update():
     a2  = float(data.get("amp2",   1))
     w2  = float(data.get("width2", 1))
 
-    _adjust_k1 = partial(_adjust_k, shift=s1, width=w1)
-    _adjust_k2 = partial(_adjust_k, shift=s2, width=w2)
+    _adjust_t1 = partial(_adjust_t, shift=s1, width=w1)
+    _adjust_t2 = partial(_adjust_t, shift=s2, width=w2)
 
     MAX_T = 20.  # plot xlim will be [(center - MAX_T), (center + MAX_T)]
     # initial broad grid to estimate a suitable centre
     t_broad = np.linspace(-100, 100, 8000)
 
-    ns_broad = dict(t=_adjust_k1(t_broad), np=np, pi=np.pi, e=np.e,
+    ns_broad = dict(t=_adjust_t1(t_broad), np=np, pi=np.pi, e=np.e,
                     rect=rect, tri=tri, step=step,
                     cos=cos, sin=sin,
                     sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
@@ -82,16 +82,16 @@ def plot_function_update():
 
     # evaluate on broad grid
     try:
-        y1_broad = a1 * eval(func1_str, ns_broad) if func1_str.strip() else np.zeros_like(t_broad)
+        y1_broad = a1 * eval(func1_str, ns_broad) if func1_str else np.zeros_like(t_broad)
     except Exception as e:
         return jsonify(error_data("Error in f₁(t): ", e)), 400
     if np.any(np.isinf(y1_broad)):
         return jsonify({"error": "f₁(t) produced non-finite values"}), 400
     
     y2_broad = None
-    if func2_str.strip():
+    if func2_str:
         try:
-            ns_broad["t"] = _adjust_k2(t_broad)
+            ns_broad["t"] = _adjust_t2(t_broad)
             y2_broad = a2 * eval(func2_str, ns_broad)
         except Exception as e:
             return jsonify(error_data("Error in f₂(t): ", e)), 400
@@ -144,7 +144,7 @@ def plot_function_update():
     end = center + MAX_T
     t = np.linspace(start, end, 4000)
 
-    ns = dict(t=_adjust_k1(t), np=np, pi=np.pi, e=np.e,
+    ns = dict(t=_adjust_t1(t), np=np, pi=np.pi, e=np.e,
               rect=rect, tri=tri, step=step,
               cos=cos, sin=sin,
               sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
@@ -155,16 +155,16 @@ def plot_function_update():
 
     # evaluate again on final grid
     try:
-        y1 = a1 * eval(func1_str, ns) if func1_str.strip() else np.zeros_like(t)
+        y1 = a1 * eval(func1_str, ns) if func1_str else np.zeros_like(t)
     except Exception as e:
         return jsonify(error_data("Error in f₁(t): ", e)), 400
     if np.any(np.isinf(y1)):
         return jsonify({"error": "f₁(t) produced non-finite values"}), 400
 
     y2 = None
-    if func2_str.strip():
+    if func2_str:
         try:
-            ns["t"] = _adjust_k2(t)
+            ns["t"] = _adjust_t2(t)
             y2 = a2 * eval(func2_str, ns)
         except Exception as e:
             return jsonify(error_data("Error in f₂(t): ", e)), 400
