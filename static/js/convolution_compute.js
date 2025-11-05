@@ -54,18 +54,37 @@
   }
 
   function maxAbs(arr){
+    // Find maximum absolute value in array
     let m = 0;
-    for(let i=0;i<arr.length;i++){ const v = Math.abs(arr[i]); if(v>m) m = v; }
+    for(let i=0;i<arr.length;i++){
+      const v = Math.abs(arr[i]);
+      if(v>m){
+        m = v;
+      }
+    }
     return m;
   }
 
   function activeLimits(arr, amp, axis){
+    // Find the active region where |arr| > 1% of amp
     if(amp<=0) return null;
     const thr = 0.01*amp;
     let i0=-1, i1=-1;
-    for(let i=0;i<arr.length;i++){ if(Math.abs(arr[i])>thr){ i0=i; break; } }
-    for(let i=arr.length-1;i>=0;i--){ if(Math.abs(arr[i])>thr){ i1=i; break; } }
-    if(i0>=0 && i1>=0) return [axis[i0], axis[i1]];
+    for(let i=0;i<arr.length;i++){
+      if(Math.abs(arr[i])>thr){
+        i0=i;
+        break;
+      }
+    }
+    for(let i=arr.length-1;i>=0;i--){
+      if(Math.abs(arr[i])>thr){
+        i1=i;
+        break;
+      }
+    }
+    if(i0>=0 && i1>=0){
+      return [axis[i0], axis[i1]];
+    }
     return null;
   }
 
@@ -75,7 +94,10 @@
       const idx = (xq[i]-x0)/step;
       const lo = Math.floor(idx);
       const hi = Math.ceil(idx);
-      if(lo<0 || hi>=n){ out[i]=0; continue; }
+      if(lo<0 || hi>=n){
+        out[i]=0;
+        continue;
+      }
       const w = idx-lo;
       out[i] = yArr[lo]*(1-w)+yArr[hi]*w;
     }
@@ -90,8 +112,16 @@
     const f2 = makeEvaluator(func2||'0');
     if(!f1 || !f2) return {error:'Error evaluating function'};
     let y1Scan, y2Scan;
-    try { y1Scan = evaluateArray(f1, tScan); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
-    try { y2Scan = evaluateArray(f2, tScan, reverseSecond); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
+    try {
+      y1Scan = evaluateArray(f1, tScan);
+    } catch(e){
+      return {error:'Error evaluating Function 1: '+e.message};
+    }
+    try {
+      y2Scan = evaluateArray(f2, tScan, reverseSecond);
+    } catch(e){
+      return {error:'Error evaluating Function 2: '+e.message};
+    }
 
     const amp1 = maxAbs(y1Scan);
     const amp2 = maxAbs(y2Scan);
@@ -119,29 +149,38 @@
     // Axis for x(t)
     let t1Min = r1[0];
     let t1Max = r1[1];
-    t1Min -= margin; t1Max += margin;
+    t1Min -= margin;
+    t1Max += margin;
 
     // Axis for h(t)
     let t2Min = r2[0];
     let t2Max = r2[1];
-    t2Min -= margin; t2Max += margin;
+    t2Min -= margin;
+    t2Max += margin;
 
     // Axis for convolution result
     let convMin = r1[0] + r2[0];
     let convMax = r1[1] + r2[1];
-    convMin -= margin; convMax += margin;
+    convMin -= margin;
+    convMax += margin;
 
 
     const N = 4096;
     const t1 = linspace(t1Min, t1Max, N);
     const t2 = linspace(t2Min, t2Max, N);
     const tConv = linspace(convMin, convMax, N);
-    const dt1 = t1[1]-t1[0];
-    const dt2 = t2[1]-t2[0];
 
     let y1, y2;
-    try { y1 = evaluateArray(f1, t1); } catch(e){ return {error:'Error evaluating Function 1: '+e.message}; }
-    try { y2 = evaluateArray(f2, t2, reverseSecond); } catch(e){ return {error:'Error evaluating Function 2: '+e.message}; }
+    try {
+      y1 = evaluateArray(f1, t1);
+    } catch(e){
+      return {error:'Error evaluating Function 1: '+e.message};
+    }
+    try {
+      y2 = evaluateArray(f2, t2, reverseSecond);
+    } catch(e){
+      return {error:'Error evaluating Function 2: '+e.message};
+    }
 
     const yConvFull = convolve(y1Scan, y2Scan, dtScan);
     const convStart = 2*tScan[0];
