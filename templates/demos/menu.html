@@ -24,7 +24,7 @@
     --demo-card-shadow-hover: 0 16px 32px rgba(15, 35, 95, 0.09);
     --demo-card-heading: #15223a;
     --demo-card-body: rgba(21, 34, 58, 0.78);
-    --demo-card-subtitle: rgba(21, 34, 58, 0.58);
+    --demo-card-subtitle: rgba(21, 34, 58, 0.678);
     --demo-icon-bg: rgba(11, 94, 189, 0.08);
     --demo-icon-color: #0b3d78;
     --demo-button-bg: rgba(11, 94, 189, 0.12);
@@ -411,19 +411,19 @@
           <span class="section-count">{{ demo_list | length }} demos</span>
         </div>
         <div class="module-grid">
-          {% set swap_titles = lecture == 'Signals and Systems II' and section == 'Lecture' %}
+          {% set swap_titles = section == 'Lecture' %}
           {% for d in demo_list %}
             <article class="demo-card {{ loop.cycle('accent-sky', 'accent-grape', 'accent-sun', 'accent-lagoon') }}">
-              <div class="demo-icon"><i class="fa-solid fa-wave-square"></i></div>
+              <!-- <div class="demo-icon"><i class="fa-solid fa-wave-square"></i></div> -->
               <div class="demo-body">
                 <h4>
                   {% if swap_titles %}
                     <strong>{{ d.title_desc }}</strong>
                   {% else %}
-                    {{ d.title }}
+                    <strong>{{ d.title }}</strong>
                   {% endif %}
                 </h4>
-                <p{% if swap_titles %} class="demo-subtitle"{% endif %}>
+                <p class="demo-subtitle">
                   {% if swap_titles %}
                     {{ d.title }}
                   {% else %}
