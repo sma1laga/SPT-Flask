@@ -77,20 +77,37 @@ def _snr_db(x: np.ndarray, y: np.ndarray) -> float:
 
 
 def _render_plot(fs: int, original: np.ndarray, quantized: np.ndarray):
-    N = min(len(original), int(fs * 0.04))  # show ≈40 ms
-    if N <= 0:
+    total_len = min(len(original), len(quantized))
+    N = min(total_len, max(1, int(fs * 0.03)))  # show ≈40 ms
+    if total_len <= 0:
         raise ValueError("Audio signal is empty")
-    t = np.arange(N) / fs * 1000.0  # ms
-    err = quantized[:N] - original[:N]
+
+    start_idx = 0
+    if total_len > N:
+        energy = np.square(original[:total_len], dtype=np.float64)
+        cumsum = np.concatenate(([0.0], np.cumsum(energy, dtype=np.float64)))
+        window_energy = cumsum[N:] - cumsum[:-N]
+        start_idx = int(np.argmax(window_energy))
+
+    end_idx = start_idx + N
+    t = (np.arange(N) + start_idx) / fs * 1000.0  # ms (absolute time)
+    original_window = original[start_idx:end_idx]
+    quantized_window = quantized[start_idx:end_idx]
+    err = quantized_window - original_window
 
     fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(8.2, 5.2), layout="constrained")
 
-    ax0.set_title("Waveform (first {:.1f} ms)".format(t[-1] if len(t) else 0.0))
+    if len(t):
+        ax0.set_title(
+            "Waveform ({:.1f}–{:.1f} ms)".format(t[0], t[-1])
+        )
+    else:
+        ax0.set_title("Waveform")
     ax0.set_xlabel("Time [ms]")
     ax0.set_ylabel("Amplitude")
     ax0.grid(True)
-    ax0.plot(t, original[:N], label="Original", color="black", lw=1.2)
-    ax0.plot(t, quantized[:N], label="Quantised", color="C1", lw=1.0, alpha=0.85)
+    ax0.plot(t, original_window, label="Original", color="black", lw=1.2)
+    ax0.plot(t, quantized_window, label="Quantised", color="C1", lw=1.0, alpha=0.85)
     ax0.legend(loc="upper right")
 
     ax1.set_title("Quantisation Error")
