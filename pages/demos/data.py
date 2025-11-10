@@ -6,10 +6,17 @@ DEMOS = {
         "Lecture": [
             {
                 "slug": "exponential",
-                "title": "Chapter 2",
+                "title": "Chapter 2-1",
                 "title_desc": "Exponential Function",
                 "desc": "Visualize x(t)=|X̂| e^{σt} e^{j(ωt+φ)}; full or up to t.",
                 "endpoint": "demos_exponential.page",
+            },
+            {
+                "slug": "convolution",
+                "title": "Chapter 2-2",
+                "title_desc": "Convolution",
+                "desc": "Visualize the convolution of two signals.",
+                "endpoint": "demos_convolution.page",
             },
             {
                 "slug": "fouriertransformation",

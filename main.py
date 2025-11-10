@@ -28,8 +28,6 @@ from pages.dynamic_convolution import dynamic_convolution_bp
 from pages.inverse_z import inverse_z_bp
 from pages.inverse_laplace import inverse_laplace_bp
 
-
-
 # discrete
 from pages.discrete_plot_functions import discrete_plot_functions_bp
 from pages.dft_page import discrete_fourier_bp
@@ -40,14 +38,8 @@ from pages.discrete_transform_intuition import transform_intuition_bp
 from pages.discrete_direct_plot import discrete_direct_plot_bp
 from pages.discrete_autocorrelation import discrete_autocorrelation_bp
 
-
-
-
-
 # Import advanced noise reduction blueprint
 from pages.advanced_noise_reduction import advanced_noise_reduction_bp
-
-
 
 # Import training blueprints from the training subfolder:
 from pages.training.training_convolution import training_convolution_bp
@@ -75,16 +67,12 @@ from pages.demos.iir import demos_iir_bp
 from pages.demos.filter_demo import demos_filter_bp
 #VL DEMOS SISY1
 from pages.demos.exponential import demos_exponential_bp
+from pages.demos.convolution import demos_convolution_bp
 from pages.demos.fouriertransformation import demos_fouriertransformation_bp
 from pages.demos.systems_time_audio import demos_systems_time_audio_bp
 from pages.demos.bandpass import demos_bandpass_bp
 from pages.demos.stability_feedback import stability_feedback_bp
 from pages.demos.sampling import sampling_bp
-
-
-
-
-
 
 
 
@@ -165,8 +153,9 @@ def create_app():
     app.register_blueprint(exam_convolution_bp, url_prefix="/exam/convolution")
     app.register_blueprint(exam_fourier_bp, url_prefix='/exam/fourier')
 
-    
+
     # Demos section
+    # SiSy2 lecture
     app.register_blueprint(demos_menu_bp,     url_prefix="/demos")
     app.register_blueprint(demos_kapitel2_bp, url_prefix="/demos/kapitel2")
     app.register_blueprint(demos_kapitel4_bp, url_prefix="/demos/kapitel4")
@@ -174,22 +163,20 @@ def create_app():
     app.register_blueprint(demos_kapitel8_2_bp, url_prefix="/demos/kapitel8_2")
     app.register_blueprint(demos_kapitel8_audio_bp, url_prefix="/demos/kapitel8_audio")
     app.register_blueprint(demos_kapitel11_bp, url_prefix="/demos/kapitel11")
-
+    # SiSy2 exercise
     app.register_blueprint(dtft_impulses_bp, url_prefix="/demos/dtft_impulses")
     app.register_blueprint(dtft_dft_bp, url_prefix="/demos/dtft_dft")
     app.register_blueprint(demos_z_trafo_bp, url_prefix="/demos/z_trafo")
     app.register_blueprint(demos_iir_bp, url_prefix="/demos/iir")
     app.register_blueprint(demos_filter_bp, url_prefix="/demos/filter")
-
+    # SiSy1 lecture
     app.register_blueprint(demos_exponential_bp, url_prefix="/demos/exponential")
+    app.register_blueprint(demos_convolution_bp, url_prefix="/demos/convolution")
     app.register_blueprint(demos_fouriertransformation_bp, url_prefix="/demos/fouriertransformation")
     app.register_blueprint(demos_systems_time_audio_bp, url_prefix="/demos/systems-time-audio")
     app.register_blueprint(demos_bandpass_bp, url_prefix="/demos/bandpass")
     app.register_blueprint(stability_feedback_bp, url_prefix="/demos/stability-feedback")
     app.register_blueprint(sampling_bp, url_prefix="/demos/sampling")
-
-
-
 
 
     @app.route("/")

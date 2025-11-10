@@ -688,14 +688,13 @@
                   {% if demo_list %}
                     <li class="section-title">{{ section }}</li>
                     {% for d in demo_list %}
-                      {% set link_url = url_for(d.endpoint) %}
                       <li>
-                        <a href="{{ link_url }}"
-                           class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
-                          {{ d.title }}
+                        <a href="{{ url_for(d.endpoint) }}"
+                        class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
+                        {{ d.title }}
                         </a>
                       </li>
-                      {% endfor %}
+                    {% endfor %}
                   {% endif %}
                 {% endfor %}
               </ul>
