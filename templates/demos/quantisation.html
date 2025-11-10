@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Quantisation Demo</h1>
+<p>
+  Explore the effect of uniform and logarithmic (μ-law) quantisation on audio signals.
+  Choose an example signal, select the available bit depth, and compare the resulting
+  waveform, quantisation error, and audio quality. Lower bit depths reduce the number
+  of available quantisation levels and increase the error, while μ-law companding keeps
+  small amplitudes more faithfully at the expense of larger peaks.
+</p>
+
+<style>
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.05);transition:none}
+  .card:hover{transform:none;box-shadow:0 1px 5px rgba(0,0,0,.05)}
+  img{max-width:100%}
+  label{display:block;margin-top:8px}
+  select,button{margin-top:4px}
+  .radio-group{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+  .radio-group label{display:inline-flex;align-items:center;gap:6px;margin-top:4px}
+  .metrics{display:grid;grid-template-columns:180px 1fr;gap:8px 12px}
+</style>
+
+<div class="row">
+  <div class="card" style="margin-top:12px">
+    <label for="song">Audio example</label>
+    <select id="song">
+      {% for option in audio_options %}
+        <option value="{{ option }}" {% if option == defaults.song %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Bit depth</label>
+    <div class="radio-group" id="bits-group">
+      {% for bits in bit_options %}
+        <label><input type="radio" name="bits" value="{{ bits }}" {% if bits == defaults.bits %}checked{% endif %}> {{ bits }} bit</label>
+      {% endfor %}
+    </div>
+
+    <label>Quantisation type</label>
+    <div class="radio-group" id="mode-group">
+      {% for key, label in mode_labels.items() %}
+        <label><input type="radio" name="mode" value="{{ key }}" {% if key == defaults.mode %}checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </div>
+
+    <button id="run" style="margin-top:12px">Recompute</button>
+  </div>
+
+  <div class="card">
+    <img id="plot" alt="Quantisation plot">
+  </div>
+
+  <div class="card">
+    <div><strong>Original</strong></div>
+    <audio id="x_audio" controls style="width:100%"></audio>
+    <div style="height:8px"></div>
+    <div><strong>Quantised</strong></div>
+    <audio id="y_audio" controls style="width:100%"></audio>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Quantisation Metrics</h3>
+  <div class="metrics">
+    <div>Quantisation levels</div>
+    <div id="levels">–</div>
+    <div>Nominal step size Δ</div>
+    <div id="step">–</div>
+    <div>Mode</div>
+    <div id="mode_label">–</div>
+    <div>Estimated SNR</div>
+    <div id="snr">–</div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function currentBits(){
+    const selected = document.querySelector('input[name="bits"]:checked');
+    return selected ? parseInt(selected.value) : {{ defaults.bits }};
+  }
+
+  function currentMode(){
+    const selected = document.querySelector('input[name="mode"]:checked');
+    return selected ? selected.value : "{{ defaults.mode }}";
+  }
+
+  async function recompute(){
+    const payload = {
+      song: $("song").value,
+      bits: currentBits(),
+      mode: currentMode()
+    };
+
+    const resp = await fetch("./compute", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    if(!resp.ok){
+      const text = await resp.text();
+      alert(text);
+      return;
+    }
+    const data = await resp.json();
+    if(data.error){
+      alert(data.error);
+      return;
+    }
+    $("plot").src = data.image;
+    $("x_audio").src = data.x_audio;
+    $("y_audio").src = data.y_audio;
+    $("levels").textContent = data.levels.toLocaleString();
+    const step = data.step;
+    $("step").textContent = step ? step.toFixed(6) : "–";
+    $("mode_label").textContent = data.mode_label;
+    if(Number.isFinite(data.snr_db)){
+      $("snr").textContent = data.snr_db.toFixed(2) + " dB";
+    }else{
+      $("snr").textContent = "∞";
+    }
+  }
+
+  $("song").addEventListener("change", recompute);
+  document.querySelectorAll('input[name="bits"]').forEach(el => el.addEventListener("change", recompute));
+  document.querySelectorAll('input[name="mode"]').forEach(el => el.addEventListener("change", recompute));
+  $("run").addEventListener("click", recompute);
+
+  recompute();
+</script>
+{% endblock %}

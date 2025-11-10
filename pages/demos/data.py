@@ -53,6 +53,13 @@ DEMOS = {
                 "desc": "x(t)=ω_g/(2π)·si²(½ω_g t); spectra X, X_a, Y; adjustable ω_g and ω_a; optional sinc components.",
                 "endpoint": "sampling.page",
             },
+            {
+                "slug": "quantisation",
+                "title": "Chapter 12",
+                "title_desc": "Quantisation",
+                "desc": "Uniform vs. μ-law audio quantisation with selectable bit depth and example sources.",
+                "endpoint": "demos_quantisation.page",
+            },
         ],
         "Tutorial": [],
     },
