@@ -20,7 +20,7 @@ DEMOS = {
             },
             {
                 "slug": "fouriertransformation",
-                "title": "Chapter 4",
+                "title": "Chapter 3",
                 "title_desc": "Fourier Transform",
                 "desc": "Analytical pairs: rect, si, triangle, si²; interactive scaling & shifting.",
                 "endpoint": "demos_fouriertransformation.page",
