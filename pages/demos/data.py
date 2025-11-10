@@ -126,7 +126,7 @@ DEMOS = {
             {
                 "slug": "iir",
                 "title": "IIR Echo",
-                "title_desc": "\(y[k] = x[k] + a·y[k-K]\)",
+                "title_desc": r"\(y[k] = x[k] + a·y[k-K]\)",
                 "desc": "Convolution view via impulse response h plus inline audio for x and y.",
                 "endpoint": "demos_iir.page",
             },
