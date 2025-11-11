@@ -1,6 +1,6 @@
 # Signal Processing Toolkit (SPT‑Flask)
 
-**SPT‑Flask** is a modern, browser‑based environment for learning and experimenting with digital and analogue signal‑processing concepts. It was created at the Lehrstuhl für Multimediale Signalverarbeitung (LMS), FAU Erlangen‑Nürnberg and is provided licence‑free for educational and research use.
+**SPT‑Flask** is a modern, browser‑based environment for learning and experimenting with digital and analogue signal‑processing concepts. It was created at the Lehrstuhl für Multimediakommunikation und Signalverarbeitung (LMS), FAU Erlangen‑Nürnberg and is provided licence‑free for educational and research use.
 
 ## 🎯 Project goals
 
