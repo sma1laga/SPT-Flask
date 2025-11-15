@@ -431,8 +431,8 @@ def bode_plot():
     error = ""
     warning = ""
     # Default inputs; here we use a coefficient list for H(s) = (s+1)/(s^2+2)
-    default_num = "[1, 1]"
-    default_den = "[1, 0, 2]"
+    default_num = "(s+2)"
+    default_den = "(s+10)(s+0.1)"
     
     user_num = default_num
     user_den = default_den
