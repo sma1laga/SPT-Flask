@@ -27,6 +27,25 @@ def _evaluate_transfer(num, den, s_values):
 
 bode_plot_bp = Blueprint('bode_plot', __name__, template_folder='templates')
 
+def _corner_frequencies(poles, zeros):
+    """Return sorted unique positive magnitudes of finitepoles and zeros"""
+    raw_values = []
+    for root in np.concatenate([poles, zeros]):
+        if np.isfinite(root):
+            mag = abs(root)
+            if mag > 0:
+                raw_values.append(float(mag))
+
+    if not raw_values:
+        return []
+
+    raw_values.sort()
+    deduped = []
+    for value in raw_values:
+        if not deduped or not np.isclose(value, deduped[-1], rtol=1e-9, atol=1e-12):
+            deduped.append(value)
+    return deduped
+
 def parse_poly_input(expr_str):
     """
     Parse the user input for a polynomial.
@@ -548,6 +567,8 @@ def bode_plot():
             bandwidth = None
     except Exception:
         bandwidth = None
+        
+    corner_freqs = _corner_frequencies(poles, zeros)
 
     bode_data = {
         "omega": w.tolist(),
@@ -558,6 +579,7 @@ def bode_plot():
         "gain_cross_freq": finite_or_none(wg),
         "phase_cross_freq": finite_or_none(wp),
         "bandwidth": finite_or_none(bandwidth),
+        "corner_frequencies": corner_freqs,
     }
 
     pz_plot = {

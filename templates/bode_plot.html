@@ -89,6 +89,13 @@
       gap: 1rem;
       align-items: center;
     }
+    .bode-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
     .bode-metrics {
       display: flex;
       flex-wrap: wrap;
@@ -102,6 +109,27 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: #6b7280;
+    }
+    .bode-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      user-select: none;
+    }
+    .bode-toggle input[type="checkbox"] {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: #a855f7;
+    }
+    .bode-toggle--disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .bode-toggle--disabled input[type="checkbox"] {
+      cursor: not-allowed;
     }
     .bode-downloads {
       display: flex;
@@ -344,15 +372,21 @@
     <div class="bode-results">
       <div class="bode-toolbar">
         <div id="bodeMetrics" class="bode-metrics"></div>
-        <div class="bode-downloads">
-          <a
-            href="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
-            download="bode_plot.png"
-          >Download PNG</a>
-          <a
-            href="{{ url_for('bode_plot.download_csv') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
-            download="bode_data.csv"
-          >Download CSV</a>
+        <div class="bode-controls">
+          <label class="bode-toggle" for="cornerFrequencyToggle">
+            <input type="checkbox" id="cornerFrequencyToggle" checked>
+            <span>Show corner frequencies</span>
+          </label>
+          <div class="bode-downloads">
+            <a
+              href="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+              download="bode_plot.png"
+            >Download PNG</a>
+            <a
+              href="{{ url_for('bode_plot.download_csv') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+              download="bode_data.csv"
+            >Download CSV</a>
+          </div>
         </div>
       </div>
 

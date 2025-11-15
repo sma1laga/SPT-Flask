@@ -6,6 +6,8 @@
 
 
   const basePlotConfig = { responsive: true, displaylogo: false };
+  let showCornerFrequencyMarkers = true;
+
 
   const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
 
@@ -87,6 +89,36 @@
     }
     return shapes;
   }
+  function getCornerFrequencies(data) {
+    if (!data) return [];
+    const freqs = Array.isArray(data.corner_frequencies) ? data.corner_frequencies : [];
+    return freqs
+      .map(value => Number(value))
+      .filter(freq => Number.isFinite(freq) && freq > 0);
+  }
+
+  function hasCornerFrequencies(data) {
+    return getCornerFrequencies(data).length > 0;
+  }
+
+  function buildCornerFrequencyShapes(data) {
+    if (!showCornerFrequencyMarkers) return [];
+    return getCornerFrequencies(data).map(freq => ({
+      type: 'line',
+      x0: freq,
+      x1: freq,
+      y0: 0,
+      y1: 1,
+      xref: 'x',
+      yref: 'paper',
+      line: { color: '#a855f7', dash: 'dot', width: 1.5 }
+    }));
+  }
+
+  function buildBodeShapes(data) {
+    const shapes = buildCrossingLines(data);
+    return shapes.concat(buildCornerFrequencyShapes(data));
+  }
 
   function renderBodeMagnitude(data) {
     if (!plotlyAvailable) return;
@@ -99,7 +131,7 @@
     const layout = {
       margin: { l: 70, r: 20, t: 10, b: 40 },
       hovermode: 'x unified',
-      shapes: buildCrossingLines(data),
+      shapes: buildBodeShapes(data),
       xaxis: {
         type: 'log',
         title: 'Frequency (rad/s)',
@@ -141,7 +173,7 @@
     const layout = {
       margin: { l: 70, r: 20, t: 10, b: 40 },
       hovermode: 'x unified',
-      shapes: buildCrossingLines(data),
+      shapes: buildBodeShapes(data),
       xaxis: {
         type: 'log',
         title: 'Frequency (rad/s)',
@@ -176,6 +208,26 @@
     renderBodeMagnitude(data);
     renderBodePhase(data);
   }
+
+  function setupCornerFrequencyToggle(data) {
+    const toggle = document.getElementById('cornerFrequencyToggle');
+    if (!toggle) return;
+    const label = toggle.closest('.bode-toggle');
+    const hasCorners = hasCornerFrequencies(data);
+    if (!hasCorners) {
+      toggle.checked = false;
+      toggle.disabled = true;
+      if (label) label.classList.add('bode-toggle--disabled');
+      showCornerFrequencyMarkers = false;
+      return;
+    }
+    showCornerFrequencyMarkers = toggle.checked;
+    toggle.addEventListener('change', () => {
+      showCornerFrequencyMarkers = toggle.checked;
+      renderBodePlot(data);
+    });
+  }
+
 
   function renderPoleZeroPlot(data) {
     if (!plotlyAvailable) return;
@@ -411,6 +463,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     if (bodeData) {
+      setupCornerFrequencyToggle(bodeData);
       renderBodePlot(bodeData);
       renderMetrics(bodeData);
     }
