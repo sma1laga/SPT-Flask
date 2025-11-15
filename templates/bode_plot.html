@@ -191,6 +191,46 @@
       font-size: 1rem;
       color: #1f2937;
     }
+    .bode-legend {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 0.75rem;
+      margin-top: 0.25rem;
+    }
+    .bode-legend > p {
+      margin: 0 0 0.5rem 0;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .bode-legend-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.25rem;
+      font-size: 0.92rem;
+    }
+    .bode-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: #4b5563;
+    }
+    .bode-legend-swatch {
+      display: inline-block;
+      width: 1.6rem;
+      border-bottom: 3px solid currentColor;
+      border-radius: 999px;
+    }
+    .bode-legend-swatch--phase {
+      color: #ef4444;
+      border-bottom-style: dashed;
+    }
+    .bode-legend-swatch--gain {
+      color: #f97316;
+      border-bottom-style: dashed;
+    }
+    .bode-legend-swatch--corner {
+      color: #a855f7;
+      border-bottom-style: dotted;
+    }
     .pz-table {
       width: 100%;
       border-collapse: collapse;
@@ -401,6 +441,34 @@
             <h4>Phase (°)</h4>
             <div id="bodePhasePlot" class="plotly-chart"></div>
           </div>
+          {% set has_phase_cross = bode_data.phase_cross_freq is not none %}
+          {% set has_gain_cross = bode_data.gain_cross_freq is not none %}
+          {% set has_corner_markers = bode_data.corner_frequencies and bode_data.corner_frequencies|length > 0 %}
+          {% if has_phase_cross or has_gain_cross or has_corner_markers %}
+            <div class="bode-legend">
+              <p>Auxiliary markers</p>
+              <div class="bode-legend-items">
+                {% if has_phase_cross %}
+                  <span class="bode-legend-item">
+                    <span class="bode-legend-swatch bode-legend-swatch--phase"></span>
+                    Phase crossover frequency (phase crosses −180°)
+                  </span>
+                {% endif %}
+                {% if has_gain_cross %}
+                  <span class="bode-legend-item">
+                    <span class="bode-legend-swatch bode-legend-swatch--gain"></span>
+                    Gain crossover frequency (magnitude crosses 0 dB)
+                  </span>
+                {% endif %}
+                {% if has_corner_markers %}
+                  <span class="bode-legend-item">
+                    <span class="bode-legend-swatch bode-legend-swatch--corner"></span>
+                    Corner frequency markers (toggle above)
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
         </div>
         <div class="bode-card">
           <h3>Pole–Zero Map</h3>

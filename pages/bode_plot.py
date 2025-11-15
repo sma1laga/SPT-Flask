@@ -406,10 +406,22 @@ def _make_freq_vector(num, den, override=None):
     else:
         w_min, w_max = 1e-2, 1e2
 
-    if np.log10(w_max) - np.log10(w_min) < 1.5:
+    span_decades = np.log10(w_max) - np.log10(w_min)
+    if span_decades < 1.5:
         center = np.median(w_list) if w_list.size else np.sqrt(w_min * w_max)
         w_min = min(w_min, center / 10)
         w_max = max(w_max, center * 10)
+        span_decades = np.log10(w_max) - np.log10(w_min)
+
+    min_total_span = 3.0
+    if span_decades < min_total_span:
+        center = np.median(w_list) if w_list.size else np.sqrt(w_min * w_max)
+        center_log = np.log10(center)
+        half_span = min_total_span / 2
+        expanded_min = 10 ** (center_log - half_span)
+        expanded_max = 10 ** (center_log + half_span)
+        w_min = min(expanded_min, w_min)
+        w_max = max(expanded_max, w_max)
 
     return np.logspace(np.log10(w_min), np.log10(w_max), 500)
 
