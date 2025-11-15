@@ -6,6 +6,26 @@
     .bode-page ul {
       padding-left: 1.4rem;
     }
+    .bode-intro {
+      margin-bottom: 1.5rem;
+      padding: 1rem 1.2rem;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 12px;
+      color: #312e81;
+    }
+    .bode-intro p {
+      margin: 0 0 0.6rem;
+      line-height: 1.45;
+    }
+    .bode-intro ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: #1f2937;
+    }
+    .bode-intro li {
+      margin-bottom: 0.35rem;
+    }
     .bode-page .plotly-chart {
       width: 100%;
       min-height: 320px;
@@ -322,46 +342,26 @@
     }
   </style>
 
-  <p><strong>How to Enter Your Transfer Function H(s):</strong></p>
-  <ul>
-    <li>
-      <strong>Coefficient List:</strong>
-      Enter the coefficients as a Python list using square brackets.
-      <br>
-      <em>Example:</em>
-      <br>
-      Numerator: <code>[1, 2, 3]</code>
-      <br>
-      Denominator: <code>[1, 0, 2]</code>
-      <br>
-      In this mode, the system automatically expands the polynomial and displays the transfer function in its standard form.
-    </li>
-    <br>
-    <li>
-      <strong>Factorized Expression:</strong>
-      Enter the function in a factorized form using parentheses.
-      <br>
-      <em>Example:</em>
-      <br>
-      Numerator: <code>(s+3+2*j)(s+3-2*j)</code>
-      <br>
-      (The denominator can be entered as a coefficient list or as a factorized expression if desired.)
-      <br>
-      When you use parentheses, your expression is displayed exactly as you typed it, even though the program expands it internally to compute the Bode plot.
-    </li>
-    <br>
-    <li>
-      <strong>Notation Tips:</strong>
-      You can combine constants, powers, and complex numbers just like in Python or SymPy.
-      <ul>
-        <li>Powers may be written as <code>s^2</code> or <code>s**2</code>. Scalars such as <code>10^5</code>, <code>1e5</code>, or <code>2.5e-3</code> multiply your factors in the usual way, e.g. <code>10^5*(s+1)</code>.</li>
-        <li>Complex numbers can be entered with <code>j</code> (or <code>1j</code>) inside either brackets or parentheses, for example <code>[1, 1+0.5j, 2]</code> or <code>(s+2+0.5*j)</code>.</li>
-        <li>Round brackets <code>( )</code> are treated as factors, while square brackets <code>[ ]</code> indicate a plain coefficient list. Mix them as needed for numerator and denominator.</li>
-        <li>Use additional parentheses to make the intended order of operations explicit, such as <code>(s+1)*(s+4)/(s^2+5*s+6)</code>.</li>
-      </ul>
-    </li>
-  </ul>
-  <p>When you click "Plot Bode", your transfer function is shown below and the Bode plot is generated.</p>
+  <div class="bode-intro">
+    <p>
+      Drop your transfer function into the numerator/denominator boxes and hit
+      <em>Plot Bode</em> or <em>Plot Nyquist</em> to see the magnitude, phase and key margins instantly.
+    </p>
+    <ul>
+      <li>
+        <strong>Lists for coefficients.</strong> Wrap polynomial terms in square brackets, e.g.
+        <code>[1, 2, 3]</code> for the numerator and <code>[1, 0, 2]</code> for the denominator.
+      </li>
+      <li>
+        <strong>Parentheses for factors.</strong> Type factored forms such as
+        <code>(s+3+2*j)(s+3-2*j)</code>; they render exactly as written while the app expands them behind the scenes.
+      </li>
+      <li>
+        <strong>Python-style notation.</strong> Use <code>s^2</code> or <code>s**2</code>, scientific notation like
+        <code>1e5</code>, and complex values with <code>j</code>. Mix brackets and parentheses to match your workflow.
+      </li>
+    </ul>
+  </div>
 
   <form method="POST" class="bode-form">
     <div>
