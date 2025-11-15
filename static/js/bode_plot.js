@@ -60,10 +60,62 @@
     `;
   }
 
-  function buildCrossingLines(data) {
+  const CROSSOVER_MARGIN_DECADES = 1;
+  const MAX_CROSSOVER_SPREAD_DECADES = 8;
 
+  function getFrequencyRangeFromData(data) {
+    if (!data || !Array.isArray(data.omega)) return null;
+    const valid = data.omega
+      .map(value => Number(value))
+      .filter(value => Number.isFinite(value) && value > 0);
+    if (!valid.length) return null;
+    return {
+      min: Math.min(...valid),
+      max: Math.max(...valid)
+    };
+  }
+  function isCrossoverWithinRange(freq, range) {
+    if (!isFiniteNumber(freq) || freq <= 0) return false;
+    if (!range || !(range.min > 0 && range.max > 0)) return true;
+    const minLimit = range.min / Math.pow(10, CROSSOVER_MARGIN_DECADES);
+    const maxLimit = range.max * Math.pow(10, CROSSOVER_MARGIN_DECADES);
+    return freq >= minLimit && freq <= maxLimit;
+  }
+
+  function areCrossoversTooFar(freqA, freqB) {
+    if (!isFiniteNumber(freqA) || !isFiniteNumber(freqB) || freqA <= 0 || freqB <= 0) {
+      return false;
+    }
+    const distance = Math.abs(Math.log10(freqA) - Math.log10(freqB));
+    return distance > MAX_CROSSOVER_SPREAD_DECADES;
+  }
+
+  function getDistanceFromRangeMidpoint(freq, range) {
+    if (!isFiniteNumber(freq) || freq <= 0) return Number.POSITIVE_INFINITY;
+    if (!range || !(range.min > 0 && range.max > 0)) {
+      return Math.abs(Math.log10(freq));
+    }
+    const midLog = (Math.log10(range.min) + Math.log10(range.max)) / 2;
+    return Math.abs(Math.log10(freq) - midLog);
+  }
+
+  function buildCrossingLines(data) {
     const shapes = [];
-    if (isFiniteNumber(data.phase_cross_freq)) {
+    const freqRange = getFrequencyRangeFromData(data);
+    let showPhase = isCrossoverWithinRange(data.phase_cross_freq, freqRange);
+    let showGain = isCrossoverWithinRange(data.gain_cross_freq, freqRange);
+
+    if (showPhase && showGain && areCrossoversTooFar(data.phase_cross_freq, data.gain_cross_freq)) {
+      const phaseDistance = getDistanceFromRangeMidpoint(data.phase_cross_freq, freqRange);
+      const gainDistance = getDistanceFromRangeMidpoint(data.gain_cross_freq, freqRange);
+      if (phaseDistance <= gainDistance) {
+        showGain = false;
+      } else {
+        showPhase = false;
+      }
+    }
+
+    if (showPhase) {
       shapes.push({
         type: 'line',
         x0: data.phase_cross_freq,
@@ -75,7 +127,7 @@
         line: { color: '#ef4444', dash: 'dash', width: 2 }
       });
     }
-    if (isFiniteNumber(data.gain_cross_freq)) {
+    if (showGain) {
       shapes.push({
         type: 'line',
         x0: data.gain_cross_freq,
