@@ -379,7 +379,8 @@ def _make_freq_vector(num, den, override=None):
     Otherwise, the range is chosen based on the magnitudes of the finite
     poles and zeros of ``num/den``.  Dense clusters (<1.5 decades wide)
     are padded symmetrically to cover at least two decades around the
-    median corner frequency.
+    median corner frequency, with up to two extra decades added below
+    and above the smallest and largest corner frequencies.
     """
     if override is not None:
         try:
@@ -397,8 +398,11 @@ def _make_freq_vector(num, den, override=None):
     w_list = w_list[np.isfinite(w_list) & (w_list > 0)]
 
     if w_list.size:
-        w_min = 0.1 * w_list.min()
-        w_max = 10 * w_list.max()
+        smallest_corner = w_list.min()
+        largest_corner = w_list.max()
+        # Show up to two decades beyond the extreme corner frequencies
+        w_min = smallest_corner / 100
+        w_max = largest_corner * 100
     else:
         w_min, w_max = 1e-2, 1e2
 
