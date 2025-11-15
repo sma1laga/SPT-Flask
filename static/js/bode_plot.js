@@ -136,7 +136,9 @@
         type: 'log',
         title: 'Frequency (rad/s)',
         showgrid: true,
-        gridcolor: '#e5e7eb'
+        gridcolor: '#e5e7eb',
+        showexponent: 'all',
+        exponentformat: 'power'
       },
       yaxis: {
         title: 'Magnitude (dB)',
@@ -178,7 +180,9 @@
         type: 'log',
         title: 'Frequency (rad/s)',
         showgrid: true,
-        gridcolor: '#e5e7eb'
+        gridcolor: '#e5e7eb',
+        showexponent: 'all',
+        exponentformat: 'power'
       },
       yaxis: {
         title: 'Phase (°)',
