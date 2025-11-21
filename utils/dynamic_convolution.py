@@ -2,8 +2,19 @@ from flask import jsonify
 from functools import partial
 import numpy as np
 from scipy.signal import convolve
-from utils.math_utils import rect, tri, step, cos, sin, delta, exp_iwt, inv_t, si, delta_train
-
+from utils.math_utils import (
+    rect,
+    tri,
+    step,
+    cos,
+    sin,
+    sign,
+    delta,
+    exp_iwt,
+    inv_t,
+    si,
+    delta_train,
+)
 
 functions = [
     ("rect(t)", "rect(t)"),
@@ -41,7 +52,7 @@ def conv_json(data: dict):
         "rect": rect, "tri": tri, "step": step,
         "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi),
         "delta": delta, "delta_train": delta_train, "exp_iwt": exp_iwt,
-        "inv_t": inv_t, "si": si, "exp": np.exp
+        "inv_t": inv_t, "si": si, "sign": sign, "exp": np.exp
     }
 
     # eval f1, f2
