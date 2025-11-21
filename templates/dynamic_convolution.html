@@ -92,6 +92,7 @@
   <script>
     let tData, y1Data, y2Data, yConvData;
     let topChart, bottomChart;
+    let hasData = false;
     const errorMsg = document.getElementById("errorMsg");
     const func1 = document.getElementById("func1");
     const func2 = document.getElementById("func2");
@@ -111,6 +112,22 @@
       activeField.selectionStart = activeField.selectionEnd = s + op.length;
       activeField.focus();
     }
+    function buildDefaultAxis(){
+      const min = -3.5, max = 3.5, step = 0.1;
+      const n = Math.round((max - min) / step);
+      return Array.from({ length: n + 1 }, (_, i) => parseFloat((min + i * step).toFixed(1)));
+    }
+
+    function setDefaultState(){
+      tData = buildDefaultAxis();
+      y1Data = [];
+      y2Data = [];
+      yConvData = [];
+      hasData = false;
+      initCharts();
+      syncTau(0);
+    }
+
 
     function fetchData(){
       clearErrors();
@@ -127,6 +144,7 @@
         y1Data    = d.y1;
         y2Data    = d.y2;
         yConvData = d.y_conv;
+        hasData   = true;
         initCharts();
         updatePlots();
       })
@@ -148,11 +166,11 @@
       topChart = new Chart(topCtx, {
         type: 'line',
         data: {
-          labels: tData,
+          labels: tData ?? buildDefaultAxis(),
           datasets: [
-            { label: "x(τ)", data: y1Data, borderColor: 'blue', fill:false, pointRadius:0 },
-            { label: "h(t−τ)", data: [], borderColor: 'orange', fill:false, pointRadius:0 },
-            { label: "x(τ)·h(t−τ)", data: [], borderColor: 'red', fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
+            { label: "x(τ)", data: hasData ? y1Data : [], borderColor: 'blue', fill:false, pointRadius:0 },
+            { label: "h(t−τ)", data: hasData ? [] : [], borderColor: '#f2a50c', fill:false, pointRadius:0 },
+            { label: "x(τ)·h(t−τ)", data: hasData ? [] : [], borderColor: 'red', fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
           ]
         },
         options: { animation:false, scales:{
@@ -164,9 +182,9 @@
       bottomChart = new Chart(bottomCtx, {
         type: 'line',
         data: {
-          labels: tData,
+          labels: tData ?? buildDefaultAxis(),
           datasets: [
-            { label: "y(t)", data: yConvData, borderColor: 'darkblue', fill:false, pointRadius:0 },
+            { label: "y(t)", data: hasData ? yConvData : [], borderColor: 'darkblue', fill:false, pointRadius:0 },
             { label: "Current Output", data: [], pointRadius:5, showLine:false, borderColor:'red' }
           ]
         },
@@ -175,10 +193,11 @@
     }
 
     function updatePlots(){
-      if(!tData || !y1Data || !y2Data || !yConvData || tData.length === 0) return;
 
       const τ = parseFloat(document.getElementById("tauSlider").value);
       document.getElementById("tauValue").textContent = τ.toFixed(1);
+      if(!hasData || !tData || !y1Data || !y2Data || !yConvData || tData.length === 0) return;
+
 
       const N  = tData.length;
       const dt = tData[1] - tData[0];
@@ -214,9 +233,8 @@
       func1.value = "";
       func2.value = "";
       clearErrors();
-      if(topChart) topChart.destroy();
-      if(bottomChart) bottomChart.destroy();
-      tData = y1Data = y2Data = yConvData = [];
+      setDefaultState();
+
     });
 
     const form = document.getElementById("dynamic-form");
@@ -234,7 +252,7 @@
     tauSlider.oninput       = (e) => syncTau(e.target.value, tauSlider);
     tauSliderInline.oninput = (e) => syncTau(e.target.value, tauSliderInline);
 
-    fetchData();
+    setDefaultState();
   </script>
 
   <!-- Styles -->
@@ -247,6 +265,7 @@
       border: 1px solid #ccd0d5;
       border-radius: 4px;
       font-size: 1em;
+      accent-color: #4b6be5;
     }
     #tauValue { font-weight: bold; }
 
