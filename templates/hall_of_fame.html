@@ -38,29 +38,14 @@
   <section class="hof-list">
     <div class="hof-list-header">
       <h2>Featured Champions</h2>
-      <p>We are preparing this space for our community. Contribute to the project to see your name here!</p>
+      <p>Celebrating contributors—whether solo or teaming up—whose ideas, code, and guidance keep the toolkit growing.</p>
     </div>
 
-    <div class="contributors-grid">
-      <article class="contributor-card placeholder">
-        <div class="card-body">
-          <span class="badge">Your Name</span>
-          <h3>Be the first to be featured</h3>
-          <p>
-            Help shape the Signal Processing Toolkit by opening an issue, proposing improvements or submitting a
-            pull request. Once your contribution lands, we will highlight you right here.
-          </p>
-        </div>
-      </article>
-      <article class="contributor-card placeholder">
-        <div class="card-body">
-          <span class="badge">Team Effort</span>
-          <h3>Collaborate &amp; contribute</h3>
-          <p>
-            Team up with fellow learners, mentor newcomers and share learning resources. Community-led contributions are essential for this open source project.
-          </p>
-        </div>
-      </article>
+    <div class="individual-contributors" aria-label="Community contributors">
+      <div class="contributor-chip">
+        <div class="chip-name">Tivio Grignon</div>
+        <p class="chip-role">UI feedback and user-friendliness guidance</p>
+      </div>
     </div>
   </section>
 </div>
@@ -308,6 +293,38 @@ body.dark-mode .hof-cta:hover {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.individual-contributors {
+  margin-top: 1.2rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 247, 226, 0.9), rgba(255, 255, 255, 0.92));
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.contributor-chip {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 226, 0.9));
+  border: 1px solid rgba(217, 119, 6, 0.22);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+}
+
+.chip-name {
+  color: #b45309;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.chip-role {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.6;
+}
 .placeholder .card-body {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.92) 45%, rgba(11, 15, 26, 0.95) 100%);
   color: rgba(226, 232, 240, 0.9);
@@ -320,6 +337,25 @@ body.dark-mode .hof-cta:hover {
 body.dark-mode .hof-hero {
   border-color: rgba(253, 230, 138, 0.6);
   box-shadow: 0 30px 65px rgba(0, 0, 0, 0.55);
+}
+body.dark-mode .individual-contributors {
+  background: linear-gradient(120deg, rgba(253, 224, 71, 0.1), rgba(17, 24, 39, 0.82));
+  border: 1px solid rgba(253, 224, 71, 0.25);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+}
+
+body.dark-mode .contributor-chip {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-mode .chip-name {
+  color: #fcd34d;
+}
+
+body.dark-mode .chip-role {
+  color: rgba(226, 232, 240, 0.85);
 }
 
 body.dark-mode .hof-highlights li {
