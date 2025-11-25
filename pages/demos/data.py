@@ -139,4 +139,16 @@ DEMOS = {
             },
         ],
     },
+    "Image and Video Compression": {
+        "Lecture": [
+            {
+                "slug": "compression",
+                "title": "Compression",
+                "title_desc": "Image & Video",
+                "desc": "Compare lossless ZIP with weak and strong JPEG compression using the classic Lenna image.",
+                "endpoint": "demos_compression.page",
+            }
+        ],
+        "Tutorial": [],
+    },
 }

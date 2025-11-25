@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">Compression modes</div>
+    <p class="control-subtitle">Toggle between lossless ZIP and multiple JPEG strengths.</p>
+    <div class="mode-buttons">
+      <button class="mode-button" data-variant="original">Original</button>
+      <button class="mode-button" data-variant="zip">Lossless ZIP</button>
+      <button class="mode-button" data-variant="jpeg_weak">Weak JPEG</button>
+      <button class="mode-button" data-variant="jpeg_medium">Medium JPEG</button>
+      <button class="mode-button" data-variant="jpeg_strong">Strong JPEG</button>
+    </div>
+  </div>
+
+  <div class="card image-card full-width">
+    <div class="card-title"><span id="variant-label">Original</span></div>
+    <p class="variant-desc" id="variant-description">Uncompressed reference image.</p>
+    <div class="image-shell">
+      <img id="variant-image" src="" alt="Compressed view" class="demo-image solo-image">
+    </div>
+    <div class="metric-grid">
+      <div>Resolution</div><div id="metric-resolution"></div>
+      <div>File size</div><div id="metric-size"></div>
+      <div>Compression factor</div><div id="metric-factor"></div>
+      <div>SNR</div><div id="metric-snr"></div>
+      <div>PSNR</div><div id="metric-psnr"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-card { margin-bottom: 16px; }
+  .control-subtitle { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  .mode-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .mode-button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: var(--demo-button-bg, rgba(11,94,189,0.12)); color: var(--demo-button-color, #0b5ebd); font-weight: 600; cursor: pointer; transition: none; box-shadow: none; transform: none; }
+  .mode-button:hover, .mode-button:focus { box-shadow: none; transform: none; background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  .mode-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  body.dark-mode .mode-button { border-color: rgba(158,203,255,0.55); background: rgba(158,203,255,0.08); color: #d7e8ff; }
+  body.dark-mode .mode-button:hover,
+  body.dark-mode .mode-button:focus,
+  body.dark-mode .mode-button.active { background: rgba(158,203,255,0.14); color: #eaf2ff; }
+  .image-card { display: flex; flex-direction: column; gap: 10px; box-shadow: none; transform: none; }
+  .image-card:hover { box-shadow: none; transform: none; }
+  .image-shell { display: flex; justify-content: center; align-items: center; padding: 12px; }
+  .demo-image { width: min(100%, 720px); max-height: 520px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; margin: 0 auto; }
+  body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .full-width { width: 100%; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 12px; font-size: 0.95rem; }
+  .metric-grid div:nth-child(odd) { color: var(--demo-description-color, #465063); }
+  body.dark-mode .metric-grid div:nth-child(odd) { color: #c6d4ea; }
+  .variant-desc { margin: 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .variant-desc { color: #d8e3f5; }
+</style>
+
+<script>
+  const variants = {{ variants | tojson }};
+
+  function formatBytes(bytes){
+    if(!Number.isFinite(bytes)) return '—';
+    if(bytes === 0) return '0 B';
+    const units = ['B','KB','MB','GB'];
+    const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length-1);
+    const val = bytes / Math.pow(1024, idx);
+    return `${val.toFixed(val >= 10 ? 0 : 1)} ${units[idx]}`;
+  }
+
+  function formatRatio(ratio){
+    if(!Number.isFinite(ratio)) return '∞';
+    return `${ratio.toFixed(2)}x`;
+  }
+
+  function formatDb(value){
+    if(!Number.isFinite(value)) return '∞ dB';
+    return `${value.toFixed(2)} dB`;
+  }
+
+  function setVariant(key){
+    const data = variants[key];
+    if(!data) return;
+    document.getElementById('variant-label').textContent = data.label;
+    document.getElementById('variant-description').textContent = data.description;
+    document.getElementById('variant-image').src = data.image_src;
+    document.getElementById('metric-resolution').textContent = `${data.width} × ${data.height} px`;
+    document.getElementById('metric-size').textContent = formatBytes(data.file_size);
+    document.getElementById('metric-factor').textContent = formatRatio(data.compression_factor);
+    document.getElementById('metric-snr').textContent = formatDb(data.snr);
+    document.getElementById('metric-psnr').textContent = formatDb(data.psnr);
+
+    document.querySelectorAll('.mode-button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.variant === key);
+    });
+  }
+
+  document.querySelectorAll('.mode-button').forEach(btn => {
+    btn.addEventListener('click', () => setVariant(btn.dataset.variant));
+  });
+
+  setVariant('original');
+</script>
+{% endblock %}
