@@ -25,10 +25,15 @@ def sin(t, t_norm: float = 1.):
 def sign(t):
     return np.sign(t)
 
-def delta(t):
-    """Approximate Dirac delta via narrow Gaussian."""
-    eps = 1e-3
-    return np.exp(-t**2 / eps) / np.sqrt(np.pi * eps)
+def delta(t, eps=1e-4, normalize: bool = False):
+    """Approximate Dirac delta via narrow Gaussian and
+    normalize maximum to 1 if `normalize` is True."""
+    delta_out = np.exp(-t**2 / eps) / np.sqrt(np.pi * eps)
+    if normalize:
+        abs_max = np.max(np.abs(delta_out))
+        if abs_max != 0:
+            delta_out /= abs_max
+    return delta_out
 
 def delta_train(t, spacing: float = 1.0, count: int = 17) -> np.ndarray:
     """Finite train of equally spaced deltas: ∑ δ(t - k*spacing) for k=-((count-1)//2) ... count//2
