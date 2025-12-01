@@ -423,8 +423,11 @@ def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
         X = scale * width * sig.freq_fn(omega * width) * np.exp(-1j * omega * shift)
 
         latex_time = fr"{scale:.2f}\,{sig.latex_time}\Big((t-{shift:.2f})/{width:.2f}\Big)"
-        latex_freq = fr"{scale*width:.2f}\,{sig.latex_freq}\big(\omega\,{width:.2f}\big)e^{{-\mathrm{j}\omega {shift:.2f}}}"
-
+        phase_term = fr"-\mathrm{{j}}\omega {shift:.2f}"
+        latex_freq = (
+            fr"{scale*width:.2f}\,{sig.latex_freq}\big(\omega\,{width:.2f}\big)"
+            fr"e^{{{phase_term}}}"
+        )
         # Build options (correct + 3 distractors)
         true_spec = X
         true_time = x

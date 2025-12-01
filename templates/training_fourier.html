@@ -70,6 +70,7 @@
   let prefetchPromise = null;
   let pendingWarmRequest = null;
   let prefetchQueuedForCurrentRound = false;
+  let hasAnswered = false;
 
 
   function getDifficulty(){ const x=document.querySelector('input[name="difficulty"]:checked'); return x?x.value:null; }
@@ -115,10 +116,12 @@
   }
 
   function renderProblemFromData(data, diffTag=null, dirTag=null){
-    if (data.error){ showFeedback('Error: '+data.error); return; }
-    currentProblemDifficulty = diffTag || getDifficulty();
-    currentProblemDirection = dirTag || getDirection();
-    currentProblemSignature = signatureFor(currentProblemDifficulty, currentProblemDirection);
+      if (data.error){ showFeedback('Error: '+data.error); return; }
+      hasAnswered = false; 
+      currentProblemDifficulty = diffTag || getDifficulty();
+      currentProblemDirection = dirTag || getDirection();
+      currentProblemSignature = signatureFor(currentProblemDifficulty, currentProblemDirection);
+
 
     latexSignal = data.latex_time || ''; latexTransform = data.latex_freq || ''; propMsg = data.property_msg || '';
 
@@ -150,10 +153,11 @@
   }
 
   function hidePlot(){
-    const img=document.getElementById('fourier_plot_image');
-    img.style.display='none'; img.removeAttribute('src');
-    const overlay=document.getElementById('plotOverlay'); overlay.style.display='none'; overlay.innerHTML='';
-    correctIndex=null; currentHitBoxes=[];
+      const img=document.getElementById('fourier_plot_image');
+      img.style.display='none'; img.removeAttribute('src');
+      const overlay=document.getElementById('plotOverlay'); overlay.style.display='none'; overlay.innerHTML='';
+      correctIndex=null; currentHitBoxes=[];
+      hasAnswered = false; 
   }
 
   function layoutOverlayBoxes(){
@@ -294,21 +298,45 @@
   }
 
   function checkAnswer(selected){
-    if (correctIndex===null) return showFeedback('Generate a problem first!');
+    if (correctIndex === null) {
+      showFeedback('Generate a problem first!');
+      return;
+    }
+
+    if (hasAnswered) {
+      return;
+    }
+    hasAnswered = true;
+
     maybeQueueNextPrefetch();
     req("{{ url_for('training_fourier.check_answer') }}", {selectedIndex: selected, correctIndex: correctIndex})
-    .then(data=>{
-      document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
-      const overlay=document.getElementById('plotOverlay'); const hits=overlay.querySelectorAll('.plot-hit');
-      hits.forEach(h=>h.style.pointerEvents='none');
-      hits[correctIndex].classList.add('correct');
-      if (selected!==correctIndex){ hits[selected].classList.add('incorrect'); 
-        const btnSel=document.querySelector(`.option-btn[data-index="${selected}"]`); if(btnSel) btnSel.classList.add('incorrect'); }
-      const btnCor=document.querySelector(`.option-btn[data-index="${correctIndex}"]`); if(btnCor) btnCor.classList.add('correct');
-      showFeedback(data.feedback||''); const ok=(selected===correctIndex); bumpStreak(ok); showExplanation();
-    })
-    .catch(()=>showFeedback('Error checking answer.'));
-  }
+      .then(data=>{
+        document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+
+        const overlay=document.getElementById('plotOverlay');
+        const hits=overlay.querySelectorAll('.plot-hit');
+        hits.forEach(h=>h.style.pointerEvents='none');
+
+        if (hits[correctIndex]) {
+          hits[correctIndex].classList.add('correct');
+        }
+        if (selected !== correctIndex && hits[selected]) {
+          hits[selected].classList.add('incorrect');
+        }
+
+        const btnSel=document.querySelector(`.option-btn[data-index="${selected}"]`);
+        if (selected !== correctIndex && btnSel) btnSel.classList.add('incorrect');
+        const btnCor=document.querySelector(`.option-btn[data-index="${correctIndex}"]`);
+        if (btnCor) btnCor.classList.add('correct');
+
+        showFeedback(data.feedback || '');
+        const ok = (selected === correctIndex);
+        bumpStreak(ok);
+        showExplanation();
+      })
+      .catch(()=>showFeedback('Error checking answer.'));
+}
+
 
   // --- Prefetch ---
   function prefetchNextProblem(){
