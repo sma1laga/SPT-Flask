@@ -141,7 +141,8 @@ def discrete_plot_functions_update():
             return jsonify({"error": f"f₂ error: {e}"}), 400
 
     return jsonify({
-        "x1": k.tolist(), "y1": y1.tolist(),
+        "x1": k.tolist(),
+        "y1": y1.tolist(),
         "x2": k.tolist() if y2 is not None else None,
         "y2": y2.tolist() if y2 is not None else None,
         "xrange": [k_start, k_end]

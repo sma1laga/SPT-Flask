@@ -178,7 +178,7 @@
     label.textContent = parseFloat(slider.value).toFixed(1);
     slider.addEventListener("input", ()=>{
       label.textContent = parseFloat(slider.value).toFixed(1);
-      updatePlots();
+      updateData();
     });
   });
   document.querySelectorAll('.reset-transform').forEach(btn=>{
@@ -192,7 +192,7 @@
         slider.value = defaultVal;
         slider.nextElementSibling.textContent = parseFloat(defaultVal).toFixed(1);
       });
-      updatePlots();
+      updateData();
     });
   });
 
@@ -203,6 +203,48 @@
     return d;
   }
 
+  /* update only data */
+  function updateData(){
+    clearErrors();
+    fetch("{{ url_for('plot_function.plot_function_update') }}",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(collectData())
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.error){
+        if(errorMsg) errorMsg.textContent = data.error;
+        if(inlineError) inlineError.textContent = data.error;
+        markError(data.pos);
+        console.error(data.error);
+        return;
+      }
+      let trace_idx = 0;
+      function updateTrace(t, y){
+        if (!y) return;
+        let update = {};
+        if (Array.isArray(y)){
+          update = {x: [t], y: [y]};
+          Plotly.restyle("plot", update, [trace_idx]);
+        }else if(y.real && y.imag){
+          update = {x: [t], y: [y.real]};
+          Plotly.restyle("plot", update, [trace_idx]);
+          const hasImag = y.imag.some(v=>Math.abs(v)>1e-12);
+          if(hasImag){
+            update = {x: [t], y: [y.imag]};
+            trace_idx += 1;
+            Plotly.restyle("plot", update, [trace_idx]);
+          }
+        }
+        trace_idx += 1;
+      }
+
+      updateTrace(data.t1, data.y1);
+      updateTrace(data.t2, data.y2);
+    })
+    .catch(console.error);
+  }
   /* fetch + draw ------------------------------------------------- */
   function updatePlots(){
   clearErrors();
@@ -241,7 +283,7 @@
       if(data.t2) addTraces(data.t2, data.y2, "f₂(t)", "#ff7f0e");
 
       const xrange = data.xrange || [-20, 20];
-      Plotly.newPlot("plot", traces,
+      Plotly.react("plot", traces,
         {margin:{t:30}, showlegend:true,
          xaxis:{title:{text:"t"}, range:xrange}, yaxis:{title:{text:"Amplitude"}}});
     })
