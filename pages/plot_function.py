@@ -75,7 +75,7 @@ def plot_function_update():
     end = center + MAX_T
     t = np.linspace(start, end, 4097)
 
-    ns = dict(t=_adjust_t1(t), np=np, pi=np.pi, e=np.e,
+    ns = dict(t=_adjust_t1(t), np=np, pi=np.pi, e=np.e, j=1j,
               rect=rect, tri=tri, step=step,
               cos=cos, sin=sin,
               sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
