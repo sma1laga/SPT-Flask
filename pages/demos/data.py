@@ -147,6 +147,13 @@ DEMOS = {
                 "title_desc": "Image & Video",
                 "desc": "Compare lossless ZIP with weak and strong JPEG compression using the classic Lenna image.",
                 "endpoint": "demos_compression.page",
+            },
+            {
+                "slug": "huffman",
+                "title": "Huffman coding",
+                "title_desc": "Entropy coding",
+                "desc": "Visualize histograms, entropy, and codeword lengths for Lenna Y/Cr channels and white noise.",
+                "endpoint": "demos_huffman.page",
             }
         ],
         "Tutorial": [],
