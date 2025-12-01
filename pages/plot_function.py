@@ -3,12 +3,20 @@ from flask import Blueprint, render_template, request, jsonify
 import numpy as np
 from functools import partial
 from utils.math_utils import (
-    rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+    rect, tri, step, cos, sin, sign, exp_iwt, inv_t, si
 )
 from utils.eval_helpers import error_data
 
 
 # additional special functions kept local to this module
+def delta_plotting(t, th=1e-3):
+    """Returns array with at most 1 nonzero value where `t` is closest to 0 and `|t| < th` """
+    delta_out = np.zeros_like(t)
+    idx = np.argmin(np.abs(t))
+    if np.abs(t[idx]) < th:
+        delta_out[idx] = 1
+    return delta_out
+
 def arcsin(t):
     return np.arcsin(t)
 
@@ -78,7 +86,7 @@ def plot_function_update():
     ns = dict(t=_adjust_t1(t), np=np, pi=np.pi, e=np.e, j=1j,
               rect=rect, tri=tri, step=step,
               cos=cos, sin=sin,
-              sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
+              sign=sign, delta=partial(delta_plotting, th=0.1*w1), exp_iwt=exp_iwt, inv_t=inv_t,
               si=si, exp=np.exp, sqrt=np.sqrt,
               arcsin=arcsin, arccos=arccos, arctan=arctan,
               sinh=sinh, cosh=cosh, tanh=tanh,
@@ -95,6 +103,7 @@ def plot_function_update():
     if func2_str:
         try:
             ns["t"] = _adjust_t2(t)
+            ns["delta"] = partial(delta_plotting, th=0.1*w2)
             y2 = a2 * eval(func2_str, ns)
         except Exception as e:
             return jsonify(error_data("Error in f₂(t): ", e)), 400
