@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, jsonify
 from functools import partial
 import numpy as np
 from scipy.signal import convolve
-from utils.math_utils import rect, tri, step, cos, sin, delta, exp_iwt, inv_t, si, delta_train
+from utils.math_utils import rect, tri, step, cos, sin, delta, inv_t, si, delta_train
 
 
 dynamic_convolution_bp = Blueprint("dynamic_convolution", __name__)
@@ -37,65 +37,40 @@ def dynamic_data():
     f1_str = data.get("func1", "")
     f2_str = data.get("func2", "")
 
-
-
-    # display grid limited to [-8, 8]
-    t = np.linspace(-8, 8, 3200)
-    # use a wider calculation grid so theoretically infinite signals appear flat
-    t_calc = np.linspace(-16, 16, 6400)
-    dt_calc = t_calc[1] - t_calc[0]
-    
     # safe eval context on the wider grid
-    local = {
+    DISP_RANGE = 3.5
+    SLIDER_RANGE = 3.5
+    t_calc = np.linspace(-4*DISP_RANGE-0.1, 4*DISP_RANGE+0.1, 8001)
+    dt = t_calc[1] - t_calc[0]
+    ctx = {
         "t": t_calc, "np": np, "pi": np.pi, "e": np.e,
         "rect": rect, "tri": tri, "step": step,
         "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi),
-        "delta": delta, "delta_train": delta_train, "exp_iwt": exp_iwt,
+        "delta": delta, "delta_train": delta_train,
         "inv_t": inv_t, "si": si, "exp": np.exp
     }
 
-    # eval f1, f2
     try:
-        y1 = eval(f1_str, local) if f1_str else np.zeros_like(t_calc)
-    except Exception as e:
-        return jsonify(error=f"Function 1 eval error: {e}"), 400
-    try:
-        y2 = eval(f2_str, local) if f2_str else np.zeros_like(t_calc)
-    except Exception as e:
-        return jsonify(error=f"Function 2 eval error: {e}"), 400
-    
-    y1 = np.real(y1)
-    y2 = np.real(y2)
-
-    # full convolution
-        # ——— Extended‐domain convolution to avoid edge truncation ———
-    N = len(t_calc)
-    t_ext = np.linspace(2*t_calc[0], 2*t_calc[-1], 2*N - 1)
-    dt_ext = t_ext[1] - t_ext[0]
-
-    local_ext = local.copy()
-    local_ext['t'] = t_ext
-
-    try:
-        y1_ext = eval(f1_str, local_ext) if f1_str else np.zeros_like(t_ext)
-        y2_ext = eval(f2_str, local_ext) if f2_str else np.zeros_like(t_ext)
+        y1_calc = eval(f1_str, ctx) if f1_str else np.zeros_like(t_calc)
+        y2_calc = eval(f2_str, ctx) if f2_str else np.zeros_like(t_calc)
     except Exception as e:
         return jsonify(error=f"Extended‐domain eval error: {e}"), 400
 
-    y1_ext = np.real(y1_ext)
-    y2_ext = np.real(y2_ext)
+    y_conv_calc = convolve(y1_calc, y2_calc, mode="same") * dt
 
-    y_conv_ext = convolve(y1_ext, y2_ext, mode="same") * dt_ext
-    y_conv_ext = np.real(y_conv_ext)
+    # evaluate input signals for display
+    t_disp = np.linspace(-DISP_RANGE-SLIDER_RANGE-0.1, DISP_RANGE+SLIDER_RANGE+0.1, 4001)
+    ctx_disp = ctx.copy()
+    ctx_disp["t"] = t_disp
+    try:
+        y1_disp = eval(f1_str, ctx_disp) if f1_str else np.zeros_like(t_disp)
+    except Exception as e:
+        return jsonify(error=f"Function 1 eval error: {e}"), 400
+    try:
+        y2_disp = eval(f2_str, ctx_disp) if f2_str else np.zeros_like(t_disp)
+    except Exception as e:
+        return jsonify(error=f"Function 2 eval error: {e}"), 400
 
-    # sample back onto the calculation grid then the display grid
-    y_conv_calc = np.interp(t_calc, t_ext, y_conv_ext)
-    y_conv_calc = np.real(y_conv_calc)
-
-    # resample original signals for display
-    y1_disp = np.interp(t, t_calc, y1)
-    y2_disp = np.interp(t, t_calc, y2)
-    
     def _scale_delta(expr, arr):
         """Normalize delta-like signals for display while leaving calculations unchanged."""
         expr = expr.strip()
@@ -107,15 +82,17 @@ def dynamic_data():
 
     y1_disp = _scale_delta(f1_str, y1_disp)
     y2_disp = _scale_delta(f2_str, y2_disp)
-    y_conv = np.interp(t, t_calc, y_conv_calc)
-    y_conv = np.real(y_conv)
+    y_conv_disp = np.interp(t_disp, t_calc, y_conv_calc)
+    if "delta" in f1_str.strip() and "delta" in f2_str.strip():
+        # convolution of two approximated deltas results in high output values
+        y_conv_disp = _scale_delta("delta", y_conv_disp)
 
     # ——————————————————————————————————————————————————————
 
 
     return jsonify({
-        "t":     t.tolist(),
+        "t":     t_disp.tolist(),
         "y1":    y1_disp.tolist(),
         "y2":    y2_disp.tolist(),
-        "y_conv": y_conv.tolist()
+        "y_conv": y_conv_disp.tolist()
     })
