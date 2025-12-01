@@ -65,13 +65,16 @@ def discrete_plot_functions_update():
     _adjust_k1 = partial(_adjust_k, shift=s1, width=w1)
     _adjust_k2 = partial(_adjust_k, shift=s2, width=w2)
 
-    MAX_N = 20. # plot xlim will be [(center - MAX_N), (center + MAX_N)]
-    # broad grid for centre detection
-    k_broad = np.linspace(-100, 101)
+    # calculate signals for t = [(center - MAX_K), (center + MAX_K)]
+    # plot around t = [(center - MAX_K/2), (center + MAX_K/2)]
+    MAX_K = 40
+    center = 0
+    k_start = center - MAX_K
+    k_end = center + MAX_K
+    k = np.arange(k_start, k_end + 1)
 
-    # evaluation namespace with discrete helpers
-    ctx_broad = dict(
-        n=_adjust_k1(k_broad), k=_adjust_k1(k_broad), np=np,
+    ctx = dict(
+        k=_adjust_k1(k), np=np,
         pi=np.pi, e=np.e,
         rect=rect_N, tri=tri_N,
         step=step, delta=delta_n,
@@ -79,52 +82,6 @@ def discrete_plot_functions_update():
         sign=sign, si=si,
         exp=np.exp,
     )
-
-    # -------------- evaluate on broad grid -----------------------------------
-    try:
-        y1_broad = a1 * eval(func1_str, ctx_broad) if func1_str.strip() else np.zeros_like(k_broad)
-    except Exception as e:
-        return jsonify({"error": f"f₁ error: {e}"}), 400
-    y2_broad = None
-    if func2_str.strip():
-        try:
-            ctx_broad["n"] = _adjust_k2(k_broad)
-            ctx_broad["k"] = _adjust_k2(k_broad)
-            y2_broad = a2 * eval(func2_str, ctx_broad)
-        except Exception as e:
-            return jsonify({"error": f"f₂ error: {e}"}), 400
-
-    def center_of_mass(x, y):
-        if y is None:
-            return None, 0
-        mag = np.abs(y)
-        tot = np.sum(mag)
-        if tot == 0:
-            return None, 0
-        return float(np.sum(x * mag) / tot), tot
-
-    c1, m1 = center_of_mass(k_broad, y1_broad)
-    c2, m2 = center_of_mass(k_broad, y2_broad)
-
-    if c1 is None and c2 is None:
-        center = 0.0
-    elif c2 is None:
-        center = c1
-    elif c1 is None:
-        center = c2
-    else:
-        center = (c1 * m1 + c2 * m2) / (m1 + m2)
-
-    # final grid centred around detected centre
-    k_start = center - MAX_N
-    k_end = center + MAX_N
-    k = np.arange(int(round(k_start)), int(round(k_end)) + 1)
-
-    ctx = ctx_broad.copy()
-    ctx.update({
-        "n": _adjust_k1(k),
-        "k": _adjust_k1(k),
-    })
 
     try:
         y1 = a1 * eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(k)
@@ -134,7 +91,6 @@ def discrete_plot_functions_update():
     y2 = None
     if func2_str.strip():
         try:
-            ctx["n"] = _adjust_k2(k)
             ctx["k"] = _adjust_k2(k)
             y2 = a2 * eval(func2_str, ctx)
         except Exception as e:
@@ -145,5 +101,5 @@ def discrete_plot_functions_update():
         "y1": y1.tolist(),
         "x2": k.tolist() if y2 is not None else None,
         "y2": y2.tolist() if y2 is not None else None,
-        "xrange": [k_start, k_end]
-        })
+        "xrange": [center - MAX_K/2, center + MAX_K/2]
+    })

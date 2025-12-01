@@ -67,82 +67,13 @@ def plot_function_update():
     _adjust_t1 = partial(_adjust_t, shift=s1, width=w1)
     _adjust_t2 = partial(_adjust_t, shift=s2, width=w2)
 
-    MAX_T = 20.  # plot xlim will be [(center - MAX_T), (center + MAX_T)]
-    # initial broad grid to estimate a suitable centre
-    t_broad = np.linspace(-100, 100, 8000)
-
-    ns_broad = dict(t=_adjust_t1(t_broad), np=np, pi=np.pi, e=np.e,
-                    rect=rect, tri=tri, step=step,
-                    cos=cos, sin=sin,
-                    sign=sign, delta=delta, exp_iwt=exp_iwt, inv_t=inv_t,
-                    si=si, exp=np.exp, sqrt=np.sqrt,
-                    arcsin=arcsin, arccos=arccos, arctan=arctan,
-                    sinh=sinh, cosh=cosh, tanh=tanh,
-                    gauss=gauss)
-
-    # evaluate on broad grid
-    try:
-        y1_broad = a1 * eval(func1_str, ns_broad) if func1_str else np.zeros_like(t_broad)
-    except Exception as e:
-        return jsonify(error_data("Error in f₁(t): ", e)), 400
-    if np.any(np.isinf(y1_broad)):
-        return jsonify({"error": "f₁(t) produced non-finite values"}), 400
-    
-    y2_broad = None
-    if func2_str:
-        try:
-            ns_broad["t"] = _adjust_t2(t_broad)
-            y2_broad = a2 * eval(func2_str, ns_broad)
-        except Exception as e:
-            return jsonify(error_data("Error in f₂(t): ", e)), 400
-        if np.any(np.isinf(y2_broad)):
-            return jsonify({"error": "f₂(t) produced non-finite values"}), 400
-
-    def center_point(t_arr, y_arr):
-        """Heuristic centre for plotting.
-
-        For signals that start from (near) zero and then rise (e.g. step or
-        ramp), the arithmetic centre of mass can drift far from the interesting
-        region.  We first look for such a "starting" edge and fall back to the
-        magnitude centre of mass if none is found.
-        """
-        if y_arr is None:
-            return None, 0
-        
-        mag = np.abs(np.nan_to_num(y_arr, nan=0.0))
-        total = np.sum(mag)
-        if np.isnan(total):
-            return None, 0
-        if total == 0:
-            return None, 0
-
-        # detect a leading region of (near) zeros followed by activity.
-        # require a reasonably long run of near-zero values to avoid
-        # mistaking oscillatory functions for one-sided signals.
-        thresh = mag.max() * 1e-3
-        nz = np.where(mag > thresh)[0]
-        min_run = max(10, len(t_arr) // 100)
-        if len(nz) > 0 and nz[0] >= min_run and np.all(mag[:nz[0]] < thresh):
-            return float(t_arr[nz[0]]), total
-
-        return float(np.sum(t_arr * mag) / total), total
-
-    c1, m1 = center_point(t_broad, y1_broad)
-    c2, m2 = center_point(t_broad, y2_broad)
-
-    if c1 is None and c2 is None:
-        center = 0.0
-    elif c2 is None:
-        center = c1
-    elif c1 is None:
-        center = c2
-    else:
-        center = (c1 * m1 + c2 * m2) / (m1 + m2)
-
-    # final grid centred around detected centre
+    # calculate signals for t = [(center - MAX_T), (center + MAX_T)]
+    # plot around t = [(center - MAX_T/2), (center + MAX_T/2)]
+    MAX_T = 10
+    center = 0
     start = center - MAX_T
     end = center + MAX_T
-    t = np.linspace(start, end, 4000)
+    t = np.linspace(start, end, 4097)
 
     ns = dict(t=_adjust_t1(t), np=np, pi=np.pi, e=np.e,
               rect=rect, tri=tri, step=step,
@@ -153,7 +84,6 @@ def plot_function_update():
               sinh=sinh, cosh=cosh, tanh=tanh,
               gauss=gauss)
 
-    # evaluate again on final grid
     try:
         y1 = a1 * eval(func1_str, ns) if func1_str else np.zeros_like(t)
     except Exception as e:
@@ -191,5 +121,5 @@ def plot_function_update():
         "y1": to_json_list(y1),
         "t2": t.tolist() if y2 is not None else None,
         "y2": to_json_list(y2) if y2 is not None else None,
-        "xrange": [start, end]
+        "xrange": [center - MAX_T/2, center + MAX_T/2]
     })
