@@ -80,6 +80,20 @@ from pages.demos.lloyd_max import demos_lloyd_max_bp
 from pages.demos.spatial_prediction import demos_spatial_prediction_bp
 
 
+def _build_demo_slug_map():
+    """Create a lookup from demo slug to its parent section name - ist cooler"""
+
+    slug_to_section = {}
+    for section_name, categories in DEMOS.items():
+        for demo_list in categories.values():
+            for demo in demo_list:
+                slug_to_section[demo["slug"]] = section_name
+    return slug_to_section
+
+
+DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
+
+
 
 
 
@@ -88,15 +102,21 @@ def create_app():
     
     @app.context_processor
     def inject_demos_sidebar():
-        """Expose demo metadata and active lecture for sidebar on demo pages."""
-        if request.path.startswith("/demos"):
-            path = request.path
-            sisy2_slugs = []
-            for section in DEMOS["Signals and Systems II"].values():
-                sisy2_slugs.extend(d["slug"] for d in section)
-            is_sisy2 = any(path.startswith(f"/demos/{slug}") for slug in sisy2_slugs)
-            return {"demos_sidebar": DEMOS, "is_sisy2": is_sisy2}
-        return {}
+        """Expose demo metadata for building the section-aware demo sidebar."""
+
+        if not request.path.startswith("/demos"):
+            return {}
+
+        parts = [part for part in request.path.split("/") if part]
+        slug = parts[1] if len(parts) > 1 else None
+        section_name = DEMO_SLUG_TO_SECTION.get(slug)
+        section_data = DEMOS.get(section_name)
+
+        return {
+            "demos_sidebar": DEMOS,
+            "demos_section": section_data,
+            "demos_section_name": section_name,
+        }
 
     @app.errorhandler(Exception)
     def _handle_exception(e):
