@@ -149,6 +149,13 @@ DEMOS = {
                 "endpoint": "demos_compression.page",
             },
             {
+                "slug": "lloyd-max",
+                "title": "Lloyd-Max",
+                "title_desc": "Iterative Quantizer",
+                "desc": "Step through Lloyd-Max iterations on Lenna and compare to uniform 16-level quantization.",
+                "endpoint": "demos_lloyd_max.page",
+            },
+            {
                 "slug": "huffman",
                 "title": "Huffman coding",
                 "title_desc": "Entropy coding",
