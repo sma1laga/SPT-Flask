@@ -142,6 +142,13 @@ DEMOS = {
     "Image and Video Compression": {
         "Lecture": [
             {
+                "slug": "spatial-prediction-1",
+                "title": "Spatial Prediction 1",
+                "title_desc": "Linear Predictors",
+                "desc": "Compare 2D linear predictors on Lenna with entropy and compression of the error image.",
+                "endpoint": "demos_spatial_prediction.page",
+            },
+            {
                 "slug": "compression",
                 "title": "Compression",
                 "title_desc": "Image & Video",

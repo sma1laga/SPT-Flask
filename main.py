@@ -77,6 +77,7 @@ from pages.demos.sampling import sampling_bp
 from pages.demos.compression import demos_compression_bp
 from pages.demos.huffman import demos_huffman_bp
 from pages.demos.lloyd_max import demos_lloyd_max_bp
+from pages.demos.spatial_prediction import demos_spatial_prediction_bp
 
 
 
@@ -187,7 +188,7 @@ def create_app():
     app.register_blueprint(demos_compression_bp, url_prefix="/demos/compression")
     app.register_blueprint(demos_huffman_bp, url_prefix="/demos/huffman")
     app.register_blueprint(demos_lloyd_max_bp, url_prefix="/demos/lloyd-max")
-
+    app.register_blueprint(demos_spatial_prediction_bp, url_prefix="/demos/spatial-prediction-1")
 
     @app.route("/")
     def home():
