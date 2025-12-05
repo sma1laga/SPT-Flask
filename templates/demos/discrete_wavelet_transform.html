@@ -70,6 +70,48 @@
         </div>
       </div>
     </div>
+
+    <div class="card reconstruction-card">
+      <div class="recon-header">
+        <div>
+          <p class="eyebrow">Successive reconstruction</p>
+          <h3>See how subbands add back detail</h3>
+          <p class="subtitle">Drag the slider to reveal how each subband contributes to the Lenna frame. The newest band glows while completed bands stay shaded.</p>
+        </div>
+        <div class="recon-controls">
+          <label for="recon-step">Step <span id="recon-step-label">1</span> / {{ recon_steps|length }}</label>
+          <input id="recon-step" type="range" min="1" max="{{ recon_steps|length }}" step="1" value="1" aria-label="Reconstruction step" />
+        </div>
+      </div>
+
+      <div class="recon-visual">
+        <div class="recon-image card">
+          <img id="recon-image" src="{{ recon_steps[0].src }}" alt="LL-2 reconstruction" loading="lazy" />
+          <span class="recon-badge" id="recon-badge">Step 1 · LL-2</span>
+        </div>
+        <div class="recon-grid" id="recon-grid" aria-live="polite">
+          <div class="recon-cell" data-key="ll2"><span>LL-2</span></div>
+          <div class="recon-cell" data-key="hl2"><span>HL-2</span></div>
+          <div class="recon-cell" data-key="lh2"><span>LH-2</span></div>
+          <div class="recon-cell" data-key="hh2"><span>HH-2</span></div>
+          <div class="recon-cell" data-key="lh1"><span>LH-1</span></div>
+          <div class="recon-cell" data-key="hl1"><span>HL-1</span></div>
+          <div class="recon-cell" data-key="hh1"><span>HH-1</span></div>
+        </div>
+      </div>
+
+      <ul class="recon-list" id="recon-list" aria-label="Reconstruction order">
+        {% for item in recon_steps %}
+          <li class="recon-list-item {% if loop.first %}active current{% endif %}" data-key="{{ item.key }}">
+            <span class="dot" aria-hidden="true"></span>
+            <div>
+              <p class="eyebrow">{{ loop.index }}. {{ item.label }}</p>
+              <p class="subtitle">{{ item.desc }}</p>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
   </div>
 </div>
 
@@ -96,12 +138,70 @@
   document.querySelectorAll('.stage-button').forEach((button) => {
     button.addEventListener('click', () => setStage(button.dataset.key));
   });
+
+  const reconSteps = {{ recon_steps | tojson }};
+  const reconSlider = document.getElementById('recon-step');
+  const reconLabel = document.getElementById('recon-step-label');
+  const reconGrid = document.getElementById('recon-grid');
+  const reconList = document.getElementById('recon-list');
+  const reconImage = document.getElementById('recon-image');
+  const reconBadge = document.getElementById('recon-badge');
+
+  function setReconStep(step) {
+    const index = Math.min(Math.max(step - 1, 0), reconSteps.length - 1);
+    const stepData = reconSteps[index];
+    reconLabel.textContent = index + 1;
+
+    if (reconImage) {
+      reconImage.src = stepData.src;
+      reconImage.alt = `${stepData.label} reconstruction`;
+    }
+
+    if (reconBadge) {
+      reconBadge.textContent = `Step ${index + 1} · ${stepData.label}`;
+    }
+
+    const activeKeys = new Set(stepData.active);
+    reconGrid.querySelectorAll('.recon-cell').forEach((cell) => {
+      cell.classList.toggle('active', activeKeys.has(cell.dataset.key));
+      cell.classList.toggle('fresh', cell.dataset.key === stepData.key);
+    });
+
+    reconList.querySelectorAll('.recon-list-item').forEach((item, i) => {
+      item.classList.toggle('active', i <= index);
+      item.classList.toggle('current', i === index);
+    });
+  }
+
+  if (reconSlider) {
+    reconSlider.addEventListener('input', (event) => {
+      setReconStep(Number(event.target.value));
+    });
+    setReconStep(Number(reconSlider.value));
+  }
 </script>
 
 <style>
+  .dwt-page {
+    --demo-surface: #ffffff;
+    --demo-card-surface: #f8fafc;
+    --demo-heading-color: #0e1a2b;
+    --demo-description-color: #465063;
+    --demo-button-color: #0b5ebd;
+    --demo-button-bg: rgba(11, 94, 189, 0.12);
+    --demo-button-hover-bg: rgba(11, 94, 189, 0.2);
+    --demo-button-hover-color: #073b75;
+    --demo-card-border: rgba(13, 53, 109, 0.12);
+    --demo-card-shadow: 0 12px 26px rgba(15, 35, 95, 0.06);
+    --demo-note-bg: rgba(11, 94, 189, 0.08);
+    --demo-tile-bg: rgba(255, 255, 255, 0.72);
+    color: var(--demo-heading-color, #0e1a2b);
+  }
   .dwt-page .card {
     box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06));
     transition: none;
+    background: var(--demo-surface, #fff);
+    color: inherit;
   }
   .dwt-page .card:hover {
     transform: none;
@@ -162,14 +262,42 @@
     transform: none;
   }
   .stage-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
-  .stage-visual { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; background: #f8fafc; display: flex; justify-content: center; }
-  .stage-visual img { width: 100%; max-width: 820px; border-radius: 12px; }
+  .stage-visual { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; background: var(--demo-card-surface, #f8fafc); display: flex; justify-content: center; }  .stage-visual img { width: 100%; max-width: 820px; border-radius: 12px; }
   .subtitle { color: var(--demo-description-color, #465063); margin: 4px 0 0; }
   .caption { margin: 0; color: var(--demo-description-color, #465063); }
   .explain-card { display: grid; gap: 12px; }
   .explain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .eyebrow { font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; color: var(--demo-eyebrow-color, #0b5ebd); font-weight: 700; }
-  .note-box { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; background: rgba(11,94,189,0.08); border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); border-radius: 12px; padding: 12px; color: var(--demo-heading-color, #0e1a2b); }
-  @media (max-width: 1024px) { .dwt-grid { grid-template-columns: 1fr; } .dwt-hero { grid-template-columns: 1fr; } .stage-header { flex-direction: column; } .explain-grid { grid-template-columns: 1fr; } }
+  .note-box { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; background: var(--demo-note-bg, rgba(11,94,189,0.08)); border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); border-radius: 12px; padding: 12px; color: var(--demo-heading-color, #0e1a2b); }
+  .reconstruction-card { display: grid; gap: 14px; }
+  .recon-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .recon-controls { display: grid; gap: 4px; align-items: center; justify-items: end; }
+  .recon-controls label { font-weight: 700; color: var(--demo-heading-color, #0e1a2b); }
+  .recon-controls input[type="range"] { width: 220px; accent-color: var(--demo-button-color, #0b5ebd); }
+  .recon-visual { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr); gap: 12px; align-items: stretch; }
+  .recon-image { position: relative; overflow: hidden; }
+  .recon-image img { width: 100%; border-radius: 12px; display: block; }
+  .recon-badge { position: absolute; top: 12px; left: 12px; background: rgba(11,94,189,0.9); color: #fff; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+  .recon-grid { position: relative; min-height: 280px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-surface, linear-gradient(180deg, rgba(13,53,109,0.06), rgba(13,53,109,0.02))); overflow: hidden; }
+  .recon-cell { position: absolute; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.18)); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--demo-heading-color, #0e1a2b); background: var(--demo-tile-bg, rgba(255,255,255,0.72)); backdrop-filter: blur(2px); transition: background 120ms ease, color 120ms ease, transform 120ms ease; }
+  .recon-cell span { pointer-events: none; }
+  .recon-cell[data-key="ll2"] { width: 50%; height: 50%; left: 0; top: 0; }
+  .recon-cell[data-key="hl2"] { width: 50%; height: 50%; left: 50%; top: 0; font-size: 0.95rem; }
+  .recon-cell[data-key="lh2"] { width: 50%; height: 50%; left: 0; top: 50%; font-size: 0.95rem; }
+  .recon-cell[data-key="hh2"] { width: 50%; height: 50%; left: 50%; top: 50%; font-size: 0.95rem; }
+  .recon-cell[data-key="lh1"] { width: 100%; height: 30%; left: 0; bottom: 0; font-size: 1rem; }
+  .recon-cell[data-key="hl1"] { width: 40%; height: 100%; right: 0; top: 0; font-size: 1rem; }
+  .recon-cell[data-key="hh1"] { width: 40%; height: 30%; right: 0; bottom: 0; font-size: 1rem; }
+  .recon-cell.active { background: linear-gradient(135deg, #ff5f6d, #ef233c); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
+  .recon-cell.fresh { animation: pulse 0.6s ease; }
+  .recon-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .recon-list-item { border: 1px dashed var(--demo-card-border, rgba(13,53,109,0.18)); border-radius: 12px; padding: 10px 12px;display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; background: var(--demo-card-surface, rgba(255,255,255,0.75)); color: var(--demo-heading-color, #0e1a2b); transition: background 120ms ease, border-color 120ms ease; }
+  .recon-list-item .subtitle { margin: 2px 0 0; }
+  .recon-list-item.active { border-style: solid; }
+  .recon-list-item.current { background: rgba(11,94,189,0.1); border-color: var(--demo-button-color, #0b5ebd); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--demo-card-border, rgba(13,53,109,0.3)); display: inline-block; }
+  .recon-list-item.active .dot { background: var(--demo-button-color, #0b5ebd); }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+  @media (max-width: 1024px) { .dwt-grid { grid-template-columns: 1fr; } .dwt-hero { grid-template-columns: 1fr; } .stage-header { flex-direction: column; } .explain-grid { grid-template-columns: 1fr; } .recon-visual { grid-template-columns: 1fr; } .recon-controls { width: 100%; justify-items: start; } }
 </style>
 {% endblock %}

@@ -59,8 +59,8 @@ def _blank_canvas(width: int, height: int) -> Image.Image:
     return Image.new("L", (width, height), color=128)
 
 
-def _build_stage_images() -> Dict[str, str]:
-    image = _load_gray_image()
+def _build_stage_images(image: np.ndarray) -> Dict[str, str]:
+
     height, width = image.shape
 
     # Stage 0 - original (grayscale) for a consistent look
@@ -158,6 +158,114 @@ def _stage_metadata(images: Dict[str, str]) -> List[Dict[str, str]]:
         },
     ]
 
+def _build_reconstruction_images(image: np.ndarray) -> List[str]:
+    coeffs = pywt.wavedec2(image, "haar", mode="periodization", level=2)
+    cA2, (cH2, cV2, cD2), (cH1, cV1, cD1) = coeffs
+
+    def _zero_like(arr: np.ndarray) -> np.ndarray:
+        return np.zeros_like(arr)
+
+    flags = {
+        "cA2": True,
+        "cV2": False,
+        "cH2": False,
+        "cD2": False,
+        "cV1": False,
+        "cH1": False,
+        "cD1": False,
+    }
+
+    order = [
+        ("ll2", "cA2"),
+        ("lh2", "cV2"),
+        ("hl2", "cH2"),
+        ("hh2", "cD2"),
+        ("lh1", "cV1"),
+        ("hl1", "cH1"),
+        ("hh1", "cD1"),
+    ]
+
+    reconstructions: List[str] = []
+    width, height = image.shape[1], image.shape[0]
+
+    for _, flag in order:
+        flags[flag] = True
+        coeffs_partial = [
+            cA2 if flags["cA2"] else _zero_like(cA2),
+            (
+                cH2 if flags["cH2"] else _zero_like(cH2),
+                cV2 if flags["cV2"] else _zero_like(cV2),
+                cD2 if flags["cD2"] else _zero_like(cD2),
+            ),
+            (
+                cH1 if flags["cH1"] else _zero_like(cH1),
+                cV1 if flags["cV1"] else _zero_like(cV1),
+                cD1 if flags["cD1"] else _zero_like(cD1),
+            ),
+        ]
+        recon = pywt.waverec2(coeffs_partial, "haar", mode="periodization")
+        recon = np.clip(recon, 0.0, 1.0)
+        recon_img = _to_image(recon, (width, height))
+        reconstructions.append(_encode_png(recon_img))
+
+    return reconstructions
+
+
+def _reconstruction_steps(recon_images: List[str]) -> List[Dict[str, str]]:
+    image_steps = iter(recon_images)
+    return [
+        {
+            "key": "ll2",
+            "label": "LL-2",
+            "desc": "Start from the coarsest approximation; it carries the broad luminance structure.",
+            "active": ["ll2"],
+            "src": next(image_steps),
+        },
+        {
+            "key": "lh2",
+            "label": "LH-2",
+            "desc": "Add vertical edges from the second-level low-pass band.",
+            "active": ["ll2", "lh2"],
+            "src": next(image_steps),
+        },
+        {
+            "key": "hl2",
+            "label": "HL-2",
+            "desc": "Blend in horizontal edges at the same coarse scale.",
+            "active": ["ll2", "lh2", "hl2"],
+            "src": next(image_steps),
+        },
+        {
+            "key": "hh2",
+            "label": "HH-2",
+            "desc": "Introduce diagonal detail to complete the level-2 block.",
+            "active": ["ll2", "lh2", "hl2", "hh2"],
+            "src": next(image_steps),
+        },
+        {
+            "key": "lh1",
+            "label": "LH-1",
+            "desc": "Layer in medium-scale vertical contrast from the next level up.",
+            "active": ["ll2", "lh2", "hl2", "hh2", "lh1"],
+            "src": next(image_steps),
+        },
+        {
+            "key": "hl1",
+            "label": "HL-1",
+            "desc": "Restore medium-scale horizontal contrast.",
+            "active": ["ll2", "lh2", "hl2", "hh2", "lh1", "hl1"],
+            "src": next(image_steps),
+        },
+        {
+            "key": "hh1",
+            "label": "HH-1",
+            "desc": "Finish with diagonal detail to reach the full-resolution reconstruction order.",
+            "active": ["ll2", "lh2", "hl2", "hh2", "lh1", "hl1", "hh1"],
+            "src": next(image_steps),
+        },
+    ]
+
+
 
 demos_discrete_wavelet_transform_bp = Blueprint(
     "demos_discrete_wavelet_transform", __name__, template_folder="../../templates"
@@ -166,9 +274,12 @@ demos_discrete_wavelet_transform_bp = Blueprint(
 
 @demos_discrete_wavelet_transform_bp.route("/", methods=["GET"], endpoint="page")
 def page():
-    stage_images = _build_stage_images()
+    image = _load_gray_image()
+    stage_images = _build_stage_images(image)
     stages = _stage_metadata(stage_images)
+    recon_images = _build_reconstruction_images(image)
     return render_template(
         "demos/discrete_wavelet_transform.html",
         stages=stages,
+        recon_steps=_reconstruction_steps(recon_images),
     )

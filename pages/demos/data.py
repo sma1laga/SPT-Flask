@@ -156,6 +156,13 @@ DEMOS = {
                 "endpoint": "demos_compression.page",
             },
             {
+                "slug": "color-spaces",
+                "title": "Color Spaces",
+                "title_desc": "Channel Histograms",
+                "desc": "Break Lenna into RGB, YUV, YIQ, and YCbCr channels with matching histograms for each component.",
+                "endpoint": "demos_color_spaces.page",
+            },
+            {
                 "slug": "discrete-wavelet-transform",
                 "title": "Discrete Wavelet Transform",
                 "title_desc": "2D Haar",
