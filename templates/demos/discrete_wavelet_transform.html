@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dwt-page">
+  <div class="dwt-hero card">
+    <div>
+      <p class="eyebrow">Image &amp; Video Compression · Wavelets</p>
+      <h1>Discrete Wavelet Transform</h1>
+      <p class="lede">Step through a 2D Haar decomposition of the Lenna image: start with the original, split horizontally, decompose vertically, and refine the low-pass branch twice.</p>
+      <div class="pill-row">
+        <span class="pill"><i class="fas fa-layer-group"></i> Multi-resolution</span>
+        <span class="pill"><i class="fas fa-image"></i> Lenna (grayscale)</span>
+        <span class="pill"><i class="fas fa-magic"></i> Haar wavelet</span>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <h3>How to read each panel</h3>
+      <ul>
+        <li><strong>Left</strong> regions show low-pass content; <strong>right</strong> regions show detail bands.</li>
+        <li>After each split, the newest subband is highlighted in the top-left quadrant.</li>
+        <li>All bands are contrast-stretched so small details stay visible.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="dwt-grid">
+    <div class="card stage-card">
+      <div class="stage-header">
+        <div>
+          <p class="eyebrow">Decomposition steps</p>
+          <h2 id="stage-title">{{ stages[0].title }}</h2>
+          <p id="stage-subtitle" class="subtitle">{{ stages[0].subtitle }}</p>
+        </div>
+        <div class="stage-buttons" role="tablist" aria-label="Wavelet stages">
+          {% for stage in stages %}
+            <button class="stage-button {% if loop.first %}active{% endif %}" data-key="{{ stage.key }}" role="tab">{{ loop.index }}. {{ stage.title }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="stage-visual">
+        <img id="stage-image" src="{{ stages[0].src }}" alt="{{ stages[0].title }}" loading="lazy" />
+      </div>
+      <p class="caption">Click through the steps to see how the 2D Haar transform peels away horizontal, vertical, and nested low-pass information.</p>
+    </div>
+
+    <div class="card explain-card">
+      <h3>What’s happening?</h3>
+      <div class="explain-grid">
+        <div>
+          <p class="eyebrow">1. Horizontal</p>
+          <p>Rows are filtered with <em>h = [1, 1]/√2</em> and <em>g = [1, -1]/√2</em>, then downsampled. The left half is smooth (LL), the right half captures horizontal detail (HL).</p>
+        </div>
+        <div>
+          <p class="eyebrow">2. Vertical</p>
+          <p>Both halves are filtered column-wise, producing four quadrants: LL, LH, HL, and HH. Darker regions highlight where energy concentrates.</p>
+        </div>
+        <div>
+          <p class="eyebrow">3. Refine LL</p>
+          <p>The LL quadrant is decomposed horizontally into an even smoother LLL block and a gentle LLH detail band.</p>
+        </div>
+        <div>
+          <p class="eyebrow">4. Refine again</p>
+          <p>LLL is finally split vertically, exposing the most compact low-pass core (LLLL) and a faint vertical detail (LLLH).</p>
+        </div>
+      </div>
+      <div class="note-box">
+        <i class="fas fa-lightbulb"></i>
+        <div>
+          <strong>Tip:</strong> Use the stage buttons to follow the wavelet refinement order. Every subband is contrast-stretched so edges are easy to spot even in the smallest tiles.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stages = {{ stages | tojson }};
+  const titleEl = document.getElementById('stage-title');
+  const subtitleEl = document.getElementById('stage-subtitle');
+  const imageEl = document.getElementById('stage-image');
+
+  function setStage(key) {
+    const data = stages.find((stage) => stage.key === key);
+    if (!data) return;
+
+    titleEl.textContent = data.title;
+    subtitleEl.textContent = data.subtitle;
+    imageEl.src = data.src;
+    imageEl.alt = data.title;
+
+    document.querySelectorAll('.stage-button').forEach((button) => {
+      button.classList.toggle('active', button.dataset.key === key);
+    });
+  }
+
+  document.querySelectorAll('.stage-button').forEach((button) => {
+    button.addEventListener('click', () => setStage(button.dataset.key));
+  });
+</script>
+
+<style>
+  .dwt-page .card {
+    box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06));
+    transition: none;
+  }
+  .dwt-page .card:hover {
+    transform: none;
+    box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06));
+  }
+  .dwt-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+    gap: 20px;
+    padding: 22px 24px;
+    border-radius: 16px;
+  }
+  .dwt-hero h1 { margin: 6px 0; }
+  .dwt-hero .lede { color: var(--demo-description-color, #465063); }
+  .hero-panel {
+    background: linear-gradient(135deg, rgba(11,94,189,0.1), rgba(11,94,189,0.04));
+    border-radius: 14px;
+    padding: 16px 18px;
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12));
+  }
+  .hero-panel ul { margin: 0; padding-left: 18px; color: var(--demo-description-color, #465063); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .pill {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--demo-button-color, #0b5ebd);
+    color: var(--demo-button-color, #0b5ebd);
+    background: var(--demo-button-bg, rgba(11,94,189,0.12));
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dwt-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .card { border-radius: 14px; padding: 16px; }
+  .stage-card { display: grid; gap: 12px; }
+  .stage-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .stage-buttons { display: flex; flex-direction: column; gap: 8px; }
+  .stage-button {
+    border: 1px solid var(--demo-button-color, #0b5ebd);
+    background: var(--demo-button-bg, rgba(11,94,189,0.12));
+    color: var(--demo-button-color, #0b5ebd);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+    transition: none;
+  }
+  .stage-button:hover {
+    background: var(--demo-button-bg, rgba(11,94,189,0.12));
+    color: var(--demo-button-color, #0b5ebd);
+    transform: none;
+  }
+  .stage-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  .stage-visual { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; background: #f8fafc; display: flex; justify-content: center; }
+  .stage-visual img { width: 100%; max-width: 820px; border-radius: 12px; }
+  .subtitle { color: var(--demo-description-color, #465063); margin: 4px 0 0; }
+  .caption { margin: 0; color: var(--demo-description-color, #465063); }
+  .explain-card { display: grid; gap: 12px; }
+  .explain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .eyebrow { font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; margin: 0; color: var(--demo-eyebrow-color, #0b5ebd); font-weight: 700; }
+  .note-box { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; background: rgba(11,94,189,0.08); border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); border-radius: 12px; padding: 12px; color: var(--demo-heading-color, #0e1a2b); }
+  @media (max-width: 1024px) { .dwt-grid { grid-template-columns: 1fr; } .dwt-hero { grid-template-columns: 1fr; } .stage-header { flex-direction: column; } .explain-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

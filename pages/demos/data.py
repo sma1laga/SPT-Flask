@@ -156,6 +156,13 @@ DEMOS = {
                 "endpoint": "demos_compression.page",
             },
             {
+                "slug": "discrete-wavelet-transform",
+                "title": "Discrete Wavelet Transform",
+                "title_desc": "2D Haar",
+                "desc": "Stepwise horizontal/vertical wavelet splits on Lenna, mirroring the MATLAB walkthrough.",
+                "endpoint": "demos_discrete_wavelet_transform.page",
+            },
+            {
                 "slug": "lloyd-max",
                 "title": "Lloyd-Max",
                 "title_desc": "Iterative Quantizer",

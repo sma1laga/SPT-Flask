@@ -79,7 +79,7 @@ from pages.demos.huffman import demos_huffman_bp
 from pages.demos.lloyd_max import demos_lloyd_max_bp
 from pages.demos.spatial_prediction import demos_spatial_prediction_bp
 from pages.demos.zonal_dct import zonal_dct_bp
-
+from pages.demos.discrete_wavelet_transform import demos_discrete_wavelet_transform_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -211,7 +211,8 @@ def create_app():
     app.register_blueprint(demos_lloyd_max_bp, url_prefix="/demos/lloyd-max")
     app.register_blueprint(demos_spatial_prediction_bp, url_prefix="/demos/spatial-prediction-1")
     app.register_blueprint(zonal_dct_bp, url_prefix="/demos/zonal-dct-coding")
-
+    app.register_blueprint(demos_discrete_wavelet_transform_bp, url_prefix="/demos/discrete-wavelet-transform")
+    
     @app.route("/")
     def home():
         return render_template("home.html")
