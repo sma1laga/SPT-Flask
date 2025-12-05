@@ -168,6 +168,13 @@ DEMOS = {
                 "title_desc": "Entropy coding",
                 "desc": "Visualize histograms, entropy, and codeword lengths for Lenna Y/Cr channels and white noise.",
                 "endpoint": "demos_huffman.page",
+            },
+            {
+                "slug": "zonal-dct-coding",
+                "title": "Zonal DCT Coding",
+                "title_desc": "8×8 Masked Quantization",
+                "desc": "Compare multiple zonal quantization masks on Lenna with entropy, SNR, PSNR, and coefficient heatmaps.",
+                "endpoint": "zonal_dct.page",
             }
         ],
         "Tutorial": [],

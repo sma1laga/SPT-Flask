@@ -78,6 +78,7 @@ from pages.demos.compression import demos_compression_bp
 from pages.demos.huffman import demos_huffman_bp
 from pages.demos.lloyd_max import demos_lloyd_max_bp
 from pages.demos.spatial_prediction import demos_spatial_prediction_bp
+from pages.demos.zonal_dct import zonal_dct_bp
 
 
 def _build_demo_slug_map():
@@ -209,6 +210,7 @@ def create_app():
     app.register_blueprint(demos_huffman_bp, url_prefix="/demos/huffman")
     app.register_blueprint(demos_lloyd_max_bp, url_prefix="/demos/lloyd-max")
     app.register_blueprint(demos_spatial_prediction_bp, url_prefix="/demos/spatial-prediction-1")
+    app.register_blueprint(zonal_dct_bp, url_prefix="/demos/zonal-dct-coding")
 
     @app.route("/")
     def home():
