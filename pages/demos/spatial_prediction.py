@@ -6,10 +6,11 @@ import io
 import math
 import os
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Dict, Mapping, Tuple
 
 import numpy as np
-from flask import Blueprint, current_app, render_template
+from flask import Blueprint, current_app, jsonify, render_template, request
 from PIL import Image
 
 
@@ -70,12 +71,14 @@ PREDICTIONS = [
     ),
 ]
 
+PREDICTION_BY_KEY = {config.key: config for config in PREDICTIONS}
+
 
 def _image_path() -> str:
     static_root = current_app.static_folder
     return os.path.join(static_root, "demos", "images", IMAGE_NAME)
 
-
+@lru_cache(maxsize=1)
 def _load_grayscale() -> np.ndarray:
     path = _image_path()
     if not os.path.exists(path):
@@ -154,6 +157,42 @@ def _build_prediction_views(img: np.ndarray, base_entropy: float) -> Dict[str, P
         results[config.key] = view
     return results
 
+def _quantize_error(error: np.ndarray, bits: int, step: float) -> np.ndarray:
+    levels = 2 ** bits
+    half_levels = levels / 2
+    scaled = np.rint(error / step)
+    clipped = np.clip(scaled, -half_levels, half_levels - 1)
+    return clipped * step
+
+
+def _compute_quantization(
+    img: np.ndarray, *, config: PredictionConfig, bits: int, step: float, base_entropy: float
+) -> Dict[str, float | str]:
+    prediction = _predict_image(img, config.weights)
+    prediction_error = img - prediction
+    quantized_error = _quantize_error(prediction_error, bits, step)
+    reconstructed = np.clip(prediction + quantized_error, 0, 255)
+    quantization_error = reconstructed - img
+
+    entropy = _entropy_bits(np.rint(quantized_error))
+    compression_factor = base_entropy / entropy if entropy else math.inf
+
+    mse = float(np.mean(np.square(img - reconstructed)))
+    signal_power = float(np.mean(np.square(img)))
+    snr = math.inf if mse == 0 else 10.0 * math.log10(signal_power / mse)
+    psnr = math.inf if mse == 0 else 20.0 * math.log10(255.0 / math.sqrt(mse))
+
+    return {
+        "prediction_error_src": _error_to_image(prediction_error),
+        "reconstructed_src": _encode_png(reconstructed),
+        "quantization_error_src": _error_to_image(quantization_error),
+        "entropy": entropy,
+        "compression_factor": compression_factor,
+        "snr": snr,
+        "psnr": psnr,
+    }
+
+
 
 demos_spatial_prediction_bp = Blueprint(
     "demos_spatial_prediction", __name__, template_folder="../../templates"
@@ -172,3 +211,26 @@ def index():
         predictions={key: vars(value) for key, value in predictions.items()},
         base_entropy=base_entropy,
     )
+
+
+@demos_spatial_prediction_bp.route("/compute", methods=["POST"], endpoint="compute")
+def compute():
+    payload = request.get_json(silent=True) or {}
+    key = payload.get("key", "none")
+    bits = int(payload.get("bits", 4))
+    step = float(payload.get("step", 4.0))
+
+    if bits < 1:
+        return jsonify({"error": "Quantization level must be at least 1 bit."}), 400
+    if step <= 0:
+        return jsonify({"error": "Quantization step size must be positive."}), 400
+
+    config = PREDICTION_BY_KEY.get(key)
+    if not config:
+        return jsonify({"error": f"Unknown predictor '{key}'."}), 400
+
+    img = _load_grayscale()
+    base_entropy = _entropy_bits(np.rint(img))
+
+    result = _compute_quantization(img, config=config, bits=bits, step=step, base_entropy=base_entropy)
+    return jsonify(result)
