@@ -177,6 +177,13 @@ DEMOS = {
                 "endpoint": "demos_lloyd_max.page",
             },
             {
+                "slug": "block-matching",
+                "title": "Block Matching",
+                "title_desc": "Motion Estimation",
+                "desc": "Interactive SAD search on Lenna showing search windows, best match, and displacement vectors.",
+                "endpoint": "demos_block_matching.page",
+            },
+            {
                 "slug": "huffman",
                 "title": "Huffman coding",
                 "title_desc": "Entropy coding",
