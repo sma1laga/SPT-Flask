@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">Block Matching</div>
+    <p class="control-subtitle">
+      Select a block in the current frame, set the search window and search strategy,
+      and see how different block-matching methods locate it in the reference frame.
+    </p>
+    <div class="control-grid">
+      <label class="slider-block">
+        Block size
+        <select id="block-size">
+          {% for size in defaults.block_sizes %}
+          <option value="{{ size }}" {% if size == defaults.default_block %}selected{% endif %}>
+            {{ size }}×{{ size }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="slider-block">
+        Search range ±<span id="search-label">{{ defaults.default_search }}</span> px
+        <input id="search-range"
+               type="range"
+               min="4"
+               max="24"
+               step="1"
+               value="{{ defaults.default_search }}" />
+      </label>
+
+      <label class="slider-block">
+        Search method
+        <select id="search-method">
+          <option value="full">Full search (exhaustive)</option>
+          <option value="three-step">Three-step search</option>
+          <option value="diamond">Diamond search</option>
+        </select>
+      </label>
+
+      <label class="slider-block">
+        Frame shift X (current vs. reference)
+        <input id="shift-x"
+               type="range"
+               min="-16"
+               max="16"
+               step="1"
+               value="{{ defaults.default_shift_x }}" />
+      </label>
+
+      <label class="slider-block">
+        Frame shift Y (current vs. reference)
+        <input id="shift-y"
+               type="range"
+               min="-16"
+               max="16"
+               step="1"
+               value="{{ defaults.default_shift_y }}" />
+      </label>
+
+      <label class="slider-block">
+        Block X position
+        <input id="block-x"
+               type="range"
+               min="0"
+               max="{{ defaults.canvas_size - defaults.default_block }}"
+               step="1"
+               value="{{ defaults.default_x }}" />
+      </label>
+
+      <label class="slider-block">
+        Block Y position
+        <input id="block-y"
+               type="range"
+               min="0"
+               max="{{ defaults.canvas_size - defaults.default_block }}"
+               step="1"
+               value="{{ defaults.default_y }}" />
+      </label>
+    </div>
+  </div>
+
+  <div class="card layout-grid">
+    <div class="panel">
+      <div class="card-title">Current frame</div>
+      <p class="panel-desc">
+        Block to track (blue) in the shifted frame.
+      </p>
+      <canvas id="current-frame"
+              width="{{ defaults.canvas_size }}"
+              height="{{ defaults.canvas_size }}"
+              aria-label="Current frame with selected block"></canvas>
+    </div>
+    <div class="panel">
+      <div class="card-title">Reference frame</div>
+      <p class="panel-desc">
+        Best match (green) found by the selected search method inside the dashed window.
+      </p>
+      <canvas id="reference-frame"
+              width="{{ defaults.canvas_size }}"
+              height="{{ defaults.canvas_size }}"
+              aria-label="Reference frame with match"></canvas>
+    </div>
+  </div>
+
+  <div class="card metric-card">
+    <div class="card-title">Match details</div>
+    <p class="panel-desc">
+      Offsets are reported as reference − current coordinates (motion vector).
+    </p>
+    <div class="metric-grid">
+      <div>Search method</div><div id="metric-method">—</div>
+      <div>Estimated displacement (dx, dy)</div><div id="metric-disp">—</div>
+      <div>Ground truth (−ShiftX, −ShiftY)</div><div id="metric-truth">—</div>
+      <div>Error (dx−gt, dy−gt, ‖e‖)</div><div id="metric-error">—</div>
+      <div>Search window</div><div id="metric-window">—</div>
+      <div>Candidates evaluated</div><div id="metric-candidates">—</div>
+      <div>Best SAD score</div><div id="metric-sad">—</div>
+    </div>
+    <p class="panel-desc">
+      Block matching compares the pixel sum of absolute differences (SAD) for each candidate inside the search region.
+      Faster search strategies evaluate fewer candidates at the cost of potentially missing the global minimum.
+    </p>
+  </div>
+</div>
+
+<style>
+  .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+
+  .control-card { margin-bottom: 16px; }
+  .control-subtitle {
+    margin: 0 0 8px 0;
+    color: var(--demo-description-color, #465063);
+  }
+
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px 14px;
+  }
+
+  .slider-block {
+    display: grid;
+    gap: 6px;
+    color: #0e1a2b;
+    font-weight: 700;
+  }
+
+  .slider-block input[type=range],
+  .slider-block select {
+    width: 100%;
+    accent-color: #0b5ebd;
+    border-radius: 10px;
+    padding: 8px;
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.18));
+    box-shadow: none;
+  }
+
+  .slider-block select {
+    background: white;
+    color: #0e1a2b;
+    font-weight: 600;
+  }
+
+  body.dark-mode .slider-block { color: #dfe8ff; }
+  body.dark-mode .slider-block input[type=range] { background: transparent; }
+  body.dark-mode .slider-block select {
+    background: rgba(158,203,255,0.12);
+    color: #e7f1ff;
+    border-color: rgba(158,203,255,0.24);
+  }
+
+  .layout-grid {
+    display: grid;
+    /* etwas breiteres Minimum, damit die Bilder "größer" wirken */
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 16px;
+    box-shadow: none;
+    transform: none;
+  }
+  .layout-grid:hover { box-shadow: none; transform: none; }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .panel-desc {
+    margin: 0;
+    color: var(--demo-description-color, #465063);
+  }
+  body.dark-mode .panel-desc { color: #d8e3f5; }
+
+  canvas {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.18));
+    box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06));
+    background: #0b0d14;
+  }
+  body.dark-mode canvas {
+    border-color: rgba(158,203,255,0.24);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+  }
+
+  .metric-card { box-shadow: none; transform: none; }
+  .metric-card:hover { box-shadow: none; transform: none; }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px 12px;
+    font-size: 0.95rem;
+  }
+
+  .metric-grid div:nth-child(odd) {
+    color: var(--demo-description-color, #465063);
+  }
+  body.dark-mode .metric-grid div:nth-child(odd) {
+    color: #c6d4ea;
+  }
+</style>
+
+<script>
+  const imageSrc = {{ defaults.image_src | tojson }};
+  const canvasSize = {{ defaults.canvas_size }};
+
+  const blockSizeSelect    = document.getElementById('block-size');
+  const searchRangeInput   = document.getElementById('search-range');
+  const searchMethodSelect = document.getElementById('search-method');
+  const blockXInput        = document.getElementById('block-x');
+  const blockYInput        = document.getElementById('block-y');
+  const shiftXInput        = document.getElementById('shift-x');
+  const shiftYInput        = document.getElementById('shift-y');
+
+  const currentCanvas   = document.getElementById('current-frame');
+  const referenceCanvas = document.getElementById('reference-frame');
+  const currentCtx      = currentCanvas.getContext('2d');
+  const referenceCtx    = referenceCanvas.getContext('2d');
+
+  const metricMethod     = document.getElementById('metric-method');
+  const metricDisp       = document.getElementById('metric-disp');
+  const metricTruth      = document.getElementById('metric-truth');
+  const metricError      = document.getElementById('metric-error');
+  const metricWindow     = document.getElementById('metric-window');
+  const metricCandidates = document.getElementById('metric-candidates');
+  const metricSad        = document.getElementById('metric-sad');
+  const searchLabel      = document.getElementById('search-label');
+
+  const img = new Image();
+  img.src = imageSrc;
+  img.onload = () => {
+    evaluate();
+  };
+
+  function getState() {
+    const blockSize = parseInt(blockSizeSelect.value, 10);
+
+    let blockX = parseInt(blockXInput.value, 10);
+    let blockY = parseInt(blockYInput.value, 10);
+
+    blockXInput.max = canvasSize - blockSize;
+    blockYInput.max = canvasSize - blockSize;
+
+    blockX = Math.min(blockX, canvasSize - blockSize);
+    blockY = Math.min(blockY, canvasSize - blockSize);
+
+    blockXInput.value = blockX;
+    blockYInput.value = blockY;
+
+    return {
+      blockSize,
+      blockX,
+      blockY,
+      search: parseInt(searchRangeInput.value, 10),
+      shiftX: parseInt(shiftXInput.value, 10),
+      shiftY: parseInt(shiftYInput.value, 10),
+      method: searchMethodSelect.value,
+    };
+  }
+
+  function drawFrames(state) {
+    const { shiftX, shiftY } = state;
+    referenceCtx.clearRect(0, 0, canvasSize, canvasSize);
+    currentCtx.clearRect(0, 0, canvasSize, canvasSize);
+
+    referenceCtx.drawImage(img, 0, 0, canvasSize, canvasSize);
+
+    currentCtx.save();
+    currentCtx.translate(shiftX, shiftY);
+    currentCtx.drawImage(img, 0, 0, canvasSize, canvasSize);
+    currentCtx.restore();
+  }
+
+  function makeSadAt(state, refData, curData) {
+    const { blockSize, blockX, blockY } = state;
+
+    return function sadAt(candX, candY) {
+      let sad = 0;
+      for (let j = 0; j < blockSize; j++) {
+        const refRow = (candY + j) * canvasSize;
+        const curRow = (blockY + j) * canvasSize;
+        for (let i = 0; i < blockSize; i++) {
+          const refIdx = (refRow + (candX + i)) * 4;
+          const curIdx = (curRow + (blockX + i)) * 4;
+
+          const dr = curData[curIdx]     - refData[refIdx];
+          const dg = curData[curIdx + 1] - refData[refIdx + 1];
+          const db = curData[curIdx + 2] - refData[refIdx + 2];
+
+          sad += Math.abs(dr) + Math.abs(dg) + Math.abs(db);
+        }
+      }
+      return sad;
+    };
+  }
+
+  function clampToWindow(x, y, window) {
+    const cx = Math.min(Math.max(x, window.minX), window.maxX);
+    const cy = Math.min(Math.max(y, window.minY), window.maxY);
+    return { x: cx, y: cy };
+  }
+
+
+  function fullSearch(state, sadAt, window) {
+    let bestX = state.blockX;
+    let bestY = state.blockY;
+    let bestSad = Infinity;
+    let candidates = 0;
+
+    for (let y = window.minY; y <= window.maxY; y++) {
+      for (let x = window.minX; x <= window.maxX; x++) {
+        const s = sadAt(x, y);
+        candidates++;
+        if (s < bestSad) {
+          bestSad = s;
+          bestX = x;
+          bestY = y;
+        }
+      }
+    }
+
+    return {
+      methodLabel: "Full search (exhaustive)",
+      x: bestX,
+      y: bestY,
+      sad: bestSad,
+      candidates,
+    };
+  }
+
+  function threeStepSearch(state, sadAt, window) {
+    let centerX = state.blockX;
+    let centerY = state.blockY;
+
+    const maxOffset = state.search > 0 ? state.search : 1;
+    let step = 1;
+    while (step * 2 <= maxOffset) step *= 2;
+
+    const visited = new Set();
+    let candidates = 0;
+
+    function evalCandidate(x, y, currentBest) {
+      const key = `${x},${y}`;
+      if (visited.has(key)) return currentBest;
+      visited.add(key);
+      const s = sadAt(x, y);
+      candidates++;
+      if (s < currentBest.sad) {
+        return { x, y, sad: s };
+      }
+      return currentBest;
+    }
+
+    let best = evalCandidate(centerX, centerY, { x: centerX, y: centerY, sad: Infinity });
+
+    while (step >= 1) {
+      const offsets = [
+        [0, 0],
+        [ step, 0], [-step, 0],
+        [0, step],  [0, -step],
+        [ step, step],   [ step, -step],
+        [-step, step],   [-step, -step],
+      ];
+
+      const before = best;
+      for (const [dx, dy] of offsets) {
+        const { x, y } = clampToWindow(centerX + dx, centerY + dy, window);
+        best = evalCandidate(x, y, best);
+      }
+
+      if (best.x !== centerX || best.y !== centerY) {
+        centerX = best.x;
+        centerY = best.y;
+      } else {
+        step = step >> 1;
+      }
+    }
+
+    return {
+      methodLabel: "Three-step search (logarithmic)",
+      x: best.x,
+      y: best.y,
+      sad: best.sad,
+      candidates,
+    };
+  }
+
+  function diamondSearch(state, sadAt, window) {
+    let centerX = state.blockX;
+    let centerY = state.blockY;
+
+    let step = state.search > 0 ? state.search : 1;
+    const visited = new Set();
+    let candidates = 0;
+
+    function evalCandidate(x, y, currentBest) {
+      const key = `${x},${y}`;
+      if (visited.has(key)) return currentBest;
+      visited.add(key);
+      const s = sadAt(x, y);
+      candidates++;
+      if (s < currentBest.sad) {
+        return { x, y, sad: s };
+      }
+      return currentBest;
+    }
+
+    let best = evalCandidate(centerX, centerY, { x: centerX, y: centerY, sad: Infinity });
+
+    while (step > 1) {
+      const offsets = [
+        [0, 0],
+        [ 0, -step],
+        [ step, 0],
+        [ 0, step],
+        [-step, 0],
+        [ step, -step],
+        [ step, step],
+        [-step, step],
+        [-step, -step],
+      ];
+
+      const before = best;
+      for (const [dx, dy] of offsets) {
+        const { x, y } = clampToWindow(centerX + dx, centerY + dy, window);
+        best = evalCandidate(x, y, best);
+      }
+
+      if (best.x !== before.x || best.y !== before.y) {
+        centerX = best.x;
+        centerY = best.y;
+      } else {
+        step = Math.max(1, step >> 1);
+      }
+    }
+
+
+    const smallOffsets = [
+      [0, 0],
+      [ 0, -1],
+      [ 1, 0],
+      [ 0, 1],
+      [-1, 0],
+    ];
+
+    for (const [dx, dy] of smallOffsets) {
+      const { x, y } = clampToWindow(centerX + dx, centerY + dy, window);
+      best = evalCandidate(x, y, best);
+    }
+
+    return {
+      methodLabel: "Diamond search (simplified)",
+      x: best.x,
+      y: best.y,
+      sad: best.sad,
+      candidates,
+    };
+  }
+
+  const SEARCH_METHODS = {
+    "full": fullSearch,
+    "three-step": threeStepSearch,
+    "diamond": diamondSearch,
+  };
+
+  function drawOverlays(state, window, result) {
+    const { blockX, blockY, blockSize } = state;
+
+    currentCtx.save();
+    currentCtx.strokeStyle = '#1f78ff';
+    currentCtx.lineWidth = 2;
+    currentCtx.strokeRect(blockX + 0.5, blockY + 0.5, blockSize - 1, blockSize - 1);
+    currentCtx.restore();
+
+    referenceCtx.save();
+
+    referenceCtx.setLineDash([6, 4]);
+    referenceCtx.strokeStyle = 'rgba(11,94,189,0.7)';
+    referenceCtx.lineWidth = 2;
+    referenceCtx.strokeRect(
+      window.minX + 0.5,
+      window.minY + 0.5,
+      window.maxX - window.minX + blockSize - 1,
+      window.maxY - window.minY + blockSize - 1
+    );
+
+    referenceCtx.setLineDash([]);
+    referenceCtx.strokeStyle = '#27ae60';
+    referenceCtx.lineWidth = 2.5;
+    referenceCtx.strokeRect(
+      result.x + 0.5,
+      result.y + 0.5,
+      blockSize - 1,
+      blockSize - 1
+    );
+
+    const cx = blockX + blockSize / 2;
+    const cy = blockY + blockSize / 2;
+    const mx = result.x + blockSize / 2;
+    const my = result.y + blockSize / 2;
+    const dx = mx - cx;
+    const dy = my - cy;
+
+    referenceCtx.strokeStyle = '#27ae60';
+    referenceCtx.lineWidth = 2;
+    referenceCtx.beginPath();
+    referenceCtx.moveTo(cx, cy);
+    referenceCtx.lineTo(mx, my);
+    referenceCtx.stroke();
+
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    const arrowSize = 6;
+
+    referenceCtx.beginPath();
+    referenceCtx.moveTo(mx, my);
+    referenceCtx.lineTo(
+      mx - ux * arrowSize - uy * arrowSize * 0.6,
+      my - uy * arrowSize + ux * arrowSize * 0.6
+    );
+    referenceCtx.moveTo(mx, my);
+    referenceCtx.lineTo(
+      mx - ux * arrowSize + uy * arrowSize * 0.6,
+      my - uy * arrowSize - ux * arrowSize * 0.6
+    );
+    referenceCtx.stroke();
+
+    referenceCtx.restore();
+  }
+
+  function updateMetrics(state, window, result) {
+    const { blockX, blockY, shiftX, shiftY } = state;
+
+    const estDx = result.x - blockX;
+    const estDy = result.y - blockY;
+
+    const gtDx = -shiftX;
+    const gtDy = -shiftY;
+
+    const errDx = estDx - gtDx;
+    const errDy = estDy - gtDy;
+    const errNorm = Math.sqrt(errDx * errDx + errDy * errDy);
+
+    metricMethod.textContent     = result.methodLabel;
+    metricDisp.textContent       = `${estDx} px, ${estDy} px`;
+    metricTruth.textContent      = `${gtDx} px, ${gtDy} px`;
+    metricError.textContent      = `${errDx} px, ${errDy} px (‖e‖ ≈ ${errNorm.toFixed(2)} px)`;
+    metricWindow.textContent     = `${window.minX}:${window.maxX} × ${window.minY}:${window.maxY}`;
+    metricCandidates.textContent = `${result.candidates}`;
+    metricSad.textContent        = result.sad.toLocaleString('en-US');
+  }
+
+  function evaluate() {
+    if (!img.complete) return;
+
+    const state = getState();
+    searchLabel.textContent = state.search;
+
+    drawFrames(state);
+
+    const refData = referenceCtx.getImageData(0, 0, canvasSize, canvasSize).data;
+    const curData = currentCtx.getImageData(0, 0, canvasSize, canvasSize).data;
+
+    const minX = Math.max(0, state.blockX - state.search);
+    const maxX = Math.min(canvasSize - state.blockSize, state.blockX + state.search);
+    const minY = Math.max(0, state.blockY - state.search);
+    const maxY = Math.min(canvasSize - state.blockSize, state.blockY + state.search);
+
+    const window = { minX, maxX, minY, maxY };
+
+    const sadAt = makeSadAt(state, refData, curData);
+
+    const methodKey = state.method in SEARCH_METHODS ? state.method : "full";
+    const result = SEARCH_METHODS[methodKey](state, sadAt, window);
+
+    drawOverlays(state, window, result);
+    updateMetrics(state, window, result);
+  }
+
+  blockSizeSelect.addEventListener('change', evaluate);
+  searchRangeInput.addEventListener('input', evaluate);
+  searchMethodSelect.addEventListener('change', evaluate);
+  blockXInput.addEventListener('input', evaluate);
+  blockYInput.addEventListener('input', evaluate);
+  shiftXInput.addEventListener('input', evaluate);
+  shiftYInput.addEventListener('input', evaluate);
+</script>
+{% endblock %}

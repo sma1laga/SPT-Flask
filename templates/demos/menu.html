@@ -67,6 +67,22 @@
     --demo-button-hover-color: #ffffff;
     --demo-strong-accent: #f0f6ff;
   }
+
+  body.dark-mode .lecture-block.compression-track .demo-card {
+    background: linear-gradient(160deg, rgba(116, 93, 204, 0.32), rgba(160, 136, 230, 0.24));
+    border-color: rgba(195, 169, 255, 0.46);
+    box-shadow: 0 18px 40px rgba(32, 24, 68, 0.56);
+  }
+
+  body.dark-mode .lecture-block.compression-track .demo-button {
+    background: rgba(195, 169, 255, 0.32);
+    color: #f4f0ff;
+  }
+
+  body.dark-mode .lecture-block.compression-track .demo-button:hover {
+    background: rgba(195, 169, 255, 0.45);
+    color: #ffffff;
+  }
   body.dark-mode .lecture-block.discrete-track .demo-card {
     background: linear-gradient(160deg, rgba(32, 64, 130, 0.6), rgba(14, 28, 64, 0.78));
     border-color: rgba(120, 170, 255, 0.36);
@@ -325,6 +341,26 @@
     border-color: var(--demo-card-border);
 
   }
+  .lecture-block.compression-track .demo-card {
+    background: linear-gradient(150deg, rgba(150, 110, 235, 0.16), rgba(190, 155, 255, 0.13));
+    border-color: rgba(150, 110, 235, 0.34);
+    box-shadow: 0 14px 32px rgba(66, 40, 120, 0.15);
+  }
+
+  .lecture-block.compression-track .demo-icon {
+    background: rgba(150, 110, 235, 0.2);
+    color: #4b2f8c;
+  }
+
+  .lecture-block.compression-track .demo-button {
+    background: rgba(150, 110, 235, 0.26);
+    color: #4b2f8c;
+  }
+
+  .lecture-block.compression-track .demo-button:hover {
+    background: rgba(150, 110, 235, 0.36);
+    color: #362165;
+  }
   .lecture-block.discrete-track .demo-card {
     background: linear-gradient(150deg, rgba(0, 119, 255, 0.09), rgba(0, 200, 255, 0.06));
     border-color: rgba(0, 119, 255, 0.22);
@@ -398,7 +434,7 @@
 </div>
 
 {% for lecture, sections in demos.items() %}
-  <section class="lecture-block {% if lecture == 'Signals and Systems II' %}discrete-track{% endif %}" id="{{ lecture | replace(' ', '-') | lower }}">
+  <section class="lecture-block {% if lecture == 'Signals and Systems II' %}discrete-track{% endif %}{% if lecture == 'Image and Video Compression' %} compression-track{% endif %}" id="{{ lecture | replace(' ', '-') | lower }}">
     <header class="lecture-heading">
       <span class="lecture-pill">Lecture</span>
       <h2>{{ lecture }}</h2>

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">Spatial Prediction 1</div>
+    <p class="control-subtitle">Pick a predictor, then explore how quantization level and step size change reconstruction quality.</p>
+    <div class="mode-buttons">
+      {% for key, data in predictions.items() %}
+        <button class="mode-button" data-key="{{ key }}">{{ data.label }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="quantization-controls">
+      <div>
+        <label for="bit-depth">Quantization level (bits)</label>
+        <div class="input-row">
+          <input id="bit-depth" type="range" min="1" max="8" step="1" value="4">
+          <input id="bit-depth-number" type="number" min="1" max="8" step="1" value="4">
+        </div>
+      </div>
+      <div>
+        <label for="step-size">Step size</label>
+        <div class="input-row">
+          <input id="step-size" type="range" min="0.5" max="32" step="0.5" value="4">
+          <input id="step-size-number" type="number" min="0.5" max="32" step="0.5" value="4">
+        </div>
+      </div>
+      <button class="recompute-button" id="recompute">Recompute</button>
+    </div>
+  </div>
+
+  <div class="image-row">
+    <div class="card image-card">
+      <div class="card-title">Original image</div>
+      <div class="image-shell">
+        <img src="{{ original_src }}" alt="Original Lenna" class="demo-image">
+      </div>
+      <p class="variant-desc">Grayscale reference ({{ '%.2f'|format(base_entropy) }} bit/pixel entropy).</p>
+    </div>
+    <div class="card image-card">
+      <div class="card-title">Prediction error</div>
+      <p class="variant-desc" id="prediction-description"></p>
+      <div class="image-shell">
+        <img id="error-image" src="" alt="Prediction error" class="demo-image">
+      </div>
+    </div>
+    <div class="card image-card">
+      <div class="card-title">Reconstructed image</div>
+      <div class="image-shell">
+        <img id="reconstructed-image" src="" alt="Reconstructed Lenna" class="demo-image">
+      </div>
+      <p class="variant-desc" id="reconstruction-caption"></p>
+    </div>
+  </div>
+
+  <div class="below-row">
+    <div class="card weights-card">
+      <div class="card-title">Predictor weights</div>
+      <p class="variant-desc">Values applied to already-known neighbours (S marks the current pixel).</p>
+      <div class="weights-grid">
+        {% for row in range(3) %}
+          {% for col in range(3) %}
+            <div class="mask-cell" data-row="{{ row }}" data-col="{{ col }}">0</div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card image-card">
+      <div class="card-title">Quantization error (scaled)</div>
+      <div class="image-shell">
+        <img id="quantization-image" src="" alt="Quantization error" class="demo-image">
+      </div>
+      <p class="variant-desc">Contrast-stretched for visibility.</p>
+    </div>
+
+
+    <div class="card stats-card">
+      <div class="card-title">Statistics</div>
+      <p class="variant-desc">Entropy reduction, compression, and quality after quantization.</p>
+      <div class="metric-grid">
+        <div>Entropy</div><div id="entropy-value"></div>
+        <div>Compression</div><div id="compression-value"></div>
+        <div>SNR</div><div id="snr-value"></div>
+        <div>PSNR</div><div id="psnr-value"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <style>
+    .demo { display: flex; flex-direction: column; gap: 16px; }
+    .demo .card { transition: none; }
+    .demo .card:hover { transform: none; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); }
+    .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 6px; }
+    body.dark-mode .card-title { color: #eaf2ff; }
+    .control-card { margin-bottom: 4px; }
+    .control-subtitle, .variant-desc { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+    body.dark-mode .control-subtitle, body.dark-mode .variant-desc { color: #c9d5eb; }
+    .mode-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .mode-button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: var(--demo-button-bg, rgba(11,94,189,0.12)); color: var(--demo-button-color, #0b5ebd); font-weight: 600; cursor: pointer; }
+    .mode-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+    body.dark-mode .mode-button { border-color: rgba(158,203,255,0.55); background: rgba(158,203,255,0.08); color: #d7e8ff; }
+    body.dark-mode .mode-button.active { background: rgba(158,203,255,0.14); color: #eaf2ff; }
+    .quantization-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; align-items: end; }
+    .input-row { display: grid; grid-template-columns: 1fr 92px; gap: 8px; align-items: center; }
+    .input-row input[type="number"] { padding: 8px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); border-radius: 8px; font-weight: 600; }
+    .recompute-button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: var(--demo-button-bg, rgba(11,94,189,0.12)); color: var(--demo-button-color, #0b5ebd); font-weight: 700; cursor: pointer; justify-self: start; }
+    .image-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .below-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+    .image-shell { display: flex; justify-content: center; align-items: center; padding: 12px; }
+    .demo-image { width: 100%; max-width: 520px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; }
+    body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 10px; font-size: 0.95rem; }
+    .metric-grid div:nth-child(odd) { color: var(--demo-description-color, #465063); }
+    body.dark-mode .metric-grid div:nth-child(odd) { color: #c6d4ea; }
+    .weights-card { max-width: 480px; }
+    .weights-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 6px; width: 240px; }
+    .mask-cell { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); border-radius: 8px; padding: 12px; display: flex; justify-content: center; align-items: center; font-weight: 700; color: #0e1a2b; background: #f7f9fc; }
+    .mask-cell.is-source { background: rgba(11,94,189,0.12); color: #0b3d78; border-color: rgba(11,94,189,0.35); }
+    body.dark-mode .mask-cell { color: #e8f1ff; background: rgba(28, 40, 65, 0.7); border-color: rgba(158,203,255,0.3); }
+    body.dark-mode .mask-cell.is-source { background: rgba(93,171,255,0.26); color: #0a1323; border-color: rgba(158,203,255,0.6); }
+  </style>
+
+<script>
+  const predictions = {{ predictions | tojson }};
+  const computeUrl = "{{ url_for('demos_spatial_prediction.compute') }}";
+
+  let activeKey = Object.keys(predictions)[0];
+  let pendingTimeout = null;
+
+  function setModeButtonState(key) {
+    document.querySelectorAll('.mode-button').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.key === key);
+    });
+  }
+
+  function updateWeights(key) {
+    const data = predictions[key];
+    if (!data) return;
+
+    document.getElementById('prediction-description').textContent = data.description;
+    document.querySelectorAll('.mask-cell').forEach((cell) => {
+      const row = Number(cell.dataset.row);
+      const col = Number(cell.dataset.col);
+      const value = data.weights_grid[row][col];
+      cell.textContent = value;
+      cell.classList.toggle('is-source', value === 'S');
+    });
+  }
+
+  function syncInputs(source, target) {
+    target.value = source.value;
+  }
+
+  function formatMetric(value, suffix = '') {
+    if (!Number.isFinite(value)) return '∞';
+    return `${value.toFixed(2)}${suffix}`;
+  }
+
+  async function recomputeQuantization() {
+    const bitInput = document.getElementById('bit-depth');
+    const bitNumber = document.getElementById('bit-depth-number');
+    const stepInput = document.getElementById('step-size');
+    const stepNumber = document.getElementById('step-size-number');
+    const recomputeButton = document.getElementById('recompute');
+
+    const bits = Number(bitInput.value);
+    const step = Number(stepInput.value);
+
+    recomputeButton.disabled = true;
+    recomputeButton.textContent = 'Computing…';
+
+    try {
+      const response = await fetch(computeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: activeKey, bits, step }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Could not compute quantization.');
+      }
+
+      const result = await response.json();
+      document.getElementById('error-image').src = result.prediction_error_src;
+      document.getElementById('reconstructed-image').src = result.reconstructed_src;
+      document.getElementById('quantization-image').src = result.quantization_error_src;
+      document.getElementById('entropy-value').textContent = `${result.entropy.toFixed(2)} bit/pixel`;
+      document.getElementById('compression-value').textContent = formatMetric(result.compression_factor);
+      document.getElementById('snr-value').textContent = `${formatMetric(result.snr, ' dB')}`;
+      document.getElementById('psnr-value').textContent = `${formatMetric(result.psnr, ' dB')}`;
+      document.getElementById('reconstruction-caption').textContent = `${bits}-bit with Δ = ${step}`;
+      bitNumber.value = bitInput.value;
+      stepNumber.value = stepInput.value;
+    } catch (error) {
+      document.getElementById('entropy-value').textContent = '—';
+      document.getElementById('compression-value').textContent = '—';
+      document.getElementById('snr-value').textContent = '—';
+      document.getElementById('psnr-value').textContent = '—';
+      console.error(error);
+    } finally {
+      recomputeButton.disabled = false;
+      recomputeButton.textContent = 'Recompute';
+    }
+  }
+
+  function scheduleRecompute() {
+    if (pendingTimeout) {
+      clearTimeout(pendingTimeout);
+    }
+    pendingTimeout = setTimeout(recomputeQuantization, 250);
+  }
+
+  document.querySelectorAll('.mode-button').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeKey = btn.dataset.key;
+      setModeButtonState(activeKey);
+      updateWeights(activeKey);
+      scheduleRecompute();
+    });
+  });
+
+  document.getElementById('bit-depth').addEventListener('input', (event) => {
+    syncInputs(event.target, document.getElementById('bit-depth-number'));
+    scheduleRecompute();
+  });
+  document.getElementById('bit-depth-number').addEventListener('input', (event) => {
+    syncInputs(event.target, document.getElementById('bit-depth'));
+    scheduleRecompute();
+  });
+
+  document.getElementById('step-size').addEventListener('input', (event) => {
+    syncInputs(event.target, document.getElementById('step-size-number'));
+    scheduleRecompute();
+  });
+  document.getElementById('step-size-number').addEventListener('input', (event) => {
+    syncInputs(event.target, document.getElementById('step-size'));
+    scheduleRecompute();
+  });
+
+  document.getElementById('recompute').addEventListener('click', () => {
+    if (pendingTimeout) {
+      clearTimeout(pendingTimeout);
+      pendingTimeout = null;
+    }
+    recomputeQuantization();
+  });
+
+  setModeButtonState(activeKey);
+  updateWeights(activeKey);
+  recomputeQuantization();
+</script>
+{% endblock %}
