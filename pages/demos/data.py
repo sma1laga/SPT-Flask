@@ -170,6 +170,13 @@ DEMOS = {
                 "endpoint": "demos_discrete_wavelet_transform.page",
             },
             {
+                "slug": "b-prediction",
+                "title": "B-prediction",
+                "title_desc": "Bi-directional frames",
+                "desc": "MPEG-1 style B-frame demo that synthesizes motion from Lenna to compare forward, backward, and bi-directional prediction.",
+                "endpoint": "b_prediction.page",
+            },
+            {
                 "slug": "lloyd-max",
                 "title": "Lloyd-Max",
                 "title_desc": "Iterative Quantizer",
