@@ -68,55 +68,35 @@
     </div>
 
     <!-- SIDEBAR + CONTENT -->
-    {% set is_demos = request.path.startswith('/demos') %}
+    {% set on_demos_menu = request.endpoint == 'demos_menu.index' %}
+    {% set is_demos = request.path.startswith('/demos') and not on_demos_menu %}
     {% set is_discrete = request.path.startswith('/discrete') or request.path.startswith('/inverse_z') %}
     <div class="content-wrapper" style="display:flex;">
       <button id="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i> Menu</button>
         <aside class="sidebar modern-sidebar">
           {% if is_demos %}
-            <h3>Demos</h3>
-            <div class="toggle-tabs">
-              <button id="tab-sisy1" class="{% if not is_sisy2 %}active{% endif %}">SiSy I</button>
-              <button id="tab-sisy2" class="{% if is_sisy2 %}active{% endif %}">SiSy II</button>
-            </div>
-
-            <div id="menu-sisy1" style="display: {% if not is_sisy2 %}block{% else %}none{% endif %};">
+            <h3>{{ demos_section_name or "Demos" }}</h3>
+            {% if demos_section %}
               <ul class="sidebar-menu">
-                {% for section, demo_list in demos_sidebar['Signals and Systems I'].items() %}
+                {% for section, demo_list in demos_section.items() %}
                   {% if demo_list %}
                     <li class="section-title">{{ section }}</li>
                     {% for d in demo_list %}
                       <li>
                         <a href="{{ url_for(d.endpoint) }}"
-                        class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
-                        {{ d.title }}
+
+                           class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
+                          {{ d.title }}
                         </a>
                       </li>
                     {% endfor %}
                   {% endif %}
                 {% endfor %}
               </ul>
-            </div>
-
-            <div id="menu-sisy2" style="display: {% if is_sisy2 %}block{% else %}none{% endif %};">
-              <ul class="sidebar-menu">
-                {% for section, demo_list in demos_sidebar['Signals and Systems II'].items() %}
-                  {% if demo_list %}
-                    <li class="section-title">{{ section }}</li>
-                    {% for d in demo_list %}
-                      {% set link_url = url_for(d.endpoint) %}
-                      <li>
-                        <a href="{{ link_url }}"
-                           class="sidebar-link{% if request.endpoint == d.endpoint %} active{% endif %}">
-                          {{ d.title }}
-                        </a>
-                      </li>
-                      {% endfor %}
-                  {% endif %}
-                {% endfor %}
-              </ul>
-            </div>
-          {% else %}
+            {% else %}
+              <p style="margin: 0; color: #334155;">Choose a demo to see its navigation.</p>
+            {% endif %}
+            {% else %}
             <h3>Navigation</h3>
             <div class="toggle-tabs">
               <button id="tab-continuous"

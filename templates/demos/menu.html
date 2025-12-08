@@ -67,6 +67,44 @@
     --demo-button-hover-color: #ffffff;
     --demo-strong-accent: #f0f6ff;
   }
+
+  body.dark-mode .lecture-block.compression-track .demo-card {
+    background: linear-gradient(160deg, rgba(116, 93, 204, 0.32), rgba(160, 136, 230, 0.24));
+    border-color: rgba(195, 169, 255, 0.46);
+    box-shadow: 0 18px 40px rgba(32, 24, 68, 0.56);
+  }
+
+  body.dark-mode .lecture-block.compression-track .demo-button {
+    background: rgba(195, 169, 255, 0.32);
+    color: #f4f0ff;
+  }
+
+  body.dark-mode .lecture-block.compression-track .demo-button:hover {
+    background: rgba(195, 169, 255, 0.45);
+    color: #ffffff;
+  }
+
+  body.dark-mode .lecture-jump.discrete-track {
+    background: rgba(93, 171, 255, 0.32);
+    color: #e7f1ff;
+    border-color: rgba(93, 171, 255, 0.5);
+  }
+
+  body.dark-mode .lecture-jump.discrete-track:hover {
+    background: rgba(93, 171, 255, 0.45);
+    color: #ffffff;
+  }
+
+  body.dark-mode .lecture-jump.compression-track {
+    background: rgba(195, 169, 255, 0.32);
+    color: #f4f0ff;
+    border-color: rgba(195, 169, 255, 0.54);
+  }
+
+  body.dark-mode .lecture-jump.compression-track:hover {
+    background: rgba(195, 169, 255, 0.45);
+    color: #ffffff;
+  }
   body.dark-mode .lecture-block.discrete-track .demo-card {
     background: linear-gradient(160deg, rgba(32, 64, 130, 0.6), rgba(14, 28, 64, 0.78));
     border-color: rgba(120, 170, 255, 0.36);
@@ -159,6 +197,86 @@
     font-size: 0.92rem;
     color: var(--demo-hero-card-text);
   }
+  .lecture-jumps {
+    margin: 0 0 32px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .lecture-jumps h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--demo-section-title);
+  }
+
+  .lecture-jump-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .lecture-jump {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 18px 22px;
+    border-radius: 18px;
+    font-weight: 800;
+    font-size: 1.08rem;
+    text-decoration: none;
+    border: 1px solid var(--demo-card-border);
+    box-shadow: var(--demo-card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .lecture-jump:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--demo-card-shadow-hover);
+  }
+
+  .lecture-jump .jump-meta {
+    font-weight: 600;
+    font-size: 0.92rem;
+    opacity: 0.82;
+  }
+
+  .lecture-jump.discrete-track {
+    background: rgba(0, 119, 255, 0.18);
+    color: #0a4aa0;
+    border-color: rgba(0, 119, 255, 0.32);
+  }
+
+  .lecture-jump.discrete-track:hover {
+    background: rgba(0, 119, 255, 0.28);
+    color: #063579;
+  }
+
+  .lecture-jump.compression-track {
+    background: rgba(150, 110, 235, 0.26);
+    color: #4b2f8c;
+    border-color: rgba(150, 110, 235, 0.38);
+  }
+
+  .lecture-jump.compression-track:hover {
+    background: rgba(150, 110, 235, 0.36);
+    color: #362165;
+  }
+
+  .lecture-jump.ss1-track {
+    background: var(--demo-card-bg);
+    color: var(--demo-card-heading);
+    border-color: var(--demo-card-border);
+  }
+
+  .lecture-jump.ss1-track:hover {
+    background: var(--demo-hero-bg);
+    color: var(--demo-section-title);
+  }
 
   .hero-guidelines {
     margin: 0;
@@ -180,6 +298,50 @@
     color: var(--demo-hero-icon-color);
     font-size: 1rem;
     margin-top: 2px;
+  }
+  .demo-controls {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--demo-card-bg);
+    border-radius: 14px;
+    border: 1px solid var(--demo-card-border);
+    box-shadow: var(--demo-card-shadow);
+  }
+
+  .chip-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-chip {
+    border: 1px solid var(--demo-card-border);
+    background: var(--demo-button-bg);
+    color: var(--demo-button-color);
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .filter-chip.is-active {
+    background: var(--demo-button-hover-bg);
+    color: var(--demo-button-hover-color);
+  }
+
+  .filter-hint {
+    font-size: 0.9rem;
+    color: var(--demo-section-count);
+    margin-left: auto;
   }
 
   .lecture-block {
@@ -325,6 +487,26 @@
     border-color: var(--demo-card-border);
 
   }
+  .lecture-block.compression-track .demo-card {
+    background: linear-gradient(150deg, rgba(150, 110, 235, 0.16), rgba(190, 155, 255, 0.13));
+    border-color: rgba(150, 110, 235, 0.34);
+    box-shadow: 0 14px 32px rgba(66, 40, 120, 0.15);
+  }
+
+  .lecture-block.compression-track .demo-icon {
+    background: rgba(150, 110, 235, 0.2);
+    color: #4b2f8c;
+  }
+
+  .lecture-block.compression-track .demo-button {
+    background: rgba(150, 110, 235, 0.26);
+    color: #4b2f8c;
+  }
+
+  .lecture-block.compression-track .demo-button:hover {
+    background: rgba(150, 110, 235, 0.36);
+    color: #362165;
+  }
   .lecture-block.discrete-track .demo-card {
     background: linear-gradient(150deg, rgba(0, 119, 255, 0.09), rgba(0, 200, 255, 0.06));
     border-color: rgba(0, 119, 255, 0.22);
@@ -344,6 +526,30 @@
   .lecture-block.discrete-track .demo-button:hover {
     background: rgba(0, 119, 255, 0.28);
     color: #063579;
+  }
+
+
+  .demo-card.is-hidden {
+    display: none;
+  }
+
+  .empty-state {
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px dashed var(--demo-card-border);
+    color: var(--demo-description-color);
+    background: var(--demo-hero-bg);
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .empty-state.is-visible {
+    display: inline-flex;
+  }
+
+  .section-header .section-count[data-count="0"] {
+    color: #c0392b;
   }
   @media (max-width: 960px) {
     .demo-hero {
@@ -397,8 +603,27 @@
   </div>
 </div>
 
+<div class="lecture-jumps" aria-label="Jump to lecture">
+  <h3>Jump to lecture</h3>
+  <div class="lecture-jump-row">
+    {% for lecture, sections in demos.items() %}
+      {% if lecture == 'Image and Video Compression' %}
+        {% set track_class = 'compression-track' %}
+      {% elif lecture == 'Signals and Systems I' %}
+        {% set track_class = 'ss1-track' %}
+      {% else %}
+        {% set track_class = 'discrete-track' %}
+      {% endif %}
+      <a class="lecture-jump {{ track_class }}" href="#{{ lecture | replace(' ', '-') | lower }}">
+        <span>{{ lecture }}</span>
+        <span class="jump-meta">Open module cards</span>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
 {% for lecture, sections in demos.items() %}
-  <section class="lecture-block {% if lecture == 'Signals and Systems II' %}discrete-track{% endif %}" id="{{ lecture | replace(' ', '-') | lower }}">
+  <section class="lecture-block {% if lecture == 'Signals and Systems II' %}discrete-track{% endif %}{% if lecture == 'Image and Video Compression' %} compression-track{% endif %}" id="{{ lecture | replace(' ', '-') | lower }}">
     <header class="lecture-heading">
       <span class="lecture-pill">Lecture</span>
       <h2>{{ lecture }}</h2>
@@ -408,13 +633,14 @@
       {% if demo_list %}
         <div class="section-header">
           <h3>{{ section }}</h3>
-          <span class="section-count">{{ demo_list | length }} demos</span>
+          <span class="section-count" data-count="{{ demo_list | length }}">{{ demo_list | length }} demos</span>
         </div>
-        <div class="module-grid">
+        <div class="module-grid" data-section="{{ section }}">
           {% set swap_titles = section == 'Lecture' %}
           {% for d in demo_list %}
-            <article class="demo-card {{ loop.cycle('accent-sky', 'accent-grape', 'accent-sun', 'accent-lagoon') }}">
-              <!-- <div class="demo-icon"><i class="fa-solid fa-wave-square"></i></div> -->
+            <article class="demo-card {{ loop.cycle('accent-sky', 'accent-grape', 'accent-sun', 'accent-lagoon') }}"
+              data-demo-title="{{ d.title | lower }} {{ d.title_desc | lower }}"
+              data-section-name="{{ section }}">
               <div class="demo-body">
                 <h4>
                   {% if swap_titles %}
