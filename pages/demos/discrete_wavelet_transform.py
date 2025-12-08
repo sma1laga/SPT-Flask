@@ -1,4 +1,4 @@
-"""Discrete Wavelet Transform (DWT) demo for Lenna
+"""Discrete Wavelet Transform (DWT) demo for the selected reference image
 
 This blueprint prepares four visualization stages: horizontal decomposition,
 vertical decomposition, then two successive refinements of the low-pass
@@ -18,12 +18,12 @@ from flask import Blueprint, current_app, render_template
 from PIL import Image
 
 
-IMAGE_NAME = "lenna.png"
+from .demo_images import cached_demo_image
 
 
 def _image_path() -> str:
-    static_root = current_app.static_folder
-    return os.path.join(static_root, "demos", "images", IMAGE_NAME)
+    _, path = cached_demo_image(current_app.static_folder)
+    return str(path)
 
 
 def _load_gray_image() -> np.ndarray:
@@ -129,7 +129,7 @@ def _stage_metadata(images: Dict[str, str]) -> List[Dict[str, str]]:
         {
             "key": "original",
             "title": "Original image",
-            "subtitle": "Reference Lenna frame (grayscale).",
+            "subtitle": "Reference demo frame (grayscale).",
             "src": images["original"],
         },
         {

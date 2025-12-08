@@ -9,7 +9,7 @@
       <button class="mode-button" data-preset="{{ preset.key }}">{{ preset.label }}</button>
       {% endfor %}
     </div>
-    <p class="control-subtitle">All presets operate on {{ block_size }}×{{ block_size }} blocks of the Lenna image.</p>
+    <p class="control-subtitle">All presets operate on {{ block_size }}×{{ block_size }} blocks of the demo image.</p>
   </div>
 
   <div class="card layout-grid">
@@ -22,7 +22,7 @@
     </div>
     <div class="panel">
       <div class="card-title">Inverse DCT transformed image</div>
-      <p class="panel-desc">Reconstructed Lenna using the zonal mask.</p>
+      <p class="panel-desc">Reconstructed demo image using the zonal mask.</p>
       <div class="image-shell">
         <img id="recon-image" src="" alt="Reconstructed image" class="demo-image">
       </div>

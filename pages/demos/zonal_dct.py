@@ -13,6 +13,7 @@ from flask import Blueprint, current_app, render_template
 from PIL import Image
 from scipy.fft import dctn, idctn
 
+from .demo_images import cached_demo_image
 
 @dataclass
 class ZonalPreset:
@@ -34,7 +35,6 @@ class ZonalResult:
     psnr: float
 
 
-IMAGE_NAME = "lenna.png"
 BLOCK_SIZE = 8
 
 PRESETS = [
@@ -119,8 +119,8 @@ PRESET_BY_KEY = {preset.key: preset for preset in PRESETS}
 
 
 def _image_path() -> str:
-    static_root = current_app.static_folder
-    return os.path.join(static_root, "demos", "images", IMAGE_NAME)
+    _, path = cached_demo_image(current_app.static_folder)
+    return str(path)
 
 
 def _load_grayscale() -> np.ndarray:

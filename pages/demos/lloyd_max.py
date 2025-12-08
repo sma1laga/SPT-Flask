@@ -1,8 +1,9 @@
 """Lloyd-Max quantization demo page"""
 from __future__ import annotations
 
-from flask import Blueprint, render_template, url_for
+from flask import Blueprint, current_app, render_template, url_for
 
+from .demo_images import cached_demo_image, static_image_filename
 
 demos_lloyd_max_bp = Blueprint(
     "demos_lloyd_max", __name__, template_folder="../../templates"
@@ -15,5 +16,5 @@ def index():
 
     return render_template(
         "demos/lloyd_max.html",
-        lenna_src=url_for("static", filename="demos/images/lenna.png"),
+        lenna_src=url_for("static", filename=static_image_filename(cached_demo_image(current_app.static_folder)[0])),
     )

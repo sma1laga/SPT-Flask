@@ -13,6 +13,8 @@ import numpy as np
 from flask import Blueprint, current_app, jsonify, render_template, request
 from PIL import Image
 
+from .demo_images import cached_demo_image
+
 
 @dataclass
 class PredictionConfig:
@@ -31,8 +33,6 @@ class PredictionView:
     compression_factor: float
     error_src: str
 
-
-IMAGE_NAME = "lenna.png"
 
 
 PREDICTIONS = [
@@ -75,8 +75,8 @@ PREDICTION_BY_KEY = {config.key: config for config in PREDICTIONS}
 
 
 def _image_path() -> str:
-    static_root = current_app.static_folder
-    return os.path.join(static_root, "demos", "images", IMAGE_NAME)
+    _, path = cached_demo_image(current_app.static_folder)
+    return str(path)
 
 @lru_cache(maxsize=1)
 def _load_grayscale() -> np.ndarray:

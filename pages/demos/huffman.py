@@ -8,15 +8,20 @@ from dataclasses import dataclass
 from heapq import heappop, heappush
 from itertools import count
 from pathlib import Path
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from flask import Blueprint, render_template
+from flask import Blueprint, current_app, render_template
 from imageio.v2 import imread, imwrite
 from skimage import color
+
+from .demo_images import cached_demo_image
+
 
 @dataclass(frozen=True)
 class HuffmanVariant:
@@ -32,8 +37,7 @@ class HuffmanVariant:
     length_uri: str
 
 
-ROOT = Path(__file__).resolve().parent.parent.parent
-LENNA_PATH = ROOT / "static" / "demos" / "images" / "lenna.png"
+
 _rng = np.random.default_rng(7)
 
 
@@ -167,10 +171,10 @@ def _huffman_stats(channel: np.ndarray, label: str, description: str, key: str) 
     )
 
 
-def _prepare_variants() -> Dict[str, HuffmanVariant]:
-    if not LENNA_PATH.exists():
-        raise FileNotFoundError(f"Lenna image missing at {LENNA_PATH}")
-    rgb = imread(LENNA_PATH)
+def _prepare_variants(image_path: Path) -> Dict[str, HuffmanVariant]:
+    if not image_path.exists():
+        raise FileNotFoundError(f"Demo image missing at {image_path}")
+    rgb = imread(image_path)
     if rgb.ndim == 2:
         rgb = np.stack([rgb] * 3, axis=-1)
     if rgb.dtype != np.uint8:
@@ -186,13 +190,13 @@ def _prepare_variants() -> Dict[str, HuffmanVariant]:
         "luminance": _huffman_stats(
             y_channel,
             label="Huffman coding of luminance component Y",
-            description="Distribution and coding efficiency for the Lenna image's Y channel.",
+            description="Distribution and coding efficiency for the demo image's Y channel.",
             key="luminance",
         ),
         "chrominance": _huffman_stats(
             cr_channel,
             label="Huffman coding of chrominance component Cr",
-            description="Histogram and Huffman code lengths for the Lenna image's Cr channel.",
+            description="Histogram and Huffman code lengths for the demo image's Cr channel.",
             key="chrominance",
         ),
         "noise": _huffman_stats(
@@ -204,15 +208,14 @@ def _prepare_variants() -> Dict[str, HuffmanVariant]:
     }
 
 
-_VARIANTS = _prepare_variants()
-
 
 demos_huffman_bp = Blueprint("demos_huffman", __name__, template_folder="../../templates")
 
 
 @demos_huffman_bp.route("/", methods=["GET"], endpoint="page")
 def page() -> str:
+    _, image_path = cached_demo_image(current_app.static_folder)
     return render_template(
         "demos/huffman.html",
-        variants={key: variant.__dict__ for key, variant in _VARIANTS.items()},
+        variants={key: variant.__dict__ for key, variant in _prepare_variants(Path(image_path)).items()},
     )

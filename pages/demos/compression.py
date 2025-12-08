@@ -7,11 +7,13 @@ import math
 import os
 import zipfile
 from dataclasses import dataclass
-from typing import Dict
-
+from pathlib import Path
+from typing import Dict, Tuple
 import numpy as np
 from flask import Blueprint, current_app, render_template, url_for
 from PIL import Image
+
+from .demo_images import cached_demo_image, static_image_filename
 
 
 @dataclass
@@ -27,23 +29,16 @@ class CompressionResult:
     height: int
 
 
-IMAGE_NAME = "lenna.png"
 JPEG_WEAK_QUALITY = 75
 JPEG_MEDIUM_QUALITY = 55
 JPEG_STRONG_QUALITY = 35
 
 
-def _image_path() -> str:
-    static_root = current_app.static_folder
-    return os.path.join(static_root, "demos", "images", IMAGE_NAME)
+def _load_image(image_path: Path) -> Tuple[np.ndarray, Tuple[int, int]]:
+    if not image_path.exists():
+        raise FileNotFoundError(f"Image not found: {image_path}")
 
-
-def _load_image() -> Tuple[np.ndarray, Tuple[int, int]]:
-    path = _image_path()
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Image not found: {path}")
-
-    with Image.open(path) as img:
+    with Image.open(image_path) as img:
         rgb = img.convert("RGB")
         size = rgb.size
         arr = np.asarray(rgb, dtype=np.float64) / 255.0
@@ -68,7 +63,7 @@ def _encode_jpeg(arr: np.ndarray, quality: int) -> Tuple[bytes, np.ndarray]:
     return data, decoded_arr
 
 
-def _zip_image(path: str) -> bytes:
+def _zip_image(path: Path) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.write(path, arcname=os.path.basename(path))
@@ -96,13 +91,14 @@ def _format_value(value: float) -> float:
 
 
 def _build_results() -> Dict[str, CompressionResult]:
-    img, _ = _load_image()
+    image_name, image_path = cached_demo_image(current_app.static_folder)
+    img, _ = _load_image(Path(image_path))
     height, width = img.shape[0], img.shape[1]
-    path = _image_path()
-    original_size = os.path.getsize(path)
+    original_size = os.path.getsize(image_path)
+
 
     # Losless ZIP
-    zip_bytes = _zip_image(path)
+    zip_bytes = _zip_image(image_path)
     zip_size = len(zip_bytes)
 
     # JPEG variants
@@ -114,7 +110,7 @@ def _build_results() -> Dict[str, CompressionResult]:
         "original": CompressionResult(
             label="Original",
             description="Uncompressed reference image.",
-            image_src=url_for("static", filename=f"demos/images/{IMAGE_NAME}"),
+            image_src=url_for("static", filename=static_image_filename(image_name)),
             file_size=original_size,
             compression_factor=1.0,
             snr=math.inf,

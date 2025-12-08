@@ -4,14 +4,14 @@
   <div class="lloyd-hero">
     <div class="hero-text">
       <p class="eyebrow">Lloyd-Max quantization</p>
-      <h1>Iterate Lloyd-Max on Lenna</h1>
+      <h1>Iterate Lloyd-Max on the demo image</h1>
       <p>Step through the iterative design of a 16-level Lloyd-Max quantizer, watch the decision thresholds move, and compare the reconstruction to a uniform quantizer.</p>
       <div class="hero-actions">
         <div class="lenna-chip">
-          <img src="{{ lenna_src }}" alt="Lenna preview">
+          <img src="{{ lenna_src }}" alt="Demo image preview">
           <div>
-            <div class="chip-label">Lenna 512×512</div>
-            <div class="chip-sub">Used for histogram + quantization</div>
+            <div class="chip-label">Reference image</div>
+            <div class="chip-sub">Randomly chosen for histogram + quantization</div>
           </div>
         </div>
         <div class="controls-stack">
@@ -48,7 +48,7 @@
         <p class="quant-metric"><span class="metric-label">SNR</span> <span id="uniform-snr">—</span> · <span class="metric-label">PSNR</span> <span id="uniform-psnr">—</span></p>
       </div>
       <div class="quant-body">
-        <img id="uniform-image" alt="Uniformly quantized Lenna" loading="lazy">
+        <img id="uniform-image" alt="Uniformly quantized demo image" loading="lazy">
         <div id="uniform-curve" class="curve"></div>
       </div>
     </article>
@@ -58,7 +58,7 @@
         <p class="quant-metric"><span class="metric-label">SNR</span> <span id="lloyd-snr">—</span> · <span class="metric-label">PSNR</span> <span id="lloyd-psnr">—</span></p>
       </div>
       <div class="quant-body">
-        <img id="lloyd-image" alt="Lloyd-Max quantized Lenna" loading="lazy">
+        <img id="lloyd-image" alt="Lloyd-Max quantized demo image" loading="lazy">
         <div id="lloyd-curve" class="curve"></div>
       </div>
     </article>

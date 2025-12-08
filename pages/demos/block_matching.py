@@ -4,8 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from flask import Blueprint, render_template, url_for
+from flask import Blueprint, current_app, render_template, url_for
 
+from .demo_images import cached_demo_image, static_image_filename
 
 @dataclass
 class BlockMatchingDefaults:
@@ -27,8 +28,9 @@ demos_block_matching_bp = Blueprint(
 
 @demos_block_matching_bp.route("/", methods=["GET"], endpoint="page")
 def index():
+    image_name, _ = cached_demo_image(current_app.static_folder)
     defaults = BlockMatchingDefaults(
-        image_src=url_for("static", filename="demos/images/lenna.png"),
+        image_src=url_for("static", filename=static_image_filename(image_name)),
         canvas_size=384,          # lil bigger than 320
         block_sizes=[8, 12, 16, 20, 24],
         default_block=16,

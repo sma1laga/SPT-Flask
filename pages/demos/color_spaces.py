@@ -1,4 +1,4 @@
-"""Color space decomposition demo for the Lenna image"""
+"""Color space decomposition demo for the selected reference image."""
 from __future__ import annotations
 
 import base64
@@ -16,6 +16,8 @@ from flask import Blueprint, abort, current_app, render_template, url_for
 from imageio.v2 import imread, imwrite
 from skimage import color
 
+from .demo_images import cached_demo_image, static_image_filename
+
 
 @dataclass(frozen=True)
 class ColorComponentView:
@@ -30,10 +32,6 @@ class ColorSpaceVariant:
     title: str
     description: str
     components: List[ColorComponentView]
-
-
-ROOT = Path(__file__).resolve().parent.parent.parent
-LENNA_PATH = ROOT / "static" / "demos" / "images" / "lenna.png"
 
 
 def _buffer_to_uri(buf: io.BytesIO) -> str:
@@ -90,11 +88,11 @@ def _component_view(name: str, component: np.ndarray, expected_range: Tuple[floa
     )
 
 
-def _prepare_variants() -> Dict[str, ColorSpaceVariant]:
-    if not LENNA_PATH.exists():
-        raise FileNotFoundError(f"Lenna image missing at {LENNA_PATH}")
+def _prepare_variants(image_path: Path) -> Dict[str, ColorSpaceVariant]:
+    if not image_path.exists():
+        raise FileNotFoundError(f"Demo image missing at {image_path}")
 
-    rgb_image = imread(LENNA_PATH)
+    rgb_image = imread(image_path)
     if rgb_image.ndim == 2:
         rgb_image = np.stack([rgb_image] * 3, axis=-1)
     if rgb_image.shape[-1] > 3:
@@ -154,16 +152,6 @@ def _prepare_variants() -> Dict[str, ColorSpaceVariant]:
     return {variant.key: variant for variant in [rgb_variant, yuv_variant, yiq_variant, ycbcr_variant]}
 
 
-_VARIANTS: Dict[str, ColorSpaceVariant] | None = None
-
-
-def _variants_cached() -> Dict[str, ColorSpaceVariant]:
-    global _VARIANTS
-    if _VARIANTS is None:
-        _VARIANTS = _prepare_variants()
-    return _VARIANTS
-
-
 def _serialize_variant(variant: ColorSpaceVariant) -> Dict[str, object]:
     return {
         "key": variant.key,
@@ -186,7 +174,10 @@ demos_color_spaces_bp = Blueprint("demos_color_spaces", __name__, template_folde
 @demos_color_spaces_bp.route("/", methods=["GET"], endpoint="page")
 def page() -> str:
     try:
-        variants = {key: _serialize_variant(variant) for key, variant in _variants_cached().items()}
+        image_name, image_path = cached_demo_image(current_app.static_folder)
+        variants = {
+            key: _serialize_variant(variant) for key, variant in _prepare_variants(Path(image_path)).items()
+        }
     except FileNotFoundError as exc:
         current_app.logger.exception("Color spaces demo assets missing")
         abort(500, description=str(exc))
@@ -197,5 +188,5 @@ def page() -> str:
     return render_template(
         "demos/color_spaces.html",
         variants=variants,
-        original_src=url_for("static", filename="demos/images/lenna.png"),
+        original_src=url_for("static", filename=static_image_filename(image_name)),
     )
