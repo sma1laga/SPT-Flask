@@ -163,6 +163,13 @@ DEMOS = {
                 "endpoint": "demos_color_spaces.page",
             },
             {
+                "slug": "image-sampling",
+                "title": "Image Sampling",
+                "title_desc": "Rectangular vs Quincunx",
+                "desc": "Compare 2×2 rectangular averaging to quincunx sampling on a synthetic ring pattern.",
+                "endpoint": "image_sampling.page",
+            },
+            {
                 "slug": "discrete-wavelet-transform",
                 "title": "Discrete Wavelet Transform",
                 "title_desc": "2D Haar",

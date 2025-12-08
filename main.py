@@ -83,6 +83,7 @@ from pages.demos.discrete_wavelet_transform import demos_discrete_wavelet_transf
 from pages.demos.color_spaces import demos_color_spaces_bp
 from pages.demos.block_matching import demos_block_matching_bp
 from pages.demos.b_prediction import b_prediction_bp
+from pages.demos.image_sampling import demos_image_sampling_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -218,6 +219,7 @@ def create_app():
     app.register_blueprint(demos_color_spaces_bp, url_prefix="/demos/color-spaces")
     app.register_blueprint(demos_block_matching_bp, url_prefix="/demos/block-matching")
     app.register_blueprint(b_prediction_bp, url_prefix="/demos/b-prediction")
+    app.register_blueprint(demos_image_sampling_bp, url_prefix="/demos/image-sampling")
 
     @app.route("/")
     def home():
