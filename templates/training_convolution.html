@@ -424,12 +424,19 @@ refreshStreakUI();
 
   <!-- Styles -->
   <style>
-    .radio-group { display: flex; gap: 15px; }
-    .radio-label { font-size: 1em; }
-    .radio-label input { margin-right: 6px; }
+    .radio-group {
+      display: flex;
+      gap: 15px;
+    }
+    .radio-label {
+      font-size: 1em;
+    }
+    .radio-label input {
+      margin-right: 6px;
+    }
     .action-btn {
       padding: 10px 20px;
-      background-color: #007acc;
+      background-color: var(--primary-color);
       color: #fff;
       border: none;
       border-radius: 4px;
@@ -437,23 +444,43 @@ refreshStreakUI();
       font-size: 1em;
       transition: background-color 0.2s ease;
     }
-    .action-btn:hover { background-color: #005fa3; }
-    #nextBtn {
-      background-color: #3CB371;
+    .action-btn:hover {
+      background-color: var(--primary-color-darker);
     }
-    #nextBtn:hover { background-color: #2E8B57; }
-    .feedback { min-height: 1.4em; margin-top: 10px; }
+    #nextBtn {
+      background-color: var(--lms-green-darker);
+    }
+    #nextBtn:hover {
+      background-color: var(--lms-green-dark);
+    }
+    .feedback {
+      min-height: 1.4em;
+      margin-top: 10px;
+    }
     .link-btn {
-      color: #007acc;
+      color: var(--primary-color);
       text-decoration: none;
       font-weight: bold;
     }
-    .link-btn:hover { text-decoration: underline; }
-    .option-btn.correct { background-color: #28a745; }
-    .option-btn.incorrect { background-color: #c0392b; }
+    .link-btn:hover {
+      text-decoration: underline;
+    }
+    .option-btn.correct {
+      background-color: var(--lms-green-darker);
+    }
+    .option-btn.incorrect {
+      background-color: var(--lms-red);
+    }
     /* Overlay exakt über dem Bild */
-    .plot-wrap { position: relative; display: inline-block; }
-    .plot-overlay { position: absolute; inset: 0; pointer-events: none; }
+    .plot-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .plot-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
 
     /* Klickbare Bereiche (Hitboxen) */
     .plot-hit {

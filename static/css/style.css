@@ -17,6 +17,7 @@
     --tab-cyan: #17becf;
 
     --lms-red: #cc3333;
+    --lms-red-darker: #A72A2A;
     --lms-gray: #999999;
     --lms-cyan: #00cccc;
     --lms-magenta: #cc00cc;
@@ -26,6 +27,8 @@
     --lms-lightred: #cc6666;
     --lms-blue: #0033cc;
     --lms-green: #33cc33;
+    --lms-green-darker: #2AA72A;
+    --lms-green-dark: #218321;
     --lms-lightgreen: #66cc66;
 
     --background-color: #f4f7f9;

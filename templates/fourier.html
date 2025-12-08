@@ -178,7 +178,7 @@ document.getElementById("clearBtn").addEventListener("click", ()=>{
     font-size: 1.1em;         /* leicht größere Schrift */
     min-width: 80px;          /* Mindestbreite */
     border-radius: 5px;
-    background-color: #007acc;
+    background-color: var(--primary-color);
     color: #fff;
     border: none;
     cursor: pointer;
@@ -186,7 +186,7 @@ document.getElementById("clearBtn").addEventListener("click", ()=>{
   }
   .quick-buttons.functions button:hover,
   .quick-buttons.operators button:hover {
-    background-color: #005fa3;
+    background-color: var(--primary-color-darker);
   }
 
   /* Action-Buttons (Compute / Clear) – moderat vergrößert */
@@ -199,21 +199,23 @@ document.getElementById("clearBtn").addEventListener("click", ()=>{
     transition: background-color 0.15s ease;
   }
   #computeBtn {
-    background-color: #28a745;
+    background-color: var(--lms-green-darker);
     color: #fff;
     margin-right: 8px;
   }
   #computeBtn:hover {
-    background-color: #218838;
+    background-color: var(--lms-green-dark);
   }
   #clearBtn {
-    background-color: #dc3545;
+    background-color: var(--lms-red);
     color: #fff;
   }
   #clearBtn:hover {
-    background-color: #c82333;
+    background-color: var(--lms-red-darker);
   }
-  input.input-error{border-color:#d00;}
+  input.input-error{
+    border-color: var(--lms-red);
+  }
 
 </style>
 

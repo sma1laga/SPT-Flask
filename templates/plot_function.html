@@ -316,40 +316,112 @@
 <!-- STYLES ------------------------------------------------------- -->
 <style>
   .quick-buttons button{
-    padding:8px 12px;font-size:0.9em;border-radius:4px;background:#007acc;
-    color:#fff;border:none;cursor:pointer;transition:background-color .15s;
+    padding:8px 12px;
+    font-size:0.9em;
+    border-radius:4px;
+    background:var(--primary-color);
+    color:#fff;
+    border:none;
+    cursor:pointer;
+    transition:background-color .15s;
   }
-  .quick-buttons button:hover{ background:#005fa3; }
+  .quick-buttons button:hover{
+    background:var(--primary-color-darker);
+  }
 
-  .action-btn{ padding:8px 22px;font-size:0.9em;border-radius:4px;border:none;cursor:pointer; }
-  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
-  .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
+  .action-btn{
+    padding:8px 22px;
+    font-size:0.9em;
+    border-radius:4px;
+    border:none;
+    cursor:pointer;
+  }
+  .green{
+    background:var(--lms-green-darker);
+    color:#fff;
+  }
+  .green:hover{
+    background:var(--lms-green-dark);
+  }
+  .red  {
+    background:var(--lms-red);
+    color:#fff;
+  }
+  .red:hover  {
+    background:var(--lms-red-darker);
+  }
 
   .transform-wrapper{
-    display:flex;flex-wrap:wrap;gap:18px;justify-content:center;
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    justify-content:center;
   }
   .transform-box{
-    border:1px solid #d9dee3;border-radius:8px;padding:16px 22px;min-width:260px;
-    background:#f8fafc;position:relative;
+    border:1px solid #d9dee3;
+    border-radius:8px;
+    padding:16px 22px;
+    min-width:260px;
+    background:#f8fafc;
+    position:relative;
   }
   .reset-transform{
-    position:absolute;top:-5px;right:22px;width:22px;height:22px;border:none;
-    border-radius:50%;background:#2563eb;color:#fff;font-size:12px;line-height:1;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    opacity:0.75;transition:opacity .15s,background-color .15s;
+    position:absolute;
+    top:-5px;
+    right:22px;
+    width:22px;
+    height:22px;
+    border:none;
+    border-radius:50%;
+    background: var(--primary-color);
+    color:#fff;
+    font-size:12px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    opacity:0.75;
+    transition:opacity .15s,background-color .15s;
   }
-  .reset-transform:hover{opacity:1;background:#1d4ed8;}
-  .slider-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
-  .slider-row label{width:90px;text-align:right;font-weight:600;}
+  .reset-transform:hover{
+    opacity:1;
+    background: var(--primary-color-darker);
+  }
+  .slider-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+  }
+  .slider-row label{
+    width:90px;
+    text-align:right;
+    font-weight:600;
+  }
   .slider-row span{
-    width:46px;text-align:center;border:1px solid #ccd0d5;border-radius:4px;
-    background:#fff;font-variant-numeric:tabular-nums;
+    width:46px;
+    text-align:center;
+    border:1px solid #ccd0d5;
+    border-radius:4px;
+    background:#fff;
+    font-variant-numeric:tabular-nums;
   }
   input[type=range]{
-    flex:1;appearance:none;height:4px;border-radius:2px;background:#007acc;cursor:pointer;
+    flex:1;
+    appearance:none;
+    height:4px;
+    border-radius:2px;
+    background:var(--primary-color);
+    cursor:pointer;
   }
   input[type=range]::-webkit-slider-thumb{
-    appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #007acc;
+    appearance:none;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:#fff;
+    border:2px solid var(--primary-color);
   }
   
   /* Dark mode adjustments */
@@ -363,15 +435,19 @@
     border-color:#444;
   }
   body.dark-mode .reset-transform{
-    background:#3b82f6;
+    background: var(--primary-color);
     color:#e8edff;
   }
-  body.dark-mode .reset-transform:hover{background:#2563eb;}
+  body.dark-mode .reset-transform:hover{
+    background: var(--primary-color-darker);
+  }
   body.dark-mode .slider-row span{
     background:#333;
     border-color:#555;
     color:#f5f5f5;
   }
-  input.input-error{border-color:#d00;}
+  input.input-error{
+    border-color: var(--lms-red);
+  }
 </style>
 {% endblock %}
