@@ -1,0 +1,27 @@
+.container { max-width: 900px; margin: 0 auto; }
+section { margin-bottom: 2rem; }
+p { margin-bottom: 0.5rem; }
+p:last-child { margin-bottom: 0; }
+section h2 {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.4rem;
+}
+section h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 52px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary-gradient-start), var(--primary-gradient-end));
+  opacity: 0.55;
+}
+section h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.impressum-table { width:100%; border-collapse:collapse; }
+.impressum-table td { padding:0.4rem; vertical-align:top; }
+.impressum-table tr:nth-child(odd) { background:var(--background-color); }
