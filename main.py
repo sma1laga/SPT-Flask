@@ -213,7 +213,7 @@ def create_app():
     app.register_blueprint(demos_compression_bp, url_prefix="/demos/compression")
     app.register_blueprint(demos_huffman_bp, url_prefix="/demos/huffman")
     app.register_blueprint(demos_lloyd_max_bp, url_prefix="/demos/lloyd-max")
-    app.register_blueprint(demos_spatial_prediction_bp, url_prefix="/demos/spatial-prediction-1")
+    app.register_blueprint(demos_spatial_prediction_bp, url_prefix="/demos/zonal-dct-coding")
     app.register_blueprint(zonal_dct_bp, url_prefix="/demos/zonal-dct-coding")
     app.register_blueprint(demos_discrete_wavelet_transform_bp, url_prefix="/demos/discrete-wavelet-transform")
     app.register_blueprint(demos_color_spaces_bp, url_prefix="/demos/color-spaces")

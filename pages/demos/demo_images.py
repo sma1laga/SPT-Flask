@@ -6,7 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Tuple
 
-DEMO_IMAGES = ("cameraman.tiff", "pirate.tiff", "peppers.tiff")
+DEMO_IMAGES = ("cameraman.tif", "pirate.tiff", "peppers.tiff")
 
 
 def choose_demo_image(static_folder: str | Path) -> Tuple[str, Path]:

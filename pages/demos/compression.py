@@ -13,7 +13,7 @@ import numpy as np
 from flask import Blueprint, current_app, render_template, url_for
 from PIL import Image
 
-from .demo_images import cached_demo_image, static_image_filename
+from .demo_images import cached_demo_image
 
 
 @dataclass
@@ -110,7 +110,7 @@ def _build_results() -> Dict[str, CompressionResult]:
         "original": CompressionResult(
             label="Original",
             description="Uncompressed reference image.",
-            image_src=url_for("static", filename=static_image_filename(image_name)),
+            image_src=_encode_png(img),
             file_size=original_size,
             compression_factor=1.0,
             snr=math.inf,
