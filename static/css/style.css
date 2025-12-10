@@ -924,9 +924,9 @@ body.sisy2-page .card:hover {
 body.dark-mode {
     background-color: #1a1f27;
     color: #f5f5f5;
-    --primary-color: #82aaff;
-    --primary-gradient-start: #82aaff;
-    --primary-gradient-end: #548aff;
+    --primary-color: #5b8def;
+    --primary-gradient-start: #5b8def;
+    --primary-gradient-end: #3f6fd9;
     --text-color: #f5f5f5;
     --background-color: #1a1f27;
     --subtext-color: #c2c9d1;
@@ -955,6 +955,24 @@ body.dark-mode .header .main-nav ul li button {
   border-color: rgba(59, 130, 246, 0.42);
   background: rgba(37, 99, 235, 0.2);
   color: var(--header-text);
+}
+
+body.dark-mode .toggle-tabs button {
+  background: #1f2c45;
+  border: 1px solid rgba(130, 170, 255, 0.6);
+  color: #e2ebff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .toggle-tabs button:hover {
+  background: #243552;
+  color: #f0f5ff;
+}
+
+body.dark-mode .toggle-tabs button.active {
+  background: linear-gradient(135deg, rgba(91, 141, 239, 0.94), rgba(63, 111, 217, 0.9));
+  border-color: rgba(148, 197, 255, 0.75);
+  color: #ffffff;
 }
 
 body.dark-mode .header .main-nav ul li.toggle-container .toggle-button {
