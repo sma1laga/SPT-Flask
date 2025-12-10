@@ -1,43 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="sampling-page">
-  <header class="hero card">
+<div class="demo sampling-page">
+  <div class="card control-card hero-card">
     <div>
-      <p class="eyebrow">Image &amp; Video Compression · Sampling</p>
-      <h1>Image Sampling</h1>
-      <p class="lede">Compare rectangular and quincunx sampling on a concentric ring pattern. Each method uses the same
-average-based prefiltering to keep energy balanced.</p>
+      <div class="card-title">Image Sampling</div>
+      <p class="control-subtitle">Compare rectangular and quincunx sampling on a concentric ring pattern.</p>
       <div class="pill-row">
         <span class="pill"><i class="fas fa-border-none"></i> Rectangular 1:4</span>
         <span class="pill"><i class="fas fa-grip-dots"></i> Quincunx 1:8</span>
         <span class="pill"><i class="fas fa-wave-square"></i> Sinusoidal rings</span>
       </div>
-      </div>
     </div>
     <div class="hero-panel">
-      <h3>What to look for</h3>
+      <div class="card-title small">What to look for</div>
       <ul>
         <li>Both samplers start from the same 512×512 concentric pattern.</li>
         <li>Rectangular sampling averages each 2×2 block, leading to blocky steps.</li>
         <li>Quincunx sampling staggers its grid, keeping diagonals smoother at a lower rate.</li>
       </ul>
     </div>
-  </header>
+  </div>
 
   <section class="stack card">
     <div class="panel">
-      <p class="eyebrow">Reference</p>
-      <h2>Original pattern</h2>
-      <p class="subtitle">Sinusoidal rings generated procedurally to match the lecture graphic.</p>
+      <div class="card-title">Original pattern</div>
+      <p class="variant-desc">Sinusoidal rings generated procedurally to match the lecture graphic.</p>
       <img src="{{ images.original }}" alt="Original concentric ring pattern" class="preview" loading="lazy" />
       <div class="actions">
         <button class="zoom-btn" data-img="{{ images.original }}">View larger</button>
       </div>
     </div>
     <div class="panel">
-      <p class="eyebrow">Rectangular</p>
-      <h2>2×2 averaging</h2>
-      <p class="subtitle">Averaged 2×2 blocks are replicated back to full resolution (sampling ratio 1:4).</p>
+      <div class="card-title">Rectangular sampling</div>
+      <p class="variant-desc">Averaged 2×2 blocks are replicated back to full resolution (sampling ratio 1:4).</p>
       <img src="{{ images.rectangular }}" alt="Rectangular sampling result" class="preview" loading="lazy" />
       <div class="actions">
         <button class="zoom-btn" data-img="{{ images.rectangular }}">View larger</button>
@@ -48,9 +43,8 @@ average-based prefiltering to keep energy balanced.</p>
       </div>
     </div>
     <div class="panel">
-      <p class="eyebrow">Quincunx</p>
-      <h2>Staggered lattice</h2>
-      <p class="subtitle">Pairs of diagonal neighbours combine to fill the grid (sampling ratio 1:8).</p>
+      <div class="card-title">Quincunx sampling</div>
+      <p class="variant-desc">Pairs of diagonal neighbours combine to fill the grid (sampling ratio 1:8).</p>
       <img src="{{ images.quincunx }}" alt="Quincunx sampling result" class="preview" loading="lazy" />
       <div class="actions">
         <button class="zoom-btn" data-img="{{ images.quincunx }}">View larger</button>
@@ -73,106 +67,30 @@ average-based prefiltering to keep energy balanced.</p>
 </div>
 
 <style>
-  .sampling-page {
-    --surface: #ffffff;
-    --card: #f8fafc;
-    --border: rgba(14, 26, 43, 0.12);
-    --shadow: 0 14px 35px rgba(11, 94, 189, 0.08);
-    --heading: #0e1a2b;
-    --text: #465063;
-    --accent: #0b5ebd;
-    --pill-bg: rgba(11, 94, 189, 0.1);
-    color: var(--text);
-  }
-  .dark-mode .sampling-page {
-    --surface: #0b1220;
-    --card: #111827;
-    --border: rgba(148, 163, 184, 0.35);
-    --shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
-    --heading: #e2e8f0;
-    --text: #cbd5e1;
-    --accent: #60a5fa;
-    --pill-bg: rgba(96, 165, 250, 0.16);
-  }
-  .sampling-page .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    padding: 24px;
-    margin-bottom: 24px;
-  }
-  .sampling-page h1,
-  .sampling-page h2,
-  .sampling-page h3 {
-    color: var(--heading);
-  }
-  .sampling-page .eyebrow {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 0.75rem;
-    margin-bottom: 6px;
-    color: var(--accent);
-    font-weight: 700;
-  }
-  .sampling-page .lede {
-    color: var(--text);
-    font-size: 1.05rem;
-    margin-bottom: 8px;
-  }
-  .sampling-page .subtitle {
-    color: var(--text);
-    margin-bottom: 10px;
-  }
-  .hero {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 18px;
-    align-items: start;
-  }
-  .hero .pill-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .hero .pill {
-    background: var(--pill-bg);
-    color: var(--accent);
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 0.9rem;
-  }
-  .hero-panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-  }
-  .hero-panel ul {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--text);
-  }
-  .stack {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-  .panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  .sampling-page { display: flex; flex-direction: column; gap: 16px; }
+  .card-title { font-weight: 700; color: #0e1a2b; }
+  .card-title.small { font-size: 0.95rem; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-subtitle, .variant-desc { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .control-subtitle, body.dark-mode .variant-desc { color: #d8e3f5; }
+  .sampling-page .card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); border-radius: 14px; padding: 16px; }
+  .sampling-page .card:hover { box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); transform: none; }
+  .hero-card { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .pill { background: rgba(11,94,189,0.1); color: #0b5ebd; padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; font-weight: 700; }
+  body.dark-mode .pill { background: rgba(158,203,255,0.14); color: #d7e8ff; }
+  .hero-panel { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; background: var(--demo-card-bg, #fff); box-shadow: none; }
+  body.dark-mode .hero-panel { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
+  .hero-panel ul { margin: 0; padding-left: 18px; color: var(--demo-description-color, #465063); }
+  body.dark-mode .hero-panel ul { color: #cbd6ea; }
+  .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .panel { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--demo-card-bg, #fff); box-shadow: none; }
+  body.dark-mode .panel { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
   .preview {
     width: 100%;
     max-width: 760px;
     border-radius: 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12));
     align-self: center;
   }
   .actions {
@@ -180,18 +98,19 @@ average-based prefiltering to keep energy balanced.</p>
     justify-content: center;
   }
   .zoom-btn {
-    background: #0b5ebd;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
+    background: var(--demo-button-bg, rgba(11,94,189,0.12));
+    color: var(--demo-button-color, #0b5ebd);
+    border: 1px solid var(--demo-button-color, #0b5ebd);
+    border-radius: 10px;
     padding: 8px 14px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: none;
   }
   .zoom-btn:hover,
   .zoom-btn:focus {
-    background: #094d9d;
+    background: var(--demo-button-hover-bg, rgba(11,94,189,0.2));
+    color: var(--demo-button-hover-color, #073b75);
   }
   .diagram {
     display: grid;
@@ -201,15 +120,16 @@ average-based prefiltering to keep energy balanced.</p>
   }
   .diagram img {
     width: 100%;
-    border: 1px solid var(--border);
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12));
     border-radius: 10px;
-    background: var(--card);
+    background: var(--demo-card-bg, #fff);
   }
   .caption {
-    color: var(--text);
+    color: var(--demo-description-color, #465063);
     margin: 0;
     font-size: 0.95rem;
   }
+  body.dark-mode .caption { color: #cbd6ea; }
   .zoom-overlay {
     position: fixed;
     inset: 0;
@@ -228,7 +148,7 @@ average-based prefiltering to keep energy balanced.</p>
   }
   .zoom-modal {
     position: relative;
-    background: var(--card);
+    background: var(--demo-card-bg, #fff);
     border-radius: 14px;
     padding: 16px;
     max-width: 1200px;
@@ -247,7 +167,7 @@ average-based prefiltering to keep energy balanced.</p>
   .zoom-modal figcaption {
     width: 100%;
     text-align: center;
-    color: var(--text);
+    color: var(--demo-description-color, #465063);
     margin: 0;
   }
   .zoom-close {
@@ -255,11 +175,11 @@ average-based prefiltering to keep energy balanced.</p>
     border: none;
     font-size: 1.4rem;
     cursor: pointer;
-    color: var(--heading);
+    color: var(--demo-heading-color, #0e1a2b);
     align-self: flex-end;
   }
   @media (max-width: 768px) {
-    .hero {
+    .hero-card {
       grid-template-columns: 1fr;
     }
   }

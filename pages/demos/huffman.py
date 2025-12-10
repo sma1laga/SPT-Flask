@@ -20,7 +20,7 @@ from flask import Blueprint, current_app, render_template
 from imageio.v2 import imread, imwrite
 from skimage import color
 
-from .demo_images import cached_demo_image
+from .demo_images import peppers_image
 
 
 @dataclass(frozen=True)
@@ -214,7 +214,7 @@ demos_huffman_bp = Blueprint("demos_huffman", __name__, template_folder="../../t
 
 @demos_huffman_bp.route("/", methods=["GET"], endpoint="page")
 def page() -> str:
-    _, image_path = cached_demo_image(current_app.static_folder)
+    _, image_path = peppers_image(current_app.static_folder)
     return render_template(
         "demos/huffman.html",
         variants={key: variant.__dict__ for key, variant in _prepare_variants(Path(image_path)).items()},

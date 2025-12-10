@@ -8,6 +8,8 @@ from typing import Tuple
 import numpy as np
 
 DEMO_IMAGES = ("cameraman.tif", "pirate.tiff", "peppers.tiff")
+_PEPPERS_CANDIDATES = ("peppers.png", "peppers.tiff")
+
 
 
 def choose_demo_image(static_folder: str | Path) -> Tuple[str, Path]:
@@ -50,3 +52,12 @@ def browser_safe_image_filename(static_folder: str | Path) -> str:
         iio.imwrite(png_path, img)
 
     return str(png_path.relative_to(static_folder)).replace("\\", "/")
+
+
+def peppers_image(static_folder: str | Path) -> Tuple[str, Path]:
+    static_root = Path(static_folder)
+    for name in _PEPPERS_CANDIDATES:
+        path = static_root / "images" / name
+        if path.exists():
+            return name, path
+    raise FileNotFoundError("Peppers demo image not found in static/images")

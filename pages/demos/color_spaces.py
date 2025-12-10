@@ -16,7 +16,7 @@ from flask import Blueprint, abort, current_app, render_template, url_for
 from imageio.v2 import imread, imwrite
 from skimage import color
 
-from .demo_images import cached_demo_image, static_image_filename
+from .demo_images import peppers_image, static_image_filename
 
 
 @dataclass(frozen=True)
@@ -174,7 +174,7 @@ demos_color_spaces_bp = Blueprint("demos_color_spaces", __name__, template_folde
 @demos_color_spaces_bp.route("/", methods=["GET"], endpoint="page")
 def page() -> str:
     try:
-        image_name, image_path = cached_demo_image(current_app.static_folder)
+        image_name, image_path = peppers_image(current_app.static_folder)
         variants = {
             key: _serialize_variant(variant) for key, variant in _prepare_variants(Path(image_path)).items()
         }
