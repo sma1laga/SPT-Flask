@@ -87,6 +87,8 @@ from pages.demos.image_sampling import demos_image_sampling_bp
 #VL STATSIP
 from pages.demos.conditional_distributions import demos_conditional_distributions_bp
 from pages.demos.mapping_random_variables import mapping_random_variables_bp
+from pages.demos.distributions import demos_distributions_bp
+
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -226,6 +228,7 @@ def create_app():
     # STATSIP
     app.register_blueprint(demos_conditional_distributions_bp, url_prefix="/demos/conditional-distributions")
     app.register_blueprint(mapping_random_variables_bp, url_prefix="/demos/mapping-random-variables")
+    app.register_blueprint(demos_distributions_bp, url_prefix="/demos/distributions")
 
     
     

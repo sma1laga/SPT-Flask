@@ -149,6 +149,13 @@ DEMOS = {
                 "endpoint": "demos_conditional_distributions.page",
             },
             {
+                "slug": "distributions",
+                "title": "Distributions",
+                "title_desc": "PDF & CDF Explorer",
+                "desc": "Interactively plot PDFs and CDFs for 12 continuous and discrete laws (normal, Laplace, Rayleigh, Poisson, etc.).",
+                "endpoint": "demos_distributions.page",
+            },
+            {
                 "slug": "mapping-random-variables",
                 "title": "Statistical Demo 2",
                 "title_desc": "Mapping Random Variables",
