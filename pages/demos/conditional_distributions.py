@@ -67,7 +67,17 @@ def _exponential_curves(lmbda: float):
     return x, pdf, cdf
 
 
-def _plot_curves(x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title_prefix: str):
+def _plot_curves(
+    x,
+    pdf,
+    cdf,
+    cond_pdf,
+    cond_cdf,
+    a_min,
+    a_max,
+    title_prefix: str,
+    latex_title: str,
+):
     return {
         "x": x.tolist(),
         "pdf": pdf.tolist(),
@@ -77,6 +87,7 @@ def _plot_curves(x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title_prefix: st
         "a_min": a_min,
         "a_max": a_max,
         "title": title_prefix,
+        "title_latex": latex_title,
     }
 
 
@@ -85,15 +96,21 @@ def _prepare_curves(distribution: str, params: dict):
         x_min = float(params.get("x_min", DEFAULTS["x_min"]))
         x_max = float(params.get("x_max", DEFAULTS["x_max"]))
         title = "Uniform"
+        latex_title = f"X \\sim \\mathcal{{U}}\\left([{x_min:.2f}, {x_max:.2f}]\\right)"
+
         x, pdf, cdf = _uniform_curves(x_min, x_max)
     elif distribution == "normal":
         mean = float(params.get("mean", DEFAULTS["mean"]))
         variance = float(params.get("variance", DEFAULTS["variance"]))
         title = "Normal"
+        latex_title = f"X \\sim \\mathcal{{N}}({mean:.2f}, {variance:.2f})"
+
         x, pdf, cdf = _normal_curves(mean, variance)
     elif distribution == "exponential":
         lmbda = float(params.get("lambda", DEFAULTS["lambda"]))
         title = "Exponential"
+        latex_title = f"X \\sim \\text{{Exp}}({lmbda:.2f})"
+
         x, pdf, cdf = _exponential_curves(lmbda)
     else:
         raise ValueError("Unknown distribution selected.")
@@ -104,8 +121,18 @@ def _prepare_curves(distribution: str, params: dict):
         raise ValueError("A_min must be smaller than A_max.")
 
     cond_prob, cond_pdf, cond_cdf = _conditional_curves(x, pdf, cdf, a_min, a_max)
-    return x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title, cond_prob
-
+    return (
+        x,
+        pdf,
+        cdf,
+        cond_pdf,
+        cond_cdf,
+        a_min,
+        a_max,
+        title,
+        latex_title,
+        cond_prob,
+    )
 
 @demos_conditional_distributions_bp.route("/compute", methods=["POST"])
 def compute():
@@ -113,9 +140,30 @@ def compute():
         data = request.get_json(force=True) or {}
         distribution = (data.get("distribution") or DEFAULTS["distribution"]).strip().lower()
 
-        x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title, cond_prob = _prepare_curves(distribution, data)
+        (
+            x,
+            pdf,
+            cdf,
+            cond_pdf,
+            cond_cdf,
+            a_min,
+            a_max,
+            title,
+            latex_title,
+            cond_prob,
+        ) = _prepare_curves(distribution, data)
 
-        payload = _plot_curves(x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title_prefix=title)
+        payload = _plot_curves(
+            x,
+            pdf,
+            cdf,
+            cond_pdf,
+            cond_cdf,
+            a_min,
+            a_max,
+            title_prefix=title,
+            latex_title=latex_title,
+        )
         payload["condition_prob"] = float(cond_prob)
         return jsonify(payload)
     except Exception as exc:  

@@ -38,6 +38,9 @@
     .summary-value{font-size:1.05rem;font-weight:700;color:#111827}
     .summary-value.accent{color:#2563eb}
     .summary-value.strong{color:#16a34a}
+    .latex-title{font-size:1.08rem;font-weight:700;text-align:left;margin:4px 2px 2px;color:#0f172a}
+    .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:6px 2px 10px;font-weight:600;color:#111827;font-size:0.98rem}
+    .subplot-label{text-align:left}
     @media(max-width:1100px){.plot-wrapper{min-height:680px}}
   </style>
 
@@ -63,6 +66,8 @@
         <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
         <div id="probability" class="inline-note"></div>
       </div>
+      <div id="plot-title" class="latex-title" aria-live="polite"></div>
+      <div id="subplot-labels" class="subplot-labels" aria-hidden="true"></div>
       <div class="summary-strip" aria-live="polite">
         <div class="summary-item">
           <div class="summary-label">Distribution</div>
@@ -91,8 +96,33 @@
   const defaults = {{ defaults | tojson }};
   const controlsEl = document.getElementById('controls');
   const plotEl = document.getElementById('plot');
+  const latexTitleEl = document.getElementById('plot-title');
+  const latexLabelsEl = document.getElementById('subplot-labels');
   const errorEl = document.getElementById('error');
   const probEl = document.getElementById('probability');
+  const latexQueue = new Set();
+  let mathJaxInterval = null;
+  function typesetLatex(blocks) {
+    blocks.filter(Boolean).forEach((blk) => latexQueue.add(blk));
+
+    const attempt = () => {
+      if (window.MathJax?.typesetPromise) {
+        const items = Array.from(latexQueue);
+        latexQueue.clear();
+        window.MathJax.typesetPromise(items).catch((err) => console.error('MathJax typeset error', err));
+        if (mathJaxInterval) {
+          clearInterval(mathJaxInterval);
+          mathJaxInterval = null;
+        }
+        return true;
+      }
+      return false;
+    };
+
+    if (!attempt() && !mathJaxInterval) {
+      mathJaxInterval = setInterval(attempt, 250);
+    }
+  }
 
   const CONFIG = {
     uniform: {
@@ -242,7 +272,7 @@
   }
 
   function renderPlot(data) {
-    const { x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title } = data;
+    const { x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title, title_latex } = data;
 
     const mask = x.map(v => v >= a_min && v <= a_max);
     const highlightX = x.map((v, i) => (mask[i] ? v : null));
@@ -258,13 +288,6 @@
       { x, y: cond_pdf, mode: 'lines', name: 'f_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x4', yaxis: 'y4' },
     ];
 
-    const annotations = [
-      { text: '\\(F_X(x)\\)', x: 0.22, y: 1.05 },
-      { text: '\\(F_{X|A}(x)\\)', x: 0.78, y: 1.05 },
-      { text: '\\(f_X(x)\\)', x: 0.22, y: 0.47 },
-      { text: '\\(f_{X|A}(x)\\)', x: 0.78, y: 0.47 },
-    ].map(item => ({ ...item, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 14 } }));
-
     const layout = {
       grid: { rows: 2, columns: 2, pattern: 'independent' },
       height: 880,
@@ -278,18 +301,38 @@
       yaxis3: { title: '$f_X(x)$', rangemode: 'tozero' },
       xaxis4: { title: '$x$' },
       yaxis4: { title: '$f_{X|A}(x)$', rangemode: 'tozero' },
-      title: { text: `\\(${title}\\): \\(F_X(x), F_{X|A}(x), f_X(x), f_{X|A}(x)\\)`, x: 0.02 },
+      title: { text: `${title}: F_X(x), F_{X|A}(x), f_X(x), f_{X|A}(x)`, x: 0.02 },
       paper_bgcolor: 'white',
       plot_bgcolor: '#f8fafc',
       shapes: [
         { type: 'rect', xref: 'x', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line: { width: 0 } },
         { type: 'rect', xref: 'x3', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line:{ width: 0 } },
       ],
-      annotations,
     };
 
-    Plotly.react(plotEl, traces, layout, { responsive: true, displaylogo: false });
-  }
+    Plotly.react(plotEl, traces, layout, { responsive: true, displaylogo: false })
+      .then(() => {
+        const latexBlocks = [];
+        if (latexTitleEl) {
+          latexTitleEl.innerHTML = `\\(${title_latex || title}\\): \\(F_X(x), F_{X\mid A}(x), f_X(x), f_{X\mid A}(x)\\)`;
+          latexBlocks.push(latexTitleEl);
+        }
+
+        if (latexLabelsEl) {
+          latexLabelsEl.innerHTML = [
+            '\\(F_X(x)\\)',
+            '\\(F_{X\\mid A}(x)\\)',
+            '\\(f_X(x)\\)',
+            '\\(f_{X\\mid A}(x)\\)'
+          ].map(expr => `<span class="subplot-label">${expr}</span>`).join('');
+          latexBlocks.push(latexLabelsEl);
+        }
+
+        if (latexBlocks.length) {
+          typesetLatex(latexBlocks);
+        }
+      });
+    }
 
   function attachListeners() {
     document.querySelectorAll('#controls input[type=range]').forEach(inp => {
