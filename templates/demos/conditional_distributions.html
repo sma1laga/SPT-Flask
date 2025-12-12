@@ -1,16 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container" style="max-width:1300px">
-  <h1>Conditional Distributions</h1>
-  <p>
-    Explore how conditioning on an interval \(A = [A_{\min}, A_{\max}]\) reshapes a distribution's PDF and CDF.
-    Choose one of the supported models (uniform, normal, exponential), adjust its parameters, and see both
-    the unconditioned and conditioned curves side by side.
-  </p>
+<div class="container wide-container">
+  <div class="page-header">
+    <div>
+      <h1>Conditional Distributions</h1>
+      <p>
+        Explore how conditioning on an interval \(A = [A_{\min}, A_{\max}]\) reshapes a distribution's PDF and CDF.
+        Choose one of the supported models (uniform, normal, exponential), adjust its parameters, and see both
+        the unconditioned and conditioned curves side by side.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-bolt"></i>Interactive demo</div>
+      <div class="pill pill-subtle"><i class="fa fa-line-chart"></i>Real-time updates</div>
+    </div>
+  </div>
 
   <style>
-    .demo-grid {display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;margin-top:18px}
-    .control-card, .plot-card {border:1px solid #d9dfe7;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.05);background:white}
+    .wide-container{max-width:1480px}
+    .page-header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+    .chip-row{display:flex;gap:10px;flex-wrap:wrap}
+    .demo-grid {display:grid;grid-template-columns:minmax(340px,400px) 1fr;gap:24px;align-items:start;margin-top:18px}
+    .control-card, .plot-card {border:1px solid #d9dfe7;border-radius:14px;padding:18px;box-shadow:0 8px 22px rgba(0,0,0,0.06);background:white}
     .control-card h3{margin-top:0;margin-bottom:12px;font-size:1.1rem}
     .kv-row{display:grid;grid-template-columns:120px 1fr 62px;gap:10px;align-items:center;margin:6px 0}
     .kv-row label{font-weight:600;font-size:0.95rem}
@@ -18,9 +29,16 @@
     .inline-note{color:#4b5563;font-size:0.92rem;margin-top:6px}
     .control-grid{display:grid;gap:8px}
     .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.9rem}
+    .pill-subtle{background:#f3f4f6;color:#4b5563}
     .error{color:#b91c1c;font-weight:600;margin-top:8px}
-    .plot-wrapper{min-height:720px}
-    @media(max-width:1100px){.demo-grid{grid-template-columns:1fr}.plot-wrapper{min-height:620px}}
+    .plot-wrapper{min-height:860px}
+    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;margin-bottom:8px}
+    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+    .summary-label{font-size:0.85rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
+    .summary-value{font-size:1.05rem;font-weight:700;color:#111827}
+    .summary-value.accent{color:#2563eb}
+    .summary-value.strong{color:#16a34a}
+    @media(max-width:1100px){.demo-grid{grid-template-columns:1fr}.plot-wrapper{min-height:680px}}
   </style>
 
   <div class="demo-grid">
@@ -44,6 +62,24 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
         <div id="probability" class="inline-note"></div>
+      </div>
+      <div class="summary-strip" aria-live="polite">
+        <div class="summary-item">
+          <div class="summary-label">Distribution</div>
+          <div id="dist-label" class="summary-value accent">Uniform</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Support</div>
+          <div id="support-label" class="summary-value">[ -5.00 , 5.00 ]</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Condition Interval</div>
+          <div id="interval-label" class="summary-value">[ -1.00 , 1.00 ]</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Probability Mass</div>
+          <div id="prob-chip" class="summary-value strong">—</div>
+        </div>
       </div>
       <div id="plot" class="plot-wrapper"></div>
     </div>
@@ -112,6 +148,8 @@
       controlsEl.appendChild(note);
     }
     attachListeners();
+    updateSummary();
+
   }
 
   function payload() {
@@ -132,10 +170,54 @@
     });
   }
 
+  function toTitleCase(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? parseFloat(el.value) : NaN;
+  }
+
+  function updateSummary(data) {
+    const dist = document.getElementById('distribution').value;
+    const distLabel = document.getElementById('dist-label');
+    const supportLabel = document.getElementById('support-label');
+    const intervalLabel = document.getElementById('interval-label');
+    const probChip = document.getElementById('prob-chip');
+
+    if (distLabel) { distLabel.textContent = toTitleCase(dist); }
+
+    const aMin = getVal('a_min');
+    const aMax = getVal('a_max');
+    if (intervalLabel && !Number.isNaN(aMin) && !Number.isNaN(aMax)) {
+      intervalLabel.textContent = `[ ${aMin.toFixed(2)} , ${aMax.toFixed(2)} ]`;
+    }
+
+    let supportText = '—';
+    if (dist === 'uniform') {
+      supportText = `[ ${getVal('x_min').toFixed(2)} , ${getVal('x_max').toFixed(2)} ]`;
+    } else if (dist === 'normal') {
+      supportText = '\u211d (all real numbers)';
+    } else if (dist === 'exponential') {
+      supportText = '[ 0 , \u221e )';
+    }
+    if (supportLabel) { supportLabel.textContent = supportText; }
+
+    if (probChip) {
+      if (typeof data?.condition_prob === 'number') {
+        probChip.textContent = `P(A) = ${(Math.round(data.condition_prob * 1000) / 1000).toFixed(3)}`;
+      } else {
+        probChip.textContent = '—';
+      }
+    }
+  }
+
   async function recompute() {
     errorEl.textContent = '';
     probEl.textContent = '';
     syncLabels();
+    updateSummary();
     try {
       const res = await fetch('./compute', {
         method: 'POST',
@@ -152,6 +234,7 @@
         const p = Math.round(data.condition_prob * 1000) / 1000;
         probEl.textContent = `P(A) = ${p}`;
       }
+      updateSummary(data);
     } catch (err) {
       console.error(err);
       errorEl.textContent = err;
@@ -177,7 +260,7 @@
 
     const layout = {
       grid: { rows: 2, columns: 2, pattern: 'independent' },
-      height: 720,
+      height: 880,
       margin: { l: 60, r: 10, t: 50, b: 50 },
       legend: { orientation: 'h', y: -0.08 },
       xaxis: { title: 'x' },
@@ -193,7 +276,7 @@
       plot_bgcolor: '#f8fafc',
       shapes: [
         { type: 'rect', xref: 'x', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line: { width: 0 } },
-        { type: 'rect', xref: 'x3', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line: { width: 0 } },
+        { type: 'rect', xref: 'x3', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line:{ width: 0 } },
       ],
     };
 
