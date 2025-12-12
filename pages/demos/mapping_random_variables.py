@@ -169,12 +169,18 @@ def _quadratic_mapping(a: float, b: float, x: np.ndarray, pdf_x: np.ndarray) -> 
     if positive.size == 0:
         return np.array([b]), np.array([0.0])
 
+    max_y = positive[-1]
+    if max_y <= b:
+        return np.array([b]), np.array([0.0])
+    
     # Inverse mapping for y >= b: x = ±sqrt((y-b)/a)
-    y_grid = np.linspace(b, positive[-1], 1200)
+    y_start = np.nextafter(b, max_y)
+    y_grid = np.linspace(y_start, max_y, 1200)
     root = np.sqrt((y_grid - b) / a)
     pdf_pos = np.interp(root, x, pdf_x, left=0.0, right=0.0)
     pdf_neg = np.interp(-root, x, pdf_x, left=0.0, right=0.0)
-    pdf_y = (pdf_pos + pdf_neg) / (2 * np.sqrt(a * (y_grid - b)))
+    denom = 2 * np.sqrt(a * (y_grid - b))
+    pdf_y = np.divide(pdf_pos + pdf_neg, denom, out=np.zeros_like(pdf_pos), where=denom > 0)
     return y_grid, pdf_y
 
 
