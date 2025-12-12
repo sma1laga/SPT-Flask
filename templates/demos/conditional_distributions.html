@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width:1300px">
+  <h1>Conditional Distributions</h1>
+  <p>
+    Explore how conditioning on an interval \(A = [A_{\min}, A_{\max}]\) reshapes a distribution's PDF and CDF.
+    Choose one of the supported models (uniform, normal, exponential), adjust its parameters, and see both
+    the unconditioned and conditioned curves side by side.
+  </p>
+
+  <style>
+    .demo-grid {display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start;margin-top:18px}
+    .control-card, .plot-card {border:1px solid #d9dfe7;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.05);background:white}
+    .control-card h3{margin-top:0;margin-bottom:12px;font-size:1.1rem}
+    .kv-row{display:grid;grid-template-columns:120px 1fr 62px;gap:10px;align-items:center;margin:6px 0}
+    .kv-row label{font-weight:600;font-size:0.95rem}
+    .kv-row input[type=range]{width:100%}
+    .inline-note{color:#4b5563;font-size:0.92rem;margin-top:6px}
+    .control-grid{display:grid;gap:8px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.9rem}
+    .error{color:#b91c1c;font-weight:600;margin-top:8px}
+    .plot-wrapper{min-height:720px}
+    @media(max-width:1100px){.demo-grid{grid-template-columns:1fr}.plot-wrapper{min-height:620px}}
+  </style>
+
+  <div class="demo-grid">
+    <div class="control-card">
+      <div class="pill"><i class="fa fa-sliders"></i>Controls</div>
+      <div class="kv-row">
+        <label for="distribution">Distribution</label>
+        <select id="distribution">
+          <option value="uniform">Uniform</option>
+          <option value="normal">Normal</option>
+          <option value="exponential">Exponential</option>
+        </select>
+        <div></div>
+      </div>
+      <div id="controls" class="control-grid"></div>
+      <p class="inline-note">Adjusting any slider recomputes the curves immediately.</p>
+      <div id="error" class="error" aria-live="polite"></div>
+    </div>
+
+    <div class="plot-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
+        <div id="probability" class="inline-note"></div>
+      </div>
+      <div id="plot" class="plot-wrapper"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const controlsEl = document.getElementById('controls');
+  const plotEl = document.getElementById('plot');
+  const errorEl = document.getElementById('error');
+  const probEl = document.getElementById('probability');
+
+  const CONFIG = {
+    uniform: {
+      params: [
+        { key: 'x_max', label: 'X_max', min: 5, max: 9.9, step: 0.1, value: defaults.x_max },
+        { key: 'x_min', label: 'X_min', min: -9.9, max: -5, step: 0.1, value: defaults.x_min },
+        { key: 'a_max', label: 'A_max', min: 0, max: 5, step: 0.1, value: defaults.a_max },
+        { key: 'a_min', label: 'A_min', min: -5, max: -0.1, step: 0.1, value: defaults.a_min },
+      ],
+      description: 'Uniform on [X_min, X_max]'
+    },
+    normal: {
+      params: [
+        { key: 'mean', label: 'Mean', min: -10, max: 10, step: 0.1, value: defaults.mean },
+        { key: 'variance', label: 'Variance', min: 0.1, max: 10, step: 0.1, value: defaults.variance },
+        { key: 'a_max', label: 'A_max', min: 0, max: 10, step: 0.1, value: 1 },
+        { key: 'a_min', label: 'A_min', min: -10, max: -0.1, step: 0.1, value: -1 },
+      ],
+      description: 'Normal with mean and variance'
+    },
+    exponential: {
+      params: [
+        { key: 'lambda', label: 'Lambda', min: 0.01, max: 1, step: 0.01, value: defaults.lambda },
+        { key: 'a_max', label: 'A_max', min: 10, max: 20, step: 0.1, value: 15 },
+        { key: 'a_min', label: 'A_min', min: 0, max: 9.9, step: 0.1, value: 5 },
+      ],
+      description: 'Exponential with rate λ (support ≥ 0)'
+    }
+  };
+
+  function buildControlRow({ key, label, min, max, step, value }) {
+    const row = document.createElement('div');
+    row.className = 'kv-row';
+    row.innerHTML = `
+      <label for="${key}">${label}</label>
+      <input type="range" id="${key}" min="${min}" max="${max}" step="${step}" value="${value}">
+      <span id="${key}_val">${value}</span>
+    `;
+    return row;
+  }
+
+  function renderControls(dist) {
+    controlsEl.innerHTML = '';
+    const cfg = CONFIG[dist];
+    cfg.params.forEach(p => {
+      const row = buildControlRow(p);
+      controlsEl.appendChild(row);
+    });
+    if (cfg.description) {
+      const note = document.createElement('div');
+      note.className = 'inline-note';
+      note.textContent = cfg.description + ' | A = [A_min, A_max]';
+      controlsEl.appendChild(note);
+    }
+    attachListeners();
+  }
+
+  function payload() {
+    const dist = document.getElementById('distribution').value;
+    const cfg = CONFIG[dist];
+    const data = { distribution: dist };
+    cfg.params.forEach(p => {
+      const el = document.getElementById(p.key);
+      data[p.key] = parseFloat(el.value);
+    });
+    return data;
+  }
+
+  function syncLabels() {
+    document.querySelectorAll('#controls input[type=range]').forEach(inp => {
+      const out = document.getElementById(`${inp.id}_val`);
+      if (out) { out.textContent = parseFloat(inp.value).toFixed(2); }
+    });
+  }
+
+  async function recompute() {
+    errorEl.textContent = '';
+    probEl.textContent = '';
+    syncLabels();
+    try {
+      const res = await fetch('./compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload())
+      });
+      const data = await res.json();
+      if (data.error) {
+        errorEl.textContent = data.error;
+        return;
+      }
+      renderPlot(data);
+      if (typeof data.condition_prob !== 'undefined') {
+        const p = Math.round(data.condition_prob * 1000) / 1000;
+        probEl.textContent = `P(A) = ${p}`;
+      }
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = err;
+    }
+  }
+
+  function renderPlot(data) {
+    const { x, pdf, cdf, cond_pdf, cond_cdf, a_min, a_max, title } = data;
+
+    const mask = x.map(v => v >= a_min && v <= a_max);
+    const highlightX = x.map((v, i) => (mask[i] ? v : null));
+    const highlightPDF = pdf.map((v, i) => (mask[i] ? v : null));
+    const highlightCDF = cdf.map((v, i) => (mask[i] ? v : null));
+
+    const traces = [
+      { x, y: cdf, mode: 'lines', name: 'F_X(x)', line: { color: '#2563eb', width: 3 }, xaxis: 'x', yaxis: 'y' },
+      { x: highlightX, y: highlightCDF, mode: 'lines', name: 'A interval', fill: 'tozeroy', line: { color: 'rgba(239,68,68,0.7)' }, xaxis: 'x', yaxis: 'y', hoverinfo: 'skip', showlegend: true },
+      { x, y: cond_cdf, mode: 'lines', name: 'F_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x2', yaxis: 'y2' },
+      { x, y: pdf, mode: 'lines', name: 'f_X(x)', line: { color: '#2563eb', width: 3 }, xaxis: 'x3', yaxis: 'y3' },
+      { x: highlightX, y: highlightPDF, mode: 'lines', name: 'A interval', fill: 'tozeroy', line: { color: 'rgba(239,68,68,0.7)' }, xaxis: 'x3', yaxis: 'y3', hoverinfo: 'skip', showlegend: false },
+      { x, y: cond_pdf, mode: 'lines', name: 'f_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x4', yaxis: 'y4' },
+    ];
+
+    const layout = {
+      grid: { rows: 2, columns: 2, pattern: 'independent' },
+      height: 720,
+      margin: { l: 60, r: 10, t: 50, b: 50 },
+      legend: { orientation: 'h', y: -0.08 },
+      xaxis: { title: 'x' },
+      yaxis: { title: 'F_X(x)', rangemode: 'tozero' },
+      xaxis2: { title: 'x' },
+      yaxis2: { title: 'F_{X|A}(x)', rangemode: 'tozero' },
+      xaxis3: { title: 'x' },
+      yaxis3: { title: 'f_X(x)', rangemode: 'tozero' },
+      xaxis4: { title: 'x' },
+      yaxis4: { title: 'f_{X|A}(x)', rangemode: 'tozero' },
+      title: `${title} — Unconditioned vs Conditioned`,
+      paper_bgcolor: 'white',
+      plot_bgcolor: '#f8fafc',
+      shapes: [
+        { type: 'rect', xref: 'x', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line: { width: 0 } },
+        { type: 'rect', xref: 'x3', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line: { width: 0 } },
+      ],
+    };
+
+    Plotly.react(plotEl, traces, layout, { responsive: true, displaylogo: false });
+  }
+
+  function attachListeners() {
+    document.querySelectorAll('#controls input[type=range]').forEach(inp => {
+      inp.addEventListener('input', recompute);
+    });
+  }
+
+  document.getElementById('distribution').addEventListener('change', (e) => {
+    renderControls(e.target.value);
+    recompute();
+  });
+
+  renderControls(document.getElementById('distribution').value);
+  recompute();
+</script>
+{% endblock %}

@@ -84,6 +84,8 @@ from pages.demos.color_spaces import demos_color_spaces_bp
 from pages.demos.block_matching import demos_block_matching_bp
 from pages.demos.b_prediction import b_prediction_bp
 from pages.demos.image_sampling import demos_image_sampling_bp
+#VL STATSIP
+from pages.demos.conditional_distributions import demos_conditional_distributions_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -220,7 +222,11 @@ def create_app():
     app.register_blueprint(demos_block_matching_bp, url_prefix="/demos/block-matching")
     app.register_blueprint(b_prediction_bp, url_prefix="/demos/b-prediction")
     app.register_blueprint(demos_image_sampling_bp, url_prefix="/demos/image-sampling")
-
+    app.register_blueprint(demos_conditional_distributions_bp, url_prefix="/demos/conditional-distributions")
+    
+    
+    
+    
     @app.route("/")
     def home():
         return render_template("home.html")

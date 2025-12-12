@@ -139,6 +139,18 @@ DEMOS = {
             },
         ],
     },
+    "Statistical Signal Processing": {
+        "Lecture": [
+            {
+                "slug": "conditional-distributions",
+                "title": "Statistical Demo",
+                "title_desc": "Conditional Distributions",
+                "desc": "Condition uniform/normal/exponential laws on an interval and compare the resulting PDF/CDF.",
+                "endpoint": "demos_conditional_distributions.page",
+            }
+        ],
+        "Tutorial": [],
+    },
     # "Image and Video Compression": {
     #     "Lecture": [
     #         {
