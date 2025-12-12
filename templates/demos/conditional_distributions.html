@@ -20,7 +20,7 @@
     .wide-container{max-width:1480px}
     .page-header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
     .chip-row{display:flex;gap:10px;flex-wrap:wrap}
-    .demo-grid {display:grid;grid-template-columns:minmax(340px,400px) 1fr;gap:24px;align-items:start;margin-top:18px}
+    .demo-grid {display:flex;flex-direction:column;gap:24px;align-items:stretch;margin-top:18px}
     .control-card, .plot-card {border:1px solid #d9dfe7;border-radius:14px;padding:18px;box-shadow:0 8px 22px rgba(0,0,0,0.06);background:white}
     .control-card h3{margin-top:0;margin-bottom:12px;font-size:1.1rem}
     .kv-row{display:grid;grid-template-columns:120px 1fr 62px;gap:10px;align-items:center;margin:6px 0}
@@ -38,7 +38,7 @@
     .summary-value{font-size:1.05rem;font-weight:700;color:#111827}
     .summary-value.accent{color:#2563eb}
     .summary-value.strong{color:#16a34a}
-    @media(max-width:1100px){.demo-grid{grid-template-columns:1fr}.plot-wrapper{min-height:680px}}
+    @media(max-width:1100px){.plot-wrapper{min-height:680px}}
   </style>
 
   <div class="demo-grid">
@@ -258,26 +258,34 @@
       { x, y: cond_pdf, mode: 'lines', name: 'f_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x4', yaxis: 'y4' },
     ];
 
+    const annotations = [
+      { text: '\\(F_X(x)\\)', x: 0.22, y: 1.05 },
+      { text: '\\(F_{X|A}(x)\\)', x: 0.78, y: 1.05 },
+      { text: '\\(f_X(x)\\)', x: 0.22, y: 0.47 },
+      { text: '\\(f_{X|A}(x)\\)', x: 0.78, y: 0.47 },
+    ].map(item => ({ ...item, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 14 } }));
+
     const layout = {
       grid: { rows: 2, columns: 2, pattern: 'independent' },
       height: 880,
-      margin: { l: 60, r: 10, t: 50, b: 50 },
+      margin: { l: 60, r: 10, t: 70, b: 50 },
       legend: { orientation: 'h', y: -0.08 },
-      xaxis: { title: 'x' },
-      yaxis: { title: 'F_X(x)', rangemode: 'tozero' },
-      xaxis2: { title: 'x' },
-      yaxis2: { title: 'F_{X|A}(x)', rangemode: 'tozero' },
-      xaxis3: { title: 'x' },
-      yaxis3: { title: 'f_X(x)', rangemode: 'tozero' },
-      xaxis4: { title: 'x' },
-      yaxis4: { title: 'f_{X|A}(x)', rangemode: 'tozero' },
-      title: `${title} — Unconditioned vs Conditioned`,
+      xaxis: { title: '$x$' },
+      yaxis: { title: '$F_X(x)$', rangemode: 'tozero' },
+      xaxis2: { title: '$x$' },
+      yaxis2: { title: '$F_{X|A}(x)$', rangemode: 'tozero' },
+      xaxis3: { title: '$x$' },
+      yaxis3: { title: '$f_X(x)$', rangemode: 'tozero' },
+      xaxis4: { title: '$x$' },
+      yaxis4: { title: '$f_{X|A}(x)$', rangemode: 'tozero' },
+      title: { text: `\\(${title}\\): \\(F_X(x), F_{X|A}(x), f_X(x), f_{X|A}(x)\\)`, x: 0.02 },
       paper_bgcolor: 'white',
       plot_bgcolor: '#f8fafc',
       shapes: [
         { type: 'rect', xref: 'x', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line: { width: 0 } },
         { type: 'rect', xref: 'x3', yref: 'paper', x0: a_min, x1: a_max, y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.08)', line:{ width: 0 } },
       ],
+      annotations,
     };
 
     Plotly.react(plotEl, traces, layout, { responsive: true, displaylogo: false });
