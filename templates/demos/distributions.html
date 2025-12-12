@@ -372,6 +372,8 @@
   }
 
   distSelect.addEventListener('change', () => { renderControls(); compute(); });
+  fixedBox.addEventListener('change', compute);
+
 
   renderControls();
   compute();
