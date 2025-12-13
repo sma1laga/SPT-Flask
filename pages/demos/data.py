@@ -140,13 +140,20 @@ DEMOS = {
         ],
     },
     "Statistical Signal Processing": {
-        "Lecture": [
+        "Probability Calculus and Random Variables": [
             {
                 "slug": "conditional-distributions",
-                "title": "Statistical Demo",
+                "title": "Conditional Distributions",
                 "title_desc": "Conditional Distributions",
                 "desc": "Condition uniform/normal/exponential laws on an interval and compare the resulting PDF/CDF.",
                 "endpoint": "demos_conditional_distributions.page",
+            },
+            {
+                "slug": "mapping-random-variables",
+                "title": "Mapping of Random Variables",
+                "title_desc": "Mapping Random Variables",
+                "desc": "Map uniform/normal/exponential/rayleigh/cauchy laws through linear, quadratic, quantizer, or custom mappings.",
+                "endpoint": "mapping_random_variables.page",
             },
             {
                 "slug": "distributions",
@@ -154,16 +161,11 @@ DEMOS = {
                 "title_desc": "PDF & CDF Explorer",
                 "desc": "Interactively plot PDFs and CDFs for 12 continuous and discrete laws (normal, Laplace, Rayleigh, Poisson, etc.).",
                 "endpoint": "demos_distributions.page",
-            },
-            {
-                "slug": "mapping-random-variables",
-                "title": "Statistical Demo 2",
-                "title_desc": "Mapping Random Variables",
-                "desc": "Map uniform/normal/exponential/rayleigh/cauchy laws through linear, quadratic, quantizer, or custom mappings.",
-                "endpoint": "mapping_random_variables.page",
             }
+
         ],
-        "Tutorial": [],
+        "Stochastic Processes": [
+            ],
     },
     # "Image and Video Compression": {
     #     "Lecture": [
