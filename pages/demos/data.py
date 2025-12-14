@@ -163,6 +163,13 @@ DEMOS = {
                 "endpoint": "demos_normal2d.page",
             },
             {
+                "slug": "central-limit-theorem",
+                "title": "Central Limit Theorem",
+                "title_desc": "Animated convolution",
+                "desc": "Iteratively convolve Laplace, uniform, Rayleigh, exponential, or gamma PDFs and watch them converge toward a Gaussian.",
+                "endpoint": "demos_central_limit_theorem.page",
+            },
+            {
                 "slug": "distributions",
                 "title": "Distributions",
                 "title_desc": "PDF & CDF Explorer",
