@@ -88,6 +88,7 @@ from pages.demos.image_sampling import demos_image_sampling_bp
 from pages.demos.conditional_distributions import demos_conditional_distributions_bp
 from pages.demos.mapping_random_variables import mapping_random_variables_bp
 from pages.demos.distributions import demos_distributions_bp
+from pages.demos.normal2d import demos_normal2d_bp
 
 
 def _build_demo_slug_map():
@@ -229,6 +230,7 @@ def create_app():
     app.register_blueprint(demos_conditional_distributions_bp, url_prefix="/demos/conditional-distributions")
     app.register_blueprint(mapping_random_variables_bp, url_prefix="/demos/mapping-random-variables")
     app.register_blueprint(demos_distributions_bp, url_prefix="/demos/distributions")
+    app.register_blueprint(demos_normal2d_bp, url_prefix="/demos/2d-normal-distributions")
 
     
     

@@ -156,6 +156,13 @@ DEMOS = {
                 "endpoint": "mapping_random_variables.page",
             },
             {
+                "slug": "2d-normal-distributions",
+                "title": "2D Normal distributions",
+                "title_desc": "Correlated Gaussian surface",
+                "desc": "Explore the bivariate normal PDF in 3D with controllable means, variances, and correlation, plus projected marginals.",
+                "endpoint": "demos_normal2d.page",
+            },
+            {
                 "slug": "distributions",
                 "title": "Distributions",
                 "title_desc": "PDF & CDF Explorer",
