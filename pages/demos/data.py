@@ -201,6 +201,13 @@ DEMOS = {
                 "endpoint": "demos_delay_estimation.page",
             },
             {
+                "slug": "delay-estimation-frequency",
+                "title": "Delay Estimation (frequency domain)",
+                "title_desc": "Cross-PSD magnitude & phase",
+                "desc": "Match the MATLAB CPSD demo: adjust SNR, signal, and delay, then inspect cross-correlation plus cross power spectral density magnitude and phase.",
+                "endpoint": "demos_delay_estimation_freq.page",
+            },
+            {
                 "slug": "harmonic-detection",
                 "title": "Harmonic detection",
                 "title_desc": "Sinusoid in noise",

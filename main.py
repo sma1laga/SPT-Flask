@@ -94,6 +94,7 @@ from pages.demos.averaging_over_time import demos_averaging_over_time_bp
 from pages.demos.autocorrelation_stationary import (demos_autocorrelation_stationary_bp)
 from pages.demos.harmonic_detection import demos_harmonic_detection_bp
 from pages.demos.delay_estimation import demos_delay_estimation_bp
+from pages.demos.delay_estimation_frequency import demos_delay_estimation_freq_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -240,7 +241,7 @@ def create_app():
     app.register_blueprint(demos_autocorrelation_stationary_bp, url_prefix="/demos/autocorrelation-stationary")
     app.register_blueprint(demos_harmonic_detection_bp, url_prefix="/demos/harmonic-detection")
     app.register_blueprint(demos_delay_estimation_bp, url_prefix="/demos/delay-estimation")
-
+    app.register_blueprint(demos_delay_estimation_freq_bp, url_prefix="/demos/delay-estimation-frequency")
     
     
     @app.route("/")
