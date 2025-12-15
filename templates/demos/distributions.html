@@ -41,6 +41,24 @@
     .formula-block h4{margin:0 0 6px;font-size:1rem}
     .toggle-row{display:flex;align-items:center;gap:10px;margin:8px 0}
     .toggle-row input{width:18px;height:18px}
+    body.dark-mode .card{background:var(--card-background);border-color:var(--border-color);color:var(--text-color);box-shadow:none;}
+    body.dark-mode .kv-row label,
+    body.dark-mode .summary-value,
+    body.dark-mode .inline-note{color:#e5e7eb;}
+    body.dark-mode .summary-label{color:#cbd5e1;}
+    body.dark-mode .summary-item{background:#1f2733;border-color:#3a4250;}
+    body.dark-mode .formula-block{background:#1f2733;border-color:#3a4250;color:#e8edf5;}
+    body.dark-mode .formula-block h4{color:#f8fafc;}
+    body.dark-mode #pdf-formula,
+    body.dark-mode #cdf-formula{color:#e8edf5;}
+    body.dark-mode .pill{background:rgba(96,165,250,0.15);color:#dbeafe;}
+    body.dark-mode select,
+    body.dark-mode input[type=range],
+    body.dark-mode input[type=number]{
+      background:#111827;
+      color:#e5e7eb;
+      border-color:#3a4250;
+    }
     @media(max-width:1160px){.demo-grid{grid-template-columns:1fr}.plots-wrapper{min-height:640px}}
   </style>
 
