@@ -23,8 +23,8 @@ RC_PARAMS = {
 
 # UI ranges
 STEP = 0.5
-MIN_DELTA, MAX_DELTA = 0.5, 10.0
-MIN_W0,    MAX_W0    = 0, 30.0
+MIN_DELTA, MAX_DELTA = 1, 12
+MIN_W0,    MAX_W0    = 4, 25
 DEFAULT_DELTA = 3.5
 DEFAULT_W0    = 15.0
 
@@ -58,19 +58,18 @@ def _render_img_cached(dw_q: int, w0_q: int) -> str:
     with plt.rc_context(RC_PARAMS):
         fig, (axF, axT) = plt.subplots(1, 2, figsize=(8.6, 3.0), layout="constrained")
         # Frequency domain
-        axF.plot(W_GRID, H, lw=2)
+        axF.plot(W_GRID, H, color='tab:red', lw=1)
         axF.set_xlim(W_MIN, W_MAX)
-        # axF.set_ylim(-0.05, 1.05)
         axF.grid(True)
         axF.set_title("Frequency domain")
         axF.set_xlabel(r"$\omega$")
         axF.set_ylabel(r"$H(\mathrm{j}\omega)$")
         # Time domain
-        axT.plot(T_GRID, ht,          color="C0", label=r"$h(t)$", lw=2)
-        axT.plot(T_GRID, env, color="r", ls="--", label="Envelope", lw=1)
-        axT.plot(T_GRID, -env, color="r", ls="--", lw=1)
+        axT.plot(T_GRID, ht, color="tab:blue", label=r"$h(t)$", lw=1)
+        axT.plot(T_GRID, env, color="tab:green", ls="--", label="Envelope", lw=1)
+        axT.plot(T_GRID, -env, color="tab:green", ls="--", lw=1)
         axT.set_xlim(T_MIN, T_MAX)
-        axT.set_ylim(-3.5, 3.5)
+        axT.set_ylim(-4, 4)
         axT.grid(True)
         axT.set_title("Time domain")
         axT.set_xlabel(r"$t$")
