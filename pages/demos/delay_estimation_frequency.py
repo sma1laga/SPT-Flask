@@ -4,10 +4,12 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 from typing import Dict, Tuple
+import warnings
 
 import numpy as np
 from flask import Blueprint, jsonify, render_template, request
 from scipy.io import wavfile
+from scipy.io.wavfile import WavFileWarning
 from scipy.signal import csd, get_window
 
 
@@ -36,7 +38,9 @@ def _normalize_audio(x: np.ndarray) -> np.ndarray:
 
 @lru_cache(maxsize=1)
 def _load_speech_signal() -> np.ndarray:
-    sr, data = wavfile.read("static/audio/examp1l.wav")
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=WavFileWarning)
+        sr, data = wavfile.read("static/audio/examp1l.wav")
     if data.ndim > 1:
         data = data.mean(axis=1)
     data = _normalize_audio(data.astype(np.float32))

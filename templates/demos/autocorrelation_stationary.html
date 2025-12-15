@@ -124,8 +124,20 @@
   .plot { width: 100%; height: 340px; }
   .w-100 { width: 100%; }
   @media (max-width: 720px) { .page-header { flex-direction: column; align-items: flex-start; } }
-</style>
 
+  body.dark-mode .page-header h1, body.dark-mode h3, body.dark-mode .lede { color: #e2e8f0; }
+  body.dark-mode .eyebrow { color: #93c5fd; }
+  body.dark-mode .control-panel { background: #0b1628; border-color: #1f2937; }
+  body.dark-mode .control-group { background: #0f172a; border-color: #1f2937; box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+  body.dark-mode .control-group label, body.dark-mode .control-readout { color: #e2e8f0; }
+  body.dark-mode .hint { color: #cbd5e1; }
+  body.dark-mode .btn-secondary { background: #1f2937; color: #e5e7eb; }
+  body.dark-mode .btn-primary { background: #1d4ed8; }
+  body.dark-mode .plot-card { background: #0f172a; border-color: #27303f; box-shadow: 0 10px 26px rgba(0,0,0,0.35); }
+  body.dark-mode .card-header { border-bottom: 1px solid #1f2937; padding-bottom: 6px; }
+  body.dark-mode .chip { background: rgba(147,197,253,0.16); color: #e0f2fe; }
+  body.dark-mode .chip-ghost { background: rgba(148,163,184,0.18); color: #e2e8f0; }
+  </style>
 <script>
   const fs = 8000;
   const state = {
@@ -160,6 +172,23 @@
   const winLabel = document.getElementById('winValue');
   const lagLabel = document.getElementById('lagValue');
   const speedLabel = document.getElementById('speedValue');
+
+  function buildLayout(layout) {
+    const isDark = document.body.classList.contains('dark-mode');
+    const axisColor = isDark ? '#e2e8f0' : '#111827';
+    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const merged = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { color: axisColor },
+      ...layout,
+    };
+    const baseX = layout.xaxis || {};
+    const baseY = layout.yaxis || {};
+    merged.xaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseX, color: axisColor };
+    merged.yaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseY, color: axisColor };
+    return merged;
+  }
 
   function unbiasedAcf(series, maxLag) {
     const n = series.length;
@@ -268,7 +297,7 @@
 
     const markers = [state.timeIndex, state.timeIndex + state.window].map(idx => idx / fs);
 
-    Plotly.react('processPlot', seriesTraces, {
+    Plotly.react('processPlot', seriesTraces, buildLayout({
       margin: { t: 20, r: 20, l: 50, b: 40 },
       legend: { orientation: 'h' },
       xaxis: { title: 't (s)' },
@@ -288,8 +317,8 @@
         { x: markers[1], y: -3.9, text: 't₂', showarrow: false, font: { color: '#d7263d', size: 12 } },
         { x: (markers[0] + markers[1]) / 2, y: -4.35, text: '|<---------- t₂ range ---------->|', showarrow: false, font: { color: '#d7263d', size: 12 } }
       ],
-      template: 'plotly_white'
-    });
+    }));
+
 
     const lags = Array.from({ length: state.maxLag + 1 }, (_, i) => i / fs);
     let rawAcf;
@@ -325,13 +354,13 @@
         name: 'Theoretical',
         line: { color: '#7f8c8d', dash: 'dash', width: 3 }
       }
-    ], {
+    ], buildLayout({
       margin: { t: 20, r: 20, l: 60, b: 50 },
       xaxis: { title: 'lag τ (s)' },
       yaxis: { title: 'Rxx(τ)' },
       legend: { orientation: 'h' },
-      template: 'plotly_white'
-    });
+    }));
+
 
     Plotly.react('acfPlotNorm', [
       {
@@ -349,13 +378,13 @@
         name: 'Theoretical',
         line: { color: '#7f8c8d', dash: 'dash', width: 3 }
       }
-    ], {
+    ], buildLayout({
       margin: { t: 20, r: 20, l: 60, b: 50 },
       xaxis: { title: 'lag τ (s)' },
       yaxis: { title: 'ρxx(τ)', range: [-1, 1] },
       legend: { orientation: 'h' },
-      template: 'plotly_white'
-    });
+    }));
+
 
     if (state.anomaly && state.playing) {
       const maxIdx = rawAcf.reduce((best, val, idx, arr) => (val > arr[best] ? idx : best), 0);

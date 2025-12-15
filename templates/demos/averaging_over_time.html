@@ -45,6 +45,18 @@
     .plot-box h4{margin:4px 8px;font-size:0.95rem;color:#111827;display:flex;align-items:center;gap:6px}
     .plot{width:100%;height:260px}
     @media(max-width:1100px){.kv-row{grid-template-columns:150px 1fr 60px}}
+
+    body.dark-mode .card{background:#0b1628;border-color:#1f2937;box-shadow:0 6px 16px rgba(0,0,0,0.35)}
+    body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 6px 16px rgba(0,0,0,0.28)}
+    body.dark-mode .plot-box h4{color:#e2e8f0}
+    body.dark-mode .pill{background:rgba(59,130,246,0.12);color:#e0e7ff}
+    body.dark-mode .pill-subtle{background:rgba(148,163,184,0.18);color:#e2e8f0}
+    body.dark-mode .btn-primary{background:#1d4ed8;box-shadow:0 2px 10px rgba(59,130,246,0.35)}
+    body.dark-mode .btn-secondary{background:#1f2937;color:#e5e7eb}
+    body.dark-mode .stat-box{background:#111827;border-color:#27303f}
+    body.dark-mode .stat-label{color:#cbd5e1}
+    body.dark-mode .stat-value{color:#f8fafc}
+    body.dark-mode .inline-note,body.dark-mode label,body.dark-mode .kv-row small{color:#cbd5e1}
   </style>
 
   <div class="demo-grid">
@@ -210,6 +222,24 @@
 
   const plotIds = ['plot-x1','plot-x2','plot-x3','plot-mean','plot-var'];
 
+  function buildLayout(layout){
+    const isDark = document.body.classList.contains('dark-mode');
+    const axisColor = isDark ? '#e2e8f0' : '#111827';
+    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const merged = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { color: axisColor },
+      ...layout,
+    };
+    const baseX = layout.xaxis || {};
+    const baseY = layout.yaxis || {};
+    merged.xaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseX, color: axisColor };
+    merged.yaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseY, color: axisColor };
+    return merged;
+  }
+
+
   let currentData = null;
   let timer = null;
   let cursor = 0;
@@ -373,26 +403,26 @@
       showlegend: false
     }));
 
-    Plotly.newPlot('plot-x1', [signalTraces[0], markers[0]], {
+    Plotly.newPlot('plot-x1', [signalTraces[0], markers[0]], buildLayout({
       margin: { t: 10, r: 8, l: 50, b: 32 },
       xaxis: { title: 't [s]' },
       yaxis: { title: 'x₁(t)', range: data.y_limits.signals[0] },
       showlegend: false,
-    }, {responsive: true, displaylogo: false});
+    }), {responsive: true, displaylogo: false});
 
-    Plotly.newPlot('plot-x2', [signalTraces[1], markers[1]], {
+    Plotly.newPlot('plot-x2', [signalTraces[1], markers[1]], buildLayout({
       margin: { t: 10, r: 8, l: 50, b: 32 },
       xaxis: { title: 't [s]' },
       yaxis: { title: 'x₂(t)', range: data.y_limits.signals[1] },
       showlegend: false,
-    }, {responsive: true, displaylogo: false});
+    }), {responsive: true, displaylogo: false});
 
-    Plotly.newPlot('plot-x3', [signalTraces[2], markers[2]], {
+    Plotly.newPlot('plot-x3', [signalTraces[2], markers[2]], buildLayout({
       margin: { t: 10, r: 8, l: 50, b: 32 },
       xaxis: { title: 't [s]' },
       yaxis: { title: 'x₃(t)', range: data.y_limits.signals[2] },
       showlegend: false,
-    }, {responsive: true, displaylogo: false});
+    }), {responsive: true, displaylogo: false});
   }
 
   function plotMeanVar(data){
@@ -410,13 +440,13 @@
     };
     const meanMarker = { x: [data.t[0]], y: [0], mode: 'markers', marker: { color: 'red', size: 8 }, showlegend: false };
 
-    Plotly.newPlot('plot-mean', [meanTrace, meanScalar, meanMarker], {
+    Plotly.newPlot('plot-mean', [meanTrace, meanScalar, meanMarker], buildLayout({
       margin: { t: 10, r: 8, l: 50, b: 32 },
       xaxis: { title: 't [s]' },
       yaxis: { title: 'mₓ(t)', range: data.y_limits.mean },
       showlegend: true,
       legend: { orientation: 'h' }
-    }, {responsive: true, displaylogo: false});
+    }), {responsive: true, displaylogo: false});
 
     const varTrace = {
       x: data.t,
@@ -432,13 +462,13 @@
     };
     const varMarker = { x: [data.t[0]], y: [0], mode: 'markers', marker: { color: 'red', size: 8 }, showlegend: false };
 
-    Plotly.newPlot('plot-var', [varTrace, varScalar, varMarker], {
+    Plotly.newPlot('plot-var', [varTrace, varScalar, varMarker], buildLayout({
       margin: { t: 10, r: 8, l: 50, b: 32 },
       xaxis: { title: 't [s]' },
       yaxis: { title: 'σ²(t)', range: data.y_limits.var },
       showlegend: true,
       legend: { orientation: 'h' }
-    }, {responsive: true, displaylogo: false});
+    }), {responsive: true, displaylogo: false});
   }
 
   async function run(){

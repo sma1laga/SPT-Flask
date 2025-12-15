@@ -17,7 +17,22 @@
     </div>
   </div>
 
-  <div class="control-card" style="background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:16px;">
+  <style>
+    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:16px}
+    .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
+    .plot-box h4{margin:0 0 6px;color:#0f172a}
+    .stat-label{font-size:0.78rem;font-weight:800;color:#6b7280;text-transform:uppercase}
+    .stat-value{font-weight:800;color:#0f172a}
+    body.dark-mode .control-card{background:#0b1628;border-color:#1f2937;box-shadow:0 8px 18px rgba(0,0,0,0.35)}
+    body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 8px 20px rgba(0,0,0,0.28)}
+    body.dark-mode .plot-box h4{color:#e2e8f0}
+    body.dark-mode .pill{background:rgba(59,130,246,0.14)!important;color:#e0e7ff!important}
+    body.dark-mode label, body.dark-mode .stat-label{color:#cbd5e1!important}
+    body.dark-mode .stat-value{color:#f8fafc}
+    body.dark-mode .btn-primary{background:#1d4ed8;color:#fff}
+  </style>
+
+  <div class="control-card">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;align-items:end;">
       <div>
         <label for="signal-kind" style="font-weight:700;">Input signal</label>
@@ -43,16 +58,16 @@
       </div>
       <div style="display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap;">
         <div>
-          <div style="font-size:0.78rem;font-weight:800;color:#6b7280;text-transform:uppercase;">Signal variance</div>
-          <div id="stat-svar" style="font-weight:800;color:#0f172a;">—</div>
+          <div class="stat-label">Signal variance</div>
+          <div id="stat-svar" class="stat-value">—</div>
         </div>
         <div>
-          <div style="font-size:0.78rem;font-weight:800;color:#6b7280;text-transform:uppercase;">Noise variance</div>
-          <div id="stat-nvar" style="font-weight:800;color:#0f172a;">—</div>
+          <div class="stat-label">Noise variance</div>
+          <div id="stat-nvar" class="stat-value">—</div>
         </div>
         <div>
-          <div style="font-size:0.78rem;font-weight:800;color:#6b7280;text-transform:uppercase;">Delay [ms]</div>
-          <div id="stat-delay" style="font-weight:800;color:#0f172a;">—</div>
+          <div class="stat-label">Delay [ms]</div>
+          <div id="stat-delay" class="stat-value">—</div>
         </div>
         <button id="update-btn" class="btn btn-primary" style="padding:10px 16px;font-weight:700;">Update</button>
       </div>
@@ -60,23 +75,23 @@
   </div>
 
   <div class="plots-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;">
-    <div class="plot-box" style="border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+    <div class="plot-box">
       <h4>Observation Y₁(t) = X(t) + N₁(t)</h4>
       <div id="plot-signal1" style="height:240px;"></div>
     </div>
-    <div class="plot-box" style="border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+    <div class="plot-box">
       <h4>Observation Y₂(t) = X(t−τ₀) + N₂(t)</h4>
       <div id="plot-signal2" style="height:240px;"></div>
     </div>
-    <div class="plot-box" style="border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03);grid-column:1 / -1;">
+    <div class="plot-box" style="grid-column:1 / -1;">
       <h4>Cross-correlation R<sub>Y₁Y₂</sub>(τ)</h4>
       <div id="plot-xcorr" style="height:280px;"></div>
     </div>
-    <div class="plot-box" style="border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+    <div class="plot-box">
       <h4>Magnitude of Cross PSD</h4>
       <div id="plot-cpsd-mag" style="height:260px;"></div>
     </div>
-    <div class="plot-box" style="border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+    <div class="plot-box">
       <h4>Phase of Cross PSD</h4>
       <div id="plot-cpsd-phase" style="height:260px;"></div>
     </div>
@@ -100,6 +115,23 @@
     nvar: document.getElementById('stat-nvar'),
     delay: document.getElementById('stat-delay'),
   };
+
+  function buildLayout(layout){
+    const isDark = document.body.classList.contains('dark-mode');
+    const axisColor = isDark ? '#e2e8f0' : '#111827';
+    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const merged = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { color: axisColor },
+      ...layout,
+    };
+    const baseX = layout.xaxis || {};
+    const baseY = layout.yaxis || {};
+    merged.xaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseX, color: axisColor };
+    merged.yaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseY, color: axisColor };
+    return merged;
+  }
 
   function syncSliderAndInput(slider, input) {
     slider.addEventListener('input', () => {
@@ -138,12 +170,12 @@
       mode: 'lines',
       line: {color: extras.color || '#2563eb', width: 2}
     };
-    const layout = {
+    const layout = buildLayout({
       margin: {l: 60, r: 10, b: 50, t: 10},
       xaxis: {title: xLabel},
       yaxis: {title: yLabel, range: extras.yRange},
       height: extras.height || 240,
-    };
+    });
     Plotly.newPlot(target, [line], layout, {displaylogo: false, responsive: true});
   }
 
