@@ -194,6 +194,13 @@ DEMOS = {
                 "endpoint": "demos_autocorrelation_stationary.page",
             },
             {
+                "slug": "delay-estimation",
+                "title": "Delay Estimation (time domain)",
+                "title_desc": "Cross-correlation peak",
+                "desc": "Inject independent noise into two observations, shift one in time, and locate the delay via cross-correlation.",
+                "endpoint": "demos_delay_estimation.page",
+            },
+            {
                 "slug": "harmonic-detection",
                 "title": "Harmonic detection",
                 "title_desc": "Sinusoid in noise",
