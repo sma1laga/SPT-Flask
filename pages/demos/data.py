@@ -179,6 +179,20 @@ DEMOS = {
 
         ],
         "Stochastic Processes": [
+            {
+                "slug": "averaging-over-time",
+                "title": "Averaging over time or ensemble",
+                "title_desc": "Mean vs ensemble weighting",
+                "desc": "Blend three realizations (audio, AR noise, or random sinusoids) with custom probabilities to compare time and ensemble averages.",
+                "endpoint": "demos_averaging_over_time.page",
+            },
+            {
+                "slug": "autocorrelation-stationary",
+                "title": "Autocorrelation",
+                "title_desc": "Stationary AR(1) process",
+                "desc": "Animate multiple realizations of a stationary AR(1) process and compare sample vs. theoretical autocorrelation.",
+                "endpoint": "demos_autocorrelation_stationary.page",
+            },
             ],
     },
     # "Image and Video Compression": {

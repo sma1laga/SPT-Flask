@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+{% set page_title = "Autocorrelation (stationary process)" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+<section class="demo-layout">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow"><i class="fa-solid fa-wave-square"></i> Stochastic processes</p>
+      <h1>Autocorrelation (stationary process)</h1>
+      <p class="lede">Animate multiple realizations of an AR(1) process and watch how an ensemble autocorrelation at a
+        fixed reference time evolves. Compare raw and normalized estimates with the theoretical curve and explore
+        infinite-data/unbiased mode.</p>
+    </div>
+    <div class="cta-stack">
+      <button id="play" class="btn btn-primary"><i class="fa-solid fa-play"></i> Play</button>
+      <button id="pauseToggle" class="btn btn-secondary"><i class="fa-solid fa-pause"></i> Pause</button>
+      <button id="stop" class="btn btn-secondary"><i class="fa-solid fa-stop"></i> Stop</button>
+      <button id="regenerate" class="btn btn-secondary"><i class="fa-solid fa-shuffle"></i> Resample process</button>
+    </div>
+  </header>
+
+  <div class="control-panel">
+    <div class="control-group">
+      <label for="arCoeff">AR pole a</label>
+      <input type="range" id="arCoeff" min="-0.95" max="0.95" step="0.05" value="0.7">
+      <div class="control-readout">a = <span id="arValue">0.70</span></div>
+      <p class="hint">Keeps the process stationary (|a| &lt; 1). Larger |a| makes correlations last longer.</p>
+    </div>
+    <div class="control-group">
+      <label for="realizations">Number of realizations</label>
+      <select id="realizations">
+        <option value="3" selected>3</option>
+        <option value="10">10</option>
+        <option value="100">100</option>
+        <option value="250">250</option>
+        <option value="infinite">Infinite (unbiased)</option>
+      </select>
+      <p class="hint">More realizations tighten the ensemble ACF estimate without freezing the page. Infinite uses an unbiased long sequence.</p>
+    </div>
+    <div class="control-group">
+      <label for="windowLength">Window length</label>
+      <input type="range" id="windowLength" min="60" max="220" step="20" value="120">
+      <div class="control-readout">N = <span id="winValue">120</span> samples</div>
+      <p class="hint">Portion of each realization shown in red between t₁ and t₂.</p>
+    </div>
+    <div class="control-group">
+      <label for="lagCount">Max lag</label>
+      <input type="range" id="lagCount" min="10" max="120" step="10" value="50">
+      <div class="control-readout">τ = <span id="lagValue">50</span> samples</div>
+      <p class="hint">How far to extend the autocorrelation curves.</p>
+    </div>
+    <div class="control-group">
+      <label for="speed">Playback speed</label>
+      <input type="range" id="speed" min="0.5" max="2.5" step="0.1" value="1.0">
+      <div class="control-readout">Speed × <span id="speedValue">1.0</span></div>
+      <p class="hint">Higher values sweep the window faster across the process.</p>
+    </div>
+    <div class="control-group">
+      <label for="anomaly">Anomaly detection</label>
+      <button id="anomaly" class="btn btn-secondary w-100"><i class="fa-solid fa-bolt"></i> Enable</button>
+      <p class="hint">When enabled, playback pauses if the ACF maximum shifts away from τ = 0.</p>
+    </div>
+  </div>
+
+  <div class="plots-grid">
+    <div class="plot-card">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Sample functions</p>
+          <h3>Sliding window across three realizations</h3>
+        </div>
+        <div class="chip">fs = 8 kHz</div>
+      </div>
+      <div id="processPlot" class="plot"></div>
+    </div>
+    <div class="plot-card">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Autocorrelation</p>
+          <h3>Sample vs. theoretical R<sub>xx</sub>(τ)</h3>
+        </div>
+        <div class="chip chip-ghost">stationary AR(1)</div>
+      </div>
+      <div id="acfPlotRaw" class="plot"></div>
+    </div>
+    <div class="plot-card">
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Normalized autocorrelation</p>
+          <h3>ρ<sub>xx</sub>(τ) with anomaly pause</h3>
+        </div>
+        <div class="chip chip-ghost">|ρ| ≤ 1</div>
+      </div>
+      <div id="acfPlotNorm" class="plot"></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .demo-layout { display: grid; gap: 18px; }
+  .page-header { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: #0b5ebd; margin: 0 0 6px; }
+  .lede { color: #445063; max-width: 760px; margin: 8px 0 0; }
+  .cta-stack { display: grid; gap: 8px; }
+  .btn { border: none; padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; }
+  .btn-primary { background: #0b5ebd; color: #fff; }
+  .btn-secondary { background: #e9eef7; color: #0e234b; }
+  .btn:active { transform: translateY(1px); }
+  .control-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; padding: 16px; background: #f7f9fc; border: 1px solid #dde6f3; border-radius: 14px; }
+  .control-group { background: #fff; border: 1px solid #e0e7f3; border-radius: 12px; padding: 12px 14px; box-shadow: 0 6px 14px rgba(12,38,92,0.06); }
+  .control-group label { display: block; font-weight: 700; margin-bottom: 6px; color: #132645; }
+  .control-group input[type=range] { width: 100%; }
+  .control-readout { font-weight: 700; margin-top: 4px; color: #0b3d78; }
+  .hint { margin: 4px 0 0; font-size: 0.9rem; color: #5a6a85; }
+  .plots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .plot-card { background: #fff; border: 1px solid #dde6f3; border-radius: 14px; padding: 14px; box-shadow: 0 8px 20px rgba(12,38,92,0.08); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .card-header h3 { margin: 2px 0 0; }
+  .chip { background: rgba(11,94,189,0.12); color: #0b3d78; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; }
+  .chip-ghost { background: rgba(11,94,189,0.05); }
+  .plot { width: 100%; height: 340px; }
+  .w-100 { width: 100%; }
+  @media (max-width: 720px) { .page-header { flex-direction: column; align-items: flex-start; } }
+</style>
+
+<script>
+  const fs = 8000;
+  const state = {
+    a: 0.7,
+    window: 120,
+    maxLag: 50,
+    speed: 1,
+    seriesCount: 3,
+    length: 1000,
+    timeIndex: 0,
+    playing: false,
+    paused: false,
+    timer: null,
+    signals: [],
+    infiniteAcf: null,
+    anomaly: false,
+    mode: 'finite',
+  };
+
+  const arCoeffEl = document.getElementById('arCoeff');
+  const windowEl = document.getElementById('windowLength');
+  const lagEl = document.getElementById('lagCount');
+  const speedEl = document.getElementById('speed');
+  const playBtn = document.getElementById('play');
+  const pauseBtn = document.getElementById('pauseToggle');
+  const stopBtn = document.getElementById('stop');
+  const regenBtn = document.getElementById('regenerate');
+  const realizationsEl = document.getElementById('realizations');
+  const anomalyBtn = document.getElementById('anomaly');
+
+  const arLabel = document.getElementById('arValue');
+  const winLabel = document.getElementById('winValue');
+  const lagLabel = document.getElementById('lagValue');
+  const speedLabel = document.getElementById('speedValue');
+
+  function unbiasedAcf(series, maxLag) {
+    const n = series.length;
+    const acf = new Float64Array(maxLag + 1);
+    for (let lag = 0; lag <= maxLag; lag++) {
+      let acc = 0;
+      const denom = n - lag;
+      for (let i = 0; i < denom; i++) {
+        acc += series[i] * series[i + lag];
+      }
+      acf[lag] = acc / denom;
+    }
+    return acf;
+  }
+
+  function clampTimeIndex() {
+    const guard = Math.max(state.window, state.maxLag);
+    if (state.timeIndex + guard >= state.length) {
+      state.timeIndex = Math.max(0, state.length - guard - 1);
+    }
+  }
+
+  function randn() {
+    const u = Math.random();
+    const v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function generateSignals() {
+    const { length, seriesCount } = state;
+    state.signals = Array.from({ length: seriesCount }, () => new Float64Array(length));
+    for (let s = 0; s < seriesCount; s++) {
+      const x = state.signals[s];
+      x[0] = randn();
+      for (let n = 1; n < length; n++) {
+        x[n] = state.a * x[n - 1] + randn();
+      }
+    }
+    state.timeIndex = 0;
+  }
+
+  function generateInfiniteAcf() {
+    if (state.mode !== 'infinite') return;
+    const bigN = 100000;
+    const longSig = new Float64Array(bigN);
+    longSig[0] = randn();
+    for (let n = 1; n < bigN; n++) {
+      longSig[n] = state.a * longSig[n - 1] + randn();
+    }
+    state.infiniteAcf = unbiasedAcf(longSig, state.maxLag);
+  }
+
+  function ensembleAcf(timeIdx) {
+    const { maxLag, signals } = state;
+    const raw = new Float64Array(maxLag + 1);
+    const energiesT1 = signals.map((sig) => sig[timeIdx] ** 2);
+    const energyT1Mean = energiesT1.reduce((a, b) => a + b, 0) / Math.max(energiesT1.length, 1);
+    const energiesT2 = Array.from({ length: maxLag + 1 }, () => 0);
+
+    for (let lag = 0; lag <= maxLag; lag++) {
+      let acc = 0;
+      let count = 0;
+      for (const sig of signals) {
+        if (timeIdx + lag >= sig.length) continue;
+        acc += sig[timeIdx] * sig[timeIdx + lag];
+        energiesT2[lag] += sig[timeIdx + lag] ** 2;
+        count += 1;
+      }
+      raw[lag] = count ? acc / count : 0;
+      if (count) {
+        energiesT2[lag] = energiesT2[lag] / count;
+      }
+    }
+
+    const norm = raw.map((v, idx) => {
+      const denom = Math.sqrt((energyT1Mean || 1) * energiesT2[idx] || 1);
+      return denom ? v / denom : 0;
+    });
+
+    return { raw, norm };
+  }
+
+  function updatePlots() {
+    const t = Array.from({ length: state.length }, (_, i) => i / fs);
+    const tWin = t.slice(state.timeIndex, state.timeIndex + state.window);
+    const windowSignals = state.signals.map((sig) => sig.slice(state.timeIndex, state.timeIndex + state.window));
+
+    const seriesTraces = [];
+    state.signals.forEach((sig, idx) => {
+      seriesTraces.push({
+        x: t,
+        y: Array.from(sig),
+        mode: 'lines',
+        line: { color: '#b5c4dc', width: 1.2 },
+        name: `x${idx + 1}(t)`
+      });
+      seriesTraces.push({
+        x: tWin,
+        y: Array.from(windowSignals[idx]),
+        mode: 'lines',
+        line: { color: '#d7263d', width: 3 },
+        name: `window x${idx + 1}`,
+        showlegend: idx === 0
+      });
+    });
+
+    const markers = [state.timeIndex, state.timeIndex + state.window].map(idx => idx / fs);
+
+    Plotly.react('processPlot', seriesTraces, {
+      margin: { t: 20, r: 20, l: 50, b: 40 },
+      legend: { orientation: 'h' },
+      xaxis: { title: 't (s)' },
+      yaxis: { title: 'amplitude' },
+      shapes: [
+        ...markers.map((xVal) => ({
+          type: 'line', x0: xVal, x1: xVal, y0: -4, y1: 4, line: { color: '#d7263d', dash: 'dot' }
+        })),
+        {
+          type: 'rect',
+          x0: markers[0], x1: markers[1], y0: -4.5, y1: -4.1,
+          fillcolor: 'rgba(215,38,61,0.2)', line: { color: 'rgba(215,38,61,0.6)' }
+        }
+      ],
+      annotations: [
+        { x: markers[0], y: -3.9, text: 't₁', showarrow: false, font: { color: '#d7263d', size: 12 } },
+        { x: markers[1], y: -3.9, text: 't₂', showarrow: false, font: { color: '#d7263d', size: 12 } },
+        { x: (markers[0] + markers[1]) / 2, y: -4.35, text: '|<---------- t₂ range ---------->|', showarrow: false, font: { color: '#d7263d', size: 12 } }
+      ],
+      template: 'plotly_white'
+    });
+
+    const lags = Array.from({ length: state.maxLag + 1 }, (_, i) => i / fs);
+    let rawAcf;
+    let normAcf;
+
+    if (state.mode === 'infinite' && state.infiniteAcf) {
+      rawAcf = Array.from(state.infiniteAcf);
+      const r0 = rawAcf[0] || 1;
+      normAcf = rawAcf.map((v) => v / r0);
+    } else {
+      const { raw, norm } = ensembleAcf(state.timeIndex);
+      rawAcf = Array.from(raw);
+      normAcf = Array.from(norm);
+    }
+
+    const sigma2 = 1 / (1 - state.a ** 2);
+    const theoreticalRaw = lags.map((_, idx) => sigma2 * Math.pow(state.a, idx));
+    const theoreticalNorm = lags.map((_, idx) => Math.pow(state.a, idx));
+
+    Plotly.react('acfPlotRaw', [
+      {
+        x: lags,
+        y: rawAcf,
+        mode: 'lines+markers',
+        name: 'Sample',
+        marker: { color: '#0b5ebd' },
+        line: { color: '#0b5ebd', width: 3 }
+      },
+      {
+        x: lags,
+        y: theoreticalRaw,
+        mode: 'lines',
+        name: 'Theoretical',
+        line: { color: '#7f8c8d', dash: 'dash', width: 3 }
+      }
+    ], {
+      margin: { t: 20, r: 20, l: 60, b: 50 },
+      xaxis: { title: 'lag τ (s)' },
+      yaxis: { title: 'Rxx(τ)' },
+      legend: { orientation: 'h' },
+      template: 'plotly_white'
+    });
+
+    Plotly.react('acfPlotNorm', [
+      {
+        x: lags,
+        y: normAcf,
+        mode: 'lines+markers',
+        name: 'Sample',
+        marker: { color: '#0b5ebd' },
+        line: { color: '#0b5ebd', width: 3 }
+      },
+      {
+        x: lags,
+        y: theoreticalNorm,
+        mode: 'lines',
+        name: 'Theoretical',
+        line: { color: '#7f8c8d', dash: 'dash', width: 3 }
+      }
+    ], {
+      margin: { t: 20, r: 20, l: 60, b: 50 },
+      xaxis: { title: 'lag τ (s)' },
+      yaxis: { title: 'ρxx(τ)', range: [-1, 1] },
+      legend: { orientation: 'h' },
+      template: 'plotly_white'
+    });
+
+    if (state.anomaly && state.playing) {
+      const maxIdx = rawAcf.reduce((best, val, idx, arr) => (val > arr[best] ? idx : best), 0);
+      if (maxIdx !== 0) {
+        togglePause(true);
+      }
+    }
+  }
+
+  function tick() {
+    if (!state.playing || state.paused) return;
+    state.timeIndex += Math.max(1, Math.round(6 * state.speed));
+    const guard = Math.max(state.window, state.maxLag);
+    if (state.timeIndex + guard >= state.length) {
+      state.timeIndex = 0;
+    }
+    updatePlots();
+  }
+
+  function togglePause(forcePause) {
+    state.paused = forcePause !== undefined ? forcePause : !state.paused;
+    pauseBtn.innerHTML = state.paused
+      ? '<i class="fa-solid fa-play"></i> Resume'
+      : '<i class="fa-solid fa-pause"></i> Pause';
+  }
+
+  function startPlayback() {
+    if (state.playing) return;
+    state.playing = true;
+    state.paused = false;
+    pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+    state.timer = setInterval(tick, 140);
+  }
+
+  function stopPlayback() {
+    state.playing = false;
+    state.paused = false;
+    clearInterval(state.timer);
+    state.timeIndex = 0;
+    pauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+    updatePlots();
+  }
+
+  function syncLabels() {
+    arLabel.textContent = state.a.toFixed(2);
+    winLabel.textContent = state.window.toString();
+    lagLabel.textContent = state.maxLag.toString();
+    speedLabel.textContent = state.speed.toFixed(1);
+  }
+
+  arCoeffEl.addEventListener('input', (e) => {
+    state.a = parseFloat(e.target.value);
+    syncLabels();
+    regenerate();
+  });
+
+  windowEl.addEventListener('input', (e) => {
+    state.window = parseInt(e.target.value, 10);
+    syncLabels();
+    clampTimeIndex();
+    updatePlots();
+  });
+
+  lagEl.addEventListener('input', (e) => {
+    state.maxLag = parseInt(e.target.value, 10);
+    syncLabels();
+    clampTimeIndex();
+    generateInfiniteAcf();
+    updatePlots();
+  });
+
+  speedEl.addEventListener('input', (e) => {
+    state.speed = parseFloat(e.target.value);
+    syncLabels();
+  });
+
+  realizationsEl.addEventListener('change', (e) => {
+    const value = e.target.value;
+    state.mode = value === 'infinite' ? 'infinite' : 'finite';
+    state.seriesCount = value === 'infinite' ? 3 : parseInt(value, 10);
+    if (state.mode === 'finite') {
+      generateSignals();
+    } else {
+      generateSignals();
+      generateInfiniteAcf();
+    }
+    updatePlots();
+  });
+
+  playBtn.addEventListener('click', () => {
+    startPlayback();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    togglePause();
+  });
+
+  stopBtn.addEventListener('click', stopPlayback);
+
+  anomalyBtn.addEventListener('click', () => {
+    state.anomaly = !state.anomaly;
+    anomalyBtn.innerHTML = state.anomaly
+      ? '<i class="fa-solid fa-bolt"></i> Disable'
+      : '<i class="fa-solid fa-bolt"></i> Enable';
+  });
+
+  function regenerate() {
+    generateSignals();
+    generateInfiniteAcf();
+    updatePlots();
+  }
+
+  regenBtn.addEventListener('click', () => {
+    const wasPlaying = state.playing;
+    if (wasPlaying) stopPlayback();
+    regenerate();
+    if (wasPlaying) startPlayback();
+  });
+
+  syncLabels();
+  generateSignals();
+  generateInfiniteAcf();
+  updatePlots();
+</script>
+{% endblock %}
