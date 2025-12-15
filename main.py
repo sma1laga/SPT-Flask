@@ -92,6 +92,7 @@ from pages.demos.normal2d import demos_normal2d_bp
 from pages.demos.central_limit_theorem import demos_central_limit_theorem_bp
 from pages.demos.averaging_over_time import demos_averaging_over_time_bp
 from pages.demos.autocorrelation_stationary import (demos_autocorrelation_stationary_bp)
+from pages.demos.harmonic_detection import demos_harmonic_detection_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -236,7 +237,8 @@ def create_app():
     app.register_blueprint(demos_central_limit_theorem_bp, url_prefix="/demos/central-limit-theorem")
     app.register_blueprint(demos_averaging_over_time_bp, url_prefix="/demos/averaging-over-time")
     app.register_blueprint(demos_autocorrelation_stationary_bp, url_prefix="/demos/autocorrelation-stationary")
-    
+    app.register_blueprint(demos_harmonic_detection_bp, url_prefix="/demos/harmonic-detection")
+
     
     
     @app.route("/")

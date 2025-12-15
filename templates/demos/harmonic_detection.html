@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container wide-container">
+  <div class="page-header">
+    <div>
+      <h1>Harmonic detection</h1>
+      <p>
+        Explore a sinusoid embedded in noise like the original MATLAB demo. Adjust the signal-to-noise ratio (SNR),
+        change the number of samples used for statistics, and switch between autocorrelation and spectral views.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-sliders"></i>Interactive shifters</div>
+      <div class="pill pill-subtle"><i class="fa fa-line-chart"></i>Five synced plots</div>
+    </div>
+  </div>
+
+  <style>
+    .wide-container{max-width:1200px}
+    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px}
+    .chip-row{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#0f3b64;font-weight:700;font-size:0.9rem}
+    .pill-subtle{background:#f3f4f6;color:#4b5563}
+    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:14px}
+    .control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    .kv-row{display:grid;grid-template-columns:150px 1fr 70px;gap:8px;align-items:center;margin:8px 0}
+    .kv-row label{font-weight:700;font-size:0.95rem}
+    .kv-row input[type="number"]{width:100%}
+    .kv-row small{color:#6b7280}
+    .mode-row{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0}
+    .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:8px}
+    .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
+    .stat-label{font-size:0.8rem;color:#6b7280;font-weight:800;letter-spacing:0.04em;text-transform:uppercase}
+    .stat-value{font-size:1.05rem;font-weight:800;color:#0f172a}
+    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+    .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:6px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
+    .plot-box h4{margin:4px 8px;font-size:0.95rem;color:#111827;display:flex;align-items:center;gap:6px}
+    .plot{width:100%;height:260px}
+    .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.25)}
+  </style>
+
+  <div class="control-card">
+    <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Controls</div>
+    <div class="control-grid">
+      <div>
+        <div class="kv-row">
+          <label for="snr-slider">SNR (dB)</label>
+          <input type="range" id="snr-slider" min="-20" max="40" step="0.1" value="{{ defaults.snr }}">
+          <input type="number" id="snr-input" step="0.1" value="{{ defaults.snr }}">
+        </div>
+        <div class="kv-row">
+          <label for="sample-slider">Samples for stats</label>
+          <input type="range" id="sample-slider" min="0" max="1" step="0.01">
+          <input type="number" id="sample-input" min="100" max="100000" step="100" value="{{ defaults.sample_count }}">
+        </div>
+        <div class="mode-row" role="radiogroup" aria-label="View mode">
+          <label><input type="radio" name="view-mode" value="autocorrelation" checked> Autocorrelation focus</label>
+          <label><input type="radio" name="view-mode" value="psd"> PSD view</label>
+        </div>
+        <button id="update-btn" class="btn-primary"><i class="fa fa-refresh"></i> Update plots</button>
+      </div>
+      <div>
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="stat-label">Signal variance</div>
+            <div id="stat-svar" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Noise variance</div>
+            <div id="stat-nvar" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">SNR</div>
+            <div id="stat-snr" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Samples</div>
+            <div id="stat-samples" class="stat-value">—</div>
+          </div>
+        </div>
+        <p style="color:#4b5563;margin-top:10px">Shifters and inputs live here above the plots, mirroring the MATLAB control box.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="plots-grid">
+    <div class="plot-box"><h4>Harmonic (clean)</h4><div id="plot-harmonic" class="plot"></div></div>
+    <div class="plot-box"><h4>Noise</h4><div id="plot-noise" class="plot"></div></div>
+    <div class="plot-box"><h4>Harmonic in aperiodic noise</h4><div id="plot-combined" class="plot"></div></div>
+    <div class="plot-box"><h4 id="plot4-title">Clipped autocorrelation</h4><div id="plot-4" class="plot"></div></div>
+    <div class="plot-box"><h4 id="plot5-title">Normalised autocorrelation</h4><div id="plot-5" class="plot"></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const computeUrl = "{{ url_for('demos_harmonic_detection.compute') }}";
+  const snrSlider = document.getElementById('snr-slider');
+  const snrInput = document.getElementById('snr-input');
+  const sampleSlider = document.getElementById('sample-slider');
+  const sampleInput = document.getElementById('sample-input');
+  const updateBtn = document.getElementById('update-btn');
+  const modeRadios = document.querySelectorAll('input[name="view-mode"]');
+
+  const statEls = {
+    svar: document.getElementById('stat-svar'),
+    nvar: document.getElementById('stat-nvar'),
+    snr: document.getElementById('stat-snr'),
+    samples: document.getElementById('stat-samples'),
+  };
+
+  const plot4Title = document.getElementById('plot4-title');
+  const plot5Title = document.getElementById('plot5-title');
+
+  const SAMPLE_MIN = 100;
+  const SAMPLE_MAX = 100000;
+
+  function sliderToSamples(v){
+    const logMin = Math.log10(SAMPLE_MIN);
+    const logMax = Math.log10(SAMPLE_MAX);
+    const val = Math.pow(10, logMin + v * (logMax - logMin));
+    return Math.round(val);
+  }
+
+  function samplesToSlider(count){
+    const clamped = Math.min(Math.max(count, SAMPLE_MIN), SAMPLE_MAX);
+    const logMin = Math.log10(SAMPLE_MIN);
+    const logMax = Math.log10(SAMPLE_MAX);
+    return (Math.log10(clamped) - logMin) / (logMax - logMin);
+  }
+
+  function syncSampleFromSlider(){
+    const samples = sliderToSamples(parseFloat(sampleSlider.value));
+    sampleInput.value = samples;
+  }
+
+  function syncSampleFromInput(){
+    const samples = parseInt(sampleInput.value || defaults.sample_count, 10);
+    sampleSlider.value = samplesToSlider(samples);
+  }
+
+  function syncSnrFromSlider(){
+    snrInput.value = parseFloat(snrSlider.value).toFixed(1);
+  }
+
+  function syncSnrFromInput(){
+    snrSlider.value = snrInput.value;
+  }
+
+  async function fetchData(){
+    const snr = parseFloat(snrInput.value);
+    const sampleCount = parseInt(sampleInput.value, 10) || defaults.sample_count;
+    const response = await fetch(computeUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ snr, sample_count: sampleCount })
+    });
+    if(!response.ok){
+      throw new Error('Server error: ' + response.status);
+    }
+    return response.json();
+  }
+
+  function renderLine(target, x, y, title, xLabel, yLabel, yRange=null){
+    const trace = {x, y, mode: 'lines', line: {color: '#2563eb', width: 2}};
+    const layout = {
+      margin: {l:50,r:10,b:45,t:10},
+      xaxis: {title: xLabel},
+      yaxis: {title: yLabel, range: yRange},
+      height: 260,
+    };
+    Plotly.newPlot(target, [trace], layout, {displaylogo:false, responsive:true});
+  }
+
+  function renderPlots(data){
+    const mode = document.querySelector('input[name="view-mode"]:checked').value;
+
+    renderLine('plot-harmonic', data.time_ms, data.harmonic, 'Harmonic', 't [ms]', 'Amplitude');
+    renderLine('plot-noise', data.time_ms, data.noise, 'Noise', 't [ms]', 'Amplitude');
+    renderLine('plot-combined', data.time_ms, data.combined, 'Combined', 't [ms]', 'Amplitude');
+
+    if(mode === 'autocorrelation'){
+      plot4Title.textContent = 'Clipped autocorrelation';
+      plot5Title.textContent = 'Normalised autocorrelation';
+      renderLine('plot-4', data.acorr.lags_ms, data.acorr.clipped, 'AC', 'τ [ms]', 'R_{xx}', [-1.5,1.5]);
+      renderLine('plot-5', data.acorr.lags_ms, data.acorr.normalized, 'Norm AC', 'τ [ms]', 'R_{xx}');
+    } else {
+      plot4Title.textContent = 'Normalised autocorrelation';
+      plot5Title.textContent = 'Power spectral density';
+      renderLine('plot-4', data.acorr.lags_ms, data.acorr.normalized, 'Norm AC', 'τ [ms]', 'R_{xx}');
+      Plotly.newPlot('plot-5', [{x: data.psd.freqs, y: data.psd.values_db, mode:'lines', line:{color:'#dc2626', width:2}}], {
+        margin:{l:50,r:10,b:45,t:10},
+        xaxis:{title:'frequency [Hz]'},
+        yaxis:{title:'10log_{10}(S_{xx})'},
+        height:260
+      }, {displaylogo:false, responsive:true});
+    }
+
+    statEls.svar.textContent = data.stats.signal_variance.toFixed(3);
+    statEls.nvar.textContent = data.stats.noise_variance.toFixed(3);
+    statEls.snr.textContent = data.stats.snr_db.toFixed(1) + ' dB';
+    statEls.samples.textContent = data.stats.sample_count.toLocaleString();
+  }
+
+  async function update(){
+    try{
+      const data = await fetchData();
+      renderPlots(data);
+    }catch(err){
+      console.error(err);
+      alert(err.message);
+    }
+  }
+
+  snrSlider.value = defaults.snr;
+  snrInput.value = defaults.snr;
+  sampleSlider.value = samplesToSlider(defaults.sample_count);
+  syncSampleFromSlider();
+
+  snrSlider.addEventListener('input', syncSnrFromSlider);
+  snrInput.addEventListener('change', syncSnrFromInput);
+  sampleSlider.addEventListener('input', syncSampleFromSlider);
+  sampleInput.addEventListener('change', syncSampleFromInput);
+  updateBtn.addEventListener('click', update);
+  modeRadios.forEach(r => r.addEventListener('change', update));
+
+  update();
+</script>
+{% endblock %}

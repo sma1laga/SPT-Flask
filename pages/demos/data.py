@@ -193,6 +193,13 @@ DEMOS = {
                 "desc": "Animate multiple realizations of a stationary AR(1) process and compare sample vs. theoretical autocorrelation.",
                 "endpoint": "demos_autocorrelation_stationary.page",
             },
+            {
+                "slug": "harmonic-detection",
+                "title": "Harmonic detection",
+                "title_desc": "Sinusoid in noise",
+                "desc": "Sweep SNR and sample count, then inspect clipped/normalized autocorrelation or PSD of a noisy harmonic.",
+                "endpoint": "demos_harmonic_detection.page",
+            },
             ],
     },
     # "Image and Video Compression": {
