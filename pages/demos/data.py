@@ -214,6 +214,13 @@ DEMOS = {
                 "desc": "Sweep SNR and sample count, then inspect clipped/normalized autocorrelation or PSD of a noisy harmonic.",
                 "endpoint": "demos_harmonic_detection.page",
             },
+            {
+                "slug": "finite-observation-intervals",
+                "title": "Finite Observation intervals",
+                "title_desc": "Autocorr & PSD",
+                "desc": "Replica of the MATLAB time/frequency demo with sinusoid/noise/speech, ideal vs. finite observation windows.",
+                "endpoint": "demos_finite_observation_intervals.page",
+            },
             ],
     },
     # "Image and Video Compression": {
