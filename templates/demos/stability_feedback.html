@@ -1,67 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Stability and Feedback Systems</h1>
+<h1>Stability and Feedback Systems (L&nbsp;10-12)</h1>
 <p>
-  This demo shows the pole diagram of the original transfer function
-  \( H(s)=\frac{b}{s-a} \) and the transfer function of the feedback system
-  \( Q(s)=\frac{H(s)}{1+K\,H(s)}=\frac{b}{\,s-a+K\,b\,} \).
-  The background indicates stability: green for stable (all poles in the left half-plane), red for unstable.
+  This demo shows the pole diagrams of a transfer function
+  $$ H(s)=\frac{b}{s-a}, $$
+  and the transfer function of the feedback system
+  $$ Q(s)=\frac{H(s)}{1+K\,H(s)}=\frac{b}{\,s-a+K\,b\,}. $$
+  The background indicates a stable system: green for stable, red for unstable.
 </p>
 
-<style>
-  .toolbar {
-    display: grid;
-    grid-template-columns: repeat(9, minmax(90px, 1fr));
-    gap: 10px;
-    align-items: start;
-    margin: 8px 0 12px;
-    text-align: center;
-  }
-  @media (max-width: 1200px) { .toolbar { grid-template-columns: repeat(6, minmax(110px, 1fr)); } }
-  @media (max-width: 700px)  { .toolbar { grid-template-columns: repeat(3, minmax(150px, 1fr)); } }
-  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
-  input[type=number]
-  button {
-    width: 100%;
-    padding: 7px 8px;
-  }
+<div class="demo row">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <label for="a">\(a\)</label>
+        <input id="a" type="number" step="{{ defaults.step }}"
+              min="{{ defaults.min_a }}" max="{{ defaults.max_a }}"
+              value="{{ defaults.a }}">
+      </div>
+      <div>
+        <label for="b">\(b\)</label>
+        <input id="b" type="number" step="{{ defaults.step }}"
+              min="{{ defaults.min_b }}" max="{{ defaults.max_b }}"
+              value="{{ defaults.b }}">
+      </div>
+      <div>
+        <label for="K">\(K\)</label>
+        <input id="K" type="number" step="{{ defaults.step }}"
+              min="{{ defaults.min_K }}" max="{{ defaults.max_K }}"
+              value="{{ defaults.K }}">
+      </div>
+    </div>
 
-  /* Make the plot span the full content width */
-  .plots { display: grid; grid-template-columns: 1fr; gap: 14px; }
-  #plot { grid-column: 1 / -1; width: 100%; height: auto; display: block; }
-
-</style>
-
-
-<div class="toolbar">
-  <div>
-    <label for="a">a</label>
-    <input id="a" type="number" step="{{ defaults.step }}"
-           min="{{ defaults.min_a }}" max="{{ defaults.max_a }}"
-           value="{{ defaults.a }}">
+    <div class="toolbar">
+      <button id="run">Update</button>
+      <button id="reset">Reset</button>
+    </div>
   </div>
-  <div>
-    <label for="b">b</label>
-    <input id="b" type="number" step="{{ defaults.step }}"
-           min="{{ defaults.min_b }}" max="{{ defaults.max_b }}"
-           value="{{ defaults.b }}">
-  </div>
-  <div>
-    <label for="K">K</label>
-    <input id="K" type="number" step="{{ defaults.step }}"
-           min="{{ defaults.min_K }}" max="{{ defaults.max_K }}"
-           value="{{ defaults.K }}">
-  </div>
-  <div>
-    <label class="visually-hidden">&nbsp;</label>
-    <button id="reset">Reset</button>
+
+  <div class="card">
+    <img id="plot" alt="Pole diagrams of H(s) and Q(s)" decoding="async" loading="eager">
   </div>
 </div>
+{% endblock %}
 
-<div class="plots">
-  <img id="plot" alt="Pole diagrams of H(s) and Q(s)" decoding="async" loading="eager">
-</div>
 
+{% block scripts %}
 <script>
   const DEFAULTS = {{ defaults | tojson }};
   const $ = (id) => document.getElementById(id);
@@ -112,7 +96,9 @@
   });
 
   window.addEventListener("load", send);
-  
+
+  $("run").addEventListener("click", send);
+
   $("reset").addEventListener("click", () => {
     ["a","b","K"].forEach(id => { $(id).value = DEFAULTS[id]; });
     send();

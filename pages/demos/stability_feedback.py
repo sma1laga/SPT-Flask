@@ -11,10 +11,11 @@ import matplotlib.pyplot as plt
 from utils.img import fig_to_base64
 
 RC_PARAMS = {
-    # "savefig.bbox": "tight",
-    "axes.titlesize": 24,
+    "savefig.bbox": "tight",
+    "axes.titlesize": 26,
     "axes.labelsize": 22,
-    "font.size": 20,
+    "font.size": 22,
+    "mathtext.fontset": "cm",
 }
 
 stability_feedback_bp = Blueprint(
@@ -23,71 +24,63 @@ stability_feedback_bp = Blueprint(
 
 # UI defaults 
 STEP = 0.5
-DEFAULTS = dict(a=1.5, b=2.0, K=2.0)
-BOUNDS   = dict(a=(-10.0, 10.0), b=(-10.0, 10.0), K=(-10.0, 10.0))
-
-# Plot window & ticks
-XMIN, XMAX = -25.0, 25.0
-YMIN, YMAX = -25.0, 25.0
-XTICKS_MAJOR = np.arange(XMIN, XMAX + 1e-9, 5.0)
-YTICKS_MAJOR = np.arange(YMIN, YMAX + 1e-9, 5.0)
-XTICKS_MINOR = np.arange(XMIN, XMAX + 1e-9, 1.0)
-YTICKS_MINOR = np.arange(YMIN, YMAX + 1e-9, 1.0)
+DEFAULTS = dict(a=1, b=1, K=1)
+BOUNDS   = dict(a=(-3, 3), b=(-2, 2), K=(-6, 6))
 
 # concurrency controls
-RENDER_LOCK = threading.Lock()   # for Matplotlib 
-META_LOCK   = threading.Lock()   # for sequencing state
+RENDER_LOCK = threading.Lock()   # for Matplotlib
+META_LOCK = threading.Lock()   # for sequencing state
 _LAST_IMG: str | None = None
 _LATEST_SEQ = 0                  # highest seq number weave seen from any client
 
 def _bg_for_stability(pole_real: float) -> str:
-    return "#E7F8E7" if pole_real < 0 else "#FBE1E1"
+    return "#ccffcc" if pole_real < 0 else "#ffcccc"
 
 def _draw_axes(ax):
-    ax.axhline(0, color="black", lw=1.2)
-    ax.axvline(0, color="black", lw=1.2)
-    ax.annotate("", xy=(XMAX, 0), xytext=(XMAX-1.5, 0),
-                arrowprops=dict(arrowstyle="->", lw=1.2, color="black"))
-    ax.annotate("", xy=(0, YMAX), xytext=(0, YMAX-1.5),
-                arrowprops=dict(arrowstyle="->", lw=1.2, color="black"))
-    ax.set_xlim(XMIN, XMAX); ax.set_ylim(YMIN, YMAX)
+    maxval = BOUNDS["a"][1] + BOUNDS["b"][1] * BOUNDS["K"][1] + 0.5
+    # draw axes with arrows, size twice of normal arrow size
+    arrowprops = dict(arrowstyle="-|>", lw=1.2, color="black", mutation_scale=40)
+    ax.annotate("", xy=(maxval, 0), xytext=(-maxval, 0), arrowprops=arrowprops)
+    ax.annotate("", xy=(0, maxval), xytext=(0, -maxval), arrowprops=arrowprops)
+    ax.set_xlim(-maxval, maxval)
+    ax.set_ylim(-maxval, maxval)
     ax.set_aspect("equal", adjustable="box")
-    ax.set_xticks(XTICKS_MAJOR); ax.set_yticks(YTICKS_MAJOR)
-    ax.set_xticks(XTICKS_MINOR, minor=True); ax.set_yticks(YTICKS_MINOR, minor=True)
-    ax.grid(True, which="major", linewidth=1.0, alpha=0.55)
-    # ax.grid(True, which="minor", linewidth=0.4, alpha=0.25)
-    ax.set_xlabel(r"Re$\{s\}$"); ax.set_ylabel(r"Im$\{s\}$")
+    minor_ticks = np.arange(-int(maxval), int(maxval) + 1, 1)
+    ax.set_xticks(minor_ticks, minor=True)
+    ax.set_yticks(minor_ticks, minor=True)
+    ax.grid(True, which="major")
+    ax.grid(True, which="minor", linewidth=0.4, alpha=0.25)
+    ax.set_xlabel(r"$\mathrm{Re}\{s\}$")
+    ax.set_ylabel(r"$\mathrm{Im}\{s\}$")
 
 def _fig_to_svg_data_url(fig) -> str:
     try:
-        with plt.rc_context({"svg.fonttype": "none"}):
-            buf = io.BytesIO()
-            fig.savefig(buf, format="svg")
-            plt.close(fig)
-            return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+        buf = io.BytesIO()
+        fig.savefig(buf, format="svg")
+        plt.close(fig)
+        return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
     except Exception:
         return fig_to_base64(fig)
 
 @lru_cache(maxsize=8192)
 def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
-    a = a_q / 2.0; b = b_q / 2.0; K = K_q / 2.0
+    a = a_q / 2.0
+    b = b_q / 2.0
+    K = K_q / 2.0
     p_H = a
     p_Q = a - K*b
     with plt.rc_context(RC_PARAMS):
-        # was: figsize=(20.0, 8.5), layout="constrained"
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16.0, 6.5), constrained_layout=False)
-        fig.subplots_adjust(left=0.07, right=0.99, bottom=0.16, top=0.88, wspace=0.28)
-        ax1.set_title(r"$H(s)=\dfrac{b}{s-a}$")
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7.5), constrained_layout=True)
+        
+        ax1.set_title("$H(s)$")
         ax1.set_facecolor(_bg_for_stability(p_H))
         _draw_axes(ax1)
-        ax1.plot([p_H],[0.0], marker="x", ms=18, mew=2.6, color="crimson")
-        ax1.text(p_H+1.2, 1.2, r"$\times\ \text{pole}$", color="crimson", fontsize=13)
+        ax1.plot([p_H],[0.0], marker="x", ms=30, mew=2.6, color="tab:red")
 
-        ax2.set_title(r"$Q(s)=\dfrac{H(s)}{1+K\,H(s)}=\dfrac{b}{\,s-a+K\,b\,}$")
+        ax2.set_title("$Q(s)$")
         ax2.set_facecolor(_bg_for_stability(p_Q))
         _draw_axes(ax2)
-        ax2.plot([p_Q],[0.0], marker="x", ms=18, mew=2.6, color="crimson")
-        ax2.text(p_Q+1.2, 1.2, r"$\times\ \text{pole}$", color="crimson", fontsize=13)
+        ax2.plot([p_Q],[0.0], marker="x", ms=30, mew=2.6, color="tab:red")
 
         img = _fig_to_svg_data_url(fig)
     return img
@@ -137,7 +130,9 @@ def compute():
     a = float(np.clip(a, *BOUNDS["a"]))
     b = float(np.clip(b, *BOUNDS["b"]))
     K = float(np.clip(K, *BOUNDS["K"]))
-    a_q = int(round(a * 2.0)); b_q = int(round(b * 2.0)); K_q = int(round(K * 2.0))
+    a_q = int(round(a * 2.0))
+    b_q = int(round(b * 2.0))
+    K_q = int(round(K * 2.0))
 
     with META_LOCK:
         if seq != _LATEST_SEQ:
