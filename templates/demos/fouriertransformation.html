@@ -3,65 +3,8 @@
 <h1>Fourier Transform (L3)</h1>
 <p>This demo shows the Fourier&nbsp;transform \(\mathcal{F}\{x(t)\}=X(\mathrm{j}\omega)\) of a signal \(x(t)\), split up into magnitude \(|X(\mathrm{j}\omega)|\) and phase \(\varphi(\mathrm{j}\omega)\). Choose the signal type, shift, width, and amplitude.</p>
 
-<style>
-  .page-wrap {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 20px 32px;
-  }
-
-  /* Compact controls that keep label/input pairs aligned */
-  .toolbar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 16px;
-    align-items: end;
-    text-align: center;
-  }
-
-  .toolbar > div:not(.actions) {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .card {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 1px 5px rgba(0,0,0,.05);
-    margin-bottom: 16px;
-    background: var(--card-bg, #fff);
-    transition: none;
-  }
-  .card:hover {
-    transform: none;
-    box-shadow: 0 1px 5px rgba(0,0,0,.05);
-  }
-  label { font-weight: 600; display: inline-block; margin-bottom: 6px; }
-  select, input[type=number] {
-    width: 100%;
-    padding: 7px 8px;
-    border: 1px solid #bbb;
-    border-radius: 8px;
-    background: var(--control-bg, #fff);
-  }
-  .toolbar > .actions {
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-    align-items: stretch;
-  }
-  .actions button {
-    white-space: nowrap;
-    flex: 1;
-  }
-  /* Plot container */
-  #plot { width: 100%; height: auto; display: block; }
-</style>
-
-<div class="page-wrap">
-  <div class="card" style="margin-top:12px">
+<div class="demo row">
+  <div class="card">
     <div class="toolbar">
       <div>
         <label for="x_type">\(x(t)\)</label>
@@ -96,11 +39,11 @@
                min="{{ defaults.min_height }}" max="{{ defaults.max_height }}"
                value="{{ defaults.x_height }}">
       </div>
+    </div>
 
-      <div class="actions">
-        <button id="run">Update</button>
-        <button id="reset" type="button">Reset</button>
-      </div>
+    <div class="toolbar">
+      <button id="run">Update</button>
+      <button id="reset" type="button">Reset</button>
     </div>
   </div>
 
@@ -108,7 +51,10 @@
     <img id="plot" alt="Fourier transform plots">
   </div>
 </div>
+{% endblock %}
 
+
+{% block scripts %}
 <script>
   const $ = (id) => document.getElementById(id);
   let debounceTimer = null;

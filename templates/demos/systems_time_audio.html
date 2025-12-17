@@ -6,103 +6,65 @@
   Select the input signal and impulse response to hear how the listening experience is affected by the system for different audio signals.
 </p>
 
-<style>
-  .card {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 1px 5px rgba(0,0,0,.05);
-    margin-bottom: 16px;
-    background: var(--card-bg, #fff);
-    transition: none;
-  }
-  .card:hover {
-    transform: none;
-    box-shadow: 0 1px 5px rgba(0,0,0,.05);
-  }
-  .toolbar {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(120px, 1fr));
-    gap: 10px;
-    align-items: start;
-    text-align: center;
-  }
-  @media (max-width: 1200px) {
-    .toolbar { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
-  }
-  @media (max-width: 700px) {
-    .toolbar { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
-  }
-  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
-  select {
-    width: 100%;
-    padding: 7px 8px;
-    border: 1px solid #bbb;
-    border-radius: 8px;
-    background: var(--control-bg, #fff);
-  }
-  button {
-    width: 100%;
-    padding: 7px 8px;
-  }
-  #plot { width: 100%; height: auto; display: block; }
-</style>
+<div class="demo row">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <label for="x_choice">\(x(t)\)</label>
+        <select id="x_choice">
+          {% for opt in x_options %}
+            <option value="{{ opt }}" {% if opt == defaults.x_choice %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-<div class="card" style="margin-top:12px">
-  <div class="toolbar">
-    <div>
-      <label for="x_choice">\(x(t)\)</label>
-      <select id="x_choice">
-        {% for opt in x_options %}
-          <option value="{{ opt }}" {% if opt == defaults.x_choice %}selected{% endif %}>{{ opt }}</option>
-        {% endfor %}
-      </select>
+      <div>
+        <label for="h_choice">\(h(t)\)</label>
+        <select id="h_choice">
+          {% for opt in h_options %}
+            <option value="{{ opt }}" {% if opt == defaults.h_choice %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </div>
     </div>
-
-    <div>
-      <label for="h_choice">\(h(t)\)</label>
-      <select id="h_choice">
-        {% for opt in h_options %}
-          <option value="{{ opt }}" {% if opt == defaults.h_choice %}selected{% endif %}>{{ opt }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div>
-      <label class="visually-hidden">&nbsp;</label>
+    
+    <div class="toolbar">
       <button id="run">Update</button>
+      <button id="reset" type="button">Reset</button>
     </div>
   </div>
-</div>
 
-<div class="card">
-  <img id="plot" alt="x(t), h(t), y(t)=x*h">
-</div>
+  <div class="card">
+    <img id="plot" alt="x(t), h(t), y(t)=x*h">
+  </div>
 
-<div class="card">
-  <div style="margin-bottom:8px">
-    <div><strong>Input signal</strong></div>
-    <audio id="audio_x" controls style="width:100%"></audio>
+  <div class="card">
+    <div style="margin-bottom:8px">
+      <div><strong>Input signal</strong></div>
+      <audio id="audio_x" controls style="width:100%"></audio>
+    </div>
+    <div style="margin-bottom:8px">
+      <div><strong>Impulse response</strong></div>
+      <audio id="audio_h" controls style="width:100%"></audio>
+    </div>
+    <div>
+      <div><strong>Output signal (input convolved with impulse response)</strong></div>
+      <audio id="audio_y" controls style="width:100%"></audio>
+    </div>
   </div>
-  <div style="margin-bottom:8px">
-    <div><strong>Impulse response</strong></div>
-    <audio id="audio_h" controls style="width:100%"></audio>
-  </div>
-  <div>
-    <div><strong>Output signal (input convolved with impulse response)</strong></div>
-    <audio id="audio_y" controls style="width:100%"></audio>
+  <div class="card">
+    <h3>Sources</h3>
+    <ul>
+      <li>Marco Jeub, Magnus Schäfer, and Peter Vary, "A Binaural Room Impulse Response Database for the Evaluation of Dereverberation Algorithms," Proc. of International Conference on Digital Signal Processing (DSP), July 2009</li>
+      <li>Rebecca Stewart and Mark Sandler, "Database of Omnidirectional and B-Format Impulse Responses," Proc. of IEEE Int. Conf. on Acoustics, Speech, and Signal Processing (ICASSP 2010), Dallas, Texas, March 2010</li>
+      <li>Wikimedia Commons: <a href="https://commons.wikimedia.org/wiki/File:Neil_Armstrong_small_step.wav">Neil Armstrong small step.wav</a>, <a href="https://commons.wikimedia.org/wiki/File:Fur_Elise.ogg">Fur Elise.ogg</a>, <a href="https://commons.wikimedia.org/wiki/File:Snare_drum_rim.ogg">Snare drum rim.ogg</a></li>
+    </ul>
   </div>
 </div>
-<div class="card">
-  <h3>Sources</h3>
-  <ul>
-    <li>Marco Jeub, Magnus Schäfer, and Peter Vary, "A Binaural Room Impulse Response Database for the Evaluation of Dereverberation Algorithms," Proc. of International Conference on Digital Signal Processing (DSP), July 2009</li>
-    <li>Rebecca Stewart and Mark Sandler, "Database of Omnidirectional and B-Format Impulse Responses," Proc. of IEEE Int. Conf. on Acoustics, Speech, and Signal Processing (ICASSP 2010), Dallas, Texas, March 2010</li>
-    <li>Wikimedia Commons: <a href="https://commons.wikimedia.org/wiki/File:Neil_Armstrong_small_step.wav">Neil Armstrong small step.wav</a>, <a href="https://commons.wikimedia.org/wiki/File:Fur_Elise.ogg">Fur Elise.ogg</a>, <a href="https://commons.wikimedia.org/wiki/File:Snare_drum_rim.ogg">Snare drum rim.ogg</a></li>
-  </ul>
-</div>
+{% endblock %}
 
+
+{% block scripts %}
 <script>
   const $ = (id) => document.getElementById(id);
 
@@ -131,6 +93,11 @@
     $(id).addEventListener("change", recompute);
   });
   $("run").addEventListener("click", recompute);
+  $("reset").addEventListener("click", () => {
+    $("x_choice").value = "{{ defaults.x_choice }}";
+    $("h_choice").value = "{{ defaults.h_choice }}";
+    recompute();
+  });
 
   window.addEventListener("load", () => recompute());
 </script>

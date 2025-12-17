@@ -10,40 +10,35 @@
   You can adjust the bandwidth \(\Delta\omega\) and the center frequency \(\omega_0\).
 </p>
 
-<style>
-  .toolbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    align-items: end;
-    margin-bottom: 8px;
-    text-align: center;
-  }
-
-  @media (max-width: 950px) {
-    .toolbar {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>
-
-<div class="demo">
-  <div class="toolbar">
-    <div>
-      <label for="delta_omega">Bandwidth \(\Delta\omega\)</label>
-      <input id="delta_omega" type="number" step="{{ defaults.step }}" min="{{ defaults.min_delta }}"
-        max="{{ defaults.max_delta }}" value="{{ defaults.delta_omega }}">
+<div class="demo row">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <label for="delta_omega">Bandwidth \(\Delta\omega\)</label>
+        <input id="delta_omega" type="number" step="{{ defaults.step }}" min="{{ defaults.min_delta }}"
+          max="{{ defaults.max_delta }}" value="{{ defaults.delta_omega }}">
+      </div>
+      <div>
+        <label for="omega0">Center frequency \(\omega_0\)</label>
+        <input id="omega0" type="number" step="{{ defaults.step }}" min="{{ defaults.min_omega0 }}"
+          max="{{ defaults.max_omega0 }}" value="{{ defaults.omega0 }}">
+      </div>
     </div>
-    <div>
-      <label for="omega0">Center frequency \(\omega_0\)</label>
-      <input id="omega0" type="number" step="{{ defaults.step }}" min="{{ defaults.min_omega0 }}"
-        max="{{ defaults.max_omega0 }}" value="{{ defaults.omega0 }}">
+    <div class="toolbar">
+      <button id="run">Update</button>
+      <button id="reset" type="button">Reset</button>
     </div>
   </div>
 
-  <img id="plot" alt="Ideal band-pass: frequency and time plots">
-</div>
 
+  <div class="card">
+    <img id="plot" alt="Ideal band-pass: frequency and time plots">
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
 <script>
   const $ = (id) => document.getElementById(id);
 
@@ -83,6 +78,12 @@
     $(id).addEventListener("input", send);
     $(id).addEventListener("change", send);
     $(id).addEventListener("keyup", e => { if (e.key === "Enter") send(); });
+  });
+  $("run").addEventListener("click", send);
+  $("reset").addEventListener("click", () => {
+    $("delta_omega").value = "{{ defaults.delta_omega }}";
+    $("omega0").value = "{{ defaults.omega0 }}";
+    send();
   });
 
   window.addEventListener("load", send);

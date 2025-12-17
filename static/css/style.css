@@ -689,7 +689,10 @@ form {
 label {
   display: block;
   margin-bottom: 8px;
-  font-weight: 500;
+  font-weight: bold;
+}
+input {
+  accent-color: var(--primary-color);
 }
 input[type="text"],
 input[type="number"],
@@ -697,13 +700,17 @@ input[type="file"],
 select {
   width: 100%;
   padding: 10px 14px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 1em;
 }
-input[type="radio"] {
-  accent-color: var(--primary-color);
+input[type="radio"] + label,
+input[type="checkbox"] + label {
+  display: inline-block;
+  font-weight: normal;
+  margin-bottom: 0;
+  margin-left: 4px;
 }
 button {
   background-color: var(--primary-color);
