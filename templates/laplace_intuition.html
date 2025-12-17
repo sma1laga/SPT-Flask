@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<style>
+  .laplace-hero {
+    background: radial-gradient(circle at 18% 15%, rgba(59, 130, 246, 0.14), transparent 32%),
+                radial-gradient(circle at 88% 20%, rgba(14, 165, 233, 0.16), transparent 30%),
+                #f7fbff;
+    color: #0f172a;
+    border-radius: 16px;
+    padding: 26px;
+    margin-bottom: 22px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  }
+  .laplace-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+  }
+  .laplace-card {
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e5e7eb;
+  }
+  .laplace-card h3 { margin-top: 0; color: #2563eb; }
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 16px;
+    align-items: end;
+  }
+  .control input {
+    width: 100%;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    background: #e0edff;
+    color: #1d4ed8;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    gap: 6px;
+  }
+  .equation-box {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    margin: 10px 0;
+    overflow-x: auto;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .mass-visual {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+  }
+  .spring {
+    flex: 1;
+    height: 18px;
+    background: repeating-linear-gradient(90deg, rgba(37,99,235,0.55), rgba(37,99,235,0.55) 12px, transparent 12px, transparent 24px);
+    border-radius: 10px;
+    position: relative;
+  }
+  .mass {
+    width: 58px;
+    height: 42px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+  }
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+  }
+  .status-item {
+    background: #f8fafc;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+  }
+
+  
+  /* Prevent long MathJax snippets from overlapping neighboring grid items */
+  .status-item > div { min-width: 0; }
+  .status-item .mjx-container { max-width: 100% !important; overflow-x: auto; overflow-y: hidden; display: block; }
+/* --- SVG animation (Laplace intuition) --- */
+  #ms-svg {
+    width: 100%;
+    height: 520px;
+    display: block;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  }
+  @media (max-width: 900px) { #ms-svg { height: 420px; } }
+  @media (max-width: 520px) { #ms-svg { height: 360px; } }
+
+  .laplace-span { grid-column: 1 / -1; }
+  .ms-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .ms-stage { margin-top: 6px; }
+  .ms-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ms-btn {
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #0f172a;
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  }
+  .ms-btn:hover { filter: brightness(0.98); }
+  .ms-btn--primary {
+    background: #2563eb;
+    border-color: #1d4ed8;
+    color: white;
+  }
+  .ms-speed {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
+  }
+  .ms-speed input { width: 160px; }
+  .ms-legend {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top:10px;
+    color:var(--subtext-color);
+    font-size:0.95rem;
+    flex-wrap: wrap;
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="laplace-hero">
+  <p class="pill" style="margin-bottom: 10px;">Continuous · Laplace Transform intuition</p>
+  <h1 style="margin: 0 0 8px; font-size: 1.9rem;">Forced mass–spring intuition through \(\mathcal{L}\{\cdot\}\)</h1>
+  <p style="max-width: 900px; color: var(--subtext-color);">
+    Explore how the Laplace domain captures the dynamics of a damped mass–spring system under harmonic forcing. Adjust
+    the physical parameters to see how pole locations, transient envelopes, and steady-state oscillations react. The plots update in
+    real-time so that the link between the differential equation and its transfer function stays tangible.
+  </p>
+  <div class="equation-box">
+    <p style="margin:0; color:#64748b; font-size:0.92rem;">General (normalized) form:</p>
+    <p id="ode-eq-generic" style="margin:0;">$$ \ddot x(t)+2\eta\,\omega_n\,\dot x(t)+\omega_n^2 x(t)=\frac{F_0}{m}\cos(\omega t) $$</p>
+    <p style="margin:10px 0 0; color:#64748b; font-size:0.92rem;">With your parameters:</p>
+    <p id="ode-eq" style="margin:0;">$$ m\,\ddot x(t)+\mu\,\dot x(t)+k\,x(t)=F_0 \cos(\omega t) $$</p>
+    <p id="laplace-eq" style="margin:0;">$$ X(s)=\dfrac{F_0 s}{(s^2+\omega^2)\,(m s^2+\mu s+k)} $$</p>
+  </div>
+  <p style="margin: 8px 0 0; color:#94a3b8; font-size:0.95rem;">
+    where \(\omega_n=\sqrt{k/m}\) and \(\eta=\frac{\mu}{2\sqrt{mk}}\) (same as the damping ratio \(\zeta\)).
+  </p>
+  <div class="status-grid" id="status-grid">
+    <div class="status-item"><strong>Natural frequency</strong><div id="freq-stat">\(\omega_n = 0\)</div></div>
+    <div class="status-item"><strong>Damping ratio</strong><div id="damping-stat">\(\zeta = 0\)</div></div>
+    <div class="status-item"><strong>Poles</strong><div id="poles-stat">\(s_{1,2}=0\)</div></div>
+    <div class="status-item"><strong>Transient time</strong><div id="transient-stat">\(T_{tr}\approx 0\)</div></div>
+    <div class="status-item"><strong>Response regime</strong><div id="regime-stat">Under-damped</div></div>
+  </div>
+</div>
+
+
+<div class="laplace-layout">
+  <div class="laplace-card laplace-span">
+    <div class="ms-header">
+      <div>
+        <h3 style="margin:0;">1 · Motion intuition</h3>
+        <p style="margin:6px 0 0; color:var(--subtext-color); max-width: 900px;">
+          Watch the mass move in real time while the Laplace plane shows <span style="color:#fbbf24;">system poles</span> and the
+          <span style="color:#fb7185;">driving frequency</span>. The bottom trace is “written” as time advances.
+        </p>
+      </div>
+
+      <div class="ms-controls" aria-label="Animation controls">
+        <button id="ms-playpause" class="ms-btn ms-btn--primary" type="button" aria-pressed="true">Pause</button>
+        <button id="ms-reset" class="ms-btn" type="button">Reset</button>
+        <label class="ms-speed" title="Playback speed">
+          <span style="color:var(--subtext-color); font-size:0.9rem;">Speed</span>
+          <input id="ms-speed" type="range" min="0.25" max="2.50" step="0.05" value="1.00" aria-label="Animation speed">
+          <span id="ms-speed-val" style="min-width:3.4em; text-align:right; color:#64748b; font-variant-numeric: tabular-nums;">1.00×</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="ms-stage">
+      <svg id="ms-svg" viewBox="0 0 760 320" role="img" aria-label="Mass–spring motion and Laplace intuition">
+        <defs>
+          <marker id="ms-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(226,232,240,0.9)"></path>
+          </marker>
+          <marker id="ms-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(251,113,133,0.95)"></path>
+          </marker>
+          <marker id="ms-arrow-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(34,211,238,0.95)"></path>
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="760" height="320" rx="18" fill="#0b1020"></rect>
+
+        <!-- Left: Laplace plane -->
+        <g id="ms-complex" transform="translate(18,18)">
+          <text x="0" y="14" fill="rgba(226,232,240,0.85)" font-size="13" font-family="ui-sans-serif, system-ui">Laplace plane (poles + input)</text>
+          <rect x="0" y="22" width="220" height="200" rx="14" fill="rgba(255,255,255,0.02)" stroke="rgba(226,232,240,0.12)"></rect>
+
+          <!-- axes -->
+          <line x1="110" y1="32" x2="110" y2="212" stroke="rgba(226,232,240,0.25)" stroke-width="1"></line>
+          <line x1="10" y1="122" x2="210" y2="122" stroke="rgba(226,232,240,0.25)" stroke-width="1"></line>
+          <text x="194" y="118" fill="rgba(226,232,240,0.55)" font-size="11">Re</text>
+          <text x="114" y="44" fill="rgba(226,232,240,0.55)" font-size="11">Im</text>
+
+          <!-- system poles -->
+          <circle id="ms-pole1" cx="110" cy="122" r="6" fill="rgba(251,191,36,0.95)"></circle>
+          <circle id="ms-pole2" cx="110" cy="122" r="6" fill="rgba(251,191,36,0.95)"></circle>
+
+          <!-- input frequency markers (jω) -->
+          <circle id="ms-inp1" cx="110" cy="122" r="5" fill="rgba(251,113,133,0.95)"></circle>
+          <circle id="ms-inp2" cx="110" cy="122" r="5" fill="rgba(251,113,133,0.95)"></circle>
+
+          <!-- natural mode phasor ~ e^^{(-σ + jω_d)t} -->
+          <line id="ms-phasor" x1="110" y1="122" x2="160" y2="122" stroke="rgba(34,211,238,0.95)" stroke-width="3" marker-end="url(#ms-arrow-cyan)"></line>
+          <text id="ms-phasor-text" x="12" y="232" fill="rgba(226,232,240,0.75)" font-size="12">phasor: exp((-σ + j·ωd)·t)</text>
+        </g>
+
+        <!-- Right: physical system -->
+        <g id="ms-physical" transform="translate(258,18)">
+          <text x="0" y="14" fill="rgba(226,232,240,0.85)" font-size="13" font-family="ui-sans-serif, system-ui">Mass–spring (driven + damped)</text>
+          <rect x="0" y="22" width="484" height="200" rx="14" fill="rgba(255,255,255,0.02)" stroke="rgba(226,232,240,0.12)"></rect>
+          <!-- driving field arrows (direction shows sign of F(t)) -->
+          <g id="ms-force-field" opacity="0.45">
+          <line id="ms-ff0" x1="60" y1="52" x2="86" y2="52" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff1" x1="120" y1="52" x2="146" y2="52" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff2" x1="180" y1="52" x2="206" y2="52" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff3" x1="240" y1="52" x2="266" y2="52" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff4" x1="300" y1="52" x2="326" y2="52" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff5" x1="360" y1="52" x2="386" y2="52" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff6" x1="60" y1="86" x2="86" y2="86" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff7" x1="120" y1="86" x2="146" y2="86" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff8" x1="180" y1="86" x2="206" y2="86" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff9" x1="240" y1="86" x2="266" y2="86" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff10" x1="300" y1="86" x2="326" y2="86" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff11" x1="360" y1="86" x2="386" y2="86" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff12" x1="60" y1="120" x2="86" y2="120" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff13" x1="120" y1="120" x2="146" y2="120" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff14" x1="180" y1="120" x2="206" y2="120" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff15" x1="240" y1="120" x2="266" y2="120" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff16" x1="300" y1="120" x2="326" y2="120" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          <line id="ms-ff17" x1="360" y1="120" x2="386" y2="120" stroke="rgba(251,113,133,0.55)" stroke-width="3" marker-end="url(#ms-arrow-red)"></line>
+          </g>
+
+          <!-- track + equilibrium -->
+          <line x1="18" y1="122" x2="468" y2="122" stroke="rgba(226,232,240,0.22)" stroke-width="2"></line>
+          <line id="ms-eq" x1="357" y1="42" x2="357" y2="212" stroke="rgba(34,211,238,0.35)" stroke-width="2" stroke-dasharray="6 6"></line>
+
+          <!-- wall -->
+          <rect x="18" y="70" width="12" height="104" fill="rgba(226,232,240,0.25)"></rect>
+
+          <!-- spring -->
+          <path id="ms-spring-path" d="M 30 122 L 180 122" stroke="rgba(226,232,240,0.90)" stroke-width="3" fill="none"></path>
+
+          <!-- mass -->
+          <rect id="ms-mass" x="320" y="92" width="74" height="60" rx="10" fill="rgba(59,130,246,0.95)" stroke="rgba(226,232,240,0.35)"></rect>
+          <text id="ms-mass-text" x="357" y="129" text-anchor="middle" fill="white" font-size="20" font-family="ui-sans-serif, system-ui" font-weight="700">m</text>
+
+          <!-- force arrow (pink) -->
+          <line id="ms-force" x1="357" y1="66" x2="420" y2="66" stroke="rgba(251,113,133,0.95)" stroke-width="4" marker-end="url(#ms-arrow-red)"></line>
+          <text x="22" y="66" fill="rgba(251,113,133,0.85)" font-size="12">F(t)</text>
+
+          <!-- damping arrow (opposes velocity) -->
+          <line id="ms-damp" x1="357" y1="190" x2="330" y2="190" stroke="rgba(226,232,240,0.55)" stroke-width="3" marker-end="url(#ms-arrow)"></line>
+          <text x="22" y="194" fill="rgba(226,232,240,0.70)" font-size="12">damping ~ -μẋ</text>
+
+          <text id="ms-readout" x="250" y="232" fill="rgba(226,232,240,0.80)" font-size="12">x(t)=0.00 m · v(t)=0.00 m/s</text>
+        </g>
+      
+        <!-- Bottom: time trace written as the mass moves -->
+        <g id="ms-trace" transform="translate(18,250)">
+          <text x="0" y="14" fill="rgba(226,232,240,0.85)" font-size="13" font-family="ui-sans-serif, system-ui">Time trace x(t)</text>
+          <rect x="0" y="22" width="724" height="52" rx="14" fill="rgba(255,255,255,0.02)" stroke="rgba(226,232,240,0.12)"></rect>
+          <line x1="18" y1="48" x2="706" y2="48" stroke="rgba(226,232,240,0.18)" stroke-width="1"></line>
+          <path id="ms-trace-path" d="M 18 48 L 20 48" stroke="rgba(34,211,238,0.95)" stroke-width="3" fill="none" stroke-linecap="round"></path>
+          <line id="ms-trace-cursor" x1="18" y1="24" x2="18" y2="72" stroke="rgba(251,113,133,0.55)" stroke-width="2"></line>
+          <circle id="ms-trace-dot" cx="18" cy="48" r="4.5" fill="rgba(34,211,238,0.95)"></circle>
+          <text id="ms-trace-readout" x="540" y="14" fill="rgba(226,232,240,0.75)" font-size="12">t=0.00 s · x(t)=0.000 m</text>
+        </g>
+
+      </svg>
+    </div>
+
+    <div class="ms-legend">
+      <span class="legend-dot" style="background:#fbbf24;"></span> poles
+      <span class="legend-dot" style="background:#fb7185;"></span> forcing (±jω) + driving arrows
+      <span class="legend-dot" style="background:#22d3ee;"></span> natural mode phasor
+      <span class="pill" id="mass-block" style="margin-left:auto;">m</span>
+    </div>
+  </div>
+
+  <div class="laplace-card">
+    <h3>2 · Physical knobs</h3>
+    <p style="margin-top:0; color:var(--subtext-color);">Tune the mechanical parameters and forcing to steer the poles of \(H(s)\) and the resulting motion.</p>
+    <div class="control-grid" id="control-grid">
+    </div>
+  </div>
+
+  <div class="laplace-card">
+    <h3>3 · Laplace structure</h3>
+    <p style="color:var(--subtext-color); margin-top:0;">
+      The Laplace transform turns the differential equation into algebra. The denominator of \(H(s)\) sets the <em>poles</em>
+      (how fast transients die and whether they oscillate), and the sinusoidal input introduces \(\pm j\omega\).
+    </p>
+    <div class="equation-box" id="transfer-box">$$ H(s) = \dfrac{X(s)}{F(s)} = \frac{1}{m s^2 + \mu s + k} $$</div>
+    <p style="margin: 8px 0 0; color:#94a3b8;">Tip: sweep \(\omega\) near \(\omega_n\) to feel resonance, then increase \(\mu\) to watch the pole real-part pull the envelope down.</p>
+  </div>
+</div>
+
+
+<div class="laplace-layout" style="margin-top:18px;">
+  <div class="laplace-card">
+    <h3>4 · Time-domain response</h3>
+    <div id="time-plot" style="height:320px;"></div>
+    <div style="display:flex; gap:10px; align-items:center; font-size:0.95rem; color:var(--subtext-color);">
+      <span class="legend-dot" style="background:#22d3ee;"></span> displacement \(x(t)\)
+      <span class="legend-dot" style="background:#fb7185;"></span> forcing \(F_0\cos(\omega t)\)
+    </div>
+  </div>
+  <div class="laplace-card">
+    <h3>5 · Pole portrait</h3>
+    <div id="pole-plot" style="height:320px;"></div>
+    <p style="margin:8px 0 0; color:var(--subtext-color);">Under-damped poles (complex conjugates) create decaying sinusoids. Critical damping pushes them to the real axis, and overdamping splits them apart.</p>
+  </div>
+</div>
+
+<div class="laplace-card" style="margin-top:18px;">
+  <h3>6 · What “transient time” really means (and why poles matter)</h3>
+  <p style="color:var(--subtext-color); margin-top:0;">
+    The transient is the part of the motion caused by initial conditions (and any mismatch before steady state). In Laplace terms,
+    it is governed by the <strong>poles</strong> of the system denominator.
+  </p>
+  <ul style="margin:10px 0 0 18px; color:var(--subtext-color); line-height:1.6;">
+    <li>If the poles are \(s_{1,2}=\sigma\pm j\omega_d\) (underdamped), then the transient behaves like
+      \(x_{tr}(t)\propto e^{\sigma t}\cos(\omega_d t+\phi)\). The <strong>real part</strong> \(\sigma\) sets the decay speed, the <strong>imaginary part</strong> \(\omega_d\) sets the ringing frequency.</li>
+    <li><strong>Transient time</strong> is essentially “how long until \(e^{\sigma t}\) is small.” A practical rule:
+      \(T_{tr}\approx 4/|\sigma|\) (≈2% left) or \(T_{tr}\approx 5/|\sigma|\) (≈0.7% left).</li>
+    <li>Poles closer to the imaginary axis (\(\sigma\to 0^{-}\)) \(\Rightarrow\) slow decay \(\Rightarrow\) long ringing.
+      Poles further left (more negative \(\sigma\)) \(\Rightarrow\) fast decay \(\Rightarrow\) short transient.</li>
+    <li>The forcing \(\cos(\omega t)\) contributes the factor \(\frac{s}{s^2+\omega^2}\), i.e. “energy” at \(\pm j\omega\).
+      The steady-state amplitude is controlled by \(H(j\omega)\) and becomes large near resonance.</li>
+  </ul>
+  <p style="margin:10px 0 0; color:#94a3b8;">
+    Try it: make \(\mu\) small → you’ll see long ringing (poles move toward the imaginary axis). Increase \(\mu\) → poles move left and \(T_{tr}\) shrinks.
+  </p>
+</div>
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/laplace_intuition.js') }}"></script>
+{% endblock %}
