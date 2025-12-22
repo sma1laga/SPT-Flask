@@ -17,32 +17,38 @@
   </div>
 
   <style>
-    .wide-container{max-width:1480px}
-    .page-header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
-    .chip-row{display:flex;gap:10px;flex-wrap:wrap}
-    .demo-grid {display:flex;flex-direction:column;gap:24px;align-items:stretch;margin-top:18px}
-    .control-card, .plot-card {border:1px solid #d9dfe7;border-radius:14px;padding:18px;box-shadow:0 8px 22px rgba(0,0,0,0.06);background:white}
-    .control-card h3{margin-top:0;margin-bottom:12px;font-size:1.1rem}
-    .kv-row{display:grid;grid-template-columns:120px 1fr 62px;gap:10px;align-items:center;margin:6px 0}
-    .kv-row label{font-weight:600;font-size:0.95rem}
-    .kv-row input[type=range]{width:100%}
-    .inline-note{color:#4b5563;font-size:0.92rem;margin-top:6px}
-    .control-grid{display:grid;gap:8px}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.9rem}
+    .wide-container{max-width:1280px;padding:0 16px}
+    .page-header{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-start}
+    .page-header h1{margin:0;font-size:1.8rem;line-height:1.25}
+    .page-header p{margin:6px 0 0;font-size:0.95rem;color:#4b5563;max-width:880px}
+    .chip-row{display:flex;gap:8px;flex-wrap:wrap}
+    .demo-grid {display:grid;grid-template-columns:minmax(280px,340px) 1fr;grid-template-areas:"controls plot" "summary plot";gap:12px;align-items:start;margin-top:12px}
+    .control-card, .plot-card, .summary-card {border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 6px 16px rgba(0,0,0,0.05);background:white}
+    .control-card{grid-area:controls}
+    .plot-card{grid-area:plot}
+    .summary-card{grid-area:summary}
+    .kv-row{display:grid;grid-template-columns:110px 1fr 52px;gap:8px;align-items:center;margin:2px 0}
+    .kv-row label{font-weight:600;font-size:0.9rem;color:#111827}
+    .kv-row input[type=range]{width:100%;height:6px}
+    .inline-note{color:#4b5563;font-size:0.88rem;margin-top:4px}
+    .control-grid{display:grid;gap:6px}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.85rem;line-height:1}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
-    .error{color:#b91c1c;font-weight:600;margin-top:8px}
-    .plot-wrapper{min-height:860px}
-    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:12px;margin-bottom:8px}
-    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
-    .summary-label{font-size:0.85rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
-    .summary-value{font-size:1.05rem;font-weight:700;color:#111827}
+    .error{color:#b91c1c;font-weight:600;margin-top:6px}
+    .plot-wrapper{min-height:580px}
+    .summary-card{display:grid;gap:8px}
+    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+    .summary-label{font-size:0.8rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
+    .summary-value{font-size:0.98rem;font-weight:700;color:#111827}
     .summary-value.accent{color:#2563eb}
     .summary-value.strong{color:#16a34a}
-    .latex-title{font-size:1.08rem;font-weight:700;text-align:left;margin:4px 2px 2px;color:#0f172a}
-    .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:6px 2px 10px;font-weight:600;color:#111827;font-size:0.98rem}
+    .latex-title{font-size:0.96rem;font-weight:700;text-align:left;margin:2px 0;color:#0f172a}
+    .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:4px 0 8px;font-weight:600;color:#111827;font-size:0.92rem}
     .subplot-label{text-align:left}
     body.dark-mode .control-card,
-    body.dark-mode .plot-card{
+    body.dark-mode .plot-card,
+    body.dark-mode .summary-card{
       background: var(--card-background);
       border-color: var(--border-color);
       color: var(--text-color);
@@ -69,7 +75,8 @@
       color:#e5e7eb;
       border-color:#3a4250;
     }
-    @media(max-width:1100px){.plot-wrapper{min-height:680px}}
+    @media(max-width:1180px){.demo-grid{grid-template-columns:1fr;grid-template-areas:"controls" "summary" "plot"}}
+    @media(max-width:1100px){.plot-wrapper{min-height:520px}}
   </style>
 
   <div class="demo-grid">
@@ -92,11 +99,16 @@
     <div class="plot-card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
-        <div id="probability" class="inline-note"></div>
+      <div id="probability" class="inline-note"></div>
       </div>
       <div id="plot-title" class="latex-title" aria-live="polite"></div>
       <div id="subplot-labels" class="subplot-labels" aria-hidden="true"></div>
-      <div class="summary-strip" aria-live="polite">
+      <div id="plot" class="plot-wrapper"></div>
+    </div>
+
+    <div class="summary-card" aria-live="polite">
+      <div class="pill pill-subtle"><i class="fa fa-table"></i>Distribution Summary</div>
+      <div class="summary-strip">
         <div class="summary-item">
           <div class="summary-label">Distribution</div>
           <div id="dist-label" class="summary-value accent">Uniform</div>
@@ -114,7 +126,6 @@
           <div id="prob-chip" class="summary-value strong">—</div>
         </div>
       </div>
-      <div id="plot" class="plot-wrapper"></div>
     </div>
   </div>
 </div>
@@ -318,9 +329,9 @@
 
     const layout = {
       grid: { rows: 2, columns: 2, pattern: 'independent' },
-      height: 880,
-      margin: { l: 60, r: 10, t: 70, b: 50 },
-      legend: { orientation: 'h', y: -0.08 },
+      height: 660,
+      margin: { l: 56, r: 8, t: 48, b: 42 },
+      legend: { orientation: 'h', y: -0.1, font: { size: 10 } },
       xaxis: { title: '$x$' },
       yaxis: { title: '$F_X(x)$', rangemode: 'tozero' },
       xaxis2: { title: '$x$' },
