@@ -74,6 +74,27 @@ document.addEventListener("DOMContentLoaded", function() {
       sidebar.classList.toggle("active");
     });
   }
+  // StatsIP demo sidebar collapse toggle (desktop)
+  const statsipToggle = document.getElementById("statsip-sidebar-toggle");
+  if (statsipToggle && document.body.classList.contains("statsip-demo")) {
+    const STORAGE_KEY = "statsipSidebarCollapsed";
+
+    const applyStatsipSidebarState = (isCollapsed) => {
+      document.body.classList.toggle("statsip-sidebar-collapsed", isCollapsed);
+      statsipToggle.setAttribute("aria-expanded", (!isCollapsed).toString());
+      statsipToggle.querySelector("i")?.classList.toggle("fa-angle-double-right", isCollapsed);
+      statsipToggle.querySelector("i")?.classList.toggle("fa-angle-double-left", !isCollapsed);
+    };
+
+    const initialCollapsed = localStorage.getItem(STORAGE_KEY) === "true";
+    applyStatsipSidebarState(initialCollapsed);
+
+    statsipToggle.addEventListener("click", () => {
+      const next = !document.body.classList.contains("statsip-sidebar-collapsed");
+      applyStatsipSidebarState(next);
+      localStorage.setItem(STORAGE_KEY, next ? "true" : "false");
+    });
+  }
 
   // Mobile navigation toggle
   const navToggle = document.querySelector(".nav-toggle");

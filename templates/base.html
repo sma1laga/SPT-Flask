@@ -31,6 +31,9 @@
 {% if request.cookies.get('darkMode') == 'true' %}
   {% set _ = body_classes.append('dark-mode') %}
 {% endif %}
+{% if is_statsip_demo|default(false) %}
+  {% set _ = body_classes.append('statsip-demo') %}
+{% endif %}
 <body{% if body_classes %} class="{{ body_classes | join(' ') }}"{% endif %}>
   <div class="outer-wrapper">
     <!-- HEADER -->
@@ -73,6 +76,16 @@
     {% set is_discrete = request.path.startswith('/discrete') or request.path.startswith('/inverse_z') %}
     <div class="content-wrapper" style="display:flex;">
       <button id="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i> Menu</button>
+        {% if is_statsip_demo %}
+        <button id="statsip-sidebar-toggle"
+                class="sidebar-collapse-btn"
+                type="button"
+                aria-expanded="true">
+          <i class="fas fa-angle-double-left" aria-hidden="true"></i>
+          <span class="label-expanded">Collapse sidebar</span>
+          <span class="label-collapsed">Show sidebar</span>
+        </button>
+        {% endif %}
         <aside class="sidebar modern-sidebar">
           {% if is_demos %}
             <h3>{{ demos_section_name or "Demos" }}</h3>

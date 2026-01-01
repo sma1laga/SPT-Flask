@@ -133,6 +133,7 @@ def create_app():
             "demos_sidebar": DEMOS,
             "demos_section": section_data,
             "demos_section_name": section_name,
+            "is_statsip_demo": section_name == "Statistical Signal Processing",
         }
 
     @app.errorhandler(Exception)
