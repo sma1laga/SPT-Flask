@@ -18,13 +18,13 @@
   </div>
 
   <style>
-    .wide-container{max-width:1250px}
+    .wide-container{max-width:1360px}
     .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
     .chip-row{display:flex;gap:8px;flex-wrap:wrap}
     .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.86rem}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
     .card{border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white}
-    .stack{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+    .layout-grid{display:grid;grid-template-columns:minmax(340px,380px) 1fr;gap:14px;margin-top:12px;align-items:start}
     .control-group{display:grid;gap:8px;margin-top:6px}
     .kv-row{display:grid;grid-template-columns:140px 1fr 70px;align-items:center;gap:10px}
     .kv-row label{font-weight:600;font-size:0.95rem}
@@ -32,12 +32,13 @@
     .kv-row input[type=number]{width:100%;padding:6px;border:1px solid #d1d5db;border-radius:8px}
     .toggle-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-weight:600;color:#1f2937}
     .formula-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:10px;font-size:0.95rem;line-height:1.5}
-    .plot-wrapper{height:640px;width:100%}
+    .plot-wrapper{height:560px;width:100%}
     .subtitle{margin:2px 0 8px;color:#475569;font-size:0.95rem}
     .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:8px}
     .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
     .summary-label{font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
     .summary-value{font-size:0.98rem;font-weight:700;color:#111827}
+    .control-card .subtitle{margin-bottom:4px}
     body.dark-mode .pill{background:rgba(96,165,250,0.15);color:#dbeafe;}
     body.dark-mode .kv-row label,
     body.dark-mode .subtitle,
@@ -52,11 +53,14 @@
     body.dark-mode #formula{color:#e8edf5;}
     body.dark-mode .summary-item{background:#1f2733;border-color:#3a4250;}
     body.dark-mode .summary-label{color:#cbd5e1;}
+    @media(max-width:1300px){
+      .layout-grid{grid-template-columns:1fr}
+    }
     @media(max-width:1100px){.plot-wrapper{height:520px}}
   </style>
 
-  <div class="stack">
-    <div class="card">
+  <div class="layout-grid">
+    <div class="card control-card">
       <div class="pill" style="margin-bottom:4px;"><i class="fa fa-sliders"></i>Controls</div>
       <p class="subtitle">Drag the sliders or enter values to highlight a parameter in the joint PDF.</p>
       <div class="control-group">

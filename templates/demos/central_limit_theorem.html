@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container wide-container">
+<div class="container wide-container clt-layout">
   <div class="page-header">
     <div>
       <h1>Central Limit Theorem</h1>
@@ -16,28 +16,36 @@
   </div>
 
   <style>
-    .wide-container{max-width:1200px}
-    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
+    .clt-layout{max-width:1240px;padding:4px 8px}
+    body.statsip-sidebar-collapsed .clt-layout{max-width:calc(100vw - 32px)}
+    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:4px}
+    .page-header h1{margin-bottom:6px}
     .chip-row{display:flex;gap:8px;flex-wrap:wrap}
     .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.86rem}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
-    .demo-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
-    .card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
-    .kv-row{display:grid;grid-template-columns:120px 1fr 64px;gap:8px;align-items:center;margin:6px 0}
+    .demo-grid{display:grid;grid-template-columns:minmax(310px,340px) 1fr;gap:14px;align-items:start}
+    body.statsip-sidebar-collapsed .demo-grid{grid-template-columns:320px 1fr}
+    .card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+    .kv-row{display:grid;grid-template-columns:118px 1fr 58px;gap:8px;align-items:center;margin:4px 0}
     .kv-row label{font-weight:600;font-size:0.95rem}
     .kv-row input,.kv-row select{width:100%}
-    .cta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .cta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
     .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.25)}
     .btn-primary:disabled{opacity:0.6;cursor:not-allowed}
     .error{color:#b91c1c;font-weight:600;min-height:20px;margin-top:4px}
     .inline-note{color:#4b5563;font-size:0.9rem;margin-top:4px}
-    .plot-card{display:flex;flex-direction:column;gap:10px}
-    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-    .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
-    .stat-label{font-size:0.8rem;color:#6b7280;font-weight:700;letter-spacing:0.03em;text-transform:uppercase}
-    .stat-value{font-size:1.05rem;font-weight:800;color:#0f172a}
-    #clt-plot{width:100%;height:520px}
-    @media(max-width:1100px){.demo-grid{grid-template-columns:1fr}.kv-row{grid-template-columns:120px 1fr 48px}}
+    .plot-card{display:flex;flex-direction:column;gap:8px}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+    .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px}
+    .stat-label{font-size:0.78rem;color:#6b7280;font-weight:700;letter-spacing:0.03em;text-transform:uppercase}
+    .stat-value{font-size:1.02rem;font-weight:800;color:#0f172a}
+    #clt-plot{width:100%;height:440px;min-height:360px}
+    @media(max-width:1100px){
+      .clt-layout{padding:6px 4px}
+      .demo-grid{grid-template-columns:1fr}
+      .kv-row{grid-template-columns:112px 1fr 48px}
+      #clt-plot{height:400px}
+    }
   </style>
 
   <div class="demo-grid">
@@ -225,18 +233,21 @@
     }));
 
     const layout = {
-      margin: { t: 40, r: 20, l: 55, b: 45 },
+      height: 430,
+      margin: { t: 30, r: 14, l: 55, b: 38 },
       xaxis: { title: 'x', zeroline: true },
       yaxis: { title: 'Probability density', rangemode: 'tozero' },
-      legend: { orientation: 'h', x: 0, y: 1.08 },
+      legend: { orientation: 'h', x: 0, y: 1.04 },
       sliders: [{
-        pad: { t: 16 },
-        currentvalue: { prefix: 'Summands: ', visible: true },
+        pad: { t: 8, b: 0 },
+        currentvalue: { prefix: 'Summands: ', visible: true, font: { size: 12 } },
         steps: sliderSteps
       }],
       updatemenus: [{
         type: 'buttons',
-        pad: { r: 10, t: 8 },
+        pad: { r: 6, t: 2 },
+        x: 0.52,
+        y: 1.15,
         buttons: [
           { label: 'Play', method: 'animate', args: [null, { fromcurrent: true, frame: { duration: 450, redraw: true }, transition: { duration: 250 } }] },
           { label: 'Pause', method: 'animate', args: [[null], { mode: 'immediate', frame: { duration: 0, redraw: false }, transition: { duration: 0 } }] }
@@ -244,7 +255,7 @@
       }]
     };
 
-    Plotly.newPlot(plotEl, frames[0].data, layout, {responsive: true}).then(() => {
+    Plotly.newPlot(plotEl, frames[0].data, layout, {responsive: true, displaylogo: false}).then(() => {
       Plotly.addFrames(plotEl, frames);
       updateStats(steps[0]);
       frameLabel.textContent = `Start: 1 variable${steps.length > 1 ? 's' : ''}`;

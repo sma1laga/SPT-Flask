@@ -17,34 +17,36 @@
   </div>
 
   <style>
-    .wide-container{max-width:1280px;padding:0 16px}
-    .page-header{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-start}
-    .page-header h1{margin:0;font-size:1.8rem;line-height:1.25}
-    .page-header p{margin:6px 0 0;font-size:0.95rem;color:#4b5563;max-width:880px}
+    .wide-container{max-width:1180px;padding:0 10px}
+    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:4px}
+    .page-header h1{margin:0;font-size:1.72rem;line-height:1.2}
+    .page-header p{margin:4px 0 0;font-size:0.93rem;color:#4b5563;max-width:860px}
     .chip-row{display:flex;gap:8px;flex-wrap:wrap}
-    .demo-grid {display:grid;grid-template-columns:minmax(280px,340px) 1fr;grid-template-areas:"controls plot" "summary plot";gap:12px;align-items:start;margin-top:12px}
-    .control-card, .plot-card, .summary-card {border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 6px 16px rgba(0,0,0,0.05);background:white}
+    .demo-grid {display:grid;grid-template-columns:minmax(270px,320px) 1fr;grid-template-areas:"controls plot" "summary plot";gap:10px;align-items:start;margin-top:10px}
+    .control-card, .plot-card, .summary-card {border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,0.05);background:white}
     .control-card{grid-area:controls}
-    .plot-card{grid-area:plot}
+    .plot-card{grid-area:plot;display:flex;flex-direction:column;gap:8px}
     .summary-card{grid-area:summary}
-    .kv-row{display:grid;grid-template-columns:110px 1fr 52px;gap:8px;align-items:center;margin:2px 0}
+    .kv-row{display:grid;grid-template-columns:104px 1fr 54px;gap:6px;align-items:center;margin:1px 0}
     .kv-row label{font-weight:600;font-size:0.9rem;color:#111827}
-    .kv-row input[type=range]{width:100%;height:6px}
+    .kv-row input[type=range]{width:100%;height:5px}
     .inline-note{color:#4b5563;font-size:0.88rem;margin-top:4px}
-    .control-grid{display:grid;gap:6px}
+    .control-grid{display:grid;gap:5px}
     .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.85rem;line-height:1}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
     .error{color:#b91c1c;font-weight:600;margin-top:6px}
-    .plot-wrapper{min-height:580px}
+    .plot-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+    .plot-meta{display:flex;align-items:center;gap:10px}
+    .plot-wrapper{height:clamp(500px,60vh,680px);min-height:500px;width:100%}
     .summary-card{display:grid;gap:8px}
-    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
-    .summary-label{font-size:0.8rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
-    .summary-value{font-size:0.98rem;font-weight:700;color:#111827}
+    .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 9px;display:flex;flex-direction:column;gap:2px}
+    .summary-label{font-size:0.78rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
+    .summary-value{font-size:0.96rem;font-weight:700;color:#111827}
     .summary-value.accent{color:#2563eb}
     .summary-value.strong{color:#16a34a}
-    .latex-title{font-size:0.96rem;font-weight:700;text-align:left;margin:2px 0;color:#0f172a}
-    .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:4px 0 8px;font-weight:600;color:#111827;font-size:0.92rem}
+    .latex-title{font-size:0.95rem;font-weight:700;text-align:left;margin:0;color:#0f172a}
+    .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 6px;font-weight:600;color:#111827;font-size:0.9rem}
     .subplot-label{text-align:left}
     body.dark-mode .control-card,
     body.dark-mode .plot-card,
@@ -76,7 +78,7 @@
       border-color:#3a4250;
     }
     @media(max-width:1180px){.demo-grid{grid-template-columns:1fr;grid-template-areas:"controls" "summary" "plot"}}
-    @media(max-width:1100px){.plot-wrapper{min-height:520px}}
+    @media(max-width:1100px){.plot-wrapper{height:clamp(400px,54vh,520px)}}
   </style>
 
   <div class="demo-grid">
@@ -97,9 +99,11 @@
     </div>
 
     <div class="plot-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="plot-header">
         <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
-      <div id="probability" class="inline-note"></div>
+        <div class="plot-meta">
+          <div id="probability" class="inline-note"></div>
+        </div>
       </div>
       <div id="plot-title" class="latex-title" aria-live="polite"></div>
       <div id="subplot-labels" class="subplot-labels" aria-hidden="true"></div>
@@ -327,20 +331,24 @@
       { x, y: cond_pdf, mode: 'lines', name: 'f_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x4', yaxis: 'y4' },
     ];
 
+    const box = plotEl.getBoundingClientRect();
+    const measuredHeight = box.height || plotEl.clientHeight || 0;
+    const plotHeight = Math.max(520, Math.min(measuredHeight || 0, 720)) || 560;
+
     const layout = {
       grid: { rows: 2, columns: 2, pattern: 'independent' },
-      height: 660,
-      margin: { l: 56, r: 8, t: 48, b: 42 },
-      legend: { orientation: 'h', y: -0.1, font: { size: 10 } },
-      xaxis: { title: '$x$' },
-      yaxis: { title: '$F_X(x)$', rangemode: 'tozero' },
-      xaxis2: { title: '$x$' },
-      yaxis2: { title: '$F_{X|A}(x)$', rangemode: 'tozero' },
-      xaxis3: { title: '$x$' },
-      yaxis3: { title: '$f_X(x)$', rangemode: 'tozero' },
-      xaxis4: { title: '$x$' },
-      yaxis4: { title: '$f_{X|A}(x)$', rangemode: 'tozero' },
-      title: { text: `${title}: F_X(x), F_{X|A}(x), f_X(x), f_{X|A}(x)`, x: 0.02 },
+      height: plotHeight,
+      margin: { l: 44, r: 10, t: 32, b: 32 },
+      legend: { orientation: 'h', y: -0.22, font: { size: 10 } },
+      xaxis: { title: '$x$', automargin: true },
+      yaxis: { title: '$F_X(x)$', rangemode: 'tozero', automargin: true },
+      xaxis2: { title: '$x$', automargin: true },
+      yaxis2: { title: '$F_{X|A}(x)$', rangemode: 'tozero', automargin: true },
+      xaxis3: { title: '$x$', automargin: true },
+      yaxis3: { title: '$f_X(x)$', rangemode: 'tozero', automargin: true },
+      xaxis4: { title: '$x$', automargin: true },
+      yaxis4: { title: '$f_{X|A}(x)$', rangemode: 'tozero', automargin: true },
+      title: { text: `${title}: F_X(x), F_{X|A}(x), f_X(x), f_{X|A}(x)`, x: 0.005, font: { size: 14 } },
       paper_bgcolor: 'white',
       plot_bgcolor: '#f8fafc',
       shapes: [

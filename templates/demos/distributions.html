@@ -16,11 +16,12 @@
   </div>
 
   <style>
-    .wide-container{max-width:1100px}
-    .page-header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+    .wide-container{max-width:1320px}
+    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
     .chip-row{display:flex;gap:10px;flex-wrap:wrap}
-    .demo-grid{display:grid;grid-template-columns:1fr;gap:20px;align-items:start;margin-top:10px}
-    .card{border:1px solid #d9dfe7;border-radius:14px;padding:18px;box-shadow:0 8px 22px rgba(0,0,0,0.06);background:white}
+    .demo-grid{display:grid;grid-template-columns:minmax(320px,360px) 1fr;gap:16px;align-items:start;margin-top:4px}
+    .card{border:1px solid #d9dfe7;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,0.06);background:white;height:100%;display:flex;flex-direction:column;gap:10px}
+    .card.card-plot{gap:12px}
     .card h3{margin-top:0;font-size:1.1rem;margin-bottom:12px}
     .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.9rem}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
@@ -28,17 +29,18 @@
     .kv-row label{font-weight:600;font-size:0.95rem}
     .kv-row input[type=range]{width:100%}
     .control-grid{display:grid;gap:8px}
-    .inline-note{color:#4b5563;font-size:0.92rem;margin-top:6px}
+    .inline-note{color:#4b5563;font-size:0.92rem;margin-top:4px}
     .error{color:#b91c1c;font-weight:700;margin-top:10px}
-    .plots-wrapper{min-height:640px}
-    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+    .plots-wrapper{height:clamp(360px,45vh,480px)}
+    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:6px 0 4px}
     .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px}
     .summary-label{font-size:0.82rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
     .summary-value{font-size:1.05rem;font-weight:700;color:#0f172a}
     .summary-value.accent{color:#2563eb}
     .summary-value.subtle{color:#4b5563;font-weight:600;font-size:0.98rem}
-    .formula-block{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-top:10px}
-    .formula-block h4{margin:0 0 6px;font-size:1rem}
+    .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:2px}
+    .formula-block{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px;height:100%}
+    .formula-block h4{margin:0 0 4px;font-size:0.98rem}
     .toggle-row{display:flex;align-items:center;gap:10px;margin:8px 0}
     .toggle-row input{width:18px;height:18px}
     body.dark-mode .card{background:var(--card-background);border-color:var(--border-color);color:var(--text-color);box-shadow:none;}
@@ -59,7 +61,10 @@
       color:#e5e7eb;
       border-color:#3a4250;
     }
-    @media(max-width:1160px){.demo-grid{grid-template-columns:1fr}.plots-wrapper{min-height:640px}}
+    @media(max-width:1240px){
+      .demo-grid{grid-template-columns:1fr}
+      .plots-wrapper{height:clamp(360px,52vh,520px)}
+    }
   </style>
 
   <div class="demo-grid">
@@ -92,37 +97,39 @@
       <div id="error" class="error" aria-live="polite"></div>
     </div>
 
-    <div class="card">
+    <div class="card card-plot">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
         <div id="dist-kind" class="inline-note"></div>
       </div>
       <div class="plots-wrapper" id="plot"></div>
-      <div class="summary">
-        <div class="summary-item">
-          <div class="summary-label">Distribution</div>
-          <div id="dist-label" class="summary-value accent">Normal</div>
+      <div class="meta-grid">
+        <div class="summary">
+          <div class="summary-item">
+            <div class="summary-label">Distribution</div>
+            <div id="dist-label" class="summary-value accent">Normal</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Support</div>
+            <div id="support-label" class="summary-value">(-∞, ∞)</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Mean</div>
+            <div id="mean-label" class="summary-value">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Variance</div>
+            <div id="var-label" class="summary-value">1.00</div>
+          </div>
         </div>
-        <div class="summary-item">
-          <div class="summary-label">Support</div>
-          <div id="support-label" class="summary-value">(-∞, ∞)</div>
+        <div class="formula-block">
+          <h4>PDF</h4>
+          <div id="pdf-formula">\( f_X(x) = \dots \)</div>
         </div>
-        <div class="summary-item">
-          <div class="summary-label">Mean</div>
-          <div id="mean-label" class="summary-value">0.00</div>
+        <div class="formula-block">
+          <h4>CDF</h4>
+          <div id="cdf-formula">\( F_X(x) = \dots \)</div>
         </div>
-        <div class="summary-item">
-          <div class="summary-label">Variance</div>
-          <div id="var-label" class="summary-value">1.00</div>
-        </div>
-      </div>
-      <div class="formula-block">
-        <h4>PDF</h4>
-        <div id="pdf-formula">\( f_X(x) = \dots \)</div>
-      </div>
-      <div class="formula-block">
-        <h4>CDF</h4>
-        <div id="cdf-formula">\( F_X(x) = \dots \)</div>
       </div>
     </div>
   </div>
@@ -342,10 +349,11 @@
       yaxis: 'y2',
     };
 
+    const calculatedHeight = Math.max(360, Math.min(520, plotEl.clientHeight || 440));
     const layout = {
       grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
       margin: { t: 30, r: 10, l: 55, b: 55 },
-      height: 620,
+      height: calculatedHeight,
       showlegend: false,
       xaxis: { title: 'x', zeroline: true },
       yaxis: { title: 'f_X(x)', rangemode: 'tozero' },

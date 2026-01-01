@@ -22,9 +22,10 @@
     .chip-row{display:flex;gap:8px;flex-wrap:wrap}
     .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#0f3b64;font-weight:700;font-size:0.9rem}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
-    .demo-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
-    .card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
-    .kv-row{display:grid;grid-template-columns:150px 1fr 68px;gap:8px;align-items:center;margin:8px 0}
+    .demo-grid{display:grid;grid-template-columns:320px 1fr;gap:12px;align-items:start}
+    .stacked-column{display:grid;gap:12px;align-content:start}
+    .card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+    .kv-row{display:grid;grid-template-columns:140px 1fr 60px;gap:6px;align-items:center;margin:6px 0}
     .kv-row label{font-weight:700;font-size:0.95rem}
     .kv-row input,.kv-row select{width:100%}
     .kv-row small{color:#6b7280}
@@ -34,16 +35,18 @@
     .btn-primary:disabled,.btn-secondary:disabled{opacity:0.6;cursor:not-allowed}
     .error{color:#b91c1c;font-weight:700;min-height:20px;margin-top:6px}
     .inline-note{color:#4b5563;font-size:0.9rem}
-    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
     .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
     .stat-label{font-size:0.78rem;color:#6b7280;font-weight:800;letter-spacing:0.04em;text-transform:uppercase}
     .stat-value{font-size:1.08rem;font-weight:800;color:#0f172a}
-    .controls-block{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-bottom:8px}
+    .controls-block{display:grid;grid-template-columns:1fr;gap:10px}
     .controls-block .card{padding:10px 12px}
-    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px}
+    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
     .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:6px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
     .plot-box h4{margin:4px 8px;font-size:0.95rem;color:#111827;display:flex;align-items:center;gap:6px}
-    .plot{width:100%;height:260px}
+    .plot{width:100%;height:200px}
+    .stats-card .stat-value{font-size:0.98rem}
+    @media(max-width:1250px){.demo-grid{grid-template-columns:1fr}}
     @media(max-width:1100px){.kv-row{grid-template-columns:150px 1fr 60px}}
 
     body.dark-mode .card{background:#0b1628;border-color:#1f2937;box-shadow:0 6px 16px rgba(0,0,0,0.35)}
@@ -60,63 +63,121 @@
   </style>
 
   <div class="demo-grid">
-    <div class="controls-block">
-      <div class="card">
-        <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Signal setup</div>
-        <div class="kv-row">
-          <label for="signal-type">Signal type</label>
-          <select id="signal-type">
-            <option value="audio">Audio (speech/music/noise)</option>
-            <option value="ar-noise">AR(1) noise</option>
-            <option value="random-amplitude-sine">Random amplitude sine</option>
-            <option value="random-phase-sine">Random phase sine</option>
-          </select>
-          <div></div>
+    <div class="stacked-column">
+      <div class="controls-block">
+        <div class="card">
+          <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Signal setup</div>
+          <div class="kv-row">
+            <label for="signal-type">Signal type</label>
+            <select id="signal-type">
+              <option value="audio">Audio (speech/music/noise)</option>
+              <option value="ar-noise">AR(1) noise</option>
+              <option value="random-amplitude-sine">Random amplitude sine</option>
+              <option value="random-phase-sine">Random phase sine</option>
+            </select>
+            <div></div>
+          </div>
+          <div class="kv-row">
+            <label for="weights-toggle">Custom weights?</label>
+            <input type="checkbox" id="weights-toggle">
+            <small>toggle edit</small>
+          </div>
+          <div class="kv-row">
+            <label for="w1">Weight 1</label>
+            <input type="number" id="w1" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[0]) }}" disabled>
+            <small>probability</small>
+          </div>
+          <div class="kv-row">
+            <label for="w2">Weight 2</label>
+            <input type="number" id="w2" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[1]) }}" disabled>
+            <small>probability</small>
+          </div>
+          <div class="kv-row">
+            <label for="w3">Weight 3</label>
+            <input type="number" id="w3" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[2]) }}" disabled>
+            <small>probability</small>
+          </div>
+          <div class="cta-row">
+            <button id="run" class="btn-primary"><i class="fa fa-refresh"></i> Generate</button>
+            <span id="weight-sum" class="inline-note"></span>
+          </div>
+          <div id="error" class="error" aria-live="polite"></div>
         </div>
-        <div class="kv-row">
-          <label for="weights-toggle">Custom weights?</label>
-          <input type="checkbox" id="weights-toggle">
-          <small>toggle edit</small>
+
+        <div class="card">
+          <div class="pill" style="margin-bottom:8px"><i class="fa fa-play"></i>Playback</div>
+          <div class="kv-row">
+            <label for="window-ms">Window size</label>
+            <input type="range" id="window-ms" min="200" max="1200" step="50" value="500">
+            <span id="window-ms-val">500 samples</span>
+          </div>
+          <div class="kv-row">
+            <label for="step-size">Step</label>
+            <input type="range" id="step-size" min="10" max="400" step="10" value="100">
+            <span id="step-size-val">100 samples</span>
+          </div>
+          <div class="cta-row">
+            <button id="play" class="btn-primary"><i class="fa fa-play"></i> Play</button>
+            <button id="pause" class="btn-secondary"><i class="fa fa-pause"></i> Pause</button>
+            <button id="stop" class="btn-secondary"><i class="fa fa-stop"></i> Stop</button>
+            <span class="inline-note">Disables source/weights during playback, like MATLAB.</span>
+          </div>
         </div>
-        <div class="kv-row">
-          <label for="w1">Weight 1</label>
-          <input type="number" id="w1" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[0]) }}" disabled>
-          <small>probability</small>
-        </div>
-        <div class="kv-row">
-          <label for="w2">Weight 2</label>
-          <input type="number" id="w2" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[1]) }}" disabled>
-          <small>probability</small>
-        </div>
-        <div class="kv-row">
-          <label for="w3">Weight 3</label>
-          <input type="number" id="w3" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[2]) }}" disabled>
-          <small>probability</small>
-        </div>
-        <div class="cta-row">
-          <button id="run" class="btn-primary"><i class="fa fa-refresh"></i> Generate</button>
-          <span id="weight-sum" class="inline-note"></span>
-        </div>
-        <div id="error" class="error" aria-live="polite"></div>
       </div>
 
-      <div class="card">
-        <div class="pill" style="margin-bottom:8px"><i class="fa fa-play"></i>Playback</div>
-        <div class="kv-row">
-          <label for="window-ms">Window size</label>
-          <input type="range" id="window-ms" min="200" max="1200" step="50" value="500">
-          <span id="window-ms-val">500 samples</span>
+      <div class="card stats-card">
+        <div class="pill" style="margin-bottom:8px"><i class="fa fa-table"></i>At-a-glance stats</div>
+        <div class="stat-grid" aria-live="polite">
+          <div class="stat-box">
+            <div class="stat-label">Ensemble mean (scalar)</div>
+            <div id="stat-mean" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Ensemble variance (scalar)</div>
+            <div id="stat-var" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Weights</div>
+            <div id="stat-weights" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Mean x₁</div>
+            <div id="stat-m1" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Mean x₂</div>
+            <div id="stat-m2" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Mean x₃</div>
+            <div id="stat-m3" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Var x₁</div>
+            <div id="stat-v1" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Var x₂</div>
+            <div id="stat-v2" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Var x₃</div>
+            <div id="stat-v3" class="stat-value">—</div>
+          </div>
         </div>
-        <div class="kv-row">
-          <label for="step-size">Step</label>
-          <input type="range" id="step-size" min="10" max="400" step="10" value="100">
-          <span id="step-size-val">100 samples</span>
-        </div>
-        <div class="cta-row">
-          <button id="play" class="btn-primary"><i class="fa fa-play"></i> Play</button>
-          <button id="pause" class="btn-secondary"><i class="fa fa-pause"></i> Pause</button>
-          <button id="stop" class="btn-secondary"><i class="fa fa-stop"></i> Stop</button>
-          <span class="inline-note">Disables source/weights during playback, like MATLAB.</span>
+        <div class="stat-grid" aria-live="polite">
+          <div class="stat-box">
+            <div class="stat-label">Current mₓ(t)</div>
+            <div id="stat-mean-point" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Current σ²(t)</div>
+            <div id="stat-var-point" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Window position</div>
+            <div id="stat-window" class="stat-value">—</div>
+          </div>
         </div>
       </div>
     </div>
@@ -133,59 +194,6 @@
         <div class="plot-box"><h4>x₃(t)</h4><div id="plot-x3" class="plot"></div></div>
         <div class="plot-box"><h4>Ensemble mean mₓ(t)</h4><div id="plot-mean" class="plot"></div></div>
         <div class="plot-box"><h4>Ensemble variance σ²(t)</h4><div id="plot-var" class="plot"></div></div>
-      </div>
-
-      <div class="stat-grid" aria-live="polite">
-        <div class="stat-box">
-          <div class="stat-label">Ensemble mean (scalar)</div>
-          <div id="stat-mean" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Ensemble variance (scalar)</div>
-          <div id="stat-var" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Weights</div>
-          <div id="stat-weights" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Mean x₁</div>
-          <div id="stat-m1" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Mean x₂</div>
-          <div id="stat-m2" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Mean x₃</div>
-          <div id="stat-m3" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Var x₁</div>
-          <div id="stat-v1" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Var x₂</div>
-          <div id="stat-v2" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Var x₃</div>
-          <div id="stat-v3" class="stat-value">—</div>
-        </div>
-      </div>
-      <div class="stat-grid" aria-live="polite">
-        <div class="stat-box">
-          <div class="stat-label">Current mₓ(t)</div>
-          <div id="stat-mean-point" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Current σ²(t)</div>
-          <div id="stat-var-point" class="stat-value">—</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">Window position</div>
-          <div id="stat-window" class="stat-value">—</div>
-        </div>
       </div>
     </div>
   </div>

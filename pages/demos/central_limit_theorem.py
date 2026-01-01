@@ -44,7 +44,10 @@ def page():
 
 def _normalize_pdf(x: np.ndarray, pdf: np.ndarray) -> np.ndarray:
     pdf = np.clip(pdf, 0.0, None)
-    area = float(np.trapz(pdf, x))
+    if hasattr(np, "trapezoid"):
+        area = float(np.trapezoid(pdf, x))
+    else:
+        area = float(np.trapz(pdf, x))
     if area <= 0:
         raise ValueError("PDF integrates to zero; check parameters.")
     return pdf / area
