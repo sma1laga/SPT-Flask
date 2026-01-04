@@ -1,40 +1,127 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container" style="max-width:1200px;">
-  <div class="page-header" style="margin-bottom:18px;">
+<div class="container delay-layout">
+  <div class="page-header delay-header">
     <div>
       <h1>Delay Estimation (time domain)</h1>
-      <p>
+      <p class="lede">
         Two noisy observations of the same signal are shifted relative to each other.
-        Adjust the SNR, choose the underlying signal (noise, speech, or sinusoid), and set a delay.
-        The cross-correlation highlights the offset.
+        Adjust the SNR, choose the underlying signal (noise, speech, or sinusoid), and set a delay to see the
+        cross-correlation peak move.
       </p>
     </div>
-    <div class="chip-row" style="display:flex;gap:8px;flex-wrap:wrap;">
-      <div class="pill" style="background:#e0f2fe;color:#0f3b64;font-weight:700;border-radius:999px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;"><i class="fa fa-sliders"></i>Shifters above plots</div>
-      <div class="pill" style="background:#f3f4f6;color:#374151;font-weight:700;border-radius:999px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;"><i class="fa fa-random"></i>Independent noises</div>
-      <div class="pill" style="background:#e5e7eb;color:#111827;border-radius:999px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;"><i class="fa fa-bolt"></i>Cross-correlation peak</div>
+    <div class="chip-row">
+      <div class="pill pill-primary"><i class="fa fa-sliders"></i>Shifters above plots</div>
+      <div class="pill pill-muted"><i class="fa fa-random"></i>Independent noises</div>
+      <div class="pill pill-outline"><i class="fa fa-bolt"></i>Cross-correlation peak</div>
     </div>
   </div>
 
   <style>
-    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:16px}
-    .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
-    .plot-box h4{margin:0 0 6px;color:#0f172a}
-    .stat-label{font-size:0.8rem;font-weight:800;color:#6b7280;text-transform:uppercase}
-    .stat-value{font-weight:800;color:#0f172a}
-    body.dark-mode .control-card{background:#0b1628;border-color:#1f2937;box-shadow:0 8px 18px rgba(0,0,0,0.35)}
-    body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 8px 20px rgba(0,0,0,0.28)}
-    body.dark-mode .plot-box h4{color:#e2e8f0}
-    body.dark-mode .pill{background:rgba(59,130,246,0.14)!important;color:#e0e7ff!important}
-    body.dark-mode .text-muted, body.dark-mode label{color:#cbd5e1!important}
-    body.dark-mode .stat-label{color:#cbd5e1}
-    body.dark-mode .stat-value{color:#f8fafc}
-    body.dark-mode .btn-primary{background:#1d4ed8;color:#fff}
+    .delay-layout{
+      --plot-height:210px;
+      --xcorr-height:250px;
+      max-width:min(1180px, calc(100vw - 32px));
+    }
+    body.statsip-sidebar-collapsed .delay-layout{
+      max-width:min(1320px, calc(100vw - 18px));
+      --plot-height:200px;
+      --xcorr-height:240px;
+    }
+    .delay-header{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      margin-bottom:10px;
+    }
+    .delay-header h1{margin-bottom:6px;}
+    .delay-header p{margin-bottom:6px;max-width:880px;}
+    .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:0.9rem;
+    }
+    .pill-primary{background:#e0f2fe;color:#0f3b64;}
+    .pill-muted{background:#f3f4f6;color:#374151;}
+    .pill-outline{background:#e5e7eb;color:#111827;}
+    .control-card{
+      background:white;
+      border:1px solid #d9dfe7;
+      border-radius:12px;
+      padding:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.05);
+      margin-bottom:12px;
+    }
+    .controls-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+      gap:10px;
+      align-items:end;
+    }
+    .range-pair{
+      display:grid;
+      grid-template-columns:1fr 88px;
+      gap:8px;
+      align-items:center;
+    }
+    .stat-cluster{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .stat-label{font-size:0.8rem;font-weight:800;color:#6b7280;text-transform:uppercase;margin-bottom:2px;}
+    .stat-value{font-weight:800;color:#0f172a;}
+    .plots-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:10px;
+      align-items:start;
+    }
+    .plot-box{
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      padding:8px;
+      background:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,0.03);
+    }
+    .plot-box h4{margin:0 0 4px;color:#0f172a;font-size:1rem;line-height:1.4;}
+    .plot-target{height:var(--plot-height);}
+    #plot-xcorr.plot-target{height:var(--xcorr-height);}
+    .text-muted{margin-top:4px;display:block;}
+    .lede{line-height:1.5;}
+    body.dark-mode .control-card{background:#0b1628;border-color:#1f2937;box-shadow:0 8px 18px rgba(0,0,0,0.35);}
+    body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 8px 20px rgba(0,0,0,0.28);}
+    body.dark-mode .plot-box h4{color:#e2e8f0;}
+    body.dark-mode .pill-primary,
+    body.dark-mode .pill-outline,
+    body.dark-mode .pill-muted{
+      background:rgba(59,130,246,0.14);
+      color:#e0e7ff;
+    }
+    body.dark-mode .text-muted, body.dark-mode label{color:#cbd5e1!important;}
+    body.dark-mode .stat-label{color:#cbd5e1;}
+    body.dark-mode .stat-value{color:#f8fafc;}
+    body.dark-mode .btn-primary{background:#1d4ed8;color:#fff;}
+    @media(max-width:980px){
+      .controls-grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr));}
+      .plots-grid{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}
+    }
+    @media(max-height:900px){
+      .delay-layout{--plot-height:190px;--xcorr-height:225px;}
+    }
   </style>
 
   <div class="control-card">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;align-items:end;">
+    <div class="controls-grid">
       <div>
         <label for="signal-kind" style="font-weight:700;">Input signal</label>
         <select id="signal-kind" class="form-control">
@@ -45,7 +132,7 @@
       </div>
       <div>
         <label for="snr-slider" style="font-weight:700;">SNR (dB)</label>
-        <div style="display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:center;">
+        <div class="range-pair">
           <input id="snr-slider" type="range" min="-10" max="40" step="0.1" value="{{ defaults.snr }}">
           <input id="snr-input" type="number" step="0.1" class="form-control" value="{{ defaults.snr }}">
         </div>
@@ -53,42 +140,42 @@
       </div>
       <div>
         <label for="delay-slider" style="font-weight:700;">Delay (ms)</label>
-        <div style="display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:center;">
+        <div class="range-pair">
           <input id="delay-slider" type="range" min="-50" max="50" step="1" value="{{ defaults.delay_ms }}">
           <input id="delay-input" type="number" step="1" class="form-control" value="{{ defaults.delay_ms }}">
         </div>
         <small class="text-muted">Positive values delay Y₂(t) relative to Y₁(t).</small>
       </div>
-        <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;">
-          <div>
+      <div class="stat-cluster">
+        <div>
           <div class="stat-label">Signal variance</div>
           <div id="stat-svar" class="stat-value">—</div>
-          </div>
-          <div>
+        </div>
+        <div>
           <div class="stat-label">Noise variance</div>
           <div id="stat-nvar" class="stat-value">—</div>
-          </div>
-          <div>
+        </div>
+        <div>
           <div class="stat-label">Delay [ms]</div>
           <div id="stat-delay" class="stat-value">—</div>
-          </div>
-          <button id="update-btn" class="btn btn-primary" style="padding:10px 16px;font-weight:700;">Update</button>
         </div>
+        <button id="update-btn" class="btn btn-primary" style="padding:10px 14px;font-weight:700;white-space:nowrap;">Update</button>
+      </div>
     </div>
   </div>
 
-  <div class="plots-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;">
+  <div class="plots-grid">
     <div class="plot-box">
       <h4>Observation Y₁(t) = X(t) + N₁(t)</h4>
-      <div id="plot-signal1" style="height:260px;"></div>
+      <div id="plot-signal1" class="plot-target"></div>
     </div>
     <div class="plot-box">
       <h4>Observation Y₂(t) = X(t−τ₀) + N₂(t)</h4>
-      <div id="plot-signal2" style="height:260px;"></div>
+      <div id="plot-signal2" class="plot-target"></div>
     </div>
     <div class="plot-box" style="grid-column:1 / -1;">
       <h4>Cross-correlation R<sub>Y₁Y₂</sub>(τ)</h4>
-      <div id="plot-xcorr" style="height:320px;"></div>
+      <div id="plot-xcorr" class="plot-target"></div>
     </div>
   </div>
 </div>
@@ -158,6 +245,14 @@
     return response.json();
   }
 
+  function getPlotHeight(kind){
+    const layout = document.querySelector('.delay-layout');
+    const styles = layout ? getComputedStyle(layout) : null;
+    const raw = styles?.getPropertyValue(kind === 'xcorr' ? '--xcorr-height' : '--plot-height');
+    const parsed = raw ? parseInt(raw, 10) : NaN;
+    return Number.isFinite(parsed) ? parsed : (kind === 'xcorr' ? 240 : 200);
+  }
+
   function renderLine(target, x, y, xLabel, yLabel, extras = {}) {
     const line = {
       x,
@@ -166,10 +261,10 @@
       line: {color: extras.color || '#2563eb', width: 2}
     };
     const layout = buildLayout({
-      margin: {l: 60, r: 10, b: 50, t: 10},
+      margin: {l: 52, r: 8, b: 40, t: 6},
       xaxis: {title: xLabel},
       yaxis: {title: yLabel, range: extras.yRange},
-      height: extras.height || 260,
+      height: extras.height || getPlotHeight(extras.kind),
     });
     Plotly.newPlot(target, [line], layout, {displaylogo: false, responsive: true});
   }
@@ -177,7 +272,7 @@
   function renderPlots(data) {
     renderLine('plot-signal1', data.time_ms, data.signal1, 't [ms]', 'Amplitude');
     renderLine('plot-signal2', data.time_ms, data.signal2, 't [ms]', 'Amplitude');
-    renderLine('plot-xcorr', data.lags_ms, data.xcorr, 'τ [ms]', 'R_{Y₁Y₂}(τ)', {height: 320});
+    renderLine('plot-xcorr', data.lags_ms, data.xcorr, 'τ [ms]', 'R_{Y₁Y₂}(τ)', {kind: 'xcorr'});
 
     statEls.svar.textContent = data.stats.signal_variance.toFixed(4);
     statEls.nvar.textContent = data.stats.noise_variance.toFixed(4);
