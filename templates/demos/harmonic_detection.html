@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container wide-container">
+<div class="container wide-container harmonic-layout">
   <div class="page-header">
     <div>
       <h1>Harmonic detection</h1>
@@ -16,27 +16,36 @@
   </div>
 
   <style>
-    .wide-container{max-width:1200px}
-    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px}
-    .chip-row{display:flex;gap:8px;flex-wrap:wrap}
-    .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#0f3b64;font-weight:700;font-size:0.9rem}
+    :root { --hd-plot-height: clamp(190px, 25vh, 230px); }
+    .harmonic-layout{max-width:min(1260px, calc(100vw - 28px));margin:0 auto;}
+    .page-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
+    .page-header h1{margin:0;font-size:1.7rem}
+    .page-header p{margin:4px 0 0}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#e0f2fe;color:#0f3b64;font-weight:700;font-size:0.9rem}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
-    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:14px}
-    .control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-    .kv-row{display:grid;grid-template-columns:150px 1fr 70px;gap:8px;align-items:center;margin:8px 0}
-    .kv-row label{font-weight:700;font-size:0.95rem}
+    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:10px}
+    .control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;align-items:start}
+    .kv-row{display:grid;grid-template-columns:140px 1fr 64px;gap:6px;align-items:center;margin:6px 0}
+    .kv-row label{font-weight:700;font-size:0.92rem}
     .kv-row input[type="number"]{width:100%}
     .kv-row small{color:#6b7280}
-    .mode-row{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0}
-    .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:8px}
-    .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
-    .stat-label{font-size:0.8rem;color:#6b7280;font-weight:800;letter-spacing:0.04em;text-transform:uppercase}
-    .stat-value{font-size:1.05rem;font-weight:800;color:#0f172a}
-    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+    .mode-row{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0}
+    .mode-row label{font-weight:700;font-size:0.9rem}
+    .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:6px}
+    .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}
+    .stat-label{font-size:0.78rem;color:#6b7280;font-weight:800;letter-spacing:0.04em;text-transform:uppercase}
+    .stat-value{font-size:1.02rem;font-weight:800;color:#0f172a}
+    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;align-items:start}
     .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:6px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
-    .plot-box h4{margin:4px 8px;font-size:0.95rem;color:#111827;display:flex;align-items:center;gap:6px}
-    .plot{width:100%;height:260px}
-    .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.25)}
+    .plot-box h4{margin:4px 6px;font-size:0.93rem;color:#111827;display:flex;align-items:center;gap:6px}
+    .plot{width:100%;height:var(--hd-plot-height);min-height:185px}
+    .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 11px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.25)}
+    body.statsip-sidebar-collapsed .harmonic-layout{max-width:min(1380px, calc(100vw - 16px))}
+    body.statsip-sidebar-collapsed .plots-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+    body.statsip-sidebar-collapsed{--hd-plot-height: clamp(185px, 24vh, 215px)}
+    body.statsip-sidebar-collapsed .control-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+    body.statsip-sidebar-collapsed .kv-row{grid-template-columns:128px 1fr 60px}
     body.dark-mode .control-card{background:#0b1628;border-color:#1f2937;box-shadow:0 8px 20px rgba(0,0,0,0.35)}
     body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 8px 20px rgba(0,0,0,0.28)}
     body.dark-mode .plot-box h4{color:#e2e8f0}
@@ -119,6 +128,7 @@
     snr: document.getElementById('stat-snr'),
     samples: document.getElementById('stat-samples'),
   };
+  let latestData = null;
 
   const plot4Title = document.getElementById('plot4-title');
   const plot5Title = document.getElementById('plot5-title');
@@ -188,14 +198,24 @@
     }
     return response.json();
   }
+  function getPlotHeight(targetId){
+    const el = document.getElementById(targetId);
+    if(!el) return 240;
+    const prev = el.style.height;
+    el.style.height = '';
+    const h = parseFloat(getComputedStyle(el).height || '0');
+    el.style.height = prev;
+    return Number.isFinite(h) && h > 0 ? h : 240;
+  }
 
   function renderLine(target, x, y, title, xLabel, yLabel, yRange=null){
     const trace = {x, y, mode: 'lines', line: {color: '#2563eb', width: 2}};
+    const plotHeight = getPlotHeight(target);
     const layout = buildLayout({
       margin: {l:50,r:10,b:45,t:10},
       xaxis: {title: xLabel},
       yaxis: {title: yLabel, range: yRange},
-      height: 260,
+      height: plotHeight,
     });
     Plotly.newPlot(target, [trace], layout, {displaylogo:false, responsive:true});
   }
@@ -220,7 +240,7 @@
         margin:{l:50,r:10,b:45,t:10},
         xaxis:{title:'frequency [Hz]'},
         yaxis:{title:'10log_{10}(S_{xx})'},
-        height:260
+        height:getPlotHeight('plot-5')
       }), {displaylogo:false, responsive:true});
     }
 
@@ -233,10 +253,16 @@
   async function update(){
     try{
       const data = await fetchData();
+      latestData = data;
       renderPlots(data);
     }catch(err){
       console.error(err);
       alert(err.message);
+    }
+  }
+  function rerenderPlots(){
+    if(latestData){
+      renderPlots(latestData);
     }
   }
 
@@ -251,6 +277,16 @@
   sampleInput.addEventListener('change', syncSampleFromInput);
   updateBtn.addEventListener('click', update);
   modeRadios.forEach(r => r.addEventListener('change', update));
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(rerenderPlots, 140);
+  });
+
+  const statsipToggle = document.getElementById('statsip-sidebar-toggle');
+  if(statsipToggle){
+    statsipToggle.addEventListener('click', () => setTimeout(rerenderPlots, 180));
+  }
 
   update();
 </script>
