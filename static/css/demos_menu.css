@@ -231,8 +231,11 @@ body.dark-mode .searchbox input::placeholder{ color: rgba(255,255,255,0.45); }
   border: 1px solid var(--menu-border);
   background: rgba(255,255,255,0.85);
   color: var(--menu-text);
+  font-family: 'Poppins', 'Roboto', sans-serif;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
   cursor: pointer;
   flex: 0 0 auto;
 }
@@ -263,8 +266,9 @@ body.dark-mode .lecture-pill.is-active{
   border: 1px solid var(--menu-border);
   background: rgba(255,255,255,0.85);
   color: var(--menu-muted);
+  font-family: 'Poppins', 'Roboto', sans-serif;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
 }
 body.dark-mode .pill-count{ background: rgba(255,255,255,0.14); }
 
