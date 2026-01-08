@@ -32,6 +32,7 @@
     .kv-row input[type=number]{width:100%;padding:6px;border:1px solid #d1d5db;border-radius:8px}
     .toggle-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-weight:600;color:#1f2937}
     .formula-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:10px;font-size:0.95rem;line-height:1.5}
+    .formula-wide{font-size:1.05rem;text-align:center;overflow-x:auto}
     .plot-wrapper{height:560px;width:100%}
     .subtitle{margin:2px 0 8px;color:#475569;font-size:0.95rem}
     .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:8px}
@@ -95,10 +96,6 @@
         <label><input type="checkbox" id="marginals" checked> Marginal PDFs</label>
         <label><input type="checkbox" id="wireframe"> Wireframe surface</label>
       </div>
-      <div class="formula-box" aria-live="polite">
-        <div style="font-weight:700;">Joint PDF</div>
-        <div id="formula"></div>
-      </div>
     </div>
 
     <div class="card">
@@ -114,6 +111,10 @@
             <div class="summary-value">Ellipses unless ρ = 0</div>
           </div>
         </div>
+      </div>
+      <div class="formula-box formula-wide" aria-live="polite">
+        <div style="font-weight:700;margin-bottom:4px;">Joint PDF</div>
+        <div id="formula"></div>
       </div>
       <div class="plot-wrapper" id="plot"></div>
     </div>
@@ -136,10 +137,10 @@
     sigma_x: '\\sigma_X',
     sigma_y: '\\sigma_Y'
   };
-
+  const highlightColor = '#e11d48';
   function highlightFormula(key){
     const tpl = `f_{XY}(x,y)=\\frac{1}{2\\pi\\sigma_X\\sigma_Y\\sqrt{1-\\rho^2}}\\exp\\Big[-\\frac{1}{2(1-\\rho^2)}\\big(\\frac{(x-\\mu_X)^2}{\\sigma_X^2}-\\frac{2\\rho(x-\\mu_X)(y-\\mu_Y)}{\\sigma_X\\sigma_Y}+\\frac{(y-\\mu_Y)^2}{\\sigma_Y^2}\\big)\\Big]`;
-    const emphasize = (token, match) => key===match ? `\\color{\\#e11d48}{${token}}` : token;
+    const emphasize = (token, match) => key===match ? `\\color{${highlightColor}}{${token}}` : token;
     const replaced = tpl
       .replaceAll(labels.rho, emphasize(labels.rho,'rho'))
       .replaceAll(labels.mean_x, emphasize(labels.mean_x,'mean_x'))
