@@ -60,6 +60,8 @@
     body.dark-mode .stat-label{color:#cbd5e1}
     body.dark-mode .stat-value{color:#f8fafc}
     body.dark-mode .inline-note,body.dark-mode label,body.dark-mode .kv-row small{color:#cbd5e1}
+    body.dark-mode input,body.dark-mode select{background:#0b1220;border:1px solid #334155;color:#e2e8f0}
+    body.dark-mode input:disabled,body.dark-mode select:disabled{background:#111827;color:#94a3b8}
   </style>
 
   <div class="demo-grid">
@@ -434,6 +436,8 @@
   }
 
   function plotMeanVar(data){
+    const isDark = document.body.classList.contains('dark-mode');
+    const scalarLineColor = isDark ? '#f8fafc' : '#111827';
     const meanTrace = {
       x: data.t,
       y: data.ensemble_mean,
@@ -444,7 +448,7 @@
       x: data.t,
       y: Array(data.t.length).fill(data.ensemble_mean_scalar),
       name: 'time mean',
-      line: { dash: 'dash', color: '#111827', width: 2 }
+      line: { dash: 'dash', color: scalarLineColor, width: 2 }
     };
     const meanMarker = { x: [data.t[0]], y: [0], mode: 'markers', marker: { color: 'red', size: 8 }, showlegend: false };
 
@@ -466,7 +470,7 @@
       x: data.t,
       y: Array(data.t.length).fill(data.ensemble_var_scalar),
       name: 'scalar variance',
-      line: { dash: 'dash', color: '#111827', width: 2 }
+      line: { dash: 'dash', color: scalarLineColor, width: 2 }
     };
     const varMarker = { x: [data.t[0]], y: [0], mode: 'markers', marker: { color: 'red', size: 8 }, showlegend: false };
 
