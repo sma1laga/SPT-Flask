@@ -158,7 +158,18 @@ function updatePlots(){
     },
   };
 
-  Plotly.newPlot("timePlot", [
+  const plotConfig = {displayModeBar: false, responsive: true};
+
+  function renderPlot(target, data, layout) {
+    const el = document.getElementById(target);
+    if (el && el.data) {
+      Plotly.react(el, data, layout, plotConfig);
+    } else {
+      Plotly.newPlot(target, data, layout, plotConfig);
+    }
+  }
+
+  renderPlot("timePlot", [
     {x: data.t, y: data.y_real, type: "scatter", mode: "lines", name: "Re", line: { color: "#1f77b4", width: 2 }},
     {x: data.t, y: data.y_imag, type: "scatter", mode: "lines", name: "Im", line: { dash: "dot", color: "#6c757d" }}
   ], {
@@ -167,16 +178,16 @@ function updatePlots(){
     xaxis: {title: {text: "$t$"}, autorange: "reversed", gridcolor: "rgba(0,0,0,0.12)", zeroline: false},
     yaxis: {title: {text: "$x(t)$"}, gridcolor: "rgba(0,0,0,0.12)", zeroline: false},
     title: {text: "$\\text{Time Signal}$"},
-  }, {displayModeBar: false, responsive: true});
-  Plotly.newPlot("magPlot", [
+  });
+  renderPlot("magPlot", [
     {x: omegaPlot, y: magPlot, type: "scatter", mode: "lines", name: "|X|", line: { color: "#1f77b4", width: 2 }}
   ], {
     ...baseLayout,
     showlegend: false,
     title: {text: "$\\text{Magnitude}$"},
     yaxis: {...baseLayout.yaxis, title: {text: "$|X(\\mathrm{j}\\omega)|$"}, range: [0, 1.15]}
-  }, {displayModeBar: false, responsive: true});
-  Plotly.newPlot("phasePlot", [
+  });
+  renderPlot("phasePlot", [
     {x: omegaPlot, y: phasePlot, type: "scatter", mode: "lines", name: "Phase", line: { color: "#2ca02c", width: 2 }}
   ], {
     ...baseLayout,
@@ -189,7 +200,7 @@ function updatePlots(){
       tickvals: [-Math.PI, -Math.PI/2, 0, Math.PI/2, Math.PI],
       ticktext: ["$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$"],
     },
-  }, {displayModeBar: false, responsive: true});
+  });
   const label = document.getElementById("fourier_transformation_label");
   label.innerHTML = data.transformation_label;
   if (window.MathJax && window.MathJax.typesetPromise) {
@@ -207,7 +218,11 @@ if (fourierForm) {
     }
   });
 }
-document.getElementById("phase").addEventListener("input", updatePlots);
+let phaseUpdateTimer;
+document.getElementById("phase").addEventListener("input", () => {
+  window.clearTimeout(phaseUpdateTimer);
+  phaseUpdateTimer = window.setTimeout(updatePlots, 120);
+});
 document.getElementById("clearBtn").addEventListener("click", ()=>{
   document.getElementById("func").value="";
   document.getElementById("phase").value=0;
