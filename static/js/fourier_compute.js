@@ -152,7 +152,9 @@
     for(let i=0;i<N;i++){
       let ang = Math.atan2(shifted.im[i], shifted.re[i]);
       if(maxMag>0 && magnitude[i] < 0.01*maxMag) ang = 0;
-      phase[i] = ang/Math.PI;
+      if(ang > Math.PI) ang -= 2 * Math.PI;
+      if(ang < -Math.PI) ang += 2 * Math.PI;
+      phase[i] = ang;
     }
     if(maxMag>0){
       for(let i=0;i<N;i++) magnitude[i]/=maxMag;
@@ -165,7 +167,7 @@
       f: Array.from(f),
       magnitude: Array.from(magnitude),
       phase: Array.from(phase),
-      transformation_label: `Phase Shift: ${phaseDeg.toFixed(2)}°`
+      transformation_label: `\\(\\text{Phase Shift} = ${phaseDeg.toFixed(2)}^{\\circ}\\)`
     };
   }
 
