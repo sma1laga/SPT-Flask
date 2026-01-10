@@ -166,6 +166,23 @@
       const omega = new Float64Array(N);
       for(let i=0;i<N;i++) omega[i] = 2 * Math.PI * f[i];
 
+      // The FFT assumes samples start at t=0 (x[n] corresponds to t=n*dt)
+      // Here we sample the continuous signal at t = t0 + n*dt with t0 = t[0]
+      // Thereforee the CTFT sample must be multiplied by exp(-jωt0) to reference the correct time origin
+
+      const t0 = t[0];
+      if (Math.abs(t0) > 1e-12) {
+        for (let i = 0; i < N; i++) {
+          const a = shifted.re[i];
+          const b = shifted.im[i];
+          const theta = -omega[i] * t0;
+          const c = Math.cos(theta);
+          const s = Math.sin(theta);
+          shifted.re[i] = a * c - b * s;
+          shifted.im[i] = a * s + b * c;
+        }
+      }
+
       const magnitude = new Float64Array(N);
       const basePhase = new Float64Array(N);
       const lowMagnitude = new Uint8Array(N);
@@ -184,6 +201,8 @@
         }
         if(ang > Math.PI) ang -= 2 * Math.PI;
         if(ang < -Math.PI) ang += 2 * Math.PI;
+        // Pref +pi over -pi for cleaner step plots
+        if (Math.abs(ang + Math.PI) < 1e-12) ang = Math.PI;
         basePhase[i] = ang;
       }
       if(maxMag>0){
@@ -230,6 +249,8 @@
       let ang = basePhase[i] + phaseRad;
       if(ang > Math.PI) ang -= 2 * Math.PI;
       if(ang < -Math.PI) ang += 2 * Math.PI;
+      // Pref -II-
+      if (Math.abs(ang + Math.PI) < 1e-12) ang = Math.PI;
       phase[i] = ang;
     }
 

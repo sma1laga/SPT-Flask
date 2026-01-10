@@ -54,6 +54,10 @@ def compute_fourier(func_str, phase_rad):
     f = fftfreq(len(t), d=dt)
     f_shifted = fftshift(f)
 
+    omega = 2 * np.pi * f_shifted
+    t0 = float(t[0])
+    Yf_shifted = Yf_shifted * np.exp(-1j * omega * t0)
+
     # 4. Betrag und Phase
     magnitude = np.abs(Yf_shifted)
     phase_raw = np.angle(Yf_shifted)
