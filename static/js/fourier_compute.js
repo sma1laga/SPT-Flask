@@ -141,6 +141,8 @@
     const f = new Float64Array(N);
     const df = 1/(N*dt);
     for(let i=0;i<N;i++) f[i] = (i - N/2)*df;
+    const omega = new Float64Array(N);
+    for(let i=0;i<N;i++) omega[i] = 2 * Math.PI * f[i];
 
     const magnitude = new Float64Array(N);
     const phase = new Float64Array(N);
@@ -149,9 +151,10 @@
       const mag = Math.hypot(shifted.re[i], shifted.im[i]);
       magnitude[i]=mag; if(mag>maxMag) maxMag=mag;
     }
+    const noiseThreshold = 0.02;
     for(let i=0;i<N;i++){
       let ang = Math.atan2(shifted.im[i], shifted.re[i]);
-      if(maxMag>0 && magnitude[i] < 0.01*maxMag) ang = 0;
+      if(maxMag>0 && magnitude[i] < noiseThreshold * maxMag) ang = 0;
       if(ang > Math.PI) ang -= 2 * Math.PI;
       if(ang < -Math.PI) ang += 2 * Math.PI;
       phase[i] = ang;
@@ -165,6 +168,7 @@
       y_real: Array.from(y_re),
       y_imag: Array.from(y_im),
       f: Array.from(f),
+      omega: Array.from(omega),
       magnitude: Array.from(magnitude),
       phase: Array.from(phase),
       transformation_label: `\\(\\text{Phase Shift} = ${phaseDeg.toFixed(2)}^{\\circ}\\)`

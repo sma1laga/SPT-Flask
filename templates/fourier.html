@@ -14,8 +14,8 @@
 <form id="fourierForm" style="max-width:700px; margin:0 auto; text-align:center;">
   <div class="function-group" style="margin-bottom:20px;">
     <label style="font-weight:bold;">Function:</label>
-    <input type="text" id="func" placeholder="e.g., sin(t) + 3*rect(t)" onfocus="setActiveField(this)">
-<div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:15px;">
+    <input type="text" id="func" placeholder="e.g., sin(pi*t) + 3*rect(t)" onfocus="setActiveField(this)">
+    <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:15px;">
       <button type="button" onclick="insertOperand('rect(t)')">\(\mathrm{rect}\)</button>
       <button type="button" onclick="insertOperand('tri(t)')">\(\mathrm{tri}\)</button>
       <button type="button" onclick="insertOperand('sin(pi*t)')">\(\mathrm{sin}\)</button>
@@ -28,8 +28,8 @@
       <button type="button" onclick="insertOperand('si(pi*t)**2')">\(\mathrm{si}^2\)</button>
       <button type="button" onclick="insertOperand('exp_iwt(t)')">\(\mathrm{e}^{\mathrm{j}\omega t}\)</button>
       <button type="button" onclick="insertOperand('exp(t)')">\(\mathrm{e}^t\)</button>
-      </div>
-  <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
+    </div>
+    <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
       <button type="button" onclick="insertOperand('+')">\(+\)</button>
       <button type="button" onclick="insertOperand('-')">\(-\)</button>
       <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
@@ -39,7 +39,7 @@
 
   <div class="options-group" style="display:flex; gap:20px; justify-content:center; margin-bottom:30px;">
     <div>
-      <label style="font-weight:bold;">PGlobal complex phase (°):</label>
+      <label style="font-weight:bold;">Global complex phase (°):</label>
       <input type="number" id="phase" value="0">
     </div>
   </div>
@@ -113,23 +113,83 @@ function updatePlots(){
     console.error(data.error);
     return;
   }
-  const lc={margin:{t:30}};
+  const omegaLimit = 5 * Math.PI;
+  const omega = data.omega;
+  const omegaPlot = [];
+  const magPlot = [];
+  const phasePlot = [];
+  for(let i=0;i<omega.length;i++){
+    if(Math.abs(omega[i]) <= omegaLimit){
+      omegaPlot.push(omega[i]);
+      magPlot.push(data.magnitude[i]);
+      phasePlot.push(data.phase[i]);
+    }
+  }
+
+  const omegaTicks = [];
+  const omegaTickText = [];
+  for(let k=-5; k<=5; k++){
+    omegaTicks.push(k * Math.PI);
+    if(k === 0){
+      omegaTickText.push("$0$");
+    } else if(k === 1){
+      omegaTickText.push("$\\pi$");
+    } else if(k === -1){
+      omegaTickText.push("$-\\pi$");
+    } else {
+      omegaTickText.push(`$${k}\\pi$`);
+    }
+  }
+
+  const baseLayout = {
+    template: "plotly_white",
+    margin: {t: 40, r: 24, l: 60, b: 50},
+    xaxis: {
+      title: {text: "$\\omega$"},
+      range: [-omegaLimit, omegaLimit],
+      tickvals: omegaTicks,
+      ticktext: omegaTickText,
+      zeroline: false,
+      gridcolor: "rgba(0,0,0,0.12)",
+    },
+    yaxis: {
+      gridcolor: "rgba(0,0,0,0.12)",
+      zeroline: false,
+    },
+  };
+
   Plotly.newPlot("timePlot", [
-    {x:data.t, y:data.y_real, type:"scatter", mode:"lines", name:"Re", line: { color: "navy" }},
-    {x:data.t, y:data.y_imag, type:"scatter", mode:"lines", name:"Im", line:{dash:"dot"}}
-  ], {...lc, title:{text:"$\\text{Time Signal}$"}, xaxis:{title:{text:"$t$"}}, yaxis:{title:{text:"$x(t)$"}}});
+    {x: data.t, y: data.y_real, type: "scatter", mode: "lines", name: "Re", line: { color: "#1f77b4", width: 2 }},
+    {x: data.t, y: data.y_imag, type: "scatter", mode: "lines", name: "Im", line: { dash: "dot", color: "#6c757d" }}
+  ], {
+    template: "plotly_white",
+    margin: {t: 40, r: 24, l: 60, b: 50},
+    xaxis: {title: {text: "$t$"}, autorange: "reversed", gridcolor: "rgba(0,0,0,0.12)", zeroline: false},
+    yaxis: {title: {text: "$x(t)$"}, gridcolor: "rgba(0,0,0,0.12)", zeroline: false},
+    title: {text: "$\\text{Time Signal}$"},
+  }, {displayModeBar: false, responsive: true});
   Plotly.newPlot("magPlot", [
-    {x:data.f, y:data.magnitude, type:"scatter", mode:"lines", name:"|Y|", line: { color: "navy" }}
-  ], {...lc, showlegend:false, title:{text:"$\\text{Magnitude}$"}, xaxis:{title:{text:"$\\omega$"}}, yaxis:{title:{text:"$|X(\\mathrm{j}\\omega)|$"}}});
+    {x: omegaPlot, y: magPlot, type: "scatter", mode: "lines", name: "|X|", line: { color: "#1f77b4", width: 2 }}
+  ], {
+    ...baseLayout,
+    showlegend: false,
+    title: {text: "$\\text{Magnitude}$"},
+    yaxis: {...baseLayout.yaxis, title: {text: "$|X(\\mathrm{j}\\omega)|$"}, range: [0, 1.15]}
+  }, {displayModeBar: false, responsive: true});
   Plotly.newPlot("phasePlot", [
-    {x:data.f, y:data.phase, type:"scatter", mode:"lines", name:"Phase", line: { color: "blue"}}
-  ], {...lc, showlegend:false, title:{text:"$\\text{Phase}$"}, xaxis:{title:{text:"$\\omega$"}},
-    yaxis:{
-      title:{text:"$\\varphi(\\mathrm{j}\\omega)$"},
-      range:[-Math.PI, Math.PI],
-      tickvals:[-Math.PI,-Math.PI/2,0,Math.PI/2,Math.PI],
-      ticktext:["$-\\pi$","$-\\frac{\\pi}{2}$","$0$","$\\frac{\\pi}{2}$","$\\pi$"],
-    }});
+    {x: omegaPlot, y: phasePlot, type: "scatter", mode: "lines", name: "Phase", line: { color: "#2ca02c", width: 2 }}
+  ], {
+    ...baseLayout,
+    showlegend: false,
+    title: {text: "$\\text{Phase}$"},
+    yaxis: {
+      ...baseLayout.yaxis,
+      title: {text: "$\\varphi(\\mathrm{j}\\omega)$"},
+      range: [-Math.PI, Math.PI],
+      tickvals: [-Math.PI, -Math.PI/2, 0, Math.PI/2, Math.PI],
+      ticktext: ["$-\\pi$", "$-\\frac{\\pi}{2}$", "$0$", "$\\frac{\\pi}{2}$", "$\\pi$"],
+    },
+  }, {displayModeBar: false, responsive: true});
   const label = document.getElementById("fourier_transformation_label");
   label.innerHTML = data.transformation_label;
   if (window.MathJax && window.MathJax.typesetPromise) {
