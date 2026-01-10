@@ -158,6 +158,55 @@
     font-size:0.95rem;
     flex-wrap: wrap;
   }
+  .dark-mode .laplace-hero {
+    background: radial-gradient(circle at 18% 15%, rgba(59, 130, 246, 0.18), transparent 32%),
+                radial-gradient(circle at 88% 20%, rgba(14, 165, 233, 0.2), transparent 30%),
+                #0f172a;
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.4);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.45);
+  }
+  .dark-mode .laplace-card {
+    background: #111827;
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 8px 20px rgba(2, 6, 23, 0.5);
+  }
+  .dark-mode .laplace-card h3 { color: #93c5fd; }
+  .dark-mode .pill {
+    background: rgba(59, 130, 246, 0.2);
+    color: #bfdbfe;
+  }
+  .dark-mode .equation-box {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
+  .dark-mode .status-item {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
+  .dark-mode .spring {
+    background: repeating-linear-gradient(90deg, rgba(147,197,253,0.65), rgba(147,197,253,0.65) 12px, transparent 12px, transparent 24px);
+  }
+  .dark-mode .mass {
+    background: linear-gradient(135deg, #60a5fa, #2563eb);
+  }
+  .dark-mode .ms-btn {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.45);
+    box-shadow: 0 6px 16px rgba(2, 6, 23, 0.45);
+  }
+  .dark-mode .ms-btn:hover { filter: brightness(1.08); }
+  .dark-mode .ms-btn--primary {
+    background: #3b82f6;
+    border-color: #2563eb;
+    color: #f8fafc;
+  }
+  .dark-mode .ms-speed {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
 
 </style>
 {% endblock %}
@@ -172,13 +221,13 @@
     real-time so that the link between the differential equation and its transfer function stays tangible.
   </p>
   <div class="equation-box">
-    <p style="margin:0; color:#64748b; font-size:0.92rem;">General (normalized) form:</p>
+    <p style="margin:0; color:var(--subtext-color); font-size:0.92rem;">General (normalized) form:</p>
     <p id="ode-eq-generic" style="margin:0;">$$ \ddot x(t)+2\eta\,\omega_n\,\dot x(t)+\omega_n^2 x(t)=\frac{F_0}{m}\cos(\omega t) $$</p>
-    <p style="margin:10px 0 0; color:#64748b; font-size:0.92rem;">With your parameters:</p>
+    <p style="margin:10px 0 0; color:var(--subtext-color); font-size:0.92rem;">With your parameters:</p>
     <p id="ode-eq" style="margin:0;">$$ m\,\ddot x(t)+\mu\,\dot x(t)+k\,x(t)=F_0 \cos(\omega t) $$</p>
     <p id="laplace-eq" style="margin:0;">$$ X(s)=\dfrac{F_0 s}{(s^2+\omega^2)\,(m s^2+\mu s+k)} $$</p>
   </div>
-  <p style="margin: 8px 0 0; color:#94a3b8; font-size:0.95rem;">
+  <p style="margin: 8px 0 0; color:var(--subtext-color); font-size:0.95rem;">
     where \(\omega_n=\sqrt{k/m}\) and \(\eta=\frac{\mu}{2\sqrt{mk}}\) (same as the damping ratio \(\zeta\)).
   </p>
   <div class="status-grid" id="status-grid">
@@ -208,7 +257,7 @@
         <label class="ms-speed" title="Playback speed">
           <span style="color:var(--subtext-color); font-size:0.9rem;">Speed</span>
           <input id="ms-speed" type="range" min="0.25" max="2.50" step="0.05" value="1.00" aria-label="Animation speed">
-          <span id="ms-speed-val" style="min-width:3.4em; text-align:right; color:#64748b; font-variant-numeric: tabular-nums;">1.00×</span>
+          <span id="ms-speed-val" style="min-width:3.4em; text-align:right; color:var(--subtext-color); font-variant-numeric: tabular-nums;">1.00×</span>
         </label>
       </div>
     </div>
@@ -340,7 +389,7 @@
       (how fast transients die and whether they oscillate), and the sinusoidal input introduces \(\pm j\omega\).
     </p>
     <div class="equation-box" id="transfer-box">$$ H(s) = \dfrac{X(s)}{F(s)} = \frac{1}{m s^2 + \mu s + k} $$</div>
-    <p style="margin: 8px 0 0; color:#94a3b8;">Tip: sweep \(\omega\) near \(\omega_n\) to feel resonance, then increase \(\mu\) to watch the pole real-part pull the envelope down.</p>
+    <p style="margin: 8px 0 0; color:var(--subtext-color);">Tip: sweep \(\omega\) near \(\omega_n\) to feel resonance, then increase \(\mu\) to watch the pole real-part pull the envelope down.</p>
   </div>
 </div>
 
@@ -377,7 +426,7 @@
     <li>The forcing \(\cos(\omega t)\) contributes the factor \(\frac{s}{s^2+\omega^2}\), i.e. “energy” at \(\pm j\omega\).
       The steady-state amplitude is controlled by \(H(j\omega)\) and becomes large near resonance.</li>
   </ul>
-  <p style="margin:10px 0 0; color:#94a3b8;">
+  <p style="margin:10px 0 0; color:var(--subtext-color);">
     Try it: make \(\mu\) small → you’ll see long ringing (poles move toward the imaginary axis). Increase \(\mu\) → poles move left and \(T_{tr}\) shrinks.
   </p>
 </div>
