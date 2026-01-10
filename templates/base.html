@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/demos.css') }}">
+  {% if is_statsip_demo|default(false) %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/statsip.css') }}">
+  {% endif %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-T2U5EbsJ6S+Td1FeqdKV1gi48feRMsWBsaOZXrCgOytcVQ1Wf+QoKMW6Wikptzs8wqkv+qsSV4OVMBnb7+AE3w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   {% block styles %}{% endblock %}
 

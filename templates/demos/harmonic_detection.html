@@ -15,49 +15,6 @@
     </div>
   </div>
 
-  <style>
-    :root { --hd-plot-height: clamp(190px, 25vh, 230px); }
-    .harmonic-layout{max-width:min(1260px, calc(100vw - 28px));margin:0 auto;}
-    .page-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
-    .page-header h1{margin:0;font-size:1.7rem}
-    .page-header p{margin:4px 0 0}
-    .chip-row{display:flex;gap:6px;flex-wrap:wrap}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:#e0f2fe;color:#0f3b64;font-weight:700;font-size:0.9rem}
-    .pill-subtle{background:#f3f4f6;color:#4b5563}
-    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);margin-bottom:10px}
-    .control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;align-items:start}
-    .kv-row{display:grid;grid-template-columns:140px 1fr 64px;gap:6px;align-items:center;margin:6px 0}
-    .kv-row label{font-weight:700;font-size:0.92rem}
-    .kv-row input[type="number"]{width:100%}
-    .kv-row small{color:#6b7280}
-    .mode-row{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0}
-    .mode-row label{font-weight:700;font-size:0.9rem}
-    .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:6px}
-    .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}
-    .stat-label{font-size:0.78rem;color:#6b7280;font-weight:800;letter-spacing:0.04em;text-transform:uppercase}
-    .stat-value{font-size:1.02rem;font-weight:800;color:#0f172a}
-    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;align-items:start}
-    .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:6px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
-    .plot-box h4{margin:4px 6px;font-size:0.93rem;color:#111827;display:flex;align-items:center;gap:6px}
-    .plot{width:100%;height:var(--hd-plot-height);min-height:185px}
-    .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 11px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.25)}
-    body.statsip-sidebar-collapsed .harmonic-layout{max-width:min(1380px, calc(100vw - 16px))}
-    body.statsip-sidebar-collapsed .plots-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
-    body.statsip-sidebar-collapsed{--hd-plot-height: clamp(185px, 24vh, 215px)}
-    body.statsip-sidebar-collapsed .control-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
-    body.statsip-sidebar-collapsed .kv-row{grid-template-columns:128px 1fr 60px}
-    body.dark-mode .control-card{background:#0b1628;border-color:#1f2937;box-shadow:0 8px 20px rgba(0,0,0,0.35)}
-    body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 8px 20px rgba(0,0,0,0.28)}
-    body.dark-mode .plot-box h4{color:#e2e8f0}
-    body.dark-mode .pill{background:rgba(59,130,246,0.14);color:#e0e7ff}
-    body.dark-mode .pill-subtle{background:rgba(148,163,184,0.18);color:#e5e7eb}
-    body.dark-mode .stat-box{background:#111827;border-color:#27303f}
-    body.dark-mode .stat-label{color:#cbd5e1}
-    body.dark-mode .stat-value{color:#f8fafc}
-    body.dark-mode label, body.dark-mode p{color:#e2e8f0}
-    body.dark-mode .btn-primary{background:#1d4ed8;box-shadow:0 2px 10px rgba(59,130,246,0.35)}  
-  </style>
-
   <div class="control-card">
     <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Controls</div>
     <div class="control-grid">
