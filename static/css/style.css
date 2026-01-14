@@ -484,10 +484,10 @@ body.nav-open {
 .sidebar-collapse-btn .label-collapsed {
   display: none;
 }
-.statsip-sidebar-collapsed .sidebar-collapse-btn .label-expanded {
+.demo-sidebar-collapsed .sidebar-collapse-btn .label-expanded {
   display: none;
 }
-.statsip-sidebar-collapsed .sidebar-collapse-btn .label-collapsed {
+.demo-sidebar-collapsed .sidebar-collapse-btn .label-collapsed {
   display: inline;
 }
 
@@ -639,19 +639,19 @@ body.dark-mode .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
   font-size: 1rem;
   cursor: pointer;
 }
-/* StatsIP demo sidebar collapseabl */
-body.statsip-demo .sidebar-collapse-btn {
+/* Demo sidebar collapse */
+body.demo-sidebar-collapsible .sidebar-collapse-btn {
   display: inline-flex;
   flex-basis: 100%;
   justify-content: flex-start;
 }
-body.statsip-demo .content-wrapper {
+body.demo-sidebar-collapsible .content-wrapper {
   flex-wrap: wrap;
 }
-body.statsip-demo .modern-sidebar {
+body.demo-sidebar-collapsible .modern-sidebar {
   transition: width 0.25s ease, margin 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
 }
-body.statsip-sidebar-collapsed .modern-sidebar {
+body.demo-sidebar-collapsed .modern-sidebar {
   width: 0;
   margin: 0;
   padding: 0;
@@ -660,7 +660,7 @@ body.statsip-sidebar-collapsed .modern-sidebar {
   overflow: hidden;
   box-shadow: none;
 }
-body.statsip-sidebar-collapsed .main-content {
+body.demo-sidebar-collapsed .main-content {
   padding-left: 10px;
   padding-right: 10px;
 }

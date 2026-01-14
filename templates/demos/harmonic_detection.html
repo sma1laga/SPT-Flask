@@ -240,9 +240,9 @@
     resizeTimer = setTimeout(rerenderPlots, 140);
   });
 
-  const statsipToggle = document.getElementById('statsip-sidebar-toggle');
-  if(statsipToggle){
-    statsipToggle.addEventListener('click', () => setTimeout(rerenderPlots, 180));
+  const demoSidebarToggle = document.getElementById('demo-sidebar-toggle');
+  if(demoSidebarToggle){
+    demoSidebarToggle.addEventListener('click', () => setTimeout(rerenderPlots, 180));
   }
 
   update();

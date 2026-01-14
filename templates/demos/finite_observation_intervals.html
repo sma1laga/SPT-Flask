@@ -86,7 +86,7 @@
   const modeSelect = document.getElementById('mode-select');
   const updateBtn = document.getElementById('update-btn');
   const layoutRoot = document.querySelector('.foi-layout');
-  const statsipToggle = document.getElementById('statsip-sidebar-toggle');
+  const demoSidebarToggle = document.getElementById('demo-sidebar-toggle');
 
   const statEls = {
     freq: document.getElementById('stat-freq'),
@@ -227,8 +227,8 @@
   samplesSlider.addEventListener('input', syncSamplesFromSlider);
   samplesInput.addEventListener('change', syncSamplesFromInput);
   updateBtn.addEventListener('click', update);
-  if(statsipToggle){
-    statsipToggle.addEventListener('click', () => {
+  if(demoSidebarToggle){
+    demoSidebarToggle.addEventListener('click', () => {
       setTimeout(resizePlotsToHeight, 260);
     });
   }

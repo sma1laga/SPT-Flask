@@ -74,24 +74,24 @@ document.addEventListener("DOMContentLoaded", function() {
       sidebar.classList.toggle("active");
     });
   }
-  // StatsIP demo sidebar collapse toggle (desktop)
-  const statsipToggle = document.getElementById("statsip-sidebar-toggle");
-  if (statsipToggle && document.body.classList.contains("statsip-demo")) {
-    const STORAGE_KEY = "statsipSidebarCollapsed";
+  // Demo sidebar collapse toggle (desktop)
+  const demoSidebarToggle = document.getElementById("demo-sidebar-toggle");
+  if (demoSidebarToggle && document.body.classList.contains("demo-sidebar-collapsible")) {
+    const STORAGE_KEY = "demoSidebarCollapsed";
 
-    const applyStatsipSidebarState = (isCollapsed) => {
-      document.body.classList.toggle("statsip-sidebar-collapsed", isCollapsed);
-      statsipToggle.setAttribute("aria-expanded", (!isCollapsed).toString());
-      statsipToggle.querySelector("i")?.classList.toggle("fa-angle-double-right", isCollapsed);
-      statsipToggle.querySelector("i")?.classList.toggle("fa-angle-double-left", !isCollapsed);
+    const applySidebarState = (isCollapsed) => {
+      document.body.classList.toggle("demo-sidebar-collapsed", isCollapsed);
+      demoSidebarToggle.setAttribute("aria-expanded", (!isCollapsed).toString());
+      demoSidebarToggle.querySelector("i")?.classList.toggle("fa-angle-double-right", isCollapsed);
+      demoSidebarToggle.querySelector("i")?.classList.toggle("fa-angle-double-left", !isCollapsed);
     };
 
     const initialCollapsed = localStorage.getItem(STORAGE_KEY) === "true";
-    applyStatsipSidebarState(initialCollapsed);
+    applySidebarState(initialCollapsed);
 
-    statsipToggle.addEventListener("click", () => {
-      const next = !document.body.classList.contains("statsip-sidebar-collapsed");
-      applyStatsipSidebarState(next);
+    demoSidebarToggle.addEventListener("click", () => {
+      const next = !document.body.classList.contains("demo-sidebar-collapsed");
+      applySidebarState(next);
       localStorage.setItem(STORAGE_KEY, next ? "true" : "false");
     });
   }

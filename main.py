@@ -109,6 +109,10 @@ def _build_demo_slug_map():
 
 
 DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
+COLLAPSIBLE_DEMO_SECTIONS = {
+    "Statistical Signal Processing",
+    "Image and Video Compression",
+}
 
 
 
@@ -134,6 +138,7 @@ def create_app():
             "demos_section": section_data,
             "demos_section_name": section_name,
             "is_statsip_demo": section_name == "Statistical Signal Processing",
+            "is_collapsible_demo": section_name in COLLAPSIBLE_DEMO_SECTIONS,
         }
 
     @app.errorhandler(Exception)
