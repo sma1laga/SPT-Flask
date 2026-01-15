@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="demo">
+<div class="demo block-matching-demo">
   <div class="card control-card">
     <div class="card-title">Block Matching</div>
     <p class="control-subtitle">
       Select a block in the current frame, set the search window and search strategy,
       and see how different block-matching methods locate it in the reference frame.
     </p>
+    <div class="control-notes">
+      <div><strong>Current frame:</strong> shifted image with the blue block you track.</div>
+      <div><strong>Reference frame:</strong> original image with the best green match inside the dashed search window.</div>
+      <div><strong>Shifters:</strong> move the current frame (Shift X/Y) and the block origin (Block X/Y) to test motion.</div>
+    </div>
     <div class="control-grid">
       <label class="slider-block">
         Block size
@@ -125,6 +130,18 @@
 </div>
 
 <style>
+  .block-matching-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .block-matching-demo .card {
+    padding: 10px;
+  }
+
   .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
   body.dark-mode .card-title { color: #f1f5ff; }
 
@@ -132,12 +149,23 @@
   .control-subtitle {
     margin: 0 0 8px 0;
     color: var(--demo-description-color, #465063);
+    font-size: 0.95rem;
   }
+
+  .control-notes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 6px 12px;
+    margin-bottom: 10px;
+    color: var(--demo-description-color, #465063);
+    font-size: 0.88rem;
+  }
+  body.dark-mode .control-notes { color: #d8e3f5; }
 
   .control-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 10px 14px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px 10px;
   }
 
   .slider-block {
@@ -145,6 +173,7 @@
     gap: 6px;
     color: #0e1a2b;
     font-weight: 700;
+    font-size: 0.9rem;
   }
 
   .slider-block input[type=range],
@@ -152,7 +181,7 @@
     width: 100%;
     accent-color: #0b5ebd;
     border-radius: 10px;
-    padding: 8px;
+    padding: 6px;
     border: 1px solid var(--demo-card-border, rgba(13,53,109,0.18));
     box-shadow: none;
   }
@@ -173,9 +202,8 @@
 
   .layout-grid {
     display: grid;
-    /* etwas breiteres Minimum, damit die Bilder "größer" wirken */
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
     box-shadow: none;
     transform: none;
   }
@@ -196,6 +224,7 @@
   canvas {
     width: 100%;
     height: auto;
+    aspect-ratio: 1 / 1;
     border-radius: 12px;
     border: 1px solid var(--demo-card-border, rgba(13,53,109,0.18));
     box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06));
@@ -211,9 +240,9 @@
 
   .metric-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 8px 12px;
-    font-size: 0.95rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px 10px;
+    font-size: 0.9rem;
   }
 
   .metric-grid div:nth-child(odd) {
@@ -221,6 +250,28 @@
   }
   body.dark-mode .metric-grid div:nth-child(odd) {
     color: #c6d4ea;
+  }
+
+  body.demo-sidebar-collapsed .block-matching-demo {
+    max-width: min(1500px, calc(100vw - 24px));
+  }
+
+  body.demo-sidebar-collapsed .block-matching-demo .control-grid {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+
+  body.demo-sidebar-collapsed .block-matching-demo .control-notes {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  body.demo-sidebar-collapsed .block-matching-demo .layout-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  @media (max-width: 1100px) {
+    .block-matching-demo .layout-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
 
