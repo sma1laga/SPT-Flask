@@ -267,7 +267,7 @@ def _prepare_distribution(dist: str, params: Dict):
         sigma = float(params.get("sigma", DEFAULTS["sigma"]))
         x, pdf, cdf, mean, variance = _normal(mean, sigma, fixed_limits)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "(-\infty, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"(-\infty, \infty)"
         )
 
     if dist == "laplace":
@@ -275,21 +275,21 @@ def _prepare_distribution(dist: str, params: Dict):
         sigma = float(params.get("laplace_sigma", DEFAULTS["laplace_sigma"]))
         x, pdf, cdf, mean, variance = _laplace(mean, sigma, fixed_limits)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "(-\infty, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"(-\infty, \infty)"
         )
 
     if dist == "rayleigh":
         sigma = float(params.get("rayleigh_sigma", DEFAULTS["rayleigh_sigma"]))
         x, pdf, cdf, mean, variance = _rayleigh(sigma, fixed_limits)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "[0, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"[0, \infty)"
         )
 
     if dist == "exponential":
         lmbda = float(params.get("lambda", DEFAULTS["lambda"]))
         x, pdf, cdf, mean, variance = _exponential(lmbda, fixed_limits)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "[0, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"[0, \infty)"
         )
 
     if dist == "cauchy":
@@ -313,7 +313,7 @@ def _prepare_distribution(dist: str, params: Dict):
             cdf,
             mean,
             variance,
-            f"k ∈ {{0, \ldots, {int(max(ks))}}}",
+            rf"k ∈ {{0, \ldots, {int(max(ks))}}}",
         )
 
     if dist == "geometric":
@@ -328,7 +328,7 @@ def _prepare_distribution(dist: str, params: Dict):
             cdf,
             mean,
             variance,
-            "k \ge 0",
+            r"k \ge 0",
         )
 
     if dist == "poisson":
@@ -343,7 +343,7 @@ def _prepare_distribution(dist: str, params: Dict):
             cdf,
             mean,
             variance,
-            "k \ge 0",
+            r"k \ge 0",
         )
 
     if dist == "gamma":
@@ -351,7 +351,7 @@ def _prepare_distribution(dist: str, params: Dict):
         lmbda = float(params.get("gamma_lambda", DEFAULTS["gamma_lambda"]))
         x, pdf, cdf, mean, variance = _gamma(a, lmbda)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "[0, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"[0, \infty)"
         )
 
     if dist == "erlang":
@@ -359,14 +359,14 @@ def _prepare_distribution(dist: str, params: Dict):
         lmbda = float(params.get("erlang_lambda", DEFAULTS["erlang_lambda"]))
         x, pdf, cdf, mean, variance = _erlang(n, lmbda)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "[0, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"[0, \infty)"
         )
 
     if dist == "chi_square":
         b = float(params.get("chi_b", DEFAULTS["chi_b"]))
         x, pdf, cdf, mean, variance = _chi_square(b)
         return _response_payload(
-            dist, "continuous", x, pdf, x, cdf, mean, variance, "[0, \infty)"
+            dist, "continuous", x, pdf, x, cdf, mean, variance, r"[0, \infty)"
         )
 
     if dist == "uniform":

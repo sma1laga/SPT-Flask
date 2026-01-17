@@ -19,6 +19,11 @@
     <div class="image-shell">
       <img id="variant-image" src="" alt="Compressed view" class="demo-image solo-image">
     </div>
+    <div class="detail-panel">
+      <div class="detail-title">Zoomed detail</div>
+      <div id="detail-view" class="detail-view" role="img" aria-label="Zoomed crop of the image center"></div>
+      <p class="detail-caption">2.5× crop from the center to make compression artifacts easier to see.</p>
+    </div>
     <div class="metric-grid">
       <div>Resolution</div><div id="metric-resolution"></div>
       <div>File size</div><div id="metric-size"></div>
@@ -52,6 +57,13 @@
   .demo-image { width: min(100%, 560px); max-height: min(52vh, 420px); border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; margin: 0 auto; }
   body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
   .full-width { width: 100%; }
+  .detail-panel { display: grid; gap: 6px; }
+  .detail-title { font-weight: 600; font-size: 0.85rem; color: #1c2b42; }
+  body.dark-mode .detail-title { color: #e6eefc; }
+  .detail-view { width: min(100%, 320px); aspect-ratio: 1 / 1; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 10px 22px rgba(15,35,95,0.08)); background-repeat: no-repeat; background-position: center; background-size: 250%; }
+  body.dark-mode .detail-view { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 24px rgba(0,0,0,0.35); }
+  .detail-caption { margin: 0; color: var(--demo-description-color, #465063); font-size: 0.82rem; }
+  body.dark-mode .detail-caption { color: #d8e3f5; }
   .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 6px 10px; font-size: 0.85rem; }
   .metric-grid div:nth-child(odd) { color: var(--demo-description-color, #465063); }
   body.dark-mode .metric-grid div:nth-child(odd) { color: #c6d4ea; }
@@ -87,6 +99,7 @@
     document.getElementById('variant-label').textContent = data.label;
     document.getElementById('variant-description').textContent = data.description;
     document.getElementById('variant-image').src = data.image_src;
+    document.getElementById('detail-view').style.backgroundImage = `url(${data.image_src})`;
     document.getElementById('metric-resolution').textContent = `${data.width} × ${data.height} px`;
     document.getElementById('metric-size').textContent = formatBytes(data.file_size);
     document.getElementById('metric-factor').textContent = formatRatio(data.compression_factor);
