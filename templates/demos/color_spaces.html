@@ -25,6 +25,35 @@
         </div>
       </div>
     </div>
+    <div class="comparison-panel">
+      <div>
+        <div class="card-title small">Component comparison</div>
+        <p class="variant-desc">Pick any two components to compare their channel images and histograms side by side.</p>
+      </div>
+      <div class="comparison-controls">
+        <label class="comparison-label" for="comparison-select-a">Left component</label>
+        <select id="comparison-select-a" class="comparison-select"></select>
+        <button type="button" class="swap-button" id="comparison-swap">Swap</button>
+        <label class="comparison-label" for="comparison-select-b">Right component</label>
+        <select id="comparison-select-b" class="comparison-select"></select>
+      </div>
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="card-title" id="comparison-title-a"></div>
+          <div class="comparison-images">
+            <img class="demo-image" id="comparison-image-a" alt="Selected component image">
+            <img class="plot-image" id="comparison-histogram-a" alt="Selected component histogram">
+          </div>
+        </div>
+        <div class="comparison-card">
+          <div class="card-title" id="comparison-title-b"></div>
+          <div class="comparison-images">
+            <img class="demo-image" id="comparison-image-b" alt="Selected component image">
+            <img class="plot-image" id="comparison-histogram-b" alt="Selected component histogram">
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="visual-grid">
       <div class="component-grid" id="component-grid"></div>
@@ -38,7 +67,7 @@
   .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
   .card-title.small { font-size: 0.95rem; margin-bottom: 6px; }
   body.dark-mode .card-title { color: #f1f5ff; }
-  .color-spaces-demo { --component-height: clamp(150px, 22vh, 225px); --plot-height: clamp(190px, 28vh, 300px); --reference-width: 105px; }
+  .color-spaces-demo { --component-height: clamp(150px, 22vh, 225px); --plot-height: clamp(190px, 28vh, 300px); --reference-width: 85px; }
   .control-card { margin-bottom: 16px; }
   .control-subtitle { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
   .mode-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -61,6 +90,24 @@
   .header-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
   .reference-card { padding: 8px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; background: var(--demo-card-bg, #fff); }
   body.dark-mode .reference-card { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); }
+  .comparison-panel { padding: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; background: var(--demo-card-bg, #fff); display: flex; flex-direction: column; gap: 12px; }
+  body.dark-mode .comparison-panel { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); }
+  .comparison-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: center; gap: 8px; }
+  .comparison-label { font-weight: 600; font-size: 0.85rem; color: var(--demo-description-color, #465063); }
+  body.dark-mode .comparison-label { color: #d8e3f5; }
+  .comparison-select { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.2)); background: var(--demo-card-bg, #fff); font-weight: 600; color: #0e1a2b; }
+  body.dark-mode .comparison-select { border-color: rgba(158,203,255,0.25); background: rgba(16,26,46,0.7); color: #eaf2ff; }
+  .swap-button { padding: 7px 10px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: #fff; color: var(--demo-button-color, #0b5ebd); font-weight: 600; cursor: pointer; }
+  .swap-button:hover,
+  .swap-button:focus { background: #fff; color: var(--demo-button-color, #0b5ebd); }
+  body.dark-mode .swap-button { border-color: rgba(158,203,255,0.55); background: rgba(158,203,255,0.08); color: #d7e8ff; }
+  body.dark-mode .swap-button:hover,
+  body.dark-mode .swap-button:focus { background: #fff; color: #0b5ebd; }
+  .comparison-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .comparison-card { padding: 10px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); background: var(--demo-card-bg, #fff); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); display: flex; flex-direction: column; gap: 8px; }
+  body.dark-mode .comparison-card { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .comparison-images { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .plot-image.is-hidden { display: none; }
   .visual-grid { display: grid; grid-template-columns: minmax(220px, 0.85fr) minmax(340px, 1.15fr); gap: 12px; align-items: start; }
   .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
   .component-card { padding: 8px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); background: var(--demo-card-bg, #fff); }
@@ -70,12 +117,13 @@
   .plot-card { padding: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); background: var(--demo-card-bg, #fff); display: flex; flex-direction: column; gap: 6px; }
   body.dark-mode .plot-card { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
   .plot-image { width: 100%; max-height: var(--plot-height); object-fit: contain; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); }
-  body.demo-sidebar-collapsed .color-spaces-demo { --component-height: clamp(140px, 20vh, 205px); --plot-height: clamp(180px, 26vh, 270px); --reference-width: 96px; }
+  body.demo-sidebar-collapsed .color-spaces-demo { --component-height: clamp(140px, 20vh, 205px); --plot-height: clamp(180px, 26vh, 270px); --reference-width: 76px; }
   body.dark-mode .plot-image { border-color: rgba(158,203,255,0.18); }
   @media (max-width: 780px) {
     .header-row { grid-template-columns: 1fr; }
     .reference-card { width: 100%; justify-self: start; }
     .visual-grid { grid-template-columns: 1fr; }
+    .comparison-controls { grid-template-columns: 1fr; }
   }
 </style>
 
@@ -84,8 +132,25 @@
 
   const componentGrid = document.getElementById('component-grid');
   const histogramGrid = document.getElementById('histogram-grid');
+  const comparisonSelectA = document.getElementById('comparison-select-a');
+  const comparisonSelectB = document.getElementById('comparison-select-b');
+  const comparisonTitleA = document.getElementById('comparison-title-a');
+  const comparisonTitleB = document.getElementById('comparison-title-b');
+  const comparisonImageA = document.getElementById('comparison-image-a');
+  const comparisonImageB = document.getElementById('comparison-image-b');
+  const comparisonHistogramA = document.getElementById('comparison-histogram-a');
+  const comparisonHistogramB = document.getElementById('comparison-histogram-b');
+  const comparisonSwap = document.getElementById('comparison-swap');
+  const referenceComponent = {
+    name: 'Reference image',
+    image_uri: {{ original_src | tojson }},
+    histogram_uri: null,
+    isReference: true,
+  };
 
-  function createComponentCard(component) {
+  let activeVariantKey = 'rgb';
+
+  function createComponentCard(component, index) {
     const card = document.createElement('div');
     card.className = 'component-card';
     const title = document.createElement('div');
@@ -100,6 +165,10 @@
     shell.appendChild(img);
     card.appendChild(title);
     card.appendChild(shell);
+    card.addEventListener('click', () => {
+      comparisonSelectA.value = index;
+      updateComparison();
+    });
     return card;
   }
 
@@ -117,22 +186,80 @@
     card.appendChild(img);
     return card;
   }
+  function resolveComponent(value, data) {
+    if (value === 'reference') {
+      return referenceComponent;
+    }
+    const index = Number(value);
+    return data.components[index] || data.components[0];
+  }
+
+  function updateComparisonSlot(component, titleEl, imageEl, histogramEl) {
+    titleEl.textContent = component.name;
+    imageEl.src = component.image_uri;
+    imageEl.alt = component.name;
+
+    if (component.isReference) {
+      histogramEl.classList.add('is-hidden');
+      histogramEl.removeAttribute('src');
+      histogramEl.alt = '';
+      return;
+    }
+
+    histogramEl.classList.remove('is-hidden');
+    histogramEl.src = component.histogram_uri;
+    histogramEl.alt = `${component.name} histogram`;
+  }
+
+  function updateComparison() {
+    const data = variants[activeVariantKey];
+    if (!data) return;
+    const componentA = resolveComponent(comparisonSelectA.value, data);
+    const componentB = resolveComponent(comparisonSelectB.value, data);
+
+    updateComparisonSlot(componentA, comparisonTitleA, comparisonImageA, comparisonHistogramA);
+    updateComparisonSlot(componentB, comparisonTitleB, comparisonImageB, comparisonHistogramB);
+  }
+
+  function populateComparisonControls(data) {
+    comparisonSelectA.innerHTML = '';
+    comparisonSelectB.innerHTML = '';
+    const referenceOption = document.createElement('option');
+    referenceOption.value = 'reference';
+    referenceOption.textContent = referenceComponent.name;
+    const referenceOptionClone = referenceOption.cloneNode(true);
+    comparisonSelectA.appendChild(referenceOption);
+    comparisonSelectB.appendChild(referenceOptionClone);
+
+    data.components.forEach((component, index) => {
+      const optionA = document.createElement('option');
+      optionA.value = String(index);
+      optionA.textContent = component.name;
+      const optionB = optionA.cloneNode(true);
+      comparisonSelectA.appendChild(optionA);
+      comparisonSelectB.appendChild(optionB);
+    });
+
+    comparisonSelectA.value = 'reference';
+    comparisonSelectB.value = data.components.length > 0 ? '0' : 'reference';
+    updateComparison();
+  }
 
   function setVariant(key) {
     const data = variants[key];
     if (!data) return;
-
+    activeVariantKey = key;
     document.getElementById('variant-title').textContent = data.title;
     document.getElementById('variant-description').textContent = data.description;
 
     componentGrid.innerHTML = '';
     histogramGrid.innerHTML = '';
 
-    data.components.forEach((component) => {
-      componentGrid.appendChild(createComponentCard(component));
+    data.components.forEach((component, index) => {
+      componentGrid.appendChild(createComponentCard(component, index));
       histogramGrid.appendChild(createHistogramCard(component));
     });
-
+    populateComparisonControls(data);
     document.querySelectorAll('.mode-button').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.variant === key);
     });
@@ -140,6 +267,14 @@
 
   document.querySelectorAll('.mode-button').forEach((btn) => {
     btn.addEventListener('click', () => setVariant(btn.dataset.variant));
+  });
+  comparisonSelectA.addEventListener('change', updateComparison);
+  comparisonSelectB.addEventListener('change', updateComparison);
+  comparisonSwap.addEventListener('click', () => {
+    const temp = comparisonSelectA.value;
+    comparisonSelectA.value = comparisonSelectB.value;
+    comparisonSelectB.value = temp;
+    updateComparison();
   });
 
   setVariant('rgb');
