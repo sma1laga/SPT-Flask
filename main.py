@@ -104,6 +104,17 @@ DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
 
 def create_app():
     app = Flask(__name__)
+
+    @app.after_request
+    def apply_response_headers(response):
+        if response.mimetype == "text/html":
+            response.headers.setdefault("Cache-Control", "no-store")
+
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.pop("X-XSS-Protection", None)
+        response.headers.pop("X-Frame-Options", None)
+        response.headers.pop("Expires", None)
+        return response
     
     @app.context_processor
     def inject_demos_sidebar():

@@ -5,11 +5,22 @@ from flask import Blueprint, render_template, request, jsonify
 dig_bp = Blueprint('digital_modulation', __name__, template_folder='templates')
 
 # ---------- helpers ----------
-
+MAX_TIME_SAMPLES = 200000
+MAX_M_PAM_SYMBOLS = 5000
+MAX_M_PAM_SPS = 64
+MAX_M_PAM_SPAN = 32
 
 def make_time(t_end=1.0, fs=1000):
     N = int(max(8, fs * t_end))
     return np.linspace(0.0, t_end, N, endpoint=False)
+
+def _validate_time_budget(fs: float, t_end: float):
+    if fs <= 0 or t_end <= 0:
+        return "fs and duration must be positive"
+    samples = fs * t_end
+    if samples > MAX_TIME_SAMPLES:
+        return f"Requested {int(samples)} samples exceeds limit ({MAX_TIME_SAMPLES})."
+    return None
 
 
 def spectrum_db(x: np.ndarray, fs: float):
@@ -433,6 +444,8 @@ def passband_api():
     n_symbols = int(max(16, n_symbols))
     symbol_rate = float(max(10.0, symbol_rate))
     carrier = float(max(1.0, carrier))
+    if n_symbols * sps > MAX_TIME_SAMPLES:
+        return jsonify(error=f"Requested {n_symbols * sps} samples exceeds limit ({MAX_TIME_SAMPLES})."), 400
 
     seed_val = params.get('seed')
     if seed_val is not None:
@@ -572,6 +585,9 @@ def modulate_api():
         fs = float(PRESETS[preset].get('fs', fs))
         t_end = float(PRESETS[preset].get('t_end', t_end))
         snr_db = _to_float_or_inf(PRESETS[preset].get('snr_db', snr_db))
+    error = _validate_time_budget(fs, t_end)
+    if error:
+        return jsonify(error=error), 400
 
     t = make_time(t_end=t_end, fs=fs)
 
@@ -652,6 +668,9 @@ def demodulate_api():
     kind = (params.get('type') or 'PAM').upper()
     fs = float(params.get('fs', 2000))
     t_end = float(params.get('t_end', 1.0))
+    error = _validate_time_budget(fs, t_end)
+    if error:
+        return jsonify(error=error), 400
     t = make_time(t_end=t_end, fs=fs)
 
     if kind in ['PAM', 'PWM', 'PPM', 'PCM']:
@@ -706,6 +725,12 @@ def m_pam_api():
         timing_offset = float(params.get('timing_offset', params.get('timing', 0.0)))
     except ValueError as exc:
         return jsonify(error=f"Invalid parameter: {exc}"), 400
+    if symbols > MAX_M_PAM_SYMBOLS:
+        return jsonify(error=f"symbols exceeds limit ({MAX_M_PAM_SYMBOLS})."), 400
+    if sps > MAX_M_PAM_SPS:
+        return jsonify(error=f"sps exceeds limit ({MAX_M_PAM_SPS})."), 400
+    if span > MAX_M_PAM_SPAN:
+        return jsonify(error=f"span exceeds limit ({MAX_M_PAM_SPAN})."), 400
 
     seed_val = params.get('seed')
     curve_seed_base = None

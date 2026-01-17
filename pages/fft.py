@@ -4,6 +4,7 @@ import json
 
 # Blueprint setup
 fft_bp = Blueprint('fft', __name__, template_folder='templates')
+MAX_FFT_SAMPLES = 16384
 
 @fft_bp.route('/', methods=['GET', 'POST'])
 def fft():
@@ -14,6 +15,8 @@ def fft():
         fs = float(request.form.get('fs', 500.0))
         T = float(request.form.get('duration', 1.0))
         N = int(request.form.get('n_samples', 1024))
+        if N > MAX_FFT_SAMPLES:
+            return (f"n_samples exceeds limit ({MAX_FFT_SAMPLES}).", 400)
 
         # Time axis
         t = np.linspace(0, T, N, endpoint=False)

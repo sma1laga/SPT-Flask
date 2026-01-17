@@ -155,8 +155,8 @@ body.nav-open {
   color: var(--header-text);
   border-bottom: 1px solid var(--header-border);
   box-shadow: 0 5px 14px rgba(15, 23, 42, 0.2);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   overflow: visible;
   isolation: isolate;
 }
@@ -510,6 +510,7 @@ body.nav-open {
   box-shadow: 0 5px 18px rgba(15, 76, 129, 0.08);
   margin: 10px;
   transition: box-shadow 0.35s ease, transform 0.35s ease;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
 }
 .modern-sidebar::before {
