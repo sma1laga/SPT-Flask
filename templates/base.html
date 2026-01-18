@@ -124,6 +124,11 @@
                  <!-- <li><a href="{{ url_for('bode_plot.bode_plot') }}" class="sidebar-link{% if request.endpoint == 'bode_plot.bode_plot' %} active{% endif %}">
                   Bode Plot</a>
                 </li> -->
+                <li class="section-title">Control Design</li>
+                <li><a href="{{ url_for('loop_shaping.loop_shaping') }}" class="sidebar-link{% if request.endpoint == 'loop_shaping.loop_shaping' %} active{% endif %}">
+                  Loop-Shaping Design</a>
+                </li>
+
 
                 <li class="section-title">Convolution</li>
                 <li><a href="{{ url_for('convolution.convolution') }}" class="sidebar-link{% if request.endpoint == 'convolution.convolution' %} active{% endif %}">

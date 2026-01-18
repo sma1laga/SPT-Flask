@@ -24,6 +24,7 @@ from pages.transform_table import transform_table_bp
 from pages.theory import theory_bp
 from pages.info import info_bp
 from pages.bode_plot import bode_plot_bp
+from pages.loop_shaping import loop_shaping_bp
 from pages.dynamic_convolution import dynamic_convolution_bp
 from pages.inverse_z import inverse_z_bp
 from pages.inverse_laplace import inverse_laplace_bp
@@ -146,6 +147,7 @@ def create_app():
     
     app.register_blueprint(fourier_bp,       url_prefix="/fourier")
     app.register_blueprint(bode_plot_bp, url_prefix="/bode_plot")
+    app.register_blueprint(loop_shaping_bp, url_prefix="/loop_shaping")
     app.register_blueprint(convolution_bp,   url_prefix="/convolution")
     app.register_blueprint(dynamic_convolution_bp, url_prefix="/convolution/dynamic")
     app.register_blueprint(autocorrelation_bp, url_prefix="/autocorrelation")

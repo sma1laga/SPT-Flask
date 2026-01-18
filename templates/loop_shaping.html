@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .loop-page {max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem;}
+  .loop-hero {background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 1.2rem 1.4rem; color: #1f2937;}
+  .loop-hero h1 {margin-top: 0; margin-bottom: 0.4rem;}
+  .loop-grid {display: grid; grid-template-columns: 1fr; gap: 1.4rem; align-items: start;}
+  .loop-card {background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06); padding: 1rem 1.2rem;}
+  .loop-card h3 {margin: 0 0 0.6rem; font-size: 1.05rem; color: #111827;}
+  .loop-card p {margin: 0 0 0.6rem; color: #4b5563;}
+  .loop-field {margin-bottom: 0.75rem;}
+  .loop-field label {display: block; font-weight: 600; margin-bottom: 0.3rem;}
+  .loop-field input,
+  .loop-field select,
+  .loop-field textarea {width: 100%; padding: 0.45rem 0.6rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem;}
+  .loop-row {display: flex; gap: 0.6rem; flex-wrap: wrap;}
+  .loop-row .loop-field {flex: 1; min-width: 120px;}
+  .loop-actions {display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem;}
+  .loop-btn {border: none; padding: 0.55rem 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.15s ease;}
+  .loop-btn.primary {background: #2563eb; color: #fff;}
+  .loop-btn.secondary {background: #10b981; color: #fff;}
+  .loop-btn.ghost {background: #f3f4f6; color: #1f2937;}
+  .loop-btn.warning {background: #f59e0b; color: #fff;}
+  .loop-badge {display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; border: 1px solid transparent;}
+  .loop-badge.ok {background: #ecfdf5; color: #065f46; border-color: #a7f3d0;}
+  .loop-badge.warn {background: #fff7ed; color: #9a3412; border-color: #fed7aa;}
+  .loop-badge.danger {background: #fef2f2; color: #991b1b; border-color: #fecaca;}
+  .loop-pill {display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.7rem; border-radius: 999px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 0.85rem; font-weight: 600; color: #0f172a;}
+  .loop-tabs {display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem;}
+  .loop-tab {border: 1px solid #cbd5f5; border-radius: 999px; padding: 0.3rem 0.8rem; font-weight: 600; cursor: pointer; background: #e0e7ff; color: #1e1b4b;}
+  .loop-tab.active {background: #2563eb; border-color: #2563eb; color: #fff;}
+  .loop-plot {min-height: 320px; width: 100%;}
+  .loop-plot-large {min-height: 360px;}
+  .loop-note {font-size: 0.9rem; color: #6b7280; margin-top: 0.4rem;}
+  .loop-interpretation ul {margin: 0; padding-left: 1.1rem; color: #1f2937;}
+  .loop-interpretation li {margin-bottom: 0.35rem;}
+  .loop-kv {display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; margin-bottom: 0.6rem;}
+  .loop-panel {border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.75rem; background: #f8fafc; margin-bottom: 0.8rem;}
+  .loop-panel h4 {margin: 0 0 0.5rem; font-size: 0.95rem; color: #111827;}
+  .loop-readonly {background: #f3f4f6; color: #374151;}
+  .loop-badge.small {font-size: 0.75rem; padding: 0.2rem 0.55rem;}
+  .loop-kv span strong {display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280;}
+  .loop-toggle {display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; color: #374151;}
+  .loop-toggle input {width: 1.05rem; height: 1.05rem; accent-color: #2563eb;}
+  .loop-hidden {display: none;}
+  .loop-footer {font-size: 0.85rem; color: #6b7280;}
+  @media (max-width: 1100px) {
+    .loop-grid {grid-template-columns: 1fr;}
+  }
+</style>
+
+<div class="loop-page">
+  <section class="loop-hero">
+    <h1>Frequency-Response / Loop-Shaping Design</h1>
+    <p>This module shows how to select and tune controllers using Bode or Nyquist plots.
+      It is designed to be didactic: fast, interactive, and transparent about limitations (e.g. non‑minimum‑phase).
+      Auto‑tuning is clearly marked as a heuristic.</p>
+    <div class="loop-row">
+      <span class="loop-pill">Goal: ω<sub>c</sub>, Phase Margin, Gain Margin</span>
+      <span class="loop-pill">Loop‑shaping in 4 steps: pick ω<sub>c</sub> → phase need → controller → verify</span>
+      <span class="loop-pill">Hint: K↑ → ω<sub>c</sub>↑, PM often drops</span>
+    </div>
+  </section>
+
+  <section class="loop-grid">
+    <div class="loop-card">
+      <h3>1) Plant / measured data</h3>
+      <div class="loop-field">
+        <label for="exampleSelect">Load example</label>
+        <select id="exampleSelect">
+          {% for ex in examples %}
+            <option value="{{ ex.id }}">{{ ex.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="loop-field">
+        <label for="tfExpression">Transfer function G(s)</label>
+        <input id="tfExpression" type="text" placeholder="(s+1)/(s*(s+2))" value="{{ examples[0].expression }}">
+        <div class="loop-note">Alternatively, enter numerator/denominator coefficients.</div>
+      </div>
+      <div class="loop-row">
+        <div class="loop-field">
+          <label for="tfNumerator">Numerator</label>
+          <input id="tfNumerator" type="text" placeholder="1, 2, 1">
+        </div>
+        <div class="loop-field">
+          <label for="tfDenominator">Denominator</label>
+          <input id="tfDenominator" type="text" placeholder="1, 3, 2, 0">
+        </div>
+      </div>
+      <div class="loop-field">
+        <label class="loop-toggle" for="useFreqData">
+          <input id="useFreqData" type="checkbox"> Use measured frequency-response data
+        </label>
+      </div>
+      <div id="freqDataBox" class="loop-hidden">
+        <div class="loop-field">
+          <label for="freqDataFormat">Data format</label>
+          <select id="freqDataFormat">
+            <option value="mag_phase">ω, |G| (dB), Phase (°)</option>
+            <option value="real_imag">ω, Re, Im</option>
+          </select>
+        </div>
+        <div class="loop-field">
+          <label for="freqData">Measured data</label>
+          <textarea id="freqData" rows="6" placeholder="# ω, dB, deg
+1  -3  -45
+2  -9  -90"></textarea>
+        </div>
+      </div>
+
+      <h3>2) Design mode</h3>
+      <div class="loop-field">
+        <label for="designMode">Design mode</label>
+        <select id="designMode">
+          <option value="exam">Lehrstuhl-Rezept (Klausur-Style)</option>
+          <option value="general">Allgemeines Loop-Shaping</option>
+        </select>
+      </div>
+      <div class="loop-panel" id="modeNote"></div>
+
+      <div class="loop-panel">
+        <h4>Targets</h4>
+        <div id="examInputs">
+          <div class="loop-row">
+            <div class="loop-field">
+              <label for="targetTan">Anstiegszeit T<sub>an</sub> [s]</label>
+              <input id="targetTan" type="number" step="0.1" value="1.0">
+            </div>
+            <div class="loop-field">
+              <label for="targetMp">Überschwingen Mp [%]</label>
+              <input id="targetMp" type="number" step="1" value="20">
+              <div class="loop-note">Hinweis: in manchen Skripten e_max.</div>
+            </div>
+          </div>
+          <div class="loop-field">
+            <label class="loop-toggle" for="targetEinfReqExam">
+              <input id="targetEinfReqExam" type="checkbox"> e∞ = 0 erforderlich (Sprung)
+            </label>
+          </div>
+          <div class="loop-row">
+            <div class="loop-field">
+              <label for="targetWdDisplay">ωD (computed)</label>
+              <input id="targetWdDisplay" class="loop-readonly" type="text" readonly>
+            </div>
+            <div class="loop-field">
+              <label for="targetPhiDisplay">Φ (PM) req (computed)</label>
+              <input id="targetPhiDisplay" class="loop-readonly" type="text" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div id="generalInputs" class="loop-hidden">
+          <div class="loop-row">
+            <div class="loop-field">
+              <label for="targetWc">ωc target</label>
+              <input id="targetWc" type="number" step="0.1" placeholder="5">
+            </div>
+            <div class="loop-field">
+              <label for="targetPmMin">Φ (PM) min [°]</label>
+              <input id="targetPmMin" type="number" step="1" placeholder="45">
+            </div>
+            <div class="loop-field">
+              <label for="targetGmMin">GM min [dB]</label>
+              <input id="targetGmMin" type="number" step="1" placeholder="6">
+            </div>
+          </div>
+          <div class="loop-field">
+            <label class="loop-toggle" for="targetEinfReq">
+              <input id="targetEinfReq" type="checkbox"> e∞ = 0 erforderlich (Sprung)
+            </label>
+          </div>
+          <div class="loop-row">
+            <div class="loop-field">
+              <label for="targetMpGeneral">Überschwingen Mp [%] (optional)</label>
+              <input id="targetMpGeneral" type="number" step="1" placeholder="20">
+            </div>
+            <div class="loop-field">
+              <label for="mpMapping">Mp → PM mapping</label>
+              <select id="mpMapping">
+                <option value="heuristic_70_minus">Lehrstuhl heuristic (70° - Mp)</option>
+                <option value="rule_100_minus_half">Rule of thumb (100° - 0.5·Mp)</option>
+              </select>
+            </div>
+            <div class="loop-field">
+              <label for="pmSuggestion">PM suggestion</label>
+              <input id="pmSuggestion" class="loop-readonly" type="text" readonly>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="loop-panel">
+        <h4>Measured values</h4>
+        <div class="loop-kv">
+          <span><strong>ωc</strong><span id="measWc">—</span></span>
+          <span><strong>Φ (PM)</strong><span id="measPm">—</span></span>
+          <span><strong>GM</strong><span id="measGm">—</span></span>
+          <span><strong>Mp [%]</strong><span id="measMp">—</span></span>
+          <span><strong>T_an [s]</strong><span id="measTr">—</span></span>
+          <span><strong>e∞ (Sprung)</strong><span id="measEinf">—</span></span>
+        </div>
+        <div class="loop-row" id="targetStatusRow"></div>
+      </div>
+
+      <div class="loop-note" id="modeHint"></div>
+
+      <h3>3) Controller GR(s)</h3>
+      <div class="loop-field">
+        <label for="controllerType">Controller type (GR)</label>
+        <select id="controllerType">
+          <option value="P">P</option>
+          <option value="PI">PI</option>
+          <option value="PD">PD (with filter)</option>
+          <option value="PID">PID (with filter)</option>
+          <option value="Lead">Lead</option>
+          <option value="Lag">Lag</option>
+          <option value="Lead-Lag">Lead-Lag</option>
+          <option value="Notch">Notch (optional)</option>
+        </select>
+      </div>
+
+      <div class="loop-field" data-controller="P PI PD PID Lead Lag Lead-Lag Notch">
+        <label for="paramK">K</label>
+        <input id="paramK" type="number" step="0.1" value="1.2">
+      </div>
+
+      <div class="loop-row">
+        <div class="loop-field" data-controller="PI PID">
+          <label for="paramTi">T<sub>i</sub></label>
+          <input id="paramTi" type="number" step="0.05" value="1.5">
+        </div>
+        <div class="loop-field" data-controller="PD PID">
+          <label for="paramTd">T<sub>d</sub></label>
+          <input id="paramTd" type="number" step="0.05" value="0.2">
+        </div>
+        <div class="loop-field" data-controller="PD PID">
+          <label for="paramN">Filter N</label>
+          <input id="paramN" type="number" step="1" value="10">
+        </div>
+      </div>
+
+      <div class="loop-row">
+        <div class="loop-field" data-controller="Lead Lag">
+          <label for="paramWz">ω<sub>z</sub></label>
+          <input id="paramWz" type="number" step="0.1" value="1">
+        </div>
+        <div class="loop-field" data-controller="Lead Lag">
+          <label for="paramWp">ω<sub>p</sub></label>
+          <input id="paramWp" type="number" step="0.1" value="10">
+        </div>
+      </div>
+
+      <div class="loop-row">
+        <div class="loop-field" data-controller="Lead-Lag">
+          <label for="paramLeadWz">Lead ω<sub>z</sub></label>
+          <input id="paramLeadWz" type="number" step="0.1" value="1">
+        </div>
+        <div class="loop-field" data-controller="Lead-Lag">
+          <label for="paramLeadWp">Lead ω<sub>p</sub></label>
+          <input id="paramLeadWp" type="number" step="0.1" value="6">
+        </div>
+        <div class="loop-field" data-controller="Lead-Lag">
+          <label for="paramLagWz">Lag ω<sub>z</sub></label>
+          <input id="paramLagWz" type="number" step="0.1" value="0.2">
+        </div>
+        <div class="loop-field" data-controller="Lead-Lag">
+          <label for="paramLagWp">Lag ω<sub>p</sub></label>
+          <input id="paramLagWp" type="number" step="0.1" value="1">
+        </div>
+      </div>
+
+      <div class="loop-row">
+        <div class="loop-field" data-controller="Notch">
+          <label for="paramW0">ω<sub>0</sub></label>
+          <input id="paramW0" type="number" step="0.1" value="10">
+        </div>
+        <div class="loop-field" data-controller="Notch">
+          <label for="paramZetaZ">ζ<sub>z</sub></label>
+          <input id="paramZetaZ" type="number" step="0.01" value="0.05">
+        </div>
+        <div class="loop-field" data-controller="Notch">
+          <label for="paramZetaP">ζ<sub>p</sub></label>
+          <input id="paramZetaP" type="number" step="0.05" value="0.5">
+        </div>
+      </div>
+
+      <div class="loop-actions">
+        <button class="loop-btn primary" id="updateBtn">Live update</button>
+        <button class="loop-btn ghost" id="resetBtn">Reset</button>
+        <button class="loop-btn secondary" id="stableBtn">Stable defaults</button>
+        <button class="loop-btn warning" id="exampleBtn">Load example</button>
+      </div>
+      <div class="loop-note">Tooltips: ω<sub>c</sub> = 0 dB crossover, PM = phase margin, GM = gain margin.</div>
+
+      <h3>6) Auto‑tuning (heuristic)</h3>
+      <div class="loop-field">
+        <label class="loop-toggle" for="autoToggle">
+          <input id="autoToggle" type="checkbox"> Enable auto‑tuning
+        </label>
+      </div>
+      <div id="autoBox" class="loop-hidden">
+        <div class="loop-actions">
+          <button class="loop-btn primary" id="autoBtn">Apply auto‑tune</button>
+        </div>
+        <div class="loop-note">Note: heuristic only! Uses the targets defined above.</div>
+      </div>
+    </div>
+
+    <div class="loop-card">
+      <h3>4) Visualization & metrics</h3>
+      <div class="loop-kv" id="metricRow">
+        <span><strong>ωc</strong><span id="metricWc">—</span></span>
+        <span><strong>Φ (PM)</strong><span id="metricPm">—</span></span>
+        <span><strong>GM</strong><span id="metricGm">—</span></span>
+        <span><strong>Bandwidth</strong><span id="metricBw">—</span></span>
+      </div>
+      <div class="loop-row" id="badgeRow"></div>
+
+      <div class="loop-note">Open-loop: L(s) = GR(s) · G(s).</div>
+      <div class="loop-tabs" data-tab-group="view">
+        <button class="loop-tab active" data-tab="bode" data-group="view">Bode</button>
+        <button class="loop-tab" data-tab="nyquist" data-group="view">Nyquist</button>
+        <button class="loop-tab" data-tab="nichols" data-group="view">Nichols</button>
+      </div>
+      <div id="tab-bode">
+        <div id="bodeMag" class="loop-plot"></div>
+        <div id="bodePhase" class="loop-plot"></div>
+      </div>
+      <div id="tab-nyquist" class="loop-hidden">
+        <div id="nyquistPlot" class="loop-plot loop-plot-large"></div>
+      </div>
+      <div id="tab-nichols" class="loop-hidden">
+        <div id="nicholsPlot" class="loop-plot loop-plot-large"></div>
+      </div>
+
+      <div class="loop-tabs" style="margin-top: 1rem;" data-tab-group="response">
+        <button class="loop-tab active" data-tab="time" data-group="response">Time response</button>
+        <button class="loop-tab" data-tab="sens" data-group="response">S/T</button>
+      </div>
+      <div id="tab-time">
+        <div id="stepPlot" class="loop-plot loop-plot-large"></div>
+      </div>
+      <div id="tab-sens" class="loop-hidden">
+        <div id="sensPlot" class="loop-plot loop-plot-large"></div>
+      </div>
+
+      <h3 style="margin-top: 1rem;">5) Interpretation</h3>
+      <div class="loop-interpretation">
+        <ul id="interpretationList"></ul>
+      </div>
+      <div class="loop-footer">Didactic focus: transparency first. Conflicts (e.g. NMP + high bandwidth) are flagged clearly.</div>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const plotConfig = {displayModeBar: true, responsive: true, scrollZoom: true};
+const exampleData = {{ examples | tojson }};
+
+const fieldsByController = () => {
+  const type = $('controllerType').value;
+  document.querySelectorAll('[data-controller]').forEach((el) => {
+    const supported = el.dataset.controller.split(' ');
+    el.style.display = supported.includes(type) ? 'block' : 'none';
+  });
+};
+
+const toggleBox = (toggleId, boxId) => {
+  const toggle = $(toggleId);
+  const box = $(boxId);
+  box.classList.toggle('loop-hidden', !toggle.checked);
+};
+
+const getControllerParams = () => {
+  return {
+    k: parseFloat($('paramK').value || 1),
+    ti: parseFloat($('paramTi').value || 1),
+    td: parseFloat($('paramTd').value || 0.1),
+    n: parseFloat($('paramN').value || 10),
+    wz: parseFloat($('paramWz').value || 1),
+    wp: parseFloat($('paramWp').value || 10),
+    lead_wz: parseFloat($('paramLeadWz').value || 1),
+    lead_wp: parseFloat($('paramLeadWp').value || 6),
+    lag_wz: parseFloat($('paramLagWz').value || 0.2),
+    lag_wp: parseFloat($('paramLagWp').value || 1),
+    w0: parseFloat($('paramW0').value || 10),
+    zeta_z: parseFloat($('paramZetaZ').value || 0.05),
+    zeta_p: parseFloat($('paramZetaP').value || 0.5)
+  };
+};
+
+const setControllerParams = (params) => {
+  if (params.k !== undefined) $('paramK').value = params.k;
+  if (params.ti !== undefined) $('paramTi').value = params.ti;
+  if (params.td !== undefined) $('paramTd').value = params.td;
+  if (params.n !== undefined) $('paramN').value = params.n;
+  if (params.wz !== undefined) $('paramWz').value = params.wz;
+  if (params.wp !== undefined) $('paramWp').value = params.wp;
+  if (params.lead_wz !== undefined) $('paramLeadWz').value = params.lead_wz;
+  if (params.lead_wp !== undefined) $('paramLeadWp').value = params.lead_wp;
+  if (params.lag_wz !== undefined) $('paramLagWz').value = params.lag_wz;
+  if (params.lag_wp !== undefined) $('paramLagWp').value = params.lag_wp;
+  if (params.w0 !== undefined) $('paramW0').value = params.w0;
+  if (params.zeta_z !== undefined) $('paramZetaZ').value = params.zeta_z;
+  if (params.zeta_p !== undefined) $('paramZetaP').value = params.zeta_p;
+};
+
+const applyExample = () => {
+  const selected = $('exampleSelect').value;
+  const example = exampleData.find((ex) => ex.id === selected);
+  if (!example) return;
+  $('tfExpression').value = example.expression;
+  $('tfNumerator').value = '';
+  $('tfDenominator').value = '';
+  $('controllerType').value = example.controller.type;
+  setControllerParams(example.controller.params);
+  fieldsByController();
+};
+
+const applyStableDefaults = () => {
+  $('controllerType').value = 'PI';
+  setControllerParams({k: 0.8, ti: 2.0, td: 0.15, n: 10, wz: 1, wp: 6});
+  fieldsByController();
+};
+
+const buildPayload = (mode = 'manual') => {
+  const designMode = $('designMode').value;
+  return {
+    mode,
+    design_mode: designMode,
+    plant: {
+      expression: $('tfExpression').value,
+      numerator: $('tfNumerator').value,
+      denominator: $('tfDenominator').value,
+      frequency_data: $('useFreqData').checked ? $('freqData').value : '',
+      data_format: $('freqDataFormat').value
+    },
+    controller: {
+      type: $('controllerType').value,
+      params: getControllerParams()
+    },
+    targets: {
+      t_an: $('targetTan').value,
+      mp: designMode === 'general' ? $('targetMpGeneral').value : $('targetMp').value,
+      einf_required: designMode === 'general' ? $('targetEinfReq').checked : $('targetEinfReqExam').checked,
+      wc: $('targetWc').value,
+      pm_min: $('targetPmMin').value,
+      gm_min: $('targetGmMin').value,
+      mp_mapping: $('mpMapping').value
+    }
+  };
+};
+
+const setMetrics = (margins) => {
+  const format = (val, unit = '') => (val === null || val === undefined || !isFinite(val)) ? '—' : `${val.toFixed(3)} ${unit}`;
+  $('metricWc').textContent = format(margins.wc, 'rad/s');
+  $('metricPm').textContent = format(margins.pm, '°');
+  $('metricGm').textContent = format(margins.gm_db, 'dB');
+  $('metricBw').textContent = format(margins.bandwidth, 'rad/s');
+};
+
+const setTargets = (targets) => {
+  const format = (val, unit = '') => (val === null || val === undefined || !isFinite(val)) ? '—' : `${parseFloat(val).toFixed(3)} ${unit}`;
+  $('targetWdDisplay').value = format(targets.wD, 'rad/s');
+  $('targetPhiDisplay').value = format(targets.phi_req, '°');
+  $('pmSuggestion').value = targets.pm_suggestion === null || targets.pm_suggestion === undefined ? '—' : `${targets.pm_suggestion.toFixed(1)}°`;
+  const note = targets.mode === 'exam'
+    ? 'Diese Regeln sind lehrstuhl-/skriptabhängig. Für andere Unis ggf. Modus B wählen.'
+    : 'Uniunabhängig: Ziele direkt setzen, Ergebnis wird durch Simulation/Reserven bewertet.';
+  $('modeHint').textContent = note;
+  $('modeNote').textContent = targets.mode === 'exam'
+    ? 'Lehrstuhl-Heuristik: ωD = 1.5 / T_an, Φ_req = 70° - Mp (nicht universell).'
+    : 'General loop-shaping: set ωc, PM, GM directly; Mp is a rough suggestion only.';
+};
+
+const setMeasured = (measured) => {
+  const format = (val, unit = '') => (val === null || val === undefined || !isFinite(val)) ? '—' : `${val.toFixed(3)} ${unit}`;
+  $('measWc').textContent = format(measured.wc, 'rad/s');
+  $('measPm').textContent = format(measured.pm, '°');
+  $('measGm').textContent = format(measured.gm, 'dB');
+  $('measMp').textContent = format(measured.mp, '%');
+  $('measTr').textContent = format(measured.t_r, 's');
+  $('measEinf').textContent = format(measured.e_inf, '');
+};
+
+const setTargetChecks = (checks) => {
+  const row = $('targetStatusRow');
+  row.innerHTML = '';
+  const add = (label, ok) => {
+    if (ok === undefined) return;
+    const span = document.createElement('span');
+    span.className = `loop-badge small ${ok ? 'ok' : 'danger'}`;
+    span.textContent = `${label}: ${ok ? 'OK' : 'not OK'}`;
+    row.appendChild(span);
+  };
+  add('ωc', checks.wc);
+  add('PM', checks.pm);
+  add('GM', checks.gm);
+  add('Mp', checks.mp);
+  add('e∞', checks.e_inf);
+};
+
+const setBadges = (badges) => {
+  const badgeRow = $('badgeRow');
+  badgeRow.innerHTML = '';
+  Object.values(badges).forEach((badge) => {
+    const span = document.createElement('span');
+    span.className = `loop-badge ${badge.class}`;
+    span.textContent = badge.label;
+    badgeRow.appendChild(span);
+  });
+};
+
+const setInterpretation = (notes) => {
+  const list = $('interpretationList');
+  list.innerHTML = '';
+  notes.forEach((note) => {
+    const li = document.createElement('li');
+    li.textContent = note;
+    list.appendChild(li);
+  });
+};
+
+const renderPlots = (data) => {
+  const f = data.frequency;
+  const magTrace = {x: f, y: data.mag_db, type: 'scatter', mode: 'lines', name: 'L(jω)'};
+  const phaseTrace = {x: f, y: data.phase_deg, type: 'scatter', mode: 'lines', name: 'Phase'};
+
+  const magLayout = {title: 'Bode |L(jω)|', xaxis: {title: 'ω (rad/s)', type: 'log'}, yaxis: {title: 'dB'}, margin: {l: 50, r: 10, t: 30, b: 45}};
+  const phaseLayout = {title: 'Bode phase', xaxis: {title: 'ω (rad/s)', type: 'log'}, yaxis: {title: '°'}, margin: {l: 50, r: 10, t: 30, b: 45}};
+
+  Plotly.react('bodeMag', [magTrace], magLayout, plotConfig);
+  Plotly.react('bodePhase', [phaseTrace], phaseLayout, plotConfig);
+
+  const nyquistTrace = {x: data.nyquist_re, y: data.nyquist_im, type: 'scatter', mode: 'lines', name: 'Nyquist'};
+  const nyquistLayout = {title: 'Nyquist', xaxis: {title: 'Re'}, yaxis: {title: 'Im', scaleanchor: 'x'}, margin: {l: 40, r: 10, t: 30, b: 45}};
+  Plotly.react('nyquistPlot', [nyquistTrace], nyquistLayout, plotConfig);
+
+  const nicholsTrace = {x: data.nichols_phase, y: data.nichols_mag_db, type: 'scatter', mode: 'lines', name: 'Nichols'};
+  const nicholsLayout = {title: 'Nichols', xaxis: {title: 'Phase (°)'}, yaxis: {title: 'Magnitude (dB)'}, margin: {l: 50, r: 10, t: 30, b: 45}};
+  Plotly.react('nicholsPlot', [nicholsTrace], nicholsLayout, plotConfig);
+
+  const stepTraces = [];
+  if (data.time && data.step_response) {
+    stepTraces.push({x: data.time, y: data.step_response, type: 'scatter', mode: 'lines', name: 'y(t)'});
+  }
+  if (data.time && data.control_response) {
+    stepTraces.push({x: data.time, y: data.control_response, type: 'scatter', mode: 'lines', name: 'u(t)'});
+  }
+  const stepLayout = {title: 'Closed-loop response', xaxis: {title: 't (s)'}, yaxis: {title: 'Amplitude'}, margin: {l: 50, r: 10, t: 30, b: 45}};
+  Plotly.react('stepPlot', stepTraces.length ? stepTraces : [{x: [], y: [], type: 'scatter'}], stepLayout, plotConfig);
+
+  const sensTrace = {x: f, y: data.sensitivity_mag_db, type: 'scatter', mode: 'lines', name: 'S'};
+  const compTrace = {x: f, y: data.complementary_mag_db, type: 'scatter', mode: 'lines', name: 'T'};
+  const sensLayout = {title: 'Sensitivity / complementary sensitivity', xaxis: {title: 'ω (rad/s)', type: 'log'}, yaxis: {title: 'dB'}, margin: {l: 50, r: 10, t: 30, b: 45}};
+  Plotly.react('sensPlot', [sensTrace, compTrace], sensLayout, plotConfig);
+};
+
+const updatePlots = async (mode = 'manual') => {
+  const response = await fetch('{{ url_for('loop_shaping.loop_shaping_api') }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(buildPayload(mode))
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    alert(text);
+    return;
+  }
+
+  const data = await response.json();
+  const margins = data.margins || {};
+  setMetrics({
+    wc: margins.wc,
+    pm: margins.pm,
+    gm_db: margins.gm_db,
+    bandwidth: data.bandwidth
+  });
+  if (data.targets) {
+    setTargets(data.targets);
+  }
+  if (data.measured) {
+    setMeasured(data.measured);
+  }
+  if (data.target_checks) {
+    setTargetChecks(data.target_checks);
+  }
+  setBadges(data.interpretation.badges);
+  setInterpretation(data.interpretation.notes);
+  renderPlots(data);
+
+  if (mode === 'auto' && data.controller) {
+    $('controllerType').value = data.controller.type;
+    setControllerParams(data.controller.params || {});
+    fieldsByController();
+  }
+};
+
+const debounce = (fn, delay) => {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+};
+
+const debouncedUpdate = debounce(() => updatePlots('manual'), 600);
+const shouldAutoUpdate = () => {
+  const hasExpression = $('tfExpression').value.trim().length > 0;
+  const hasCoeffInput = $('tfNumerator').value.trim().length > 0 || $('tfDenominator').value.trim().length > 0;
+  return hasExpression && !hasCoeffInput;
+};
+const debouncedUpdateIfAllowed = () => {
+  if (shouldAutoUpdate()) {
+    debouncedUpdate();
+  }
+};
+
+['tfExpression', 'controllerType', 'paramK', 'paramTi', 'paramTd', 'paramN',
+ 'paramWz', 'paramWp', 'paramLeadWz', 'paramLeadWp', 'paramLagWz', 'paramLagWp', 'paramW0', 'paramZetaZ',
+ 'paramZetaP', 'freqData', 'freqDataFormat', 'designMode', 'targetTan', 'targetMp', 'targetWc', 'targetPmMin',
+ 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('input', debouncedUpdateIfAllowed);
+});
+['tfNumerator', 'tfDenominator'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('input', () => {
+    $('tfExpression').value = '';
+  });
+});
+
+$('controllerType').addEventListener('change', () => {
+  fieldsByController();
+  debouncedUpdateIfAllowed();
+});
+
+const updateDesignModeUI = () => {
+  const isExam = $('designMode').value === 'exam';
+  $('examInputs').classList.toggle('loop-hidden', !isExam);
+  $('generalInputs').classList.toggle('loop-hidden', isExam);
+};
+
+$('designMode').addEventListener('change', () => {
+  updateDesignModeUI();
+  debouncedUpdateIfAllowed();
+});
+
+$('useFreqData').addEventListener('change', () => {
+  toggleBox('useFreqData', 'freqDataBox');
+  debouncedUpdateIfAllowed();
+});
+
+$('autoToggle').addEventListener('change', () => toggleBox('autoToggle', 'autoBox'));
+['targetEinfReqExam', 'targetEinfReq'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('change', debouncedUpdateIfAllowed);
+});
+
+$('updateBtn').addEventListener('click', () => updatePlots('manual'));
+$('autoBtn').addEventListener('click', () => updatePlots('auto'));
+$('resetBtn').addEventListener('click', () => {
+  $('tfExpression').value = exampleData[0].expression;
+  $('tfNumerator').value = '';
+  $('tfDenominator').value = '';
+  $('controllerType').value = exampleData[0].controller.type;
+  setControllerParams(exampleData[0].controller.params);
+  fieldsByController();
+  updatePlots('manual');
+});
+$('stableBtn').addEventListener('click', () => {
+  applyStableDefaults();
+  updatePlots('manual');
+});
+$('exampleBtn').addEventListener('click', () => {
+  applyExample();
+  updatePlots('manual');
+});
+$('exampleSelect').addEventListener('change', () => {
+  applyExample();
+  updatePlots('manual');
+});
+
+const tabButtons = document.querySelectorAll('.loop-tab');
+const switchViewTab = (tab) => {
+  ['bode', 'nyquist', 'nichols'].forEach((name) => {
+    const el = document.getElementById(`tab-${name}`);
+    if (el) el.classList.toggle('loop-hidden', name !== tab);
+  });
+};
+
+const switchResponseTab = (tab) => {
+  ['time', 'sens'].forEach((name) => {
+    const el = document.getElementById(`tab-${name}`);
+    if (el) el.classList.toggle('loop-hidden', name !== tab);
+  });
+};
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    const group = btn.dataset.group;
+    btn.parentElement.querySelectorAll('.loop-tab').forEach((el) => el.classList.remove('active'));
+    btn.classList.add('active');
+    if (group === 'view') {
+      switchViewTab(tab);
+    }
+    if (group === 'response') {
+      switchResponseTab(tab);
+    }
+  });
+});
+
+fieldsByController();
+updateDesignModeUI();
+applyExample();
+updatePlots('manual');
+</script>
+{% endblock %}
