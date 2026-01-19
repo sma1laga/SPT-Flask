@@ -1,0 +1,27 @@
+services:
+  nginx: # nginx reverse proxy for efficient static file serving
+    build: ./nginx 
+    ports: 
+      - 1300:80 
+    volumes:  
+      - static_volume:/home/app/spt/static
+    depends_on: 
+      - spt 
+    restart: "on-failure" 
+    
+
+  spt:
+    build: .
+    command: sh -c "cp -r static/* static_share &&
+                    gunicorn 'main:create_app()' --bind 0.0.0.0:8000 --workers 2 --access-logfile - --error-logfile -" # copy static during startup to keep volume up to date
+    volumes:
+      - static_volume:/home/app/spt/static_share
+      - ./logs/crashes.log:/home/app/spt/crashes.log
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY:${SECRET_KEY}
+    restart: "on-failure"
+
+volumes:
+  static_volume:
