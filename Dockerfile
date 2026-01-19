@@ -1,5 +1,5 @@
 # base image  
-FROM python:3.13
+FROM python:3.13-slim
 
 # setup environment variables
 ENV TZ="Europe/Berlin"
@@ -23,7 +23,7 @@ ENV PIP_USE_PEP517=true
 # install dependencies 
 COPY ./requirements.txt ${DockerHOME} 
 RUN pip install --upgrade pip &&\
-    pip install -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt
 
 # copy whole project
 COPY . .
@@ -31,4 +31,4 @@ COPY . .
 EXPOSE 8000
 
 # start server
-CMD ["gunicorn", "main:create_app()", "--bind", "0.0.0.0:8000", "--workers", "4"]
+CMD ["gunicorn", "main:create_app()", "--bind", "0.0.0.0:8000", "--workers", "2"]
