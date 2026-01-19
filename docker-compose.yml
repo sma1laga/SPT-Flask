@@ -1,17 +1,17 @@
 services:
   nginx: # nginx reverse proxy for efficient static file serving
-    build: ./nginx 
+    image: sdeniffel/spt-flask-nginx:latest
     ports: 
       - 1300:80 
     volumes:  
       - static_volume:/home/app/spt/static
     depends_on: 
-      - spt 
+      - app 
     restart: "on-failure" 
     
 
-  spt:
-    build: .
+  app:
+    image: sdeniffel/spt-flask-app:latest
     command: sh -c "cp -r static/* static_share &&
                     gunicorn 'main:create_app()' --bind 0.0.0.0:8000 --workers 2 --access-logfile - --error-logfile -" # copy static during startup to keep volume up to date
     volumes:
