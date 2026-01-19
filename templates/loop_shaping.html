@@ -122,20 +122,20 @@
       <div class="loop-panel">
         <h4>Targets</h4>
         <div class="loop-field">
-          <label for="referenceType">Führungsgröße</label>
+          <label for="referenceType">Reference input</label>
           <select id="referenceType">
-            <option value="step">Sprung (1·ε(t))</option>
-            <option value="ramp">Rampe (a·t·ε(t))</option>
+            <option value="step">Step (1·ε(t))</option>
+            <option value="ramp">Ramp (a·t·ε(t))</option>
           </select>
         </div>
         <div class="loop-row" id="rampSlopeRow">
           <div class="loop-field">
-            <label for="rampSlope">Steigung a</label>
+            <label for="rampSlope">Slope a</label>
             <input id="rampSlope" type="number" step="0.1" value="1">
           </div>
           <div class="loop-field">
             <label class="loop-toggle" for="targetEinfReqRamp">
-              <input id="targetEinfReqRamp" type="checkbox"> e∞ = 0 required (Rampe)
+              <input id="targetEinfReqRamp" type="checkbox"> e∞ = 0 required (ramp)
             </label>
           </div>
         </div>
@@ -221,13 +221,13 @@
         <div class="loop-row" id="targetStatusRow"></div>
       </div>
       <div class="loop-panel">
-        <h4>Stationäre Genauigkeit</h4>
+        <h4>Steady-state accuracy</h4>
         <div class="loop-kv">
-          <span><strong>Systemtyp ν</strong><span id="steadyType">—</span></span>
+          <span><strong>System type ν</strong><span id="steadyType">—</span></span>
           <span><strong>Kp</strong><span id="steadyKp">—</span></span>
           <span><strong>Kv</strong><span id="steadyKv">—</span></span>
-          <span><strong>e∞ (Sprung)</strong><span id="steadyStep">—</span></span>
-          <span><strong>e∞ (Rampe)</strong><span id="steadyRamp">—</span></span>
+          <span><strong>e∞ (step)</strong><span id="steadyStep">—</span></span>
+          <span><strong>e∞ (ramp)</strong><span id="steadyRamp">—</span></span>
         </div>
         <div class="loop-note" id="steadyRampNote"></div>
         <div class="loop-note" id="steadyHint"></div>
@@ -535,7 +535,7 @@ const setTargetChecks = (checks) => {
   add('GM', checks.gm);
   add('Mp', checks.mp);
   add('e∞', checks.e_inf);
-  add('e∞(Rampe)', checks.e_inf_ramp);
+  add('e∞ (ramp)', checks.e_inf_ramp);
 };
 
 const formatValue = (val, unit = '') => (
@@ -553,13 +553,13 @@ const setSteadyState = (steady) => {
     : (steady.ramp_error === null ? '—' : formatValue(steady.ramp_error));
   $('steadyRampNote').textContent = steady.ramp_error_sim === null || steady.ramp_error_sim === undefined
     ? ''
-    : `Simulation: e∞ ≈ ${formatValue(steady.ramp_error_sim)} (numerisch approximiert).`;
-  $('steadyHint').textContent = 'Für Rampe benötigt man i.d.R. einen höheren Systemtyp (mehr Integratoren im offenen Kreis).';
+    : `Simulation: e∞ ≈ ${formatValue(steady.ramp_error_sim)} (numerically approximated).`;
+  $('steadyHint').textContent = 'For ramps, you typically need a higher system type (more integrators in the open loop).';
   if (steady.reference === 'ramp' && steady.ramp_einf_required) {
     if (steady.system_type !== null && steady.system_type < 2) {
-      $('steadyRecommendation').textContent = 'Mit der aktuellen Struktur nicht möglich; du brauchst insgesamt zwei Integratoren im offenen Kreis.';
+      $('steadyRecommendation').textContent = 'Not possible with the current structure; you need two integrators in the open loop.';
     } else {
-      $('steadyRecommendation').textContent = 'Ziel e∞ = 0 für Rampe möglich: Systemtyp ν ≥ 2.';
+      $('steadyRecommendation').textContent = 'Target e∞ = 0 for a ramp is feasible: system type ν ≥ 2.';
     }
   } else {
     $('steadyRecommendation').textContent = '';
@@ -614,7 +614,7 @@ const renderPlots = (data) => {
     if (data.ramp.error) {
       stepTraces.push({x: data.time, y: data.ramp.error, type: 'scatter', mode: 'lines', name: 'e(t)'});
     }
-    stepTitle = 'Closed-loop response (Rampe)';
+    stepTitle = 'Closed-loop response (ramp)';
   } else {
     if (data.time && data.step_response) {
       stepTraces.push({x: data.time, y: data.step_response, type: 'scatter', mode: 'lines', name: 'y(t)'});
@@ -622,7 +622,7 @@ const renderPlots = (data) => {
     if (data.time && data.control_response) {
       stepTraces.push({x: data.time, y: data.control_response, type: 'scatter', mode: 'lines', name: 'u(t)'});
     }
-    stepTitle = 'Closed-loop response (Sprung)';
+    stepTitle = 'Closed-loop response (step)';
   }
   const stepLayout = {title: stepTitle, xaxis: {title: 't (s)'}, yaxis: {title: 'Amplitude'}, margin: {l: 50, r: 10, t: 30, b: 45}};
   Plotly.react('stepPlot', stepTraces.length ? stepTraces : [{x: [], y: [], type: 'scatter'}], stepLayout, plotConfig);
