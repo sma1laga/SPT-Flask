@@ -427,6 +427,60 @@ def _compute_step_metrics(time: Optional[np.ndarray], response: Optional[np.ndar
 
     return {"mp": float(mp) if mp is not None else None, "t_r": t_r, "e_inf": float(e_inf)}
 
+def _count_integrators(sys: control.TransferFunction, tol: float = 1e-6) -> int:
+    poles = control.poles(sys)
+    return int(np.sum(np.abs(poles) < tol))
+
+
+def _safe_dcgain(sys: control.TransferFunction) -> Optional[float]:
+    try:
+        gain = control.dcgain(sys)
+    except Exception:
+        return None
+    if gain is None:
+        return None
+    gain_value = float(np.real(gain))
+    if not np.isfinite(gain_value):
+        return None
+    return gain_value
+
+
+def _steady_state_constants(loop_tf: control.TransferFunction) -> Tuple[Optional[float], Optional[float]]:
+    s = control.TransferFunction([1, 0], [1])
+    kp = _safe_dcgain(loop_tf)
+    kv = _safe_dcgain(s * loop_tf)
+    return kp, kv
+
+
+def _steady_state_errors(
+    system_type: int,
+    kp: Optional[float],
+    kv: Optional[float],
+    ramp_slope: float,
+) -> Tuple[Optional[float], Optional[float]]:
+    if system_type >= 1:
+        step_error = 0.0
+    elif kp is not None:
+        step_error = 1.0 / (1.0 + kp)
+    else:
+        step_error = None
+
+    if system_type >= 2:
+        ramp_error = 0.0
+    elif system_type == 1 and kv is not None and kv != 0:
+        ramp_error = ramp_slope / kv
+    elif system_type == 0:
+        ramp_error = float("inf")
+    else:
+        ramp_error = None
+
+    return step_error, ramp_error
+
+
+def _finite_or_none(value: Optional[float]) -> Optional[float]:
+    if value is None:
+        return None
+    return value if np.isfinite(value) else None
 
 def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     design_mode = design_mode or "general"
@@ -438,6 +492,9 @@ def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[
         "pm": None,
         "gm": None,
         "einf_required": False,
+        "ramp_einf_required": bool(targets.get("ramp_einf_required")),
+        "reference": targets.get("reference", "step"),
+        "ramp_slope": float(targets.get("ramp_slope") or 1.0),
         "mp": None,
         "pm_suggestion": None,
         "pm_mapping_label": None,
@@ -471,6 +528,7 @@ def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[
         pm = float(targets.get("pm_min") or 0) or None
         gm = float(targets.get("gm_min") or 0) or None
         einf_required = bool(targets.get("einf_required"))
+        ramp_einf_required = bool(targets.get("ramp_einf_required"))
         mp = float(targets.get("mp") or 0) or None
         mapping = targets.get("mp_mapping", "heuristic_70_minus")
         pm_suggestion = None
@@ -488,6 +546,7 @@ def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[
                 "pm": pm,
                 "gm": gm,
                 "einf_required": einf_required,
+                "ramp_einf_required": ramp_einf_required,
                 "mp": mp,
                 "pm_suggestion": pm_suggestion,
                 "pm_mapping_label": mapping_label,
@@ -495,6 +554,8 @@ def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[
         )
         if einf_required:
             auto_targets["steady_state"] = "step_zero"
+        if ramp_einf_required:
+            auto_targets["steady_state"] = "ramp_zero"
 
     return targets_display, auto_targets
 
@@ -643,6 +704,22 @@ def loop_shaping_api():
             time = None
             step_response = None
             control_response = None
+            ramp_payload = None
+            system_type = None
+            kp = None
+            kv = None
+            steady_state = {
+                "system_type": None,
+                "kp": None,
+                "kv": None,
+                "step_error": None,
+                "ramp_error": None,
+                "ramp_error_sim": None,
+                "ramp_error_infinite": None,
+                "ramp_slope": None,
+                "reference": target_inputs.get("reference", "step"),
+                "ramp_einf_required": bool(target_inputs.get("ramp_einf_required")),
+            }
         else:
             loop_tf = controller * parsed.transfer
             margins_values = control.margin(loop_tf)
@@ -668,6 +745,35 @@ def loop_shaping_api():
             time, step_response = control.step_response(closed_loop, T=t_vec)
             control_tf = control.feedback(controller, parsed.transfer)
             _, control_response = control.step_response(control_tf, T=t_vec)
+            ramp_slope = float(target_inputs.get("ramp_slope") or 1.0)
+            ramp_reference = ramp_slope * t_vec
+            _, ramp_response = control.forced_response(closed_loop, T=t_vec, U=ramp_reference)
+            ramp_error = ramp_reference - ramp_response
+            ramp_error_inf = float(ramp_error[-1]) if ramp_error.size else None
+            ramp_payload = {
+                "reference": ramp_reference.tolist(),
+                "response": ramp_response.tolist(),
+                "error": ramp_error.tolist(),
+                "error_inf": _finite_or_none(ramp_error_inf),
+            }
+            system_type = _count_integrators(loop_tf)
+            kp, kv = _steady_state_constants(loop_tf)
+            step_error, ramp_error = _steady_state_errors(
+                system_type, kp, kv, ramp_slope
+            )
+            ramp_error_infinite = ramp_error is not None and not np.isfinite(ramp_error)
+            steady_state = {
+                "system_type": system_type,
+                "kp": _finite_or_none(kp),
+                "kv": _finite_or_none(kv),
+                "step_error": _finite_or_none(step_error),
+                "ramp_error": _finite_or_none(ramp_error),
+                "ramp_error_infinite": ramp_error_infinite,
+                "ramp_error_sim": _finite_or_none(ramp_error_inf),
+                "ramp_slope": ramp_slope,
+                "reference": target_inputs.get("reference", "step"),
+                "ramp_einf_required": bool(target_inputs.get("ramp_einf_required")),
+            }
 
         sensitivity = 1 / (1 + loop_response)
         complementary = loop_response / (1 + loop_response)
@@ -715,6 +821,12 @@ def loop_shaping_api():
             target_checks["mp"] = measured["mp"] <= targets_display["mp"]
         if targets_display.get("einf_required") and measured["e_inf"] is not None:
             target_checks["e_inf"] = abs(measured["e_inf"]) <= 0.02
+        if targets_display.get("ramp_einf_required"):
+            ramp_error_value = steady_state.get("ramp_error")
+            if ramp_error_value is not None:
+                target_checks["e_inf_ramp"] = abs(ramp_error_value) <= 0.02
+            elif steady_state.get("ramp_error_infinite"):
+                target_checks["e_inf_ramp"] = False
 
         return jsonify(
             {
@@ -732,12 +844,15 @@ def loop_shaping_api():
                 "time": time.tolist() if time is not None else None,
                 "step_response": step_response.tolist() if step_response is not None else None,
                 "control_response": control_response.tolist() if control_response is not None else None,
+                "ramp": ramp_payload,
                 "margins": margins,
                 "controller": {"type": controller_type, "params": controller_params},
                 "bandwidth": float(bandwidth) if bandwidth is not None and np.isfinite(bandwidth) else None,
                 "interpretation": interpretation,
                 "targets": targets_display,
                 "measured": measured,
+                "steady_state": steady_state,
+                "reference": targets_display.get("reference", "step"),
                 "target_checks": target_checks,
                 "warnings": warnings,
             }

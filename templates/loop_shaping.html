@@ -121,6 +121,24 @@
 
       <div class="loop-panel">
         <h4>Targets</h4>
+        <div class="loop-field">
+          <label for="referenceType">Führungsgröße</label>
+          <select id="referenceType">
+            <option value="step">Sprung (1·ε(t))</option>
+            <option value="ramp">Rampe (a·t·ε(t))</option>
+          </select>
+        </div>
+        <div class="loop-row" id="rampSlopeRow">
+          <div class="loop-field">
+            <label for="rampSlope">Steigung a</label>
+            <input id="rampSlope" type="number" step="0.1" value="1">
+          </div>
+          <div class="loop-field">
+            <label class="loop-toggle" for="targetEinfReqRamp">
+              <input id="targetEinfReqRamp" type="checkbox"> e∞ = 0 required (Rampe)
+            </label>
+          </div>
+        </div>
         <div id="examInputs">
           <div class="loop-row">
             <div class="loop-field">
@@ -201,6 +219,19 @@
           <span><strong>e∞ (step)</strong><span id="measEinf">—</span></span>
         </div>
         <div class="loop-row" id="targetStatusRow"></div>
+      </div>
+      <div class="loop-panel">
+        <h4>Stationäre Genauigkeit</h4>
+        <div class="loop-kv">
+          <span><strong>Systemtyp ν</strong><span id="steadyType">—</span></span>
+          <span><strong>Kp</strong><span id="steadyKp">—</span></span>
+          <span><strong>Kv</strong><span id="steadyKv">—</span></span>
+          <span><strong>e∞ (Sprung)</strong><span id="steadyStep">—</span></span>
+          <span><strong>e∞ (Rampe)</strong><span id="steadyRamp">—</span></span>
+        </div>
+        <div class="loop-note" id="steadyRampNote"></div>
+        <div class="loop-note" id="steadyHint"></div>
+        <div class="loop-note" id="steadyRecommendation"></div>
       </div>
 
       <div class="loop-note" id="modeHint"></div>
@@ -446,6 +477,9 @@ const buildPayload = (mode = 'manual') => {
       t_an: $('targetTan').value,
       mp: designMode === 'general' ? $('targetMpGeneral').value : $('targetMp').value,
       einf_required: designMode === 'general' ? $('targetEinfReq').checked : $('targetEinfReqExam').checked,
+      ramp_einf_required: $('targetEinfReqRamp').checked,
+      reference: $('referenceType').value,
+      ramp_slope: $('rampSlope').value,
       wc: $('targetWc').value,
       pm_min: $('targetPmMin').value,
       gm_min: $('targetGmMin').value,
@@ -501,6 +535,35 @@ const setTargetChecks = (checks) => {
   add('GM', checks.gm);
   add('Mp', checks.mp);
   add('e∞', checks.e_inf);
+  add('e∞(Rampe)', checks.e_inf_ramp);
+};
+
+const formatValue = (val, unit = '') => (
+  val === null || val === undefined || !isFinite(val) ? '—' : `${val.toFixed(3)} ${unit}`.trim()
+);
+
+const setSteadyState = (steady) => {
+  if (!steady) return;
+  $('steadyType').textContent = steady.system_type === null ? '—' : steady.system_type;
+  $('steadyKp').textContent = formatValue(steady.kp);
+  $('steadyKv').textContent = formatValue(steady.kv);
+  $('steadyStep').textContent = steady.step_error === null ? '—' : formatValue(steady.step_error);
+  $('steadyRamp').textContent = steady.ramp_error_infinite
+    ? '∞'
+    : (steady.ramp_error === null ? '—' : formatValue(steady.ramp_error));
+  $('steadyRampNote').textContent = steady.ramp_error_sim === null || steady.ramp_error_sim === undefined
+    ? ''
+    : `Simulation: e∞ ≈ ${formatValue(steady.ramp_error_sim)} (numerisch approximiert).`;
+  $('steadyHint').textContent = 'Für Rampe benötigt man i.d.R. einen höheren Systemtyp (mehr Integratoren im offenen Kreis).';
+  if (steady.reference === 'ramp' && steady.ramp_einf_required) {
+    if (steady.system_type !== null && steady.system_type < 2) {
+      $('steadyRecommendation').textContent = 'Mit der aktuellen Struktur nicht möglich; du brauchst insgesamt zwei Integratoren im offenen Kreis.';
+    } else {
+      $('steadyRecommendation').textContent = 'Ziel e∞ = 0 für Rampe möglich: Systemtyp ν ≥ 2.';
+    }
+  } else {
+    $('steadyRecommendation').textContent = '';
+  }
 };
 
 const setBadges = (badges) => {
@@ -544,13 +607,24 @@ const renderPlots = (data) => {
   Plotly.react('nicholsPlot', [nicholsTrace], nicholsLayout, plotConfig);
 
   const stepTraces = [];
-  if (data.time && data.step_response) {
-    stepTraces.push({x: data.time, y: data.step_response, type: 'scatter', mode: 'lines', name: 'y(t)'});
+  let stepTitle = 'Closed-loop response';
+  if (data.reference === 'ramp' && data.ramp && data.ramp.reference && data.ramp.response) {
+    stepTraces.push({x: data.time, y: data.ramp.reference, type: 'scatter', mode: 'lines', name: 'r(t)'});
+    stepTraces.push({x: data.time, y: data.ramp.response, type: 'scatter', mode: 'lines', name: 'y(t)'});
+    if (data.ramp.error) {
+      stepTraces.push({x: data.time, y: data.ramp.error, type: 'scatter', mode: 'lines', name: 'e(t)'});
+    }
+    stepTitle = 'Closed-loop response (Rampe)';
+  } else {
+    if (data.time && data.step_response) {
+      stepTraces.push({x: data.time, y: data.step_response, type: 'scatter', mode: 'lines', name: 'y(t)'});
+    }
+    if (data.time && data.control_response) {
+      stepTraces.push({x: data.time, y: data.control_response, type: 'scatter', mode: 'lines', name: 'u(t)'});
+    }
+    stepTitle = 'Closed-loop response (Sprung)';
   }
-  if (data.time && data.control_response) {
-    stepTraces.push({x: data.time, y: data.control_response, type: 'scatter', mode: 'lines', name: 'u(t)'});
-  }
-  const stepLayout = {title: 'Closed-loop response', xaxis: {title: 't (s)'}, yaxis: {title: 'Amplitude'}, margin: {l: 50, r: 10, t: 30, b: 45}};
+  const stepLayout = {title: stepTitle, xaxis: {title: 't (s)'}, yaxis: {title: 'Amplitude'}, margin: {l: 50, r: 10, t: 30, b: 45}};
   Plotly.react('stepPlot', stepTraces.length ? stepTraces : [{x: [], y: [], type: 'scatter'}], stepLayout, plotConfig);
 
   const sensTrace = {x: f, y: data.sensitivity_mag_db, type: 'scatter', mode: 'lines', name: 'S'};
@@ -589,6 +663,9 @@ const updatePlots = async (mode = 'manual') => {
   if (data.target_checks) {
     setTargetChecks(data.target_checks);
   }
+  if (data.steady_state) {
+    setSteadyState(data.steady_state);
+  }
   setBadges(data.interpretation.badges);
   setInterpretation(data.interpretation.notes);
   renderPlots(data);
@@ -622,8 +699,8 @@ const debouncedUpdateIfAllowed = () => {
 
 ['tfExpression', 'controllerType', 'paramK', 'paramTi', 'paramTd', 'paramN',
  'paramWz', 'paramWp', 'paramLeadWz', 'paramLeadWp', 'paramLagWz', 'paramLagWp', 'paramW0', 'paramZetaZ',
- 'paramZetaP', 'freqData', 'freqDataFormat', 'designMode', 'targetTan', 'targetMp', 'targetWc', 'targetPmMin',
- 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
+ 'paramZetaP', 'freqData', 'freqDataFormat', 'designMode', 'referenceType', 'rampSlope', 'targetTan', 'targetMp',
+ 'targetWc', 'targetPmMin', 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('input', debouncedUpdateIfAllowed);
 });
@@ -643,11 +720,20 @@ const updateDesignModeUI = () => {
   const isExam = $('designMode').value === 'exam';
   $('examInputs').classList.toggle('loop-hidden', !isExam);
   $('generalInputs').classList.toggle('loop-hidden', isExam);
+  const isRamp = $('referenceType').value === 'ramp';
+  $('rampSlopeRow').classList.toggle('loop-hidden', !isRamp);
 };
 
 $('designMode').addEventListener('change', () => {
   updateDesignModeUI();
   debouncedUpdateIfAllowed();
+});
+['referenceType', 'rampSlope'].forEach((id) => {
+  const el = $(id);
+  if (el) el.addEventListener('input', () => {
+    updateDesignModeUI();
+    debouncedUpdateIfAllowed();
+  });
 });
 
 $('useFreqData').addEventListener('change', () => {
@@ -656,7 +742,7 @@ $('useFreqData').addEventListener('change', () => {
 });
 
 $('autoToggle').addEventListener('change', () => toggleBox('autoToggle', 'autoBox'));
-['targetEinfReqExam', 'targetEinfReq'].forEach((id) => {
+['targetEinfReqExam', 'targetEinfReq', 'targetEinfReqRamp'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('change', debouncedUpdateIfAllowed);
 });
