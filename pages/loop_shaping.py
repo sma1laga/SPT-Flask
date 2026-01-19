@@ -478,7 +478,7 @@ def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[
         if mp is not None:
             if mapping == "heuristic_70_minus":
                 pm_suggestion = 70 - mp
-                mapping_label = "Lehrstuhl heuristic (70° - Mp)"
+                mapping_label = "Course heuristic (70° - Mp)"
             else:
                 pm_suggestion = 100 - 0.5 * mp
                 mapping_label = "Rule of thumb (100° - 0.5·Mp)"

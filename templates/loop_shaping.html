@@ -113,8 +113,8 @@
       <div class="loop-field">
         <label for="designMode">Design mode</label>
         <select id="designMode">
-          <option value="exam">Lehrstuhl-Rezept (Klausur-Style)</option>
-          <option value="general">Allgemeines Loop-Shaping</option>
+          <option value="exam">Exam recipe (handout style)</option>
+          <option value="general">General loop shaping</option>
         </select>
       </div>
       <div class="loop-panel" id="modeNote"></div>
@@ -124,18 +124,18 @@
         <div id="examInputs">
           <div class="loop-row">
             <div class="loop-field">
-              <label for="targetTan">Anstiegszeit T<sub>an</sub> [s]</label>
+              <label for="targetTan">Rise time T<sub>an</sub> [s]</label>
               <input id="targetTan" type="number" step="0.1" value="1.0">
             </div>
             <div class="loop-field">
-              <label for="targetMp">Überschwingen Mp [%]</label>
+              <label for="targetMp">Overshoot Mp [%]</label>
               <input id="targetMp" type="number" step="1" value="20">
-              <div class="loop-note">Hinweis: in manchen Skripten e_max.</div>
+              <div class="loop-note">Note: some notes use e<sub>max</sub>.</div>
             </div>
           </div>
           <div class="loop-field">
             <label class="loop-toggle" for="targetEinfReqExam">
-              <input id="targetEinfReqExam" type="checkbox"> e∞ = 0 erforderlich (Sprung)
+              <input id="targetEinfReqExam" type="checkbox"> e∞ = 0 required (step)
             </label>
           </div>
           <div class="loop-row">
@@ -167,18 +167,18 @@
           </div>
           <div class="loop-field">
             <label class="loop-toggle" for="targetEinfReq">
-              <input id="targetEinfReq" type="checkbox"> e∞ = 0 erforderlich (Sprung)
+              <input id="targetEinfReq" type="checkbox"> e∞ = 0 required (step)
             </label>
           </div>
           <div class="loop-row">
             <div class="loop-field">
-              <label for="targetMpGeneral">Überschwingen Mp [%] (optional)</label>
+              <label for="targetMpGeneral">Overshoot Mp [%] (optional)</label>
               <input id="targetMpGeneral" type="number" step="1" placeholder="20">
             </div>
             <div class="loop-field">
               <label for="mpMapping">Mp → PM mapping</label>
               <select id="mpMapping">
-                <option value="heuristic_70_minus">Lehrstuhl heuristic (70° - Mp)</option>
+                <option value="heuristic_70_minus">Course heuristic (70° - Mp)</option>
                 <option value="rule_100_minus_half">Rule of thumb (100° - 0.5·Mp)</option>
               </select>
             </div>
@@ -198,7 +198,7 @@
           <span><strong>GM</strong><span id="measGm">—</span></span>
           <span><strong>Mp [%]</strong><span id="measMp">—</span></span>
           <span><strong>T_an [s]</strong><span id="measTr">—</span></span>
-          <span><strong>e∞ (Sprung)</strong><span id="measEinf">—</span></span>
+          <span><strong>e∞ (step)</strong><span id="measEinf">—</span></span>
         </div>
         <div class="loop-row" id="targetStatusRow"></div>
       </div>
@@ -468,11 +468,11 @@ const setTargets = (targets) => {
   $('targetPhiDisplay').value = format(targets.phi_req, '°');
   $('pmSuggestion').value = targets.pm_suggestion === null || targets.pm_suggestion === undefined ? '—' : `${targets.pm_suggestion.toFixed(1)}°`;
   const note = targets.mode === 'exam'
-    ? 'Diese Regeln sind lehrstuhl-/skriptabhängig. Für andere Unis ggf. Modus B wählen.'
-    : 'Uniunabhängig: Ziele direkt setzen, Ergebnis wird durch Simulation/Reserven bewertet.';
+    ? 'These rules depend on the course handout. For other curricula, choose General mode.'
+    : 'Curriculum-independent: set targets directly and judge by simulation and margins.';
   $('modeHint').textContent = note;
   $('modeNote').textContent = targets.mode === 'exam'
-    ? 'Lehrstuhl-Heuristik: ωD = 1.5 / T_an, Φ_req = 70° - Mp (nicht universell).'
+    ? 'Course heuristic: ωD = 1.5 / T_an, Φ_req = 70° - Mp (not universal).'
     : 'General loop-shaping: set ωc, PM, GM directly; Mp is a rough suggestion only.';
 };
 
