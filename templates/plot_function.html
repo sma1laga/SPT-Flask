@@ -50,8 +50,8 @@
   <div class="quick-buttons" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;">
     <button type="button" onclick="insertOperand('rect(t)')">\(\mathrm{rect}\)</button>
     <button type="button" onclick="insertOperand('tri(t)')">\(\mathrm{tri}\)</button>
-    <button type="button" onclick="insertOperand('sin(t)')">\(\sin\)</button>
-    <button type="button" onclick="insertOperand('cos(t)')">\(\cos\)</button>
+    <button type="button" onclick="insertOperand('sin(pi*t)')">\(\sin\)</button>
+    <button type="button" onclick="insertOperand('cos(pi*t)')">\(\cos\)</button>
     <button type="button" onclick="insertOperand('step(t)')">\(\mathrm{step}\)</button>
     <button type="button" onclick="insertOperand('delta(t)')">\(\delta\)</button>
     <button type="button" onclick="insertOperand('sign(t)')">\(\mathrm{sign}\)</button>
@@ -101,9 +101,9 @@
       <button type="button" class="reset-transform" data-group="1"
               title="Reset f₁ controls" aria-label="Reset f₁ controls">↺</button>
       <legend style="color:#1f77b4;">\(f_1\)</legend>
-      <div class="slider-row"><label>Shift</label><input id="shift1" type="range" min="-20" max="20" step="0.1" value="0"><span></span></div>
+      <div class="slider-row"><label>Shift</label><input id="shift1" type="range" min="-10" max="10" step="0.1" value="0"><span></span></div>
       <div class="slider-row"><label>Amplitude</label><input id="amp1"   type="range" min="0.1" max="5"  step="0.1" value="1"><span></span></div>
-      <div class="slider-row"><label>Width</label><input id="width1" type="range" min="0.2" max="5"  step="0.1" value="1"><span></span></div>
+      <div class="slider-row"><label>Width</label><input id="width1" type="range" min="0.1" max="5"  step="0.1" value="1"><span></span></div>
     </fieldset>
 
     <!-- f₂ controls -->
@@ -113,7 +113,7 @@
       <legend style="color:#ff7f0e;">\(f_2\)</legend>
       <div class="slider-row"><label>Shift</label><input id="shift2" type="range" min="-10" max="10" step="0.1" value="0"><span></span></div>
       <div class="slider-row"><label>Amplitude</label><input id="amp2"   type="range" min="0.1" max="5"  step="0.1" value="1"><span></span></div>
-      <div class="slider-row"><label>Width</label><input id="width2" type="range" min="0.2" max="5"  step="0.1" value="1"><span></span></div>
+      <div class="slider-row"><label>Width</label><input id="width2" type="range" min="0.1" max="5"  step="0.1" value="1"><span></span></div>
     </fieldset>
   </div>
 
@@ -178,7 +178,7 @@
     label.textContent = parseFloat(slider.value).toFixed(1);
     slider.addEventListener("input", ()=>{
       label.textContent = parseFloat(slider.value).toFixed(1);
-      updatePlots();
+      updateData();
     });
   });
   document.querySelectorAll('.reset-transform').forEach(btn=>{
@@ -192,7 +192,7 @@
         slider.value = defaultVal;
         slider.nextElementSibling.textContent = parseFloat(defaultVal).toFixed(1);
       });
-      updatePlots();
+      updateData();
     });
   });
 
@@ -203,9 +203,51 @@
     return d;
   }
 
+  /* update only data */
+  function updateData(){
+    clearErrors();
+    fetch("{{ url_for('plot_function.plot_function_update') }}",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(collectData())
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.error){
+        if(errorMsg) errorMsg.textContent = data.error;
+        if(inlineError) inlineError.textContent = data.error;
+        markError(data.pos);
+        console.error(data.error);
+        return;
+      }
+      let trace_idx = 0;
+      function updateTrace(t, y){
+        if (!y) return;
+        let update = {};
+        if (Array.isArray(y)){
+          update = {x: [t], y: [y]};
+          Plotly.restyle("plot", update, [trace_idx]);
+        }else if(y.real && y.imag){
+          update = {x: [t], y: [y.real]};
+          Plotly.restyle("plot", update, [trace_idx]);
+          const hasImag = y.imag.some(v=>Math.abs(v)>1e-12);
+          if(hasImag){
+            update = {x: [t], y: [y.imag]};
+            trace_idx += 1;
+            Plotly.restyle("plot", update, [trace_idx]);
+          }
+        }
+        trace_idx += 1;
+      }
+
+      updateTrace(data.t1, data.y1);
+      updateTrace(data.t2, data.y2);
+    })
+    .catch(console.error);
+  }
   /* fetch + draw ------------------------------------------------- */
   function updatePlots(){
-  clearErrors();
+    clearErrors();
     fetch("{{ url_for('plot_function.plot_function_update') }}",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -240,8 +282,8 @@
       addTraces(data.t1, data.y1, "f₁(t)", "#1f77b4");
       if(data.t2) addTraces(data.t2, data.y2, "f₂(t)", "#ff7f0e");
 
-      const xrange = data.xrange || [-20, 20];
-      Plotly.newPlot("plot", traces,
+      const xrange = data.xrange || [-5, 5];
+      Plotly.react("plot", traces,
         {margin:{t:30}, showlegend:true,
          xaxis:{title:{text:"t"}, range:xrange}, yaxis:{title:{text:"Amplitude"}}});
     })
@@ -274,40 +316,112 @@
 <!-- STYLES ------------------------------------------------------- -->
 <style>
   .quick-buttons button{
-    padding:8px 12px;font-size:0.9em;border-radius:4px;background:#007acc;
-    color:#fff;border:none;cursor:pointer;transition:background-color .15s;
+    padding:8px 12px;
+    font-size:0.9em;
+    border-radius:4px;
+    background:var(--primary-color);
+    color:#fff;
+    border:none;
+    cursor:pointer;
+    transition:background-color .15s;
   }
-  .quick-buttons button:hover{ background:#005fa3; }
+  .quick-buttons button:hover{
+    background:var(--primary-color-darker);
+  }
 
-  .action-btn{ padding:8px 22px;font-size:0.9em;border-radius:4px;border:none;cursor:pointer; }
-  .green{ background:#28a745;color:#fff; } .green:hover{ background:#218838; }
-  .red  { background:#dc3545;color:#fff; } .red:hover  { background:#c82333; }
+  .action-btn{
+    padding:8px 22px;
+    font-size:0.9em;
+    border-radius:4px;
+    border:none;
+    cursor:pointer;
+  }
+  .green{
+    background:var(--lms-green-darker);
+    color:#fff;
+  }
+  .green:hover{
+    background:var(--lms-green-dark);
+  }
+  .red  {
+    background:var(--lms-red);
+    color:#fff;
+  }
+  .red:hover  {
+    background:var(--lms-red-darker);
+  }
 
   .transform-wrapper{
-    display:flex;flex-wrap:wrap;gap:18px;justify-content:center;
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+    justify-content:center;
   }
   .transform-box{
-    border:1px solid #d9dee3;border-radius:8px;padding:16px 22px;min-width:260px;
-    background:#f8fafc;position:relative;
+    border:1px solid #d9dee3;
+    border-radius:8px;
+    padding:16px 22px;
+    min-width:260px;
+    background:#f8fafc;
+    position:relative;
   }
   .reset-transform{
-    position:absolute;top:-5px;right:22px;width:22px;height:22px;border:none;
-    border-radius:50%;background:#2563eb;color:#fff;font-size:12px;line-height:1;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
-    opacity:0.75;transition:opacity .15s,background-color .15s;
+    position:absolute;
+    top:-5px;
+    right:22px;
+    width:22px;
+    height:22px;
+    border:none;
+    border-radius:50%;
+    background: var(--primary-color);
+    color:#fff;
+    font-size:12px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    opacity:0.75;
+    transition:opacity .15s,background-color .15s;
   }
-  .reset-transform:hover{opacity:1;background:#1d4ed8;}
-  .slider-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
-  .slider-row label{width:90px;text-align:right;font-weight:600;}
+  .reset-transform:hover{
+    opacity:1;
+    background: var(--primary-color-darker);
+  }
+  .slider-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+  }
+  .slider-row label{
+    width:90px;
+    text-align:right;
+    font-weight:600;
+  }
   .slider-row span{
-    width:46px;text-align:center;border:1px solid #ccd0d5;border-radius:4px;
-    background:#fff;font-variant-numeric:tabular-nums;
+    width:46px;
+    text-align:center;
+    border:1px solid #ccd0d5;
+    border-radius:4px;
+    background:#fff;
+    font-variant-numeric:tabular-nums;
   }
   input[type=range]{
-    flex:1;appearance:none;height:4px;border-radius:2px;background:#007acc;cursor:pointer;
+    flex:1;
+    appearance:none;
+    height:4px;
+    border-radius:2px;
+    background:var(--primary-color);
+    cursor:pointer;
   }
   input[type=range]::-webkit-slider-thumb{
-    appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #007acc;
+    appearance:none;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:#fff;
+    border:2px solid var(--primary-color);
   }
   
   /* Dark mode adjustments */
@@ -321,15 +435,19 @@
     border-color:#444;
   }
   body.dark-mode .reset-transform{
-    background:#3b82f6;
+    background: var(--primary-color);
     color:#e8edff;
   }
-  body.dark-mode .reset-transform:hover{background:#2563eb;}
+  body.dark-mode .reset-transform:hover{
+    background: var(--primary-color-darker);
+  }
   body.dark-mode .slider-row span{
     background:#333;
     border-color:#555;
     color:#f5f5f5;
   }
-  input.input-error{border-color:#d00;}
+  input.input-error{
+    border-color: var(--lms-red);
+  }
 </style>
 {% endblock %}

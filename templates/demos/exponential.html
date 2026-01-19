@@ -9,51 +9,57 @@ The amplitude \(|\hat{X}|\), the angular frequency \(\omega\), the damping \(\si
 The following applies: \(\hat{X} = |\hat{X}|\cdot \mathrm e^{\mathrm{j}\cdot\varphi}\)
 </p>
 
-<style>
-  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
-  .card{width:100%;padding:12px;border:1px solid #ddd;border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.05);transition:none}
-  .card:hover{transform:none;box-shadow:0 1px 5px rgba(0,0,0,.05)}
-  img{max-width:100%}
-  .kv{display:grid;grid-template-columns:170px 1fr;gap:10px 12px;align-items:center}
-  .hstack{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  input[type=range]{width:80%}
-</style>
-
-<div class="row">
-  <div class="card" style="margin-top:12px">
+<div class="demo row">
+  <div class="card">
     <div class="kv">
       <div><strong>Magnitude \(|\hat X|\)</strong></div>
-      <div><input id="magnitude" type="range" min="0" max="2" step="0.1" value="{{ defaults.magnitude }}"> <span id="magnitude_val">{{ defaults.magnitude }}</span></div>
+      <div class="hstack">
+        <input id="magnitude" type="range" min="0" max="2" step="0.1" value="{{ defaults.magnitude }}"> <span id="magnitude_val">{{ defaults.magnitude }}</span>
+      </div>
 
       <div><strong>Phase \(\varphi\) [rad]</strong></div>
-      <div><input id="phase" type="range" min="{{ -pi/2 }}" max="{{ pi/2 }}" step="{{ pi/8 }}" value="{{ defaults.phase }}"> <span id="phase_val">{{ defaults.phase }}</span></div>
+      <div class="hstack">
+        <input id="phase" type="range" min="{{ -pi/2 }}" max="{{ pi/2 }}" step="{{ pi/8 }}" value="{{ defaults.phase }}"> <span id="phase_val">{{ defaults.phase }}</span>
+      </div>
       
       <div><strong>Real part \(\sigma\)</strong></div>
-      <div><input id="sigma" type="range" min="-0.5" max="0.5" step="0.1" value="{{ defaults.sigma }}"> <span id="sigma_val">{{ defaults.sigma }}</span></div>
+      <div class="hstack">
+        <input id="sigma" type="range" min="-0.5" max="0.5" step="0.1" value="{{ defaults.sigma }}"> <span id="sigma_val">{{ defaults.sigma }}</span>
+      </div>
 
       <div><strong>Frequency \(\omega\)</strong></div>
-      <div><input id="omega" type="range" min="-10" max="10" step="1" value="{{ defaults.omega }}"> <span id="omega_val">{{ defaults.omega }}</span></div>
+      <div class="hstack">
+        <input id="omega" type="range" min="-10" max="10" step="1" value="{{ defaults.omega }}"> <span id="omega_val">{{ defaults.omega }}</span>
+      </div>
 
       <div><strong>Time \(t\)</strong></div>
-      <div><input id="time" type="range" min="0" max="{{ t_max }}" step="0.25" value="{{ defaults.time }}"> <span id="time_val">{{ defaults.time }}</span></div>
+      <div class="hstack"><input id="time" type="range" min="0" max="{{ t_max }}" step="0.25" value="{{ defaults.time }}"> <span id="time_val">{{ defaults.time }}</span></div>
 
       <div><strong>Mode</strong></div>
       <div class="hstack">
-        <label><input type="radio" name="mode" value="Entirely" {% if defaults.mode == "Entirely" %}checked{% endif %}> Entirely</label>
-        <label><input type="radio" name="mode" value="Until t" {% if defaults.mode == "Until t" %}checked{% endif %}> Until t</label>
+        <div>
+          <input type="radio" id="mode_entirely" name="mode" value="Entirely" {% if defaults.mode == "Entirely" %}checked{% endif %}><label for="mode_entirely">Entirely</label>
+        </div>
+        <div>
+          <input type="radio" id="mode_until_t" name="mode" value="Until t" {% if defaults.mode == "Until t" %}checked{% endif %}><label for="mode_until_t">Until t</label>
+        </div>
       </div>
     </div>
-
-    <div class="hstack" style="margin-top:12px">
-      <button id="run">Recompute</button>
+    <div class="toolbar">
+      <button id="run">Update</button>
+      <button id="reset">Reset</button>
     </div>
+
   </div>
 
   <div class="card">
     <img id="plot" alt="plot">
   </div>
 </div>
+{% endblock %}
 
+
+{% block scripts %}
 <script>
   const $ = (id) => document.getElementById(id);
   function getMode(){
@@ -105,6 +111,17 @@ The following applies: \(\hat{X} = |\hat{X}|\cdot \mathrm e^{\mathrm{j}\cdot\var
   });
   document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener("change", () => recompute()));
   $("run").addEventListener("click", () => recompute());
+  $("reset").addEventListener("click", () => {
+    $("magnitude").value = "{{ defaults.magnitude }}";
+    $("phase").value = "{{ defaults.phase }}";
+    $("omega").value = "{{ defaults.omega }}";
+    $("sigma").value = "{{ defaults.sigma }}";
+    $("time").value = "{{ defaults.time }}";
+    $("mode_entirely").checked = "{{ defaults.mode == 'Entirely' }}";
+    $("mode_until_t").checked = "{{ defaults.mode == 'Until t' }}";
+    syncLabels();
+    recompute();
+  });
 
   // initial draw
   recompute();

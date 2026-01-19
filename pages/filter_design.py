@@ -12,6 +12,7 @@ filter_design_bp = Blueprint(
     __name__,
     template_folder="../templates",
 )
+MAX_FILTER_SAMPLES = 16384
 
 # --------------------------- Helpers: inline exporters ---------------------------
 
@@ -78,6 +79,8 @@ def api():
         ftype  = request.args.get("ftype",  "lowpass")         # lowpass|highpass|bandpass|bandstp
         fs     = float(request.args.get("fs", 48000))
         N      = int(request.args.get("N", 4096))
+        if N > MAX_FILTER_SAMPLES:
+            return (f"N exceeds limit ({MAX_FILTER_SAMPLES}).", 400)
         order  = int(request.args.get("order", 6))
         rp     = float(request.args.get("rp", 1))
         rs     = float(request.args.get("rs", 60))
@@ -243,6 +246,8 @@ def live_plot():
         cutoff_str = request.args.get("cutoff", "1000")
         fs = float(request.args.get("sample_rate", 48000))
         N = int(request.args.get("num_samples", 2000))
+        if N > MAX_FILTER_SAMPLES:
+            return (f"num_samples exceeds limit ({MAX_FILTER_SAMPLES}).", 400)
         noise_amp = float(request.args.get("noise_amplitude", 1))
         def parse_pair(s):
             vals=[float(x.strip()) for x in s.split(',') if x.strip()]

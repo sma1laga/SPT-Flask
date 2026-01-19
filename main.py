@@ -28,8 +28,6 @@ from pages.dynamic_convolution import dynamic_convolution_bp
 from pages.inverse_z import inverse_z_bp
 from pages.inverse_laplace import inverse_laplace_bp
 
-
-
 # discrete
 from pages.discrete_plot_functions import discrete_plot_functions_bp
 from pages.dft_page import discrete_fourier_bp
@@ -40,14 +38,8 @@ from pages.discrete_transform_intuition import transform_intuition_bp
 from pages.discrete_direct_plot import discrete_direct_plot_bp
 from pages.discrete_autocorrelation import discrete_autocorrelation_bp
 
-
-
-
-
 # Import advanced noise reduction blueprint
 from pages.advanced_noise_reduction import advanced_noise_reduction_bp
-
-
 
 # Import training blueprints from the training subfolder:
 from pages.training.training_convolution import training_convolution_bp
@@ -75,14 +67,36 @@ from pages.demos.iir import demos_iir_bp
 from pages.demos.filter_demo import demos_filter_bp
 #VL DEMOS SISY1
 from pages.demos.exponential import demos_exponential_bp
+from pages.demos.convolution import demos_convolution_bp
 from pages.demos.fouriertransformation import demos_fouriertransformation_bp
 from pages.demos.systems_time_audio import demos_systems_time_audio_bp
 from pages.demos.bandpass import demos_bandpass_bp
 from pages.demos.stability_feedback import stability_feedback_bp
 from pages.demos.sampling import sampling_bp
+#VL IVC
+from pages.demos.compression import demos_compression_bp
+from pages.demos.huffman import demos_huffman_bp
+from pages.demos.lloyd_max import demos_lloyd_max_bp
+from pages.demos.spatial_prediction import demos_spatial_prediction_bp
+from pages.demos.zonal_dct import zonal_dct_bp
+from pages.demos.discrete_wavelet_transform import demos_discrete_wavelet_transform_bp
+from pages.demos.color_spaces import demos_color_spaces_bp
+from pages.demos.block_matching import demos_block_matching_bp
+from pages.demos.b_prediction import b_prediction_bp
+from pages.demos.image_sampling import demos_image_sampling_bp
+
+def _build_demo_slug_map():
+    """Create a lookup from demo slug to its parent section name - ist cooler"""
+
+    slug_to_section = {}
+    for section_name, categories in DEMOS.items():
+        for demo_list in categories.values():
+            for demo in demo_list:
+                slug_to_section[demo["slug"]] = section_name
+    return slug_to_section
 
 
-
+DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
 
 
 
@@ -90,18 +104,35 @@ from pages.demos.sampling import sampling_bp
 
 def create_app():
     app = Flask(__name__)
+
+    @app.after_request
+    def apply_response_headers(response):
+        if response.mimetype == "text/html":
+            response.headers.setdefault("Cache-Control", "no-store")
+
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.pop("X-XSS-Protection", None)
+        response.headers.pop("X-Frame-Options", None)
+        response.headers.pop("Expires", None)
+        return response
     
     @app.context_processor
     def inject_demos_sidebar():
-        """Expose demo metadata and active lecture for sidebar on demo pages."""
-        if request.path.startswith("/demos"):
-            path = request.path
-            sisy2_slugs = []
-            for section in DEMOS["Signals and Systems II"].values():
-                sisy2_slugs.extend(d["slug"] for d in section)
-            is_sisy2 = any(path.startswith(f"/demos/{slug}") for slug in sisy2_slugs)
-            return {"demos_sidebar": DEMOS, "is_sisy2": is_sisy2}
-        return {}
+        """Expose demo metadata for building the section-aware demo sidebar."""
+
+        if not request.path.startswith("/demos"):
+            return {}
+
+        parts = [part for part in request.path.split("/") if part]
+        slug = parts[1] if len(parts) > 1 else None
+        section_name = DEMO_SLUG_TO_SECTION.get(slug)
+        section_data = DEMOS.get(section_name)
+
+        return {
+            "demos_sidebar": DEMOS,
+            "demos_section": section_data,
+            "demos_section_name": section_name,
+        }
 
     @app.errorhandler(Exception)
     def _handle_exception(e):
@@ -165,8 +196,9 @@ def create_app():
     app.register_blueprint(exam_convolution_bp, url_prefix="/exam/convolution")
     app.register_blueprint(exam_fourier_bp, url_prefix='/exam/fourier')
 
-    
+
     # Demos section
+    # SiSy2 lecture
     app.register_blueprint(demos_menu_bp,     url_prefix="/demos")
     app.register_blueprint(demos_kapitel2_bp, url_prefix="/demos/kapitel2")
     app.register_blueprint(demos_kapitel4_bp, url_prefix="/demos/kapitel4")
@@ -174,23 +206,31 @@ def create_app():
     app.register_blueprint(demos_kapitel8_2_bp, url_prefix="/demos/kapitel8_2")
     app.register_blueprint(demos_kapitel8_audio_bp, url_prefix="/demos/kapitel8_audio")
     app.register_blueprint(demos_kapitel11_bp, url_prefix="/demos/kapitel11")
-
+    # SiSy2 exercise
     app.register_blueprint(dtft_impulses_bp, url_prefix="/demos/dtft_impulses")
     app.register_blueprint(dtft_dft_bp, url_prefix="/demos/dtft_dft")
     app.register_blueprint(demos_z_trafo_bp, url_prefix="/demos/z_trafo")
     app.register_blueprint(demos_iir_bp, url_prefix="/demos/iir")
     app.register_blueprint(demos_filter_bp, url_prefix="/demos/filter")
-
+    # SiSy1 lecture
     app.register_blueprint(demos_exponential_bp, url_prefix="/demos/exponential")
+    app.register_blueprint(demos_convolution_bp, url_prefix="/demos/convolution")
     app.register_blueprint(demos_fouriertransformation_bp, url_prefix="/demos/fouriertransformation")
     app.register_blueprint(demos_systems_time_audio_bp, url_prefix="/demos/systems-time-audio")
     app.register_blueprint(demos_bandpass_bp, url_prefix="/demos/bandpass")
     app.register_blueprint(stability_feedback_bp, url_prefix="/demos/stability-feedback")
     app.register_blueprint(sampling_bp, url_prefix="/demos/sampling")
-
-
-
-
+    # IVC 
+    app.register_blueprint(demos_compression_bp, url_prefix="/demos/compression")
+    app.register_blueprint(demos_huffman_bp, url_prefix="/demos/huffman")
+    app.register_blueprint(demos_lloyd_max_bp, url_prefix="/demos/lloyd-max")
+    app.register_blueprint(demos_spatial_prediction_bp, url_prefix="/demos/spatial-dpcm-coding")
+    app.register_blueprint(zonal_dct_bp, url_prefix="/demos/zonal-dct-coding1")
+    app.register_blueprint(demos_discrete_wavelet_transform_bp, url_prefix="/demos/discrete-wavelet-transform")
+    app.register_blueprint(demos_color_spaces_bp, url_prefix="/demos/color-spaces")
+    app.register_blueprint(demos_block_matching_bp, url_prefix="/demos/block-matching")
+    app.register_blueprint(b_prediction_bp, url_prefix="/demos/b-prediction")
+    app.register_blueprint(demos_image_sampling_bp, url_prefix="/demos/image-sampling")
 
     @app.route("/")
     def home():

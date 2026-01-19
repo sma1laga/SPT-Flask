@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo sampling-page">
+  <div class="card control-card hero-card">
+    <div>
+      <div class="card-title">Image Sampling</div>
+      <p class="control-subtitle">Compare rectangular and quincunx sampling on a concentric ring pattern.</p>
+      <div class="pill-row">
+        <span class="pill"><i class="fas fa-border-none"></i> Rectangular 1:4</span>
+        <span class="pill"><i class="fas fa-grip-dots"></i> Quincunx 1:8</span>
+        <span class="pill"><i class="fas fa-wave-square"></i> Sinusoidal rings</span>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <div class="card-title small">What to look for</div>
+      <ul>
+        <li>Both samplers start from the same 512×512 concentric pattern.</li>
+        <li>Rectangular sampling averages each 2×2 block, leading to blocky steps.</li>
+        <li>Quincunx sampling staggers its grid, keeping diagonals smoother at a lower rate.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section class="stack card">
+    <div class="panel">
+      <div class="card-title">Original pattern</div>
+      <p class="variant-desc">Sinusoidal rings generated procedurally to match the lecture graphic.</p>
+      <img src="{{ images.original }}" alt="Original concentric ring pattern" class="preview" loading="lazy" />
+      <div class="actions">
+        <button class="zoom-btn" data-img="{{ images.original }}">View larger</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="card-title">Rectangular sampling</div>
+      <p class="variant-desc">Averaged 2×2 blocks are replicated back to full resolution (sampling ratio 1:4).</p>
+      <img src="{{ images.rectangular }}" alt="Rectangular sampling result" class="preview" loading="lazy" />
+      <div class="actions">
+        <button class="zoom-btn" data-img="{{ images.rectangular }}">View larger</button>
+      </div>
+      <div class="diagram">
+        <img src="{{ images.rect_grid }}" alt="Rectangular sampling grid" loading="lazy" />
+        <p class="caption">Sampling points sit at the center of each 2×2 cell.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="card-title">Quincunx sampling</div>
+      <p class="variant-desc">Pairs of diagonal neighbours combine to fill the grid (sampling ratio 1:8).</p>
+      <img src="{{ images.quincunx }}" alt="Quincunx sampling result" class="preview" loading="lazy" />
+      <div class="actions">
+        <button class="zoom-btn" data-img="{{ images.quincunx }}">View larger</button>
+      </div>
+      <div class="diagram">
+        <img src="{{ images.quinc_grid }}" alt="Quincunx sampling grid" loading="lazy" />
+        <p class="caption">Diamond-shaped lattice captures diagonals more gracefully.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="zoom-overlay" aria-hidden="true">
+    <div class="zoom-backdrop"></div>
+    <figure class="zoom-modal" role="dialog" aria-modal="true">
+      <button class="zoom-close" aria-label="Close">×</button>
+      <img src="" alt="Enlarged sampling view" />
+      <figcaption>Click or tap outside to close.</figcaption>
+    </figure>
+  </div>
+</div>
+
+<style>
+  .sampling-page { display: flex; flex-direction: column; gap: 16px; }
+  .card-title { font-weight: 700; color: #0e1a2b; }
+  .card-title.small { font-size: 0.95rem; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-subtitle, .variant-desc { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .control-subtitle, body.dark-mode .variant-desc { color: #d8e3f5; }
+  .sampling-page .card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); border-radius: 14px; padding: 16px; }
+  .sampling-page .card:hover { box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); transform: none; }
+  .hero-card { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .pill { background: rgba(11,94,189,0.1); color: #0b5ebd; padding: 6px 12px; border-radius: 999px; font-size: 0.9rem; font-weight: 700; }
+  body.dark-mode .pill { background: rgba(158,203,255,0.14); color: #d7e8ff; }
+  .hero-panel { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; background: var(--demo-card-bg, #fff); box-shadow: none; }
+  body.dark-mode .hero-panel { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
+  .hero-panel ul { margin: 0; padding-left: 18px; color: var(--demo-description-color, #465063); }
+  body.dark-mode .hero-panel ul { color: #cbd6ea; }
+  .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .panel { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: var(--demo-card-bg, #fff); box-shadow: none; }
+  body.dark-mode .panel { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
+  .preview {
+    width: 100%;
+    max-width: 760px;
+    border-radius: 10px;
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12));
+    align-self: center;
+  }
+  .actions {
+    display: flex;
+    justify-content: center;
+  }
+  .zoom-btn {
+    background: var(--demo-button-bg, rgba(11,94,189,0.12));
+    color: var(--demo-button-color, #0b5ebd);
+    border: 1px solid var(--demo-button-color, #0b5ebd);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: none;
+  }
+  .zoom-btn:hover,
+  .zoom-btn:focus {
+    background: var(--demo-button-hover-bg, rgba(11,94,189,0.2));
+    color: var(--demo-button-hover-color, #073b75);
+  }
+  .diagram {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    align-items: center;
+    gap: 12px;
+  }
+  .diagram img {
+    width: 100%;
+    border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12));
+    border-radius: 10px;
+    background: var(--demo-card-bg, #fff);
+  }
+  .caption {
+    color: var(--demo-description-color, #465063);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+  body.dark-mode .caption { color: #cbd6ea; }
+  .zoom-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+  .zoom-overlay.active {
+    display: flex;
+  }
+  .zoom-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(14, 26, 43, 0.55);
+  }
+  .zoom-modal {
+    position: relative;
+    background: var(--demo-card-bg, #fff);
+    border-radius: 14px;
+    padding: 16px;
+    max-width: 1200px;
+    width: 92vw;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .zoom-modal img {
+    width: 100%;
+    border-radius: 10px;
+  }
+  .zoom-modal figcaption {
+    width: 100%;
+    text-align: center;
+    color: var(--demo-description-color, #465063);
+    margin: 0;
+  }
+  .zoom-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    color: var(--demo-heading-color, #0e1a2b);
+    align-self: flex-end;
+  }
+  @media (max-width: 768px) {
+    .hero-card {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 640px) {
+    .diagram {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+<script>
+  (() => {
+    const overlay = document.querySelector('.zoom-overlay');
+    const overlayImg = overlay?.querySelector('img');
+    const closeBtn = overlay?.querySelector('.zoom-close');
+    const backdrop = overlay?.querySelector('.zoom-backdrop');
+
+    function open(imgSrc) {
+      if (!overlay || !overlayImg) return;
+      overlayImg.src = imgSrc;
+      overlay.classList.add('active');
+    }
+
+    function close() {
+      if (!overlay || !overlayImg) return;
+      overlay.classList.remove('active');
+      overlayImg.src = '';
+    }
+
+    document.querySelectorAll('.zoom-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const src = btn.getAttribute('data-img');
+        if (src) open(src);
+      });
+    });
+
+    [closeBtn, backdrop].forEach((el) => {
+      el?.addEventListener('click', close);
+    });
+
+    document.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Escape') close();
+    });
+  })();
+</script>
+{% endblock %}

@@ -11,4 +11,3 @@ requests==2.32.5
 pytest==9.0.0
 scikit-image==0.25.2
 gunicorn==23.0.0
-

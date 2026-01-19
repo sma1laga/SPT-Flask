@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">Color Spaces</div>
+    <p class="control-subtitle">Switch between RGB, YUV, YIQ, and YCbCr to see the demo image channels and their histograms.</p>
+    <div class="mode-buttons">
+      <button class="mode-button" data-variant="rgb">RGB components</button>
+      <button class="mode-button" data-variant="yuv">YUV components</button>
+      <button class="mode-button" data-variant="yiq">YIQ components</button>
+      <button class="mode-button" data-variant="ycbcr">YCbCr components</button>
+    </div>
+  </div>
+
+  <div class="card image-card full-width">
+    <div class="header-row">
+      <div>
+        <div class="card-title" id="variant-title">Color space decomposition</div>
+        <p class="variant-desc" id="variant-description"></p>
+      </div>
+      <div class="reference-card">
+        <div class="card-title small">Reference image</div>
+        <div class="image-shell reference-shell">
+          <img src="{{ original_src }}" alt="Original demo image" class="demo-image reference-image">
+        </div>
+      </div>
+    </div>
+
+    <div class="visual-grid">
+      <div class="component-grid" id="component-grid"></div>
+
+      <div class="plots-grid" id="histogram-grid"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
+  .card-title.small { font-size: 0.95rem; margin-bottom: 6px; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-card { margin-bottom: 16px; }
+  .control-subtitle { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  .mode-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .mode-button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: var(--demo-button-bg, rgba(11,94,189,0.12)); color: var(--demo-button-color, #0b5ebd); font-weight: 600; cursor: pointer; transition: none; box-shadow: none; transform: none; }
+  .mode-button:hover, .mode-button:focus { box-shadow: none; transform: none; background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  .mode-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  body.dark-mode .mode-button { border-color: rgba(158,203,255,0.55); background: rgba(158,203,255,0.08); color: #d7e8ff; }
+  body.dark-mode .mode-button:hover,
+  body.dark-mode .mode-button:focus,
+  body.dark-mode .mode-button.active { background: rgba(158,203,255,0.14); color: #eaf2ff; }
+  .image-card { display: flex; flex-direction: column; gap: 14px; box-shadow: none; transform: none; }
+  .image-card:hover { box-shadow: none; transform: none; }
+  .image-shell { display: flex; justify-content: center; align-items: center; padding: 10px; }
+  .reference-shell { padding: 8px; }
+  .demo-image { width: 100%; max-width: 520px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; }
+  .reference-image { max-width: 140px; }
+  body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .variant-desc { margin: 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .variant-desc { color: #d8e3f5; }
+  .header-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start; }
+  .reference-card { padding: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; background: var(--demo-card-bg, #fff); }
+  body.dark-mode .reference-card { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); }
+  .visual-grid { display: grid; grid-template-columns: minmax(240px, 0.85fr) minmax(380px, 1.15fr); gap: 16px; align-items: start; }
+  .component-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .component-card { padding: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); background: var(--demo-card-bg, #fff); }
+  .component-card .demo-image { max-height: 280px; }
+  body.dark-mode .component-card { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .plots-grid { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: stretch; }
+  .plot-card { padding: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); background: var(--demo-card-bg, #fff); display: flex; flex-direction: column; gap: 8px; }
+  body.dark-mode .plot-card { border-color: rgba(158,203,255,0.18); background: rgba(16,26,46,0.7); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .plot-image { width: 100%; max-height: 640px; object-fit: contain; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); }
+  body.dark-mode .plot-image { border-color: rgba(158,203,255,0.18); }
+  @media (max-width: 780px) {
+    .header-row { grid-template-columns: 1fr; }
+    .reference-card { width: 100%; justify-self: start; }
+    .visual-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  const variants = {{ variants | tojson }};
+
+  const componentGrid = document.getElementById('component-grid');
+  const histogramGrid = document.getElementById('histogram-grid');
+
+  function createComponentCard(component) {
+    const card = document.createElement('div');
+    card.className = 'component-card';
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = component.name;
+    const shell = document.createElement('div');
+    shell.className = 'image-shell';
+    const img = document.createElement('img');
+    img.className = 'demo-image';
+    img.src = component.image_uri;
+    img.alt = component.name;
+    shell.appendChild(img);
+    card.appendChild(title);
+    card.appendChild(shell);
+    return card;
+  }
+
+  function createHistogramCard(component) {
+    const card = document.createElement('div');
+    card.className = 'plot-card';
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = `${component.name} histogram`;
+    const img = document.createElement('img');
+    img.className = 'plot-image';
+    img.src = component.histogram_uri;
+    img.alt = `${component.name} histogram`;
+    card.appendChild(title);
+    card.appendChild(img);
+    return card;
+  }
+
+  function setVariant(key) {
+    const data = variants[key];
+    if (!data) return;
+
+    document.getElementById('variant-title').textContent = data.title;
+    document.getElementById('variant-description').textContent = data.description;
+
+    componentGrid.innerHTML = '';
+    histogramGrid.innerHTML = '';
+
+    data.components.forEach((component) => {
+      componentGrid.appendChild(createComponentCard(component));
+      histogramGrid.appendChild(createHistogramCard(component));
+    });
+
+    document.querySelectorAll('.mode-button').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.variant === key);
+    });
+  }
+
+  document.querySelectorAll('.mode-button').forEach((btn) => {
+    btn.addEventListener('click', () => setVariant(btn.dataset.variant));
+  });
+
+  setVariant('rgb');
+</script>
+{% endblock %}

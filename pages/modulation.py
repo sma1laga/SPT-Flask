@@ -8,11 +8,21 @@ mod_bp = Blueprint('modulation', __name__)
 # ---------- helpers ----------
 
 MAX_PLOT_POINTS = 20000
+MAX_TIME_SAMPLES = 200000
 
 
 def make_time(t_end=1.0, fs=1000):
     N = int(max(8, fs * t_end))
     return np.linspace(0.0, t_end, N, endpoint=False)
+
+def _validate_time_budget(fs: float, t_end: float):
+    if fs <= 0 or t_end <= 0:
+        return "fs and duration must be positive"
+    samples = fs * t_end
+    if samples > MAX_TIME_SAMPLES:
+        return f"Requested {int(samples)} samples exceeds limit ({MAX_TIME_SAMPLES})."
+    return None
+
 
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
@@ -286,6 +296,9 @@ def modulate_api():
         t_end = float(PRESETS[preset].get('t_end', t_end))
         snr_db = _to_float_or_inf(PRESETS[preset].get('snr_db', snr_db))
     carrier_mode = _normalize_carrier_mode(params.get('carrier_mode'))
+    error = _validate_time_budget(fs, t_end)
+    if error:
+        return jsonify(error=error), 400
 
 
     t = make_time(t_end=t_end, fs=fs)
@@ -419,6 +432,9 @@ def demodulate_api():
     kind  = (params.get('type') or 'AM').upper()
     fs    = float(params.get('fs', 1000))
     t_end = float(params.get('t_end', 1.0))
+    error = _validate_time_budget(fs, t_end)
+    if error:
+        return jsonify(error=error), 400
     t     = make_time(t_end=t_end, fs=fs)
 
     if kind == 'AM':

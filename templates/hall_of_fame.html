@@ -38,29 +38,36 @@
   <section class="hof-list">
     <div class="hof-list-header">
       <h2>Featured Champions</h2>
-      <p>We are preparing this space for our community. Contribute to the project to see your name here!</p>
+      <p>Celebrating contributors—whether solo or teaming up—whose ideas, code, and guidance keep the toolkit growing.</p>
     </div>
 
-    <div class="contributors-grid">
-      <article class="contributor-card placeholder">
-        <div class="card-body">
-          <span class="badge">Your Name</span>
-          <h3>Be the first to be featured</h3>
-          <p>
-            Help shape the Signal Processing Toolkit by opening an issue, proposing improvements or submitting a
-            pull request. Once your contribution lands, we will highlight you right here.
-          </p>
+    <div class="individual-contributors" aria-label="Community contributors">
+      <div class="contributors-subhead">
+        <span class="contributors-badge" aria-hidden="true">Spotlight</span>
+        <div>
+          <h3>Shining names in our Hall</h3>
+          <p>We celebrate our contributors with heartfelt thanks for the builds, fixes, and feedback that shape the toolkit.</p>
         </div>
-      </article>
-      <article class="contributor-card placeholder">
-        <div class="card-body">
-          <span class="badge">Team Effort</span>
-          <h3>Collaborate &amp; contribute</h3>
-          <p>
-            Team up with fellow learners, mentor newcomers and share learning resources. Community-led contributions are essential for this open source project.
-          </p>
+      </div>
+
+      <div class="chip-grid" role="list">
+        <div class="contributor-chip" role="listitem">
+          <div class="chip-name">Tivio Grignon</div>
+          <p class="chip-role">UI feedback and user-friendliness guidance</p>
         </div>
-      </article>
+        <div class="contributor-chip" role="listitem">
+          <div class="chip-name">Daniel Andreas</div>
+          <p class="chip-role">Significant improvement contribution on the Bode diagram module</p>
+        </div>
+        <div class="contributor-chip" role="listitem">
+          <div class="chip-name">Arthur Sahm</div>
+          <p class="chip-role">Bugs detected and module reviews — beta tester</p>
+        </div>
+        <div class="contributor-chip" role="listitem">
+          <div class="chip-name">Pascal Schaschek</div>
+          <p class="chip-role">Module reviews and UI feedback — beta tester</p>
+        </div>
+      </div>
     </div>
   </section>
 </div>
@@ -194,10 +201,15 @@ body.dark-mode .hof-cta:hover {
 }
 
 .hof-list {
-  margin-top: 3.4rem;
+  margin-top: 3.1rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.hof-list-header {
+  text-align: center;
 }
 
 .hof-list-header h2 {
@@ -205,8 +217,8 @@ body.dark-mode .hof-cta:hover {
   align-items: center;
   gap: 0.65rem;
   margin-bottom: 0.9rem;
-  font-size: 1.95rem;
-  font-weight: 700;
+  font-size: 2.15rem;
+  font-weight: 800;
   color: rgba(253, 224, 71, 0.92);
 }
 
@@ -218,9 +230,10 @@ body.dark-mode .hof-cta:hover {
 }
 
 .hof-list-header p {
-  margin: 0;
-  font-size: 1.05rem;
-  color: rgba(148, 163, 184, 0.95);
+  margin: 0 auto;
+  max-width: 720px;
+  font-size: 1.08rem;
+  color: rgba(100, 116, 139, 0.95);
 }
 
 .contributors-grid {
@@ -308,6 +321,112 @@ body.dark-mode .hof-cta:hover {
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
+.individual-contributors {
+  margin-top: 1.2rem;
+  width: min(100%, 880px);
+  margin-inline: auto;
+  padding: 1.35rem 1.4rem 1.25rem;
+  border-radius: 16px;
+  background: radial-gradient(circle at 12% 18%, rgba(253, 224, 71, 0.12), transparent 46%),
+    radial-gradient(circle at 88% 40%, rgba(250, 204, 21, 0.12), transparent 48%),
+    linear-gradient(150deg, rgba(15, 23, 42, 0.9), rgba(17, 24, 39, 0.92));
+  border: 1px solid rgba(253, 224, 71, 0.3);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35), inset 0 1px 0 rgba(253, 224, 71, 0.25);
+  display: grid;
+  gap: 1.05rem;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.contributors-subhead {
+  display: grid;
+  gap: 0.35rem;
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.75rem;
+}
+
+.contributors-subhead h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #fef3c7;
+}
+
+.contributors-subhead p {
+  margin: 0.15rem 0 0;
+  color: rgba(226, 232, 240, 0.8);
+  line-height: 1.6;
+}
+
+.contributors-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 10px;
+  background: linear-gradient(130deg, #fbbf24 0%, #f59e0b 100%);
+  color: #1f2937;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  box-shadow: 0 10px 24px rgba(217, 119, 6, 0.32);
+  text-transform: uppercase;
+}
+
+.chip-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.contributor-chip {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.05rem;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 226, 0.92));
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  box-shadow: 0 16px 26px rgba(15, 23, 42, 0.22);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.contributor-chip > * {
+  position: relative;
+  z-index: 1;
+}
+
+.chip-name {
+  color: #92400e;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.chip-role {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.65;
+}
+
+.contributor-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.contributor-chip:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.3);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.contributor-chip:hover::before {
+  opacity: 1;
+}
 .placeholder .card-body {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.92) 45%, rgba(11, 15, 26, 0.95) 100%);
   color: rgba(226, 232, 240, 0.9);
@@ -320,6 +439,25 @@ body.dark-mode .hof-cta:hover {
 body.dark-mode .hof-hero {
   border-color: rgba(253, 230, 138, 0.6);
   box-shadow: 0 30px 65px rgba(0, 0, 0, 0.55);
+}
+body.dark-mode .individual-contributors {
+  background: linear-gradient(145deg, rgba(17, 24, 39, 0.95), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(253, 224, 71, 0.32);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.32);
+}
+
+body.dark-mode .contributor-chip {
+  background: linear-gradient(140deg, rgba(26, 32, 44, 0.94), rgba(30, 41, 59, 0.9));
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .chip-name {
+  color: #fcd34d;
+}
+
+body.dark-mode .chip-role {
+  color: rgba(226, 232, 240, 0.82);
 }
 
 body.dark-mode .hof-highlights li {

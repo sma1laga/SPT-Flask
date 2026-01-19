@@ -1,8 +1,5 @@
 {% extends "base.html" %}
-{% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/inverse_laplace.css') }}">
-{% endblock %}
+
 {% block content %}
 <div class="inverse-laplace-container" style="max-width: 900px; margin: auto;">
   <div class="page-header text-center mb-5">

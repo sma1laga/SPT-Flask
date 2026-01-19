@@ -1,58 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Ideal Band-Pass (VL 8-13)</h1>
+<h1>Ideal Band-Pass (L 8-13)</h1>
 <p>
   This demo shows an ideal band-pass filter
-  \( H(\mathrm{j}\omega) = \mathrm{rect}\!\left(\frac{\omega}{\Delta\omega}\right) * \big[\delta(\omega-\omega_0) + \delta(\omega+\omega_0)\big] \)
-  in the time and frequency domains. You can adjust the bandwidth \(\Delta\omega\) and the center frequency \(\omega_0\).
-  The envelope of \(h(t)\) is displayed as a dashed curve.
+  $$ H(\mathrm{j}\omega) = \mathrm{rect}\!\left(\frac{\omega}{\Delta\omega}\right) \ast \big[\delta(\omega-\omega_0) +
+  \delta(\omega+\omega_0)\big] $$
+  in the frequency domain with its impulse response
+  $$ h(t) = \frac{\Delta\omega}{\pi} \mathrm{si}\!\left(\frac{\Delta\omega}{2}t\right) \cdot \cos(\omega_0 t). $$
+  You can adjust the bandwidth \(\Delta\omega\) and the center frequency \(\omega_0\).
 </p>
 
-<style>
-  .toolbar {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
-    gap: 12px;
-    align-items: end;
-    margin-bottom: 8px;
-    text-align: center;
-  }
-  @media (max-width: 950px) {
-    .toolbar { grid-template-columns: 1fr; }
-    .formula { text-align: left !important; }
-  }
-</style>
-
-<div class="demo">
-  <div class="toolbar">
-    <div>
-      <label for="delta_omega">&Delta;&omega; (bandwidth)</label>
-      <input id="delta_omega" type="number"
-             step="{{ defaults.step }}"
-             min="{{ defaults.min_delta }}" max="{{ defaults.max_delta }}"
-             value="{{ defaults.delta_omega }}">
-    </div>
-    <div class="formula" style="text-align:center;">
-      <div style="font-weight:600; margin-bottom:4px;">
-        Ideal band-pass filter:
-        \( H(\mathrm{j}\omega) = \mathrm{rect}\!\left(\frac{\omega}{\Delta\omega}\right) * \big[\delta(\omega-\omega_0) + \delta(\omega+\omega_0)\big] \)
+<div class="demo row">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <label for="delta_omega">Bandwidth \(\Delta\omega\)</label>
+        <input id="delta_omega" type="number" step="{{ defaults.step }}" min="{{ defaults.min_delta }}"
+          max="{{ defaults.max_delta }}" value="{{ defaults.delta_omega }}">
+      </div>
+      <div>
+        <label for="omega0">Center frequency \(\omega_0\)</label>
+        <input id="omega0" type="number" step="{{ defaults.step }}" min="{{ defaults.min_omega0 }}"
+          max="{{ defaults.max_omega0 }}" value="{{ defaults.omega0 }}">
       </div>
     </div>
-
-
-    <div>
-      <label for="omega0">&omega;<sub>0</sub> (center)</label>
-      <input id="omega0" type="number"
-             step="{{ defaults.step }}"
-             min="{{ defaults.min_omega0 }}" max="{{ defaults.max_omega0 }}"
-             value="{{ defaults.omega0 }}">
+    <div class="toolbar">
+      <button id="run">Update</button>
+      <button id="reset" type="button">Reset</button>
     </div>
   </div>
 
 
-  <img id="plot" alt="Ideal band-pass: frequency and time plots">
+  <div class="card">
+    <img id="plot" alt="Ideal band-pass: frequency and time plots">
+  </div>
 </div>
+{% endblock %}
 
+
+{% block scripts %}
 <script>
   const $ = (id) => document.getElementById(id);
 
@@ -67,13 +53,13 @@
 
       const body = {
         delta_omega: parseFloat($("delta_omega").value),
-        omega0:      parseFloat($("omega0").value),
+        omega0: parseFloat($("omega0").value),
       };
 
       try {
         const resp = await fetch("./compute", {
           method: "POST",
-          headers: {"Content-Type":"application/json"},
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
           signal: inFlight.signal
         });
@@ -88,10 +74,16 @@
     }, 80);
   }
 
-  ["delta_omega","omega0"].forEach(id => {
+  ["delta_omega", "omega0"].forEach(id => {
     $(id).addEventListener("input", send);
     $(id).addEventListener("change", send);
     $(id).addEventListener("keyup", e => { if (e.key === "Enter") send(); });
+  });
+  $("run").addEventListener("click", send);
+  $("reset").addEventListener("click", () => {
+    $("delta_omega").value = "{{ defaults.delta_omega }}";
+    $("omega0").value = "{{ defaults.omega0 }}";
+    send();
   });
 
   window.addEventListener("load", send);

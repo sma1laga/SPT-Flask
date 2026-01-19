@@ -1,0 +1,140 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.container section {
+  margin-bottom: 2.5rem;
+}
+.intro {
+  position: relative;
+  padding: 2.25rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(0, 122, 204, 0.08), rgba(0, 196, 255, 0.05));
+  box-shadow: 0 5px 16px rgba(15, 76, 129, 0.07);
+  overflow: hidden;
+}
+.intro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.28), transparent 62%);
+  pointer-events: none;
+}
+.intro-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.intro-header h1 {
+  margin: 0;
+}
+.intro-header .hall-of-fame-link {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.65rem 1.15rem;
+  /* color: var(--link-color); */
+  box-shadow: 0 5px 14px rgba(0, 122, 204, 0.16);
+}
+.intro-header .hall-of-fame-link:hover {
+  box-shadow: 0 6px 16px rgba(0, 196, 255, 0.28);
+}
+.feature-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
+.feature-item {
+  position: relative;
+  flex: 1 1 280px;
+  background: var(--card-background);
+  color: var(--text-color);
+  padding: 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 76, 129, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(0, 122, 204, 0.1);
+}
+
+.feature-item h3 {
+  color: var(--primary-color);
+}
+.note { margin-top: 1rem; font-style: italic; }
+.vision {
+  margin-top: 1.5rem;
+  padding: 0 0.25rem;
+}
+.team {
+  margin-top: 1.5rem;
+  padding: 0 0.25rem;
+}
+.team ul {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+  padding-left: 1.2rem;
+}
+.team li {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+.team li:last-child { margin-bottom: 0; }
+.team li::marker { color: var(--primary-color); }
+.team strong { color: var(--primary-color); }
+
+section h2 {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.4rem;
+}
+section h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 52px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-gradient-end, #00aaff));
+  opacity: 0.55;
+}
+.btn {
+  background: var(--primary-color);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+}
+.btn:hover {
+  background: var(--primary-gradient-end);
+  color: #fff;
+}
+.github-button {
+  margin-top: 1rem;   /* pushes the button a bit lower */
+}
+.contact {
+  padding-bottom: 0.5rem;
+}
+body.dark-mode .intro {
+  background: linear-gradient(135deg, rgba(0, 122, 204, 0.2), rgba(0, 196, 255, 0.12));
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.38);
+}
+body.dark-mode .feature-item {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.32);
+  border-color: rgba(0, 170, 255, 0.16);
+}
+body.dark-mode .intro-header .hall-of-fame-link {
+  background: linear-gradient(135deg, rgba(0, 122, 204, 0.9), rgba(0, 196, 255, 0.72));
+  color: #fff;
+  border: 1px solid rgba(0, 196, 255, 0.45);
+  box-shadow: 0 8px 22px rgba(0, 196, 255, 0.32);
+}
+
+body.dark-mode .intro-header .hall-of-fame-link:hover {
+  box-shadow: 0 10px 26px rgba(0, 196, 255, 0.42);
+}
+
+body.dark-mode .btn {
+  color: #fff;
+}
+
+body.dark-mode .github-button .btn {
+  background: linear-gradient(135deg, rgba(0, 122, 204, 0.85), rgba(0, 196, 255, 0.68));
+  border: 1px solid rgba(0, 196, 255, 0.38);
+  box-shadow: 0 6px 18px rgba(0, 122, 204, 0.3);
+}

@@ -6,14 +6,21 @@ DEMOS = {
         "Lecture": [
             {
                 "slug": "exponential",
-                "title": "Chapter 2",
+                "title": "Chapter 2-1",
                 "title_desc": "Exponential Function",
                 "desc": "Visualize x(t)=|X̂| e^{σt} e^{j(ωt+φ)}; full or up to t.",
                 "endpoint": "demos_exponential.page",
             },
             {
+                "slug": "convolution",
+                "title": "Chapter 2-2",
+                "title_desc": "Convolution",
+                "desc": "Visualize the convolution of two signals.",
+                "endpoint": "demos_convolution.page",
+            },
+            {
                 "slug": "fouriertransformation",
-                "title": "Chapter 4",
+                "title": "Chapter 3",
                 "title_desc": "Fourier Transform",
                 "desc": "Analytical pairs: rect, si, triangle, si²; interactive scaling & shifting.",
                 "endpoint": "demos_fouriertransformation.page",
@@ -119,7 +126,7 @@ DEMOS = {
             {
                 "slug": "iir",
                 "title": "IIR Echo",
-                "title_desc": "\(y[k] = x[k] + a·y[k-K]\)",
+                "title_desc": r"\(y[k] = x[k] + a·y[k-K]\)",
                 "desc": "Convolution view via impulse response h plus inline audio for x and y.",
                 "endpoint": "demos_iir.page",
             },
@@ -132,4 +139,79 @@ DEMOS = {
             },
         ],
     },
+    # "Image and Video Compression": {
+    #     "Lecture": [
+    #         {
+    #             "slug": "spatial-prediction-1",
+    #             "title": "Spatial Prediction 1",
+    #             "title_desc": "Linear Predictors",
+    #             "desc": "Compare 2D linear predictors on a demo image with entropy and compression of the error image.",
+    #             "endpoint": "demos_spatial_prediction.page",
+    #         },
+    #         {
+    #             "slug": "compression",
+    #             "title": "Compression",
+    #             "title_desc": "Image & Video",
+    #             "desc": "Compare lossless ZIP with weak and strong JPEG compression using a classic demo image.",
+    #             "endpoint": "demos_compression.page",
+    #         },
+    #         {
+    #             "slug": "color-spaces",
+    #             "title": "Color Spaces",
+    #             "title_desc": "Channel Histograms",
+    #             "desc": "Break the demo image into RGB, YUV, YIQ, and YCbCr channels with matching histograms for each component.",
+    #             "endpoint": "demos_color_spaces.page",
+    #         },
+    #         {
+    #             "slug": "image-sampling",
+    #             "title": "Image Sampling",
+    #             "title_desc": "Rectangular vs Quincunx",
+    #             "desc": "Compare 2×2 rectangular averaging to quincunx sampling on a synthetic ring pattern.",
+    #             "endpoint": "image_sampling.page",
+    #         },
+    #         {
+    #             "slug": "discrete-wavelet-transform",
+    #             "title": "Discrete Wavelet Transform",
+    #             "title_desc": "2D Haar",
+    #             "desc": "Stepwise horizontal/vertical wavelet splits on the demo image, mirroring the MATLAB walkthrough.",
+    #             "endpoint": "demos_discrete_wavelet_transform.page",
+    #         },
+    #         {
+    #             "slug": "b-prediction",
+    #             "title": "B-prediction",
+    #             "title_desc": "Bi-directional frames",
+    #             "desc": "MPEG-1 style B-frame demo that synthesizes motion from the demo image to compare forward, backward, and bi-directional prediction.",
+    #             "endpoint": "b_prediction.page",
+    #         },
+    #         {
+    #             "slug": "lloyd-max",
+    #             "title": "Lloyd-Max",
+    #             "title_desc": "Iterative Quantizer",
+    #             "desc": "Step through Lloyd-Max iterations on the demo image and compare to uniform 16-level quantization.",
+    #             "endpoint": "demos_lloyd_max.page",
+    #         },
+    #         {
+    #             "slug": "block-matching",
+    #             "title": "Block Matching",
+    #             "title_desc": "Motion Estimation",
+    #             "desc": "Interactive SAD search on the demo image showing search windows, best match, and displacement vectors.",
+    #             "endpoint": "demos_block_matching.page",
+    #         },
+    #         {
+    #             "slug": "huffman",
+    #             "title": "Huffman coding",
+    #             "title_desc": "Entropy coding",
+    #             "desc": "Visualize histograms, entropy, and codeword lengths for the demo image's Y/Cr channels and white noise.",
+    #             "endpoint": "demos_huffman.page",
+    #         },
+    #         {
+    #             "slug": "zonal-dct-coding",
+    #             "title": "Zonal DCT Coding",
+    #             "title_desc": "8×8 Masked Quantization",
+    #             "desc": "Compare multiple zonal quantization masks on the demo image with entropy, SNR, PSNR, and coefficient heatmaps.",
+    #             "endpoint": "zonal_dct.page",
+    #         }
+    #     ],
+    #     "Tutorial": [],
+    # },
 }

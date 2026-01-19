@@ -27,6 +27,25 @@ def _evaluate_transfer(num, den, s_values):
 
 bode_plot_bp = Blueprint('bode_plot', __name__, template_folder='templates')
 
+def _corner_frequencies(poles, zeros):
+    """Return sorted unique positive magnitudes of finitepoles and zeros"""
+    raw_values = []
+    for root in np.concatenate([poles, zeros]):
+        if np.isfinite(root):
+            mag = abs(root)
+            if mag > 0:
+                raw_values.append(float(mag))
+
+    if not raw_values:
+        return []
+
+    raw_values.sort()
+    deduped = []
+    for value in raw_values:
+        if not deduped or not np.isclose(value, deduped[-1], rtol=1e-9, atol=1e-12):
+            deduped.append(value)
+    return deduped
+
 def parse_poly_input(expr_str):
     """
     Parse the user input for a polynomial.
@@ -360,7 +379,8 @@ def _make_freq_vector(num, den, override=None):
     Otherwise, the range is chosen based on the magnitudes of the finite
     poles and zeros of ``num/den``.  Dense clusters (<1.5 decades wide)
     are padded symmetrically to cover at least two decades around the
-    median corner frequency.
+    median corner frequency, with up to two extra decades added below
+    and above the smallest and largest corner frequencies.
     """
     if override is not None:
         try:
@@ -378,15 +398,30 @@ def _make_freq_vector(num, den, override=None):
     w_list = w_list[np.isfinite(w_list) & (w_list > 0)]
 
     if w_list.size:
-        w_min = 0.1 * w_list.min()
-        w_max = 10 * w_list.max()
+        smallest_corner = w_list.min()
+        largest_corner = w_list.max()
+        # Show up to two decades beyond the extreme corner frequencies
+        w_min = smallest_corner / 100
+        w_max = largest_corner * 100
     else:
         w_min, w_max = 1e-2, 1e2
 
-    if np.log10(w_max) - np.log10(w_min) < 1.5:
+    span_decades = np.log10(w_max) - np.log10(w_min)
+    if span_decades < 1.5:
         center = np.median(w_list) if w_list.size else np.sqrt(w_min * w_max)
         w_min = min(w_min, center / 10)
         w_max = max(w_max, center * 10)
+        span_decades = np.log10(w_max) - np.log10(w_min)
+
+    min_total_span = 3.0
+    if span_decades < min_total_span:
+        center = np.median(w_list) if w_list.size else np.sqrt(w_min * w_max)
+        center_log = np.log10(center)
+        half_span = min_total_span / 2
+        expanded_min = 10 ** (center_log - half_span)
+        expanded_max = 10 ** (center_log + half_span)
+        w_min = min(expanded_min, w_min)
+        w_max = max(expanded_max, w_max)
 
     return np.logspace(np.log10(w_min), np.log10(w_max), 500)
 
@@ -396,8 +431,8 @@ def bode_plot():
     error = ""
     warning = ""
     # Default inputs; here we use a coefficient list for H(s) = (s+1)/(s^2+2)
-    default_num = "[1, 1]"
-    default_den = "[1, 0, 2]"
+    default_num = "(s+2)"
+    default_den = "(s+10)(s+0.1)"
     
     user_num = default_num
     user_den = default_den
@@ -548,6 +583,8 @@ def bode_plot():
             bandwidth = None
     except Exception:
         bandwidth = None
+        
+    corner_freqs = _corner_frequencies(poles, zeros)
 
     bode_data = {
         "omega": w.tolist(),
@@ -558,6 +595,7 @@ def bode_plot():
         "gain_cross_freq": finite_or_none(wg),
         "phase_cross_freq": finite_or_none(wp),
         "bandwidth": finite_or_none(bandwidth),
+        "corner_frequencies": corner_freqs,
     }
 
     pz_plot = {

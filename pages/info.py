@@ -83,11 +83,11 @@ def news():
         # Default template with: version / codename / date / whats the acctual update (highlights)
         # @Paul - noch nicht wichtig, erst nach launch dann...
         { 
-            "version": "1.1.7vUI",
+            "version": "1.1.1vUI",
             "codename": "UI Refresh",
             "date": "September 20, 2025",
             "highlights": [
-                "Refined dashboard styling for better readabilitz.",
+                "Refined dashboard styling for better readability.",
                 "Introduced the dedicated news page for release notes.",
                 "Improved footer accessibility links."
             ],

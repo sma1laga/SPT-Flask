@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">Huffman coding</div>
+    <p class="control-subtitle">Switch between luminance, chrominance, and white noise examples.</p>
+    <div class="mode-buttons">
+      <button class="mode-button" data-variant="luminance">Luminance Y</button>
+      <button class="mode-button" data-variant="chrominance">Chrominance Cr</button>
+      <button class="mode-button" data-variant="noise">White noise</button>
+    </div>
+  </div>
+
+  <div class="card image-card full-width">
+    <div class="header-row">
+      <div>
+        <div class="card-title" id="variant-label">Huffman coding</div>
+        <p class="variant-desc" id="variant-description"></p>
+      </div>
+      <div class="metric-grid">
+        <div>Entropy</div><div id="metric-entropy"></div>
+        <div>Average codeword length</div><div id="metric-length"></div>
+        <div>Original file size</div><div id="metric-original"></div>
+        <div>File size after Huffman coding</div><div id="metric-compressed"></div>
+      </div>
+    </div>
+
+    <div class="image-and-info">
+      <div class="image-shell">
+        <img id="variant-image" src="" alt="Huffman input" class="demo-image solo-image">
+      </div>
+    </div>
+
+    <div class="plots-grid">
+      <div class="plot-card">
+        <div class="card-title">Histogram</div>
+        <img id="histogram-image" class="plot-image" alt="Histogram">
+      </div>
+      <div class="plot-card">
+        <div class="card-title">Distribution of codeword lengths in Huffman coding</div>
+        <img id="length-image" class="plot-image" alt="Codeword length distribution">
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-card { margin-bottom: 16px; }
+  .control-subtitle { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  .mode-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .mode-button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: var(--demo-button-bg, rgba(11,94,189,0.12)); color: var(--demo-button-color, #0b5ebd); font-weight: 600; cursor: pointer; transition: none; box-shadow: none; transform: none; }
+  .mode-button:hover, .mode-button:focus { box-shadow: none; transform: none; background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  .mode-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  body.dark-mode .mode-button { border-color: rgba(158,203,255,0.55); background: rgba(158,203,255,0.08); color: #d7e8ff; }
+  body.dark-mode .mode-button:hover,
+  body.dark-mode .mode-button:focus,
+  body.dark-mode .mode-button.active { background: rgba(158,203,255,0.14); color: #eaf2ff; }
+  .image-card { display: flex; flex-direction: column; gap: 12px; box-shadow: none; transform: none; }
+  .image-card:hover { box-shadow: none; transform: none; }
+  .image-shell { display: flex; justify-content: center; align-items: center; padding: 12px; }
+  .demo-image { width: min(100%, 720px); max-height: 520px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; margin: 0 auto; }
+  body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .variant-desc { margin: 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .variant-desc { color: #d8e3f5; }
+  .header-row { display: flex; flex-direction: column; gap: 10px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 12px; font-size: 0.95rem; }
+  .metric-grid div:nth-child(odd) { color: var(--demo-description-color, #465063); }
+  body.dark-mode .metric-grid div:nth-child(odd) { color: #c6d4ea; }
+  .plots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
+  .plot-card { padding: 14px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); }
+  body.dark-mode .plot-card { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .plot-image { width: 100%; min-height: 320px; max-height: 480px; object-fit: contain; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); }
+  body.dark-mode .plot-image { border-color: rgba(158,203,255,0.18); }
+  .image-and-info { display: flex; gap: 16px; align-items: flex-start; }
+  @media (max-width: 768px) {
+    .image-and-info { flex-direction: column; }
+  }
+</style>
+
+<script>
+  const variants = {{ variants | tojson }};
+
+  function formatBits(value) {
+    return `${value.toFixed(2)} bit/pixel`;
+  }
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes)) return '—';
+    if (bytes === 0) return '0 B';
+    const units = ['B','KB','MB','GB'];
+    const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length-1);
+    const val = bytes / Math.pow(1024, idx);
+    return `${val.toFixed(val >= 10 ? 0 : 1)} ${units[idx]}`;
+  }
+
+  function setVariant(key) {
+    const data = variants[key];
+    if (!data) return;
+    document.getElementById('variant-label').textContent = data.label;
+    document.getElementById('variant-description').textContent = data.description;
+    document.getElementById('variant-image').src = data.image_uri;
+    document.getElementById('histogram-image').src = data.histogram_uri;
+    document.getElementById('length-image').src = data.length_uri;
+    document.getElementById('metric-entropy').textContent = formatBits(data.entropy);
+    document.getElementById('metric-length').textContent = formatBits(data.average_length);
+    document.getElementById('metric-original').textContent = formatBytes(data.original_size);
+    document.getElementById('metric-compressed').textContent = formatBytes(data.compressed_size);
+
+    document.querySelectorAll('.mode-button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.variant === key);
+    });
+  }
+
+  document.querySelectorAll('.mode-button').forEach(btn => {
+    btn.addEventListener('click', () => setVariant(btn.dataset.variant));
+  });
+
+  setVariant('luminance');
+</script>
+{% endblock %}

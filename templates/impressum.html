@@ -1,13 +1,130 @@
 {% extends "base.html" %}
+
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/impressum.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container" style="padding:20px; max-width:800px; margin:auto;">
-  <h1>Impressum</h1>
-  <p><strong>Signal Processing Toolkit</strong><br>
-     Lehrstuhl f&uuml;r Multimediale Signalverarbeitung (LMS)<br>
-     Friedrich-Alexander-Universit&auml;t Erlangen-N&uuml;rnberg (FAU)</p>
-  <p>Cauerstr. 7<br>
-     91058 Erlangen<br>
-     Germany</p>
-  <p>Contact: <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a></p>
+<div class="page-header" style="text-align:center;">
+  <h1 style="font-size:2.5em;">Impressum</h1>
+</div>
+
+<div class="container">
+   <section>
+      <h2>Herausgeber</h2>
+      <p>Friedrich-Alexander-Universität Erlangen-Nürnberg</p>
+      <p>Freyeslebenstraße 1<br>
+         91058 Erlangen</p>
+      <p>E-Mail: <a href="mailto:poststelle@fau.de">poststelle@fau.de</a></p>
+
+      <h3>Rechtsform und gesetzliche Vertretung</h3>
+      <p>Körperschaft des öffentlichen Rechts. Gesetzliche Vertretung nach außen durch Präsident Prof. Dr. Joachim Hornegger.
+         Für namentlich oder mit einem gesonderten Impressum gekennzeichnete Beiträge liegt die Verantwortung bei den jeweiligen Autorinnen und Autoren.</p>
+   </section>
+
+   <section>
+      <h2>Inhaltliche Verantwortung</h2>
+      <p>Prof. Dr.-Ing. André Kaup</p>
+      <p>Cauerstr. 7<br>
+         91058 Erlangen</p>
+      <p>E-Mail: <a href="mailto:andre.kaup@fau.de">andre.kaup@fau.de</a></p>
+
+      <h3>Redaktion und technische Ansprechpartner</h3>
+      <p>Paul Wawerek-López</p>
+      <p>E-Mail: <a href="mailto:paul.wawerek-lopez@fau.de">paul.wawerek-lopez@fau.de</a></p>
+      <p>Tarik Smailagic</p>
+      <p>E-Mail: <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a></p>
+   </section>
+
+   <section>
+      <h2>Zuständige Aufsichtsbehörde</h2>
+      <p>Bayerisches Staatsministerium für Wissenschaft und Kunst</p>
+      <p>Salvatorstraße 2<br>
+         80327 München</p>
+      <ul style="padding-left:2em;">
+         <li>URL: <a href="https://www.stmwk.bayern.de/">https://www.stmwk.bayern.de/</a></li>
+         <li>Telefon: <a href="tel:+49 89 2186 0">+49 89 2186 0</a></li>
+         <li>E-Mail: <a href="mailto:poststelle@ldbv.bayern.de">poststelle@ldbv.bayern.de</a></li>
+      </ul>
+   </section>
+
+   <section>
+      <h2>Identifikationsnummern</h2>
+      <table class="impressum-table">
+         <tr>
+            <td><b>Umsatzsteuer-Identifikationsnummer</b></td>
+            <td>DE 132507686</td>
+         </tr>
+         <tr>
+            <td><b>Steuernummer</b></td>
+            <td>216/114/20045 (Finanzamt Erlangen)</td>
+         </tr>
+         <tr>
+            <td><b>DUNS-Nummer</b></td>
+            <td>327958716</td>
+         </tr>
+         <tr>
+            <td><b>EORI-Nummer</b></td>
+            <td>DE4204891</td>
+         </tr>
+         <tr>
+            <td><b>Bankverbindung</b></td>
+            <td>Bayerische Landesbank München<br>
+               IBAN: DE66700500000301279280<br>
+               SWIFT/BIC-Code: BYLADEMMXXX
+            </td>
+         </tr>
+      </table>
+   </section>
+
+   <details><summary><b>Nutzungsbedingungen</b></summary>
+      <p>
+         Texte, Bilder, Grafiken sowie die Gestaltung dieser Internetseiten können dem Urheberrecht unterliegen.
+      </p>
+      <p>
+         Als Privatperson dürfen Sie urheberrechtlich geschütztes Material zum privaten und sonstigen eigenen Gebrauch im Rahmen des <a href="http://www.gesetze-im-internet.de/urhg/__53.html">§&nbsp;53&nbsp;Urheberrechtsgesetz&nbsp;(UrhG)</a> verwenden.
+         Eine Vervielfältigung oder Verwendung dieser Seiten oder Teilen davon in anderen elektronischen oder gedruckten Publikationen und deren Veröffentlichung ist nur mit unserer Einwilligung gestattet.
+         Diese erteilen auf Anfrage die für den Inhalt Verantwortlichen.
+         Der Nachdruck und die Auswertung von Pressemitteilungen und Reden sind mit Quellenangabe allgemein gestattet.
+      </p>
+      <p>
+         Weiterhin können Texte, Bilder, Grafiken und sonstige Dateien ganz oder teilweise dem Urheberrecht Dritter unterliegen.
+         Auch über das Bestehen möglicher Rechte Dritter geben Ihnen die für den Inhalt Verantwortlichen nähere Auskünfte, sofern diese Rechte nicht bereits durch entsprechende Hinweise im Webangebot kenntlich gemacht sind.
+      </p>
+   </details>
+   <details><summary><b>Haftungsausschluss</b></summary>
+      <p>
+         Dieses Impressum gilt nur für den Webauftritt unter dieser Adresse:<br>
+         <b><i>www.spt.fau.de</i></b>
+      </p>
+      <p>
+         Alle auf dieser Internetseite bereitgestellten Informationen haben wir nach bestem Wissen und Gewissen erarbeitet und geprüft.
+         Eine Gewähr für die jederzeitige Aktualität, Richtigkeit, Vollständigkeit und Verfügbarkeit der bereit gestellten Informationen können wir allerdings nicht übernehmen.
+         Ein Vertragsverhältnis mit den Nutzern des Internetangebots kommt nicht zustande.
+      </p>
+      <p>
+         Wir haften nicht für Schäden, die durch die Nutzung dieses Internetangebots entstehen.
+         Dieser Haftungsausschluss gilt nicht, soweit die Vorschriften des §&nbsp;839&nbsp;BGB&nbsp;(Haftung bei Amtspflichtverletzung) einschlägig sind.
+         Für etwaige Schäden, die beim Aufrufen oder Herunterladen von Daten durch Schadsoftware oder der Installation oder Nutzung von Software verursacht werden, wird nicht gehaftet.
+      </p>
+      <h3>Haftung für Links</h3>
+      <p>
+         Von unseren eigenen Inhalten sind Querverweise&nbsp;(Links) auf die Webseiten anderer Anbieter zu unterscheiden.
+         Durch diese Links ermöglichen wir lediglich den Zugang zur Nutzung fremder Inhalte nach §&nbsp;8&nbsp;Telemediengesetz.
+         Bei der erstmaligen Verknüpfung mit diesen Internetangeboten haben wir diese fremden Inhalte daraufhin überprüft, ob durch sie eine mögliche zivilrechtliche oder strafrechtliche Verantwortlichkeit ausgelöst wird.
+         Wir können diese fremden Inhalte aber nicht ständig auf Veränderungen überprüfen und daher auch keine Verantwortung dafür übernehmen.
+         Für illegale, fehlerhafte oder unvollständige Inhalte und insbesondere für Schäden, die aus der Nutzung oder Nichtnutzung von Informationen Dritter entstehen, haftet allein der jeweilige Anbieter der Seite.
+      </p>
+   </details>
+   <details><summary><b>Mitteilungen von Informationen über Verstöße gemäß Hinweisgeberschutzgesetz</b></summary>
+      <p>
+         Die interne Meldestelle nach dem Hinweisgeberschutzgesetz steht allen Beschäftigten und sonstigen Personen offen, die im Zusammenhang mit ihrer beruflichen Tätigkeit an der Universität Informationen über mögliche Rechtsverstöße erlangt haben.
+         Auch ehemalige Beschäftigte sowie Bewerberinnen und Bewerber können sich an die Meldestelle werden.
+         Die Meldung wird vertraulich behandelt.
+      </p>
+      <p>
+         <b>Interne Meldestelle:</b> <a href="https://fau-meldestelle.hinweis.digital/">Hinweisgebersystem der FAU</a>
+      </p>
 </div>
 {% endblock %}

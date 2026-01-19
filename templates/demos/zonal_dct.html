@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">Zonal DCT Coding</div>
+    <p class="control-subtitle">Toggle between masks to see how many DCT coefficients survive and how the reconstruction looks.</p>
+    <div class="mode-buttons" id="preset-buttons">
+      {% for preset in presets %}
+      <button class="mode-button" data-preset="{{ preset.key }}">{{ preset.label }}</button>
+      {% endfor %}
+    </div>
+    <p class="control-subtitle">All presets operate on {{ block_size }}×{{ block_size }} blocks of the demo image.</p>
+  </div>
+
+  <div class="card layout-grid">
+    <div class="panel">
+      <div class="card-title">DCT transformed image (log scale)</div>
+      <p class="panel-desc">Bright spots mark coefficients that survive the quantization matrix.</p>
+      <div class="image-shell">
+        <img id="dct-image" src="" alt="DCT magnitude" class="demo-image">
+      </div>
+    </div>
+    <div class="panel">
+      <div class="card-title">Inverse DCT transformed image</div>
+      <p class="panel-desc">Reconstructed demo image using the zonal mask.</p>
+      <div class="image-shell">
+        <img id="recon-image" src="" alt="Reconstructed image" class="demo-image">
+      </div>
+    </div>
+  </div>
+
+  <div class="card matrix-card">
+    <div class="card-title">Frequency quantization matrix</div>
+    <p class="panel-desc">Higher numbers preserve more energy for the corresponding frequency. Zeros fully discard a coefficient.</p>
+    <div id="matrix-grid" class="matrix-grid"></div>
+    <div class="metric-grid">
+      <div>Entropy</div><div id="metric-entropy"></div>
+      <div>SNR</div><div id="metric-snr"></div>
+      <div>PSNR</div><div id="metric-psnr"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-card { margin-bottom: 16px; }
+  .control-subtitle { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  .mode-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+  .mode-button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--demo-button-color, #0b5ebd); background: var(--demo-button-bg, rgba(11,94,189,0.12)); color: var(--demo-button-color, #0b5ebd); font-weight: 600; cursor: pointer; transition: none; box-shadow: none; transform: none; }
+  .mode-button:hover, .mode-button:focus { box-shadow: none; transform: none; background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  .mode-button.active { background: var(--demo-button-hover-bg, rgba(11,94,189,0.2)); color: var(--demo-button-hover-color, #073b75); }
+  body.dark-mode .mode-button { border-color: rgba(158,203,255,0.55); background: rgba(158,203,255,0.08); color: #d7e8ff; }
+  body.dark-mode .mode-button:hover,
+  body.dark-mode .mode-button:focus,
+  body.dark-mode .mode-button.active { background: rgba(158,203,255,0.14); color: #eaf2ff; }
+  .layout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; box-shadow: none; transform: none; }
+  .layout-grid:hover { box-shadow: none; transform: none; }
+  .panel { display: flex; flex-direction: column; gap: 8px; }
+  .panel-desc { margin: 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .panel-desc { color: #d8e3f5; }
+  .image-shell { display: flex; justify-content: center; align-items: center; padding: 12px; }
+  .demo-image { width: min(100%, 540px); max-height: 420px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; margin: 0 auto; }
+  body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .matrix-card { box-shadow: none; transform: none; }
+  .matrix-card:hover { box-shadow: none; transform: none; }
+  .matrix-grid { display: grid; grid-template-columns: repeat(8, minmax(34px, 1fr)); gap: 4px; width: min(100%, 420px); margin: 12px 0; }
+  .matrix-cell { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 8px; padding: 8px; text-align: center; font-weight: 700; color: #0e1a2b; background: rgba(11,94,189,0.06); }
+  .matrix-cell.zero { background: rgba(12, 29, 64, 0.04); color: #6b7287; }
+  body.dark-mode .matrix-cell { border-color: rgba(158,203,255,0.24); color: #e7f1ff; }
+  body.dark-mode .matrix-cell.zero { background: rgba(255,255,255,0.06); color: #c3cde1; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; font-size: 0.95rem; }
+  .metric-grid div:nth-child(odd) { color: var(--demo-description-color, #465063); }
+  body.dark-mode .metric-grid div:nth-child(odd) { color: #c6d4ea; }
+</style>
+
+<script>
+  const results = {{ results | tojson }};
+
+  function formatEntropy(value){
+    if(!Number.isFinite(value)) return '∞ bits/pixel';
+    return `${value.toFixed(2)} bits/pixel`;
+  }
+
+  function formatDb(value){
+    if(!Number.isFinite(value)) return '∞ dB';
+    return `${value.toFixed(2)} dB`;
+  }
+
+  function renderMatrix(matrix){
+    const grid = document.getElementById('matrix-grid');
+    grid.innerHTML = '';
+    matrix.forEach(row => {
+      row.forEach(cell => {
+        const div = document.createElement('div');
+        div.className = `matrix-cell${Number(cell) === 0 ? ' zero' : ''}`;
+        div.textContent = cell;
+        grid.appendChild(div);
+      });
+    });
+  }
+
+  function setPreset(key){
+    const data = results[key];
+    if(!data) return;
+    document.getElementById('dct-image').src = data.dct_src;
+    document.getElementById('recon-image').src = data.reconstructed_src;
+    document.getElementById('metric-entropy').textContent = formatEntropy(data.entropy);
+    document.getElementById('metric-snr').textContent = formatDb(data.snr);
+    document.getElementById('metric-psnr').textContent = formatDb(data.psnr);
+    renderMatrix(data.matrix);
+
+    document.querySelectorAll('.mode-button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.preset === key);
+    });
+  }
+
+  document.querySelectorAll('.mode-button').forEach(btn => {
+    btn.addEventListener('click', () => setPreset(btn.dataset.preset));
+  });
+
+  setPreset(Object.keys(results)[0]);
+</script>
+{% endblock %}

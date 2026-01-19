@@ -7,7 +7,11 @@
 }
 
 .demo .card {
+  display: grid;
+  flex-direction: column;
+  gap: 1rem;
   width: 100%;
+  margin-top: 1rem;
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 12px;
@@ -17,8 +21,9 @@
 
 .demo .kv {
   display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 10px 12px;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  vertical-align: middle;
 }
 
 .demo .hstack {
@@ -28,19 +33,47 @@
   flex-wrap: wrap;
 }
 
-.demo label {
-  display: block;
-  margin-top: 8px;
-  margin-bottom: 4px;
+.demo .toolbar { 
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 0 10px;
+  align-items: end;
+  text-align: center;
+}
+@media (max-width: 1100px) {
+  .demo .toolbar {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .demo .toolbar {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
 }
 
 .demo input,
 .demo select {
+  width: 100%;
+  padding: 7px 8px;
   border: 1px solid #bbb;
+  border-radius: 8px;
+  background: var(--control-bg, #fff);
+}
+.demo input[type="radio"],
+.demo input[type="checkbox"] {
+  width: auto;
+}
+.demo input[type="range"] {
+  width: 80%;
+}
+.demo button {
+  width: 100%;
+  padding: 7px 8px;
 }
 
 .demo img {
   max-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
 }

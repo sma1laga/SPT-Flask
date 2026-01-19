@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo lloyd-page">
+  <div class="card control-card lloyd-hero">
+    <div class="hero-text">
+      <div class="card-title">Lloyd-Max quantization</div>
+      <p class="control-subtitle">Step through iterative threshold updates and compare uniform vs. Lloyd-Max reconstructions.</p>
+      <div class="hero-actions">
+        <div class="lenna-chip">
+          <img src="{{ lenna_src }}" alt="Demo image preview">
+          <div>
+            <div class="chip-label">Reference image</div>
+            <div class="chip-sub">Randomly chosen for histogram + quantization</div>
+          </div>
+        </div>
+        <div class="controls-stack">
+          <label class="slider-block">
+            <span>Iterations</span>
+            <input type="range" id="iteration-slider" min="0" max="8" step="1" value="1">
+            <div class="slider-meta">
+              <span id="iteration-count">1</span>
+              <span class="slider-hint">0 = initial uniform thresholds</span>
+            </div>
+          </label>
+          <div class="level-toggle" role="group" aria-label="Quantization levels">
+            <button type="button" data-level="16" class="active">16 levels</button>
+            <button type="button" data-level="8">8 levels</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-plot">
+      <div class="card-title small">Histogram and thresholds</div>
+      <div id="lloyd-plot" class="plot-card" aria-label="Lloyd-Max histogram plot"></div>
+    </div>
+  </div>
+
+  <section class="quantization-grid">
+    <article class="quant-card card">
+      <div class="quant-header">
+        <div class="quant-title-row">
+          <div class="card-title">Uniform quantization <span id="uniform-level-label">using 16 levels</span></div>
+          <div class="level-toggle compact" role="group" aria-label="Uniform levels">
+            <button type="button" data-level="16" class="active">16</button>
+            <button type="button" data-level="8">8</button>
+          </div>
+        </div>
+        <p class="quant-metric"><span class="metric-label">SNR</span> <span id="uniform-snr">—</span> · <span class="metric-label">PSNR</span> <span id="uniform-psnr">—</span></p>
+      </div>
+      <div class="quant-body">
+        <img id="uniform-image" alt="Uniformly quantized demo image" loading="lazy">
+        <div id="uniform-curve" class="curve"></div>
+      </div>
+    </article>
+    <article class="quant-card card">
+      <div class="quant-header">
+        <div class="card-title">Lloyd-Max quantization <span id="lloyd-level-label">using 16 levels</span></div>
+        <p class="quant-metric"><span class="metric-label">SNR</span> <span id="lloyd-snr">—</span> · <span class="metric-label">PSNR</span> <span id="lloyd-psnr">—</span></p>
+      </div>
+      <div class="quant-body">
+        <img id="lloyd-image" alt="Lloyd-Max quantized demo image" loading="lazy">
+        <div id="lloyd-curve" class="curve"></div>
+      </div>
+    </article>
+  </section>
+</div>
+
+<style>
+  .lloyd-page { display: flex; flex-direction: column; gap: 16px; }
+  .card-title { font-weight: 700; color: #0e1a2b; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-subtitle { margin: 4px 0 8px 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .control-subtitle { color: #d8e3f5; }
+  .lloyd-page .card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); transition: none; }
+  .lloyd-page .card:hover { box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); transform: none; }
+  .lloyd-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1.1fr); gap: 14px; align-items: start; box-shadow: none; border-radius: 14px; }
+  .hero-text { display: grid; gap: 12px; }
+  .hero-actions { display: grid; gap: 12px; align-items: stretch; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .lenna-chip { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); border-radius: 12px; padding: 10px; box-shadow: none; }
+  .lenna-chip img { width: 68px; height: 68px; border-radius: 12px; object-fit: cover; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); }
+  .chip-label { font-weight: 700; color: #0e1a2b; }
+  .chip-sub { font-size: 0.9rem; color: var(--demo-description-color, #465063); }
+  body.dark-mode .lenna-chip { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
+  body.dark-mode .lenna-chip img { border-color: rgba(158,203,255,0.24); }
+  body.dark-mode .chip-label { color: #e8f1ff; }
+  body.dark-mode .chip-sub { color: #cbd6ea; }
+  .controls-stack { display: grid; gap: 10px; }
+  .slider-block { display: grid; gap: 6px; color: #0e1a2b; font-weight: 700; }
+  .slider-block input[type=range] { width: 100%; accent-color: #0b5ebd; }
+  .slider-meta { display: flex; justify-content: space-between; color: var(--demo-description-color, #465063); font-weight: 600; font-size: 0.95rem; }
+  body.dark-mode .slider-block { color: #dfe8ff; }
+  body.dark-mode .slider-meta { color: #c6d4ea; }
+  .hero-plot { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 10px; background: var(--demo-card-bg, #fff); box-shadow: none; display: grid; gap: 8px; }
+  body.dark-mode .hero-plot { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
+  .plot-card { width: 100%; height: 100%; min-height: 320px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 10px; box-shadow: none; }
+  body.dark-mode .plot-card { border-color: rgba(158,203,255,0.18); }
+  .quantization-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .quant-card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 14px; box-shadow: none; display: grid; gap: 12px; background: var(--demo-card-bg, #fff); }
+  body.dark-mode .quant-card { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
+  .quant-header { display: grid; gap: 6px; }
+  .quant-header p { margin: 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .quant-header p { color: #cbd6ea; }
+  .quant-body { display: grid; gap: 10px; }
+  .quant-body img { width: 100%; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); box-shadow: none; }
+  body.dark-mode .quant-body img { border-color: rgba(158,203,255,0.24); }
+  .curve { width: 100%; height: 180px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 10px; }
+  body.dark-mode .curve { border-color: rgba(158,203,255,0.18); }
+  .metric-label { color: var(--demo-button-color, #0b5ebd); font-weight: 700; }
+  body.dark-mode .metric-label { color: #d7e8ff; }
+  .level-toggle { display: inline-flex; gap: 6px; align-items: center; }
+  .level-toggle button { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); background: var(--demo-card-bg, #fff); color: #0e1a2b; padding: 6px 10px; border-radius: 10px; font-weight: 700; cursor: pointer; transition: none; }
+  .level-toggle button.active { background: var(--demo-button-bg, rgba(11,94,189,0.12)); border-color: var(--demo-button-color, #0b5ebd); color: var(--demo-button-color, #0b5ebd); }
+  body.dark-mode .level-toggle button { background: rgba(16,26,46,0.7); color: #e6edff; border-color: rgba(158,203,255,0.24); }
+  body.dark-mode .level-toggle button.active { background: rgba(158,203,255,0.14); color: #d7e8ff; border-color: rgba(158,203,255,0.4); }
+  .level-toggle.compact button { padding: 4px 8px; font-size: 0.95rem; }
+  .quant-title-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  @media (max-width: 960px) { .lloyd-hero { grid-template-columns: 1fr; } }
+</style>
+
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lloyd_max_demo.js') }}" defer></script>
+<script>
+  window.LLOYD_MAX_DEMO = {
+    imageSrc: "{{ lenna_src }}",
+    levels: 16,
+    maxIterations: 8,
+  };
+</script>
+{% endblock %}

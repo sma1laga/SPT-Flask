@@ -32,7 +32,7 @@
   <span id="tauValue">0</span>
 </div>
 
-<div style="max-width: 650px; margin: auto;">
+<div id="dynamic-plot-wrapper" style="max-width: 650px; margin: auto;">
   <canvas id="topChart" height="200" style="width:100%; border:1px solid #ccc; border-radius:4px;"></canvas>
   <div id="inline-slider-wrapper" style="display:flex; justify-content:center; align-items:center; margin:0.35em 0;">
     <input
@@ -151,4 +151,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
   initCharts();
 });
 </script>
+<style>
+  /* light backgrounds for better contrast in darkmode */
+  #dynamic-plot-wrapper canvas {
+    background: #f6f7fb;
+  }
+</style>
 {% endblock %}

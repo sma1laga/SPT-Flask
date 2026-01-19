@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="demo">
+  <div class="card control-card">
+    <div class="card-title">B-prediction</div>
+    <p class="control-subtitle">ISO/IEC MPEG-1 bi-directional prediction reproduced with the original np1/np2/np3 frames and faithful block-matching logic.</p>
+    <div class="explanation-grid">
+      <div>
+        <h4>Sequence setup</h4>
+        <p>Frames n−1, n, and n+1 are loaded directly from <code>np1.png</code>, <code>np2.png</code>, and <code>np3.png</code> without any synthetic shifts or brightness tweaks. All computations rely on these references.</p>
+      </div>
+      <div>
+        <h4>Prediction logic</h4>
+        <ul>
+          <li><strong>Forward/Backward:</strong> Motion search compares the current frame against the previous or future frame to minimize the sum of absolute differences.</li>
+          <li><strong>Bi-directional:</strong> A dual search selects the best block from either neighbor and marks whether the past (red) or future (blue) frame was chosen.</li>
+          <li><strong>Entropy readout:</strong> Residual entropy follows the following: values are normalized to 256 bins across the −1…1 range.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card image-card">
+    <div class="card-title">Video sequence from provided frames</div>
+    <div class="sequence-grid">
+      <div class="frame-block">
+        <div class="frame-label">Frame n−1</div>
+        <img id="frame-prev" class="demo-image" alt="Previous frame">
+      </div>
+      <div class="frame-block">
+        <div class="frame-label">Frame n</div>
+        <img id="frame-current" class="demo-image" alt="Current frame">
+      </div>
+      <div class="frame-block">
+        <div class="frame-label">Frame n+1</div>
+        <img id="frame-next" class="demo-image" alt="Next frame">
+      </div>
+    </div>
+  </div>
+
+  <div class="card image-card">
+    <div class="card-title">Prediction error maps (block size 8×8, search range ±32 pixels)</div>
+    <p class="variant-desc">Residuals follow the following block search with grayscale differences centered at 0 and remapped to 0…255 for display.</p>
+    <div class="residual-grid">
+      <div class="frame-block">
+        <div class="frame-label">Bi-directional residual</div>
+        <img id="residual-bidirectional" class="demo-image" alt="Bi-directional residual">
+        <div class="metric">Entropy: <span id="entropy-bidirectional">–</span> bit/pixel</div>
+      </div>
+      <div class="frame-block">
+        <div class="frame-label">From previous frame</div>
+        <img id="residual-forward" class="demo-image" alt="Forward residual">
+        <div class="metric">Entropy: <span id="entropy-forward">–</span> bit/pixel</div>
+      </div>
+      <div class="frame-block">
+        <div class="frame-label">From subsequent frame</div>
+        <img id="residual-backward" class="demo-image" alt="Backward residual">
+        <div class="metric">Entropy: <span id="entropy-backward">–</span> bit/pixel</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card image-card">
+    <div class="card-title">Residual histograms</div>
+    <p class="variant-desc">Bins span 256 uniformly spaced levels between −1 and 1</p>
+    <div class="hist-grid">
+      <div class="hist-block">
+        <div class="hist-label">Bi-directional</div>
+        <canvas id="hist-bidirectional" width="260" height="180" aria-label="Bi-directional histogram"></canvas>
+      </div>
+      <div class="hist-block">
+        <div class="hist-label">From previous</div>
+        <canvas id="hist-forward" width="260" height="180" aria-label="Forward histogram"></canvas>
+      </div>
+      <div class="hist-block">
+        <div class="hist-label">From subsequent</div>
+        <canvas id="hist-backward" width="260" height="180" aria-label="Backward histogram"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card image-card">
+    <div class="card-title">Reference support for each block</div>
+    <p class="variant-desc">Blocks predicted from the previous frame are tinted warm; those matched to the subsequent frame are tinted cool.</p>
+    <div class="blend-wrap">
+      <img id="blend-map" class="demo-image" alt="Reference blend map">
+    </div>
+    <div class="legend">
+      <div class="legend-item">
+        <span class="legend-swatch swatch-past"></span>
+        <span>Block from previous frame</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch swatch-future"></span>
+        <span>Block from subsequent frame</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .control-card { margin-bottom: 16px; }
+  .card-title { font-weight: 700; color: #0e1a2b; margin-bottom: 8px; }
+  body.dark-mode .card-title { color: #f1f5ff; }
+  .control-subtitle { margin: 0 0 8px 0; color: var(--demo-description-color, #465063); }
+  .explanation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .explanation-grid h4 { margin: 0 0 6px 0; }
+  .explanation-grid p, .explanation-grid li { color: var(--demo-description-color, #465063); }
+  body.dark-mode .explanation-grid p, body.dark-mode .explanation-grid li { color: #d3def2; }
+  .image-card { display: flex; flex-direction: column; gap: 12px; box-shadow: none; transform: none; }
+  .sequence-grid, .residual-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .hist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .hist-block { background: var(--demo-card-bg, #f8fbff); border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 10px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); }
+  body.dark-mode .hist-block { background: rgba(10,20,35,0.5); border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .hist-label { font-weight: 600; margin-bottom: 4px; }
+  .hist-block canvas { width: 100%; height: auto; display: block; }
+  .frame-block { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .frame-label { font-weight: 600; color: var(--demo-description-color, #465063); }
+  body.dark-mode .frame-label { color: #c6d4ea; }
+  .demo-image { width: 100%; max-width: 400px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); }
+  body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+  .metric { font-weight: 600; color: #0e1a2b; }
+  body.dark-mode .metric { color: #f1f5ff; }
+  .variant-desc { margin: 0; color: var(--demo-description-color, #465063); }
+  body.dark-mode .variant-desc { color: #d8e3f5; }
+  .blend-wrap { display: flex; justify-content: center; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .legend-swatch { width: 18px; height: 18px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,0.1); }
+  .swatch-past { background: #c45a5a; }
+  .swatch-future { background: #4a67c7; }
+</style>
+
+<script>
+  const sources = {{ defaults | tojson }};
+  const blockSize = 8;
+  const searchArea = 32;
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+  function grayscaleCanvas(img, width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const { data } = imageData;
+    const gray = new Float32Array(width * height);
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      const v = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      data[i] = data[i + 1] = data[i + 2] = v;
+      gray[p] = v / 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return { canvas, gray };
+  }
+
+  function blockMove(curr, ref, width, height) {
+    const vectors = [];
+    const blocksX = Math.floor(width / blockSize);
+    const blocksY = Math.floor(height / blockSize);
+    for (let by = 0; by < blocksY; by++) {
+      for (let bx = 0; bx < blocksX; bx++) {
+        const xStart = bx * blockSize;
+        const yStart = by * blockSize;
+        let best = Infinity;
+        let bestX = 0;
+        let bestY = 0;
+        const xMin = Math.max(0, xStart - searchArea);
+        const xMax = Math.min(width - blockSize, xStart + searchArea);
+        const yMin = Math.max(0, yStart - searchArea);
+        const yMax = Math.min(height - blockSize, yStart + searchArea);
+        for (let y = yMin; y <= yMax; y++) {
+          for (let x = xMin; x <= xMax; x++) {
+            let sad = 0;
+            for (let j = 0; j < blockSize; j++) {
+              const currRow = (yStart + j) * width + xStart;
+              const refRow = (y + j) * width + x;
+              for (let i = 0; i < blockSize; i++) {
+                sad += Math.abs(curr[currRow + i] - ref[refRow + i]);
+              }
+            }
+            if (sad < best) {
+              best = sad;
+              bestX = x;
+              bestY = y;
+            }
+          }
+        }
+        vectors.push({ x: xStart, y: yStart, refX: bestX, refY: bestY });
+      }
+    }
+    return vectors;
+  }
+
+  function biBlockMove(curr, refPrev, refNext, width, height) {
+    const vectors = [];
+    const blocksX = Math.floor(width / blockSize);
+    const blocksY = Math.floor(height / blockSize);
+    for (let by = 0; by < blocksY; by++) {
+      for (let bx = 0; bx < blocksX; bx++) {
+        const xStart = bx * blockSize;
+        const yStart = by * blockSize;
+        let best = Infinity;
+        let bestX = 0;
+        let bestY = 0;
+        let causal = 0;
+        const xMin = Math.max(0, xStart - searchArea);
+        const xMax = Math.min(width - blockSize, xStart + searchArea);
+        const yMin = Math.max(0, yStart - searchArea);
+        const yMax = Math.min(height - blockSize, yStart + searchArea);
+        for (let y = yMin; y <= yMax; y++) {
+          for (let x = xMin; x <= xMax; x++) {
+            let sadNext = 0;
+            let sadPrev = 0;
+            for (let j = 0; j < blockSize; j++) {
+              const currRow = (yStart + j) * width + xStart;
+              const refRow = (y + j) * width + x;
+              for (let i = 0; i < blockSize; i++) {
+                const idxCurr = currRow + i;
+                sadNext += Math.abs(curr[idxCurr] - refNext[refRow + i]);
+                sadPrev += Math.abs(curr[idxCurr] - refPrev[refRow + i]);
+              }
+            }
+            if (sadNext < best) {
+              best = sadNext;
+              bestX = x;
+              bestY = y;
+              causal = 0;
+            }
+            if (sadPrev < best) {
+              best = sadPrev;
+              bestX = x;
+              bestY = y;
+              causal = 1;
+            }
+          }
+        }
+        vectors.push({ x: xStart, y: yStart, refX: bestX, refY: bestY, causal });
+      }
+    }
+    return vectors;
+  }
+
+  function computeResidual(vectors, curr, ref, width, height) {
+    const residual = new Float32Array(width * height);
+    for (const vec of vectors) {
+      for (let j = 0; j < blockSize; j++) {
+        const currRow = (vec.y + j) * width + vec.x;
+        const refRow = (vec.refY + j) * width + vec.refX;
+        for (let i = 0; i < blockSize; i++) {
+          const idx = currRow + i;
+          residual[idx] = curr[idx] - ref[refRow + i];
+        }
+      }
+    }
+    return residual;
+
+  }
+
+  function computeBiResidual(vectors, curr, refPrev, refNext, width, height) {
+    const residual = new Float32Array(width * height);
+    for (const vec of vectors) {
+      const ref = vec.causal ? refPrev : refNext;
+      for (let j = 0; j < blockSize; j++) {
+        const currRow = (vec.y + j) * width + vec.x;
+        const refRow = (vec.refY + j) * width + vec.refX;
+        for (let i = 0; i < blockSize; i++) {
+          const idx = currRow + i;
+          residual[idx] = curr[idx] - ref[refRow + i];
+        }
+      }
+    }
+    return residual;
+  }
+
+  function histogramFromResidual(residual) {
+
+    const histogram = new Uint32Array(256);
+    for (const value of residual) {
+      const bin = Math.max(0, Math.min(255, Math.round((value + 1) * 0.5 * 255)));
+      histogram[bin] += 1;
+    }
+    return histogram;
+  }
+
+  function residualToImageData(residual, width, height) {
+    const imageData = new ImageData(width, height);
+    for (let i = 0; i < residual.length; i++) {
+      const v = Math.max(0, Math.min(255, (residual[i] * 0.5 + 0.5) * 255));
+      const idx = i * 4;
+      imageData.data[idx] = imageData.data[idx + 1] = imageData.data[idx + 2] = v;
+      imageData.data[idx + 3] = 255;
+    }
+    return imageData;
+  }
+
+  function renderImage(targetImg, imageData) {
+    const canvas = document.createElement('canvas');
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+    canvas.getContext('2d').putImageData(imageData, 0, 0);
+    targetImg.src = canvas.toDataURL('image/png');
+  }
+
+  function drawHistogram(canvas, histogram) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padding = { top: 12, right: 8, bottom: 22, left: 42 };
+    const innerWidth = canvas.width - padding.left - padding.right;
+    const innerHeight = canvas.height - padding.top - padding.bottom;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#d0d6e2';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padding.left, padding.top, innerWidth, innerHeight);
+
+    const max = Math.max(...histogram);
+    const barWidth = innerWidth / histogram.length;
+    ctx.fillStyle = '#6ea6e3';
+    for (let i = 0; i < histogram.length; i++) {
+      const h = max ? (histogram[i] / max) * innerHeight : 0;
+      const x = padding.left + i * barWidth;
+      const y = padding.top + innerHeight - h;
+      ctx.fillRect(x, y, barWidth, h);
+    }
+
+    ctx.fillStyle = '#2a3140';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Grey level', padding.left + innerWidth / 2, canvas.height - 6);
+    ctx.save();
+    ctx.translate(14, padding.top + innerHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Frequency of occurrence', 0, 0);
+    ctx.restore();
+  }
+
+  function computeEntropy(histogram) {
+    const total = histogram.reduce((a, b) => a + b, 0);
+    if (!total) return 0;
+    let entropy = 0;
+    for (const count of histogram) {
+      if (!count) continue;
+      const p = count / total;
+      entropy -= p * Math.log2(p);
+    }
+    return entropy;
+  }
+
+  function renderBlendMap(vectors, baseCanvas) {
+
+    const canvas = document.createElement('canvas');
+    canvas.width = baseCanvas.width;
+    canvas.height = baseCanvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(baseCanvas, 0, 0);
+    ctx.globalAlpha = 0.65;
+    for (const vec of vectors) {
+      ctx.fillStyle = vec.causal ? 'rgba(196,90,90,0.7)' : 'rgba(74,103,199,0.7)';
+      ctx.fillRect(vec.x, vec.y, blockSize, blockSize);
+      ctx.strokeStyle = vec.causal ? 'rgba(196,90,90,0.9)' : 'rgba(74,103,199,0.9)';
+      ctx.strokeRect(vec.x + 0.5, vec.y + 0.5, blockSize - 1, blockSize - 1);
+    }
+    return canvas.toDataURL('image/png');
+  }
+
+  async function initDemo() {
+    const [imgPrev, imgCurr, imgNext] = await Promise.all([
+      loadImage(sources.image_prev),
+      loadImage(sources.image_curr),
+      loadImage(sources.image_next),
+    ]);
+    const width = imgCurr.width;
+    const height = imgCurr.height;
+
+    const prevGray = grayscaleCanvas(imgPrev, width, height);
+    const currGray = grayscaleCanvas(imgCurr, width, height);
+    const nextGray = grayscaleCanvas(imgNext, width, height);
+
+    document.getElementById('frame-prev').src = prevGray.canvas.toDataURL('image/png');
+    document.getElementById('frame-current').src = currGray.canvas.toDataURL('image/png');
+    document.getElementById('frame-next').src = nextGray.canvas.toDataURL('image/png');
+
+    const forwardVectors = blockMove(currGray.gray, prevGray.gray, width, height);
+    const backwardVectors = blockMove(currGray.gray, nextGray.gray, width, height);
+    const bidirectionalVectors = biBlockMove(currGray.gray, prevGray.gray, nextGray.gray, width, height);
+
+    const biResidual = computeBiResidual(bidirectionalVectors, currGray.gray, prevGray.gray, nextGray.gray, width, height);
+    const forwardResidual = computeResidual(forwardVectors, currGray.gray, prevGray.gray, width, height);
+    const backwardResidual = computeResidual(backwardVectors, currGray.gray, nextGray.gray, width, height);
+
+    renderImage(document.getElementById('residual-bidirectional'), residualToImageData(biResidual, width, height));
+    renderImage(document.getElementById('residual-forward'), residualToImageData(forwardResidual, width, height));
+    renderImage(document.getElementById('residual-backward'), residualToImageData(backwardResidual, width, height));
+
+    const biHist = histogramFromResidual(biResidual);
+    const forwardHist = histogramFromResidual(forwardResidual);
+    const backwardHist = histogramFromResidual(backwardResidual);
+
+    drawHistogram(document.getElementById('hist-bidirectional'), biHist);
+    drawHistogram(document.getElementById('hist-forward'), forwardHist);
+    drawHistogram(document.getElementById('hist-backward'), backwardHist);
+
+    document.getElementById('entropy-bidirectional').textContent = computeEntropy(biHist).toFixed(3);
+    document.getElementById('entropy-forward').textContent = computeEntropy(forwardHist).toFixed(3);
+    document.getElementById('entropy-backward').textContent = computeEntropy(backwardHist).toFixed(3);
+
+    document.getElementById('blend-map').src = renderBlendMap(bidirectionalVectors, currGray.canvas);
+
+  }
+
+  initDemo();
+</script>
+{% endblock %}

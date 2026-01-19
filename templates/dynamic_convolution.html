@@ -92,9 +92,12 @@
         data: {
           labels: tData,
           datasets: [
-            { label: "x(τ)", data: y1Data, borderColor: 'blue', fill:false, pointRadius:0 },
-            { label: "h(t−τ)", data: [], borderColor: 'orange', fill:false, pointRadius:0 },
-            { label: "x(τ)·h(t−τ)", data: [], borderColor: 'red', fill:true, backgroundColor:'rgba(255,0,0,0.2)', borderWidth:2, pointRadius:0 }
+            { label: "x(τ)", data: y1Data, borderColor: 'blue',
+            fill:false, pointRadius:0, borderWidth:2, borderJoinStyle:'round' },
+            { label: "h(t−τ)", data: [], borderColor: 'orange',
+            fill:false, pointRadius:0, borderWidth:2, borderJoinStyle:'round' },
+            { label: "x(τ)·h(t−τ)", data: [], borderColor: 'red',
+            fill:true, backgroundColor:'rgba(255,0,0,0.5)', borderWidth:1, pointRadius:0, borderJoinStyle:'round' }
           ]
         },
         options: { animation:false, scales:{
@@ -108,7 +111,8 @@
         data: {
           labels: tData,
           datasets: [
-            { label: "y(t)", data: yConvData, borderColor: 'darkblue', fill:false, pointRadius:0 },
+            { label: "y(t)", data: yConvData, borderColor: 'darkblue',
+            fill:false, pointRadius:0, borderWidth:2, borderJoinStyle:'round' },
             { label: "Current Output", data: [], pointRadius:5, showLine:false, borderColor:'red' }
           ]
         },
@@ -172,5 +176,10 @@
     #tauValue { font-weight: bold; }
 
     #dynamic-plot-wrapper { position: relative; }
+
+    /* light backgrounds for better contrast in darkmode */
+    #dynamic-plot-wrapper canvas {
+      background: #f6f7fb;
+    }
   </style>
 {% endblock %}

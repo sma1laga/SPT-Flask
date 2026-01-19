@@ -1,76 +1,88 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Sampling (Ch. 11)</h1>
+<h1>Sampling (L&nbsp;11-18)</h1>
 <p>
-  This demo shows signals in the frequency and time domains before and after sampling with the sampling frequency \(\omega_a\), as described in Chapter&nbsp;11.
-  As an example, the input signal \(x(t)\) is
+  This demo shows signals in the time and frequency domain before and after sampling with the sampling frequency&nbsp;\(\omega_\mathrm{a}\) as described in Chapter&nbsp;11.
+  As an example, the input signal&nbsp;\(x(t)\) is
   \[
-    x(t) = \frac{\omega_g}{2\pi}\,\mathrm{si}^2\!\left(\tfrac{1}{2}\,\omega_g\,t\right),
+    x(t) = \frac{\omega_\mathrm{g}}{2\pi}\,\mathrm{si}^2\!\left(\frac{1}{2}\omega_\mathrm{g}t\right),
   \]
-  with spectrum
+  with the spectrum&nbsp;\(X(\mathrm{j}\omega)\), calculated as
   \[
-    X(\mathrm{j}\omega) = \Lambda\!\left(\frac{\omega}{\omega_g}\right)
-    = \frac{1}{\omega_g}\,\mathrm{rect}\!\left(\frac{\omega}{\omega_g}\right) * \mathrm{rect}\!\left(\frac{\omega}{\omega_g}\right).
+    X(\mathrm{j}\omega) = \Lambda\!\left(\frac{\omega}{\omega_\mathrm{g}}\right)
+    = \frac{1}{\omega_\mathrm{g}}\cdot\mathrm{rect}\!\left(\frac{\omega}{\omega_\mathrm{g}}\right) \ast \mathrm{rect}\!\left(\frac{\omega}{\omega_\mathrm{g}}\right).
   \]
-  The input is sampled to obtain \(x_a(t)\) (slides&nbsp;11-13 to&nbsp;11-14) and reconstructed ideally to obtain \(y(t)\) (slides&nbsp;11-16 to&nbsp;11-18\)).
-  You can view \(x_a(t)\) and \(y(t)\) and their spectra \(X_a(\mathrm{j}\omega)\) and \(Y(\mathrm{j}\omega)\) in time and frequency domains, and optionally display the individual \(\mathrm{si}\)-functions that sum to \(y(t)\).
-  Adjust the sampling frequency \(\omega_a\) and the cutoff \(\omega_g\).
+  The input signal&nbsp;\(x(t)\) is sampled, resulting in&nbsp;\(x_\mathrm{a}(t)\) (c.f. L&nbsp;11-13 to &nbsp;11-14), and reconstructed to obtain&nbsp;\(y(t)\) (c.f. &nbsp;11-16 to&nbsp;11-18).
+  You can view&nbsp;\(x_\mathrm{a}(t)\) and&nbsp;\(y(t)\) and their respective spectra&nbsp;\(X_\mathrm{a}(\mathrm{j}\omega)\) and&nbsp;\(Y(\mathrm{j}\omega)\) in time and frequency domain, and optionally display the individual \(\mathrm{si}\)-functions that sum up to&nbsp;\(y(t)\).
+  Adjust the sampling frequency&nbsp;\(\omega_\mathrm{a}\) and the cutoff frequency&nbsp;\(\omega_\mathrm{g}\) to see the effect of aliasing.
 </p>
 
-<style>
-  .toolbar {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px 18px;
-    align-items: start;
-    margin: 12px 0 10px;
-  }
-  .group { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  .checks { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 6px 14px; }
-  @media (max-width: 900px) { .checks { grid-template-columns: 1fr; } }
-  label { font-weight: 600; display: inline-block; margin-bottom: 4px; }
-  input[type=number] {
-    width: 100%; padding: 7px 8px; border: 1px solid #bbb; border-radius: 8px; background: var(--control-bg, #fff);
-  }
-  .plots { display: grid; grid-template-columns: 1fr; gap: 14px; }
-  #plot { width: 100%; height: auto; display: block; }
-</style>
 
-<div class="toolbar">
-  <div class="group">
-    <div>
-      <label for="wg_over_pi">\(\omega_g / \pi\)</label>
-      <input id="wg_over_pi" type="number" step="{{ defaults.step }}"
-             min="{{ defaults.min_wg }}" max="{{ defaults.max_wg }}"
-             value="{{ defaults.w_g_over_pi }}">
+<div class="demo row">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <label for="wg_over_pi">\(\omega_\mathrm{g} / \pi\)</label>
+        <input id="wg_over_pi" type="number" step="{{ defaults.step }}"
+              min="{{ defaults.min_wg }}" max="{{ defaults.max_wg }}"
+              value="{{ defaults.w_g_over_pi }}">
+      </div>
+      <div>
+        <label for="wa_over_pi">\(\omega_\mathrm{a} / \pi\)</label>
+        <input id="wa_over_pi" type="number" step="{{ defaults.step }}"
+              min="{{ defaults.min_wa }}" max="{{ defaults.max_wa }}"
+              value="{{ defaults.w_a_over_pi }}">
+      </div>
     </div>
-    <div class="checks">
-      <label><input id="show_xt" type="checkbox" {% if defaults.show_xt %}checked{% endif %}> show x(t)</label>
-      <label><input id="show_xa" type="checkbox" {% if defaults.show_xa %}checked{% endif %}> show x<sub>a</sub>(t)</label>
-      <label><input id="show_yt" type="checkbox" {% if defaults.show_yt %}checked{% endif %}> show y(t)</label>
-      <label><input id="show_partials" type="checkbox" {% if defaults.show_partials %}checked{% endif %}> show partial sums of y</label>
+    
+    <div>
+      Plot...
+      <div class="toolbar" style="text-align: left;">
+        <div>
+          <input id="show_xt" type="checkbox" style="accent-color: black;"
+            {% if defaults.show_xt %}checked{% endif %}><label for="show_xt">\(x(t)\)</label>
+        </div>
+        <div>
+          <input id="show_xa" type="checkbox" style="accent-color: var(--tab-blue);"
+            {% if defaults.show_xa %}checked{% endif %}><label for="show_xa">\(x_\mathrm{a}(t)\)</label>
+        </div>
+        <div>
+          <input id="show_yt" type="checkbox" style="accent-color: var(--tab-red);"
+            {% if defaults.show_yt %}checked{% endif %}><label for="show_yt">\(y(t)\)</label>
+        </div>
+        <div>
+          <input id="show_partials" type="checkbox" style="accent-color: var(--tab-green);"
+            {% if defaults.show_partials %}checked{% endif %}><label for="show_partials">partial sums of&nbsp;\(y(t)\)</label>
+        </div>
+        <div>
+          <input id="show_X"  type="checkbox" style="accent-color: black;"
+            {% if defaults.show_X %}checked{% endif %}><label for="show_X">\(X(\mathrm{j}\omega)\)</label>
+        </div>
+        <div>
+          <input id="show_Xa" type="checkbox" style="accent-color: var(--tab-blue);"
+            {% if defaults.show_Xa %}checked{% endif %}><label for="show_Xa">\(X_\mathrm{a}(\mathrm{j}\omega)\)</label>
+        </div>
+        <div>
+          <input id="show_Y"  type="checkbox" style="accent-color: var(--tab-red);"
+            {% if defaults.show_Y %}checked{% endif %}><label for="show_Y">\(Y(\mathrm{j}\omega)\)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button id="run" type="button">Update</button>
+      <button id="reset" type="button">Reset</button>
     </div>
   </div>
 
-  <div class="group">
-    <div>
-      <label for="wa_over_pi">\(\omega_a / \pi\)</label>
-      <input id="wa_over_pi" type="number" step="{{ defaults.step }}"
-             min="{{ defaults.min_wa }}" max="{{ defaults.max_wa }}"
-             value="{{ defaults.w_a_over_pi }}">
-    </div>
-    <div class="checks">
-      <label><input id="show_X"  type="checkbox" {% if defaults.show_X %}checked{% endif %}> show \(X(\mathrm{j}\omega)\)</label>
-      <label><input id="show_Xa" type="checkbox" {% if defaults.show_Xa %}checked{% endif %}> show \(X_a(\mathrm{j}\omega)\)</label>
-      <label><input id="show_Y"  type="checkbox" {% if defaults.show_Y %}checked{% endif %}> show \(Y(\mathrm{j}\omega)\)</label>
-    </div>
+  <div class="card">
+    <img id="plot" alt="Sampling: time and frequency-domain plots">
   </div>
 </div>
+{% endblock %}
 
-<div class="plots">
-  <img id="plot" alt="Sampling: time and frequency-domain plots">
-</div>
 
+{% block scripts %}
 <script>
   const $ = (id) => document.getElementById(id);
 
@@ -123,6 +135,21 @@
   ["wg_over_pi","wa_over_pi","show_xt","show_xa","show_yt","show_partials","show_X","show_Xa","show_Y"].forEach(id => {
     $(id).addEventListener("input",  recompute);
     $(id).addEventListener("change", recompute);
+  });
+
+  $("run").addEventListener("click", recompute);
+
+  $("reset").addEventListener("click", () => {
+    $("wg_over_pi").value = "{{ defaults.w_g_over_pi }}";
+    $("wa_over_pi").value = "{{ defaults.w_a_over_pi }}";
+    $("show_xt").checked = {{ 'true' if defaults.show_xt else 'false' }};
+    $("show_xa").checked = {{ 'true' if defaults.show_xa else 'false' }};
+    $("show_yt").checked = {{ 'true' if defaults.show_yt else 'false' }};
+    $("show_partials").checked = {{ 'true' if defaults.show_partials else 'false' }};
+    $("show_X").checked = {{ 'true' if defaults.show_X else 'false' }};
+    $("show_Xa").checked = {{ 'true' if defaults.show_Xa else 'false' }};
+    $("show_Y").checked = {{ 'true' if defaults.show_Y else 'false' }};
+    recompute();
   });
 
   window.addEventListener("load", recompute);
