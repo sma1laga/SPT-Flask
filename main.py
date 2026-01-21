@@ -84,6 +84,18 @@ from pages.demos.color_spaces import demos_color_spaces_bp
 from pages.demos.block_matching import demos_block_matching_bp
 from pages.demos.b_prediction import b_prediction_bp
 from pages.demos.image_sampling import demos_image_sampling_bp
+#VL STATSIP
+from pages.demos.conditional_distributions import demos_conditional_distributions_bp
+from pages.demos.mapping_random_variables import mapping_random_variables_bp
+from pages.demos.distributions import demos_distributions_bp
+from pages.demos.normal2d import demos_normal2d_bp
+from pages.demos.central_limit_theorem import demos_central_limit_theorem_bp
+from pages.demos.averaging_over_time import demos_averaging_over_time_bp
+from pages.demos.autocorrelation_stationary import (demos_autocorrelation_stationary_bp)
+from pages.demos.harmonic_detection import demos_harmonic_detection_bp
+from pages.demos.delay_estimation import demos_delay_estimation_bp
+from pages.demos.delay_estimation_frequency import demos_delay_estimation_freq_bp
+from pages.demos.finite_observation_intervals import demos_finite_observation_intervals_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -97,6 +109,10 @@ def _build_demo_slug_map():
 
 
 DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
+COLLAPSIBLE_DEMO_SECTIONS = {
+    "Statistical Signal Processing",
+    "Image and Video Compression",
+}
 
 
 
@@ -132,6 +148,8 @@ def create_app():
             "demos_sidebar": DEMOS,
             "demos_section": section_data,
             "demos_section_name": section_name,
+            "is_statsip_demo": section_name == "Statistical Signal Processing",
+            "is_collapsible_demo": section_name in COLLAPSIBLE_DEMO_SECTIONS,
         }
 
     @app.errorhandler(Exception)
@@ -231,7 +249,20 @@ def create_app():
     app.register_blueprint(demos_block_matching_bp, url_prefix="/demos/block-matching")
     app.register_blueprint(b_prediction_bp, url_prefix="/demos/b-prediction")
     app.register_blueprint(demos_image_sampling_bp, url_prefix="/demos/image-sampling")
+    # STATSIP
+    app.register_blueprint(demos_conditional_distributions_bp, url_prefix="/demos/conditional-distributions")
+    app.register_blueprint(mapping_random_variables_bp, url_prefix="/demos/mapping-random-variables")
+    app.register_blueprint(demos_distributions_bp, url_prefix="/demos/distributions")
+    app.register_blueprint(demos_normal2d_bp, url_prefix="/demos/2d-normal-distributions")
+    app.register_blueprint(demos_central_limit_theorem_bp, url_prefix="/demos/central-limit-theorem")
+    app.register_blueprint(demos_averaging_over_time_bp, url_prefix="/demos/averaging-over-time")
+    app.register_blueprint(demos_autocorrelation_stationary_bp, url_prefix="/demos/autocorrelation-stationary")
+    app.register_blueprint(demos_harmonic_detection_bp, url_prefix="/demos/harmonic-detection")
+    app.register_blueprint(demos_delay_estimation_bp, url_prefix="/demos/delay-estimation")
+    app.register_blueprint(demos_delay_estimation_freq_bp, url_prefix="/demos/delay-estimation-frequency")
+    app.register_blueprint(demos_finite_observation_intervals_bp, url_prefix="/demos/finite-observation-intervals")
 
+    
     @app.route("/")
     def home():
         return render_template("home.html")
