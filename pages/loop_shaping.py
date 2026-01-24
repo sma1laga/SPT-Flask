@@ -53,6 +53,17 @@ EXAMPLES = [
 ]
 
 
+def _phase_deg_negative(value: complex) -> float:
+    """Return phase in degrees mapped to (-360, 0].
+
+    For loop shaping we prefer negative phases to avoid wrap confusion.
+    """
+    phase = float(np.angle(value, deg=True))
+    if phase > 0:
+        phase -= 360.0
+    return phase
+
+
 @dataclass
 class ParsedPlant:
     transfer: Optional[control.TransferFunction]
@@ -234,7 +245,308 @@ def _controller_transfer(controller_type: str, params: Dict[str, float]) -> cont
         numerator = [1, 2 * zeta_z * w0, w0 ** 2]
         denominator = [1, 2 * zeta_p * w0, w0 ** 2]
         return k * control.TransferFunction(numerator, denominator)
+    if controller_type == "Custom":
+        expr = str(params.get("expression", "")).strip()
+        if not expr:
+            raise ValueError("Custom controller requires an expression, e.g. '10*(1+s/2)/s'.")
+        tf = _parse_transfer_expression(expr)
+        return tf
     raise ValueError("Unknown controller type.")
+
+
+def _parse_float_or_none(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        text = str(value).strip()
+        if not text:
+            return None
+        return float(text)
+    except Exception:
+        return None
+
+
+def _exam_recipe_controller(
+    plant: control.TransferFunction,
+    targets: Dict[str, Any],
+) -> Tuple[control.TransferFunction, Dict[str, Any], List[str]]:
+    """Frequenzkennlinienverfahren
+
+    This is not a universal method; it implements common handout heuristics:
+      ω_D = 1.5 / T_an
+      Φ_req = 70° - M_p
+
+    Additionally it can enforce/meet a steady-state error spec for step or ramp.
+    """
+    warnings: List[str] = []
+    s = control.TransferFunction([1, 0], [1])
+
+    # ----- 0) Read targets -----
+    reference = str(targets.get("reference") or "step").lower()
+    if reference not in {"step", "ramp"}:
+        reference = "step"
+
+    ramp_slope = float(targets.get("ramp_slope") or 1.0)
+    t_an = _parse_float_or_none(targets.get("t_an")) or 0.0
+    mp = _parse_float_or_none(targets.get("mp")) or 0.0
+
+    einf_mode = str(targets.get("einf_mode") or "none").lower()
+    if einf_mode == "none":
+        if bool(targets.get("einf_required")) and reference == "step":
+            einf_mode = "zero"
+        if bool(targets.get("ramp_einf_required")) and reference == "ramp":
+            einf_mode = "zero"
+
+    einf_value = _parse_float_or_none(targets.get("einf_value"))
+    if einf_mode == "numeric" and (einf_value is None or einf_value < 0):
+        warnings.append("e∞ target invalid → ignored.")
+        einf_mode = "none"
+        einf_value = None
+    if einf_mode == "numeric" and einf_value == 0:
+        einf_mode = "zero"
+
+    w_d = 1.5 / t_an if t_an > 0 else None
+    phi_req = 70.0 - mp if mp > 0 else None
+    if w_d is None or phi_req is None:
+        raise ValueError("Exam recipe requires T_an > 0 and M_p > 0.")
+
+    phi_req = float(np.clip(phi_req, 15.0, 85.0))
+
+    # ----- 1) Enforce required system type (ν) -----
+    plant_type = _count_integrators(plant)
+    if reference == "step":
+        nu_req = 1 if einf_mode == "zero" else 0
+    else:  # ramp
+        if einf_mode == "zero":
+            nu_req = 2
+        elif einf_mode == "numeric":
+            nu_req = 1
+        else:
+            nu_req = 0
+
+    n_add = max(0, nu_req - plant_type)
+    if n_add > 0:
+        warnings.append(f"Added {n_add} integrator(s) to meet ν ≥ {nu_req}.")
+
+    c_int = 1 / (s ** n_add) if n_add > 0 else control.TransferFunction([1], [1])
+    l_base = c_int * plant  # K=1, no lead/lag yet
+
+    # ----- 2) Compute crossover gain K_cross at ω_D -----
+    l_wd = _frequency_response(l_base, np.array([w_d]))[0]
+    mag0 = abs(l_wd)
+    if mag0 <= 0 or not np.isfinite(mag0):
+        raise ValueError("Could not evaluate plant at ω_D.")
+    k_cross = 1.0 / mag0
+
+    # ----- 3) Compute steady-state gain K_ss (if numeric spec) -----
+    k_ss: Optional[float] = None
+    nu_total = plant_type + n_add
+    if einf_mode == "numeric" and einf_value is not None:
+        e = float(einf_value)
+        if reference == "step":
+            if nu_total >= 1:
+                k_ss = None
+                warnings.append("System type ν≥1 → step e∞ = 0 automatically.")
+            else:
+                kp_base = _safe_dcgain(l_base)
+                if kp_base is None or kp_base <= 0:
+                    warnings.append("Could not compute Kp for e∞ spec.")
+                else:
+                    kp_req = (1.0 / e) - 1.0
+                    k_ss = kp_req / kp_base
+        else:  # ramp
+            if nu_total >= 2:
+                k_ss = None
+                warnings.append("System type ν≥2 → ramp e∞ = 0 automatically.")
+            elif nu_total == 1:
+                kv_base = _safe_dcgain(s * l_base)
+                if kv_base is None or kv_base <= 0:
+                    warnings.append("Could not compute Kv for ramp e∞ spec.")
+                else:
+                    kv_req = ramp_slope / e
+                    k_ss = kv_req / kv_base
+            else:
+                warnings.append("Ramp steady-state error is infinite for ν=0.")
+
+    k0 = float(k_ss) if (k_ss is not None and np.isfinite(k_ss) and k_ss > 0) else float(k_cross)
+
+    # ----- 4) Phase deficit at ω_D and required lead -----
+    phase0 = _phase_deg_negative(l_wd)
+    phase_target = -180.0 + phi_req
+    delta_phi = phase_target - phase0
+
+    # Add a small safety buffer (common handout practice)
+    delta_phi_eff = float(np.clip(delta_phi + 5.0, 0.0, 60.0))
+
+    ratio_needed = k_cross / max(k0, 1e-12)
+    alpha_mag = ratio_needed ** 2 if ratio_needed > 1.0 else 1.0
+
+    alpha_phase = 1.0
+    if delta_phi_eff > 1e-6:
+        phi = np.deg2rad(delta_phi_eff)
+        alpha_phase = (1 + np.sin(phi)) / (1 - np.sin(phi))
+
+    alpha = float(max(alpha_mag, alpha_phase, 1.0))
+    alpha = float(np.clip(alpha, 1.0, 200.0))
+
+    lead = control.TransferFunction([1], [1])
+    lead_params: Optional[Dict[str, float]] = None
+    if alpha > 1.0001:
+        wz = w_d / np.sqrt(alpha)
+        wp = w_d * np.sqrt(alpha)
+        lead = (s / wz + 1) / (s / wp + 1)
+        lead_params = {"wz": float(wz), "wp": float(wp), "alpha": float(alpha), "phi_add": float(delta_phi_eff)}
+
+    # After lead, recompute crossover gain requirement (exact)
+    l_after_lead = lead * l_base
+    l_wd_after_lead = _frequency_response(l_after_lead, np.array([w_d]))[0]
+    mag_after_lead = abs(l_wd_after_lead)
+    k_cross_after_lead = 1.0 / mag_after_lead if mag_after_lead > 0 else k_cross
+
+    # ----- 5) If K is fixed too high (from e∞), add lag to attenuate around ω_D -----
+    lag = control.TransferFunction([1], [1])
+    lag_params: Optional[Dict[str, float]] = None
+    beta = k0 / max(k_cross_after_lead, 1e-12)
+    if beta > 1.05:
+        wp_lag = w_d / 10.0
+        wz_lag = wp_lag * beta
+        lag = (s / wz_lag + 1) / (s / wp_lag + 1)
+        lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
+
+    # Final controller
+    controller = k0 * c_int * lead * lag
+
+    # ----- 6) Build a recipe report (step-by-step, Klausur-style) -----
+    report_steps: List[Dict[str, str]] = []
+    report_steps.append(
+        {
+            "title": "1) Vorgaben → ω_D und Φ",
+            "text": f"ω_D = 1.5/T_an = 1.5/{t_an:g} = {w_d:.3g} rad/s;  Φ_req = 70° - M_p = 70° - {mp:g}% = {phi_req:.3g}°."
+        }
+    )
+
+    if einf_mode == "zero":
+        if reference == "step":
+            report_steps.append(
+                {
+                    "title": "2) Stationäre Genauigkeit (Sprung)",
+                    "text": f"e∞=0 → offener Kreis braucht ν≥1. Strecke hat ν={plant_type}, daher Integrator-Zusatz: {n_add}."
+                }
+            )
+        else:
+            report_steps.append(
+                {
+                    "title": "2) Stationäre Genauigkeit (Rampe)",
+                    "text": f"e∞=0 → offener Kreis braucht ν≥2. Strecke hat ν={plant_type}, daher Integrator-Zusatz: {n_add}."
+                }
+            )
+    elif einf_mode == "numeric" and einf_value is not None:
+        if reference == "step":
+            report_steps.append(
+                {
+                    "title": "2) Stationäre Abweichung (Sprung)",
+                    "text": f"Vorgegeben e∞={einf_value:g}. Für ν=0 gilt e∞=1/(1+Kp). Daraus Kp_req=(1/e∞)-1. (Falls ν≥1 → e∞=0 automatisch.)"
+                }
+            )
+        else:
+            report_steps.append(
+                {
+                    "title": "2) Stationäre Abweichung (Rampe)",
+                    "text": f"Vorgegeben e∞={einf_value:g} bei Rampe a={ramp_slope:g}. Für ν=1 gilt e∞=a/Kv → Kv_req=a/e∞. (Falls ν≥2 → e∞=0 automatisch.)"
+                }
+            )
+
+    report_steps.append(
+        {
+            "title": "3) Durchtritt und Verstärkung",
+            "text": f"|L(jω_D)| (ohne K) = {20*np.log10(mag0):.2f} dB ⇒ K_cross = {k_cross:.4g}. "
+                    f"Gewählt K = {k0:.4g}{' (aus e∞)' if k_ss is not None else ''}."
+        }
+    )
+
+    report_steps.append(
+        {
+            "title": "4) Phasenbedarf",
+            "text": f"φ(L(jω_D)) ≈ {phase0:.2f}°. Ziel: φ_target = -180°+Φ_req = {phase_target:.2f}°. "
+                    f"Δφ ≈ {delta_phi:.2f}° → Lead-Auslegung mit Δφ_eff ≈ {delta_phi_eff:.2f}°."
+        }
+    )
+
+    if lead_params:
+        report_steps.append(
+            {
+                "title": "5) Lead-Glied",
+                "text": f"Lead: (1+s/ω_z)/(1+s/ω_p) mit ω_z={lead_params['wz']:.3g}, ω_p={lead_params['wp']:.3g} (α={lead_params['alpha']:.3g})."
+            }
+        )
+    else:
+        report_steps.append(
+            {
+                "title": "5) Lead-Glied",
+                "text": "Kein Lead notwendig (Δφ ≤ 0 und kein Gain-Boost am ω_D erforderlich)."
+            }
+        )
+
+    if lag_params:
+        report_steps.append(
+            {
+                "title": "6) Lag-Glied (falls K durch e∞ fest ist)",
+                "text": f"β={lag_params['beta']:.3g} → Lag: (1+s/ω_z)/(1+s/ω_p) mit ω_p={lag_params['wp']:.3g}, ω_z={lag_params['wz']:.3g} (≈1/β bei ω_D)."
+            }
+        )
+
+    # Build a string expression that can be pasted into the Custom controller field.
+    parts: List[str] = [f"{k0:.12g}"]
+    if n_add > 0:
+        parts.append(f"(1/(s^{n_add}))")
+    if lead_params:
+        parts.append(f"((1+s/{lead_params['wz']:.12g})/(1+s/{lead_params['wp']:.12g}))")
+    if lag_params:
+        parts.append(f"((1+s/{lag_params['wz']:.12g})/(1+s/{lag_params['wp']:.12g}))")
+    controller_expr = "*".join(parts)
+
+    # Human-readable block list (useful for Exam-style answers)
+    blocks: List[Dict[str, Any]] = []
+    blocks.append({"type": "Gain", "label": "K", "k": float(k0)})
+    if n_add > 0:
+        blocks.append({"type": "Integrator", "label": f"1/s^{n_add}", "n": int(n_add)})
+    if lead_params:
+        blocks.append({"type": "Lead", **lead_params})
+    if lag_params:
+        blocks.append({"type": "Lag", **lag_params})
+
+    k_source = "steady_state" if (k_ss is not None and np.isfinite(k_ss)) else "crossover"
+    report = {
+        "w_d": float(w_d),
+        "phi_req": float(phi_req),
+        "reference": reference,
+        "ramp_slope": float(ramp_slope),
+        "einf_mode": einf_mode,
+        "einf_value": einf_value,
+        "plant_type": int(plant_type),
+        "nu_req": int(nu_req),
+        "nu_total": int(nu_total),
+        "n_add": int(n_add),
+        "k_source": k_source,
+        "k_cross": float(k_cross),
+        "k_cross_after_lead": float(k_cross_after_lead) if np.isfinite(k_cross_after_lead) else None,
+        "k_ss": float(k_ss) if k_ss is not None and np.isfinite(k_ss) else None,
+        "k": float(k0),
+        "phase_at_wd": float(phase0),
+        "phase_target": float(phase_target),
+        "delta_phi": float(delta_phi),
+        "delta_phi_eff": float(delta_phi_eff),
+        "ratio_needed": float(ratio_needed),
+        "alpha": float(alpha),
+        "beta": float(beta) if np.isfinite(beta) else None,
+        "lead": lead_params,
+        "lag": lag_params,
+        "blocks": blocks,
+        "controller_expression": controller_expr,
+        "steps": report_steps,
+    }
+
+    return controller, report, warnings
 
 
 def _frequency_response(sys: control.TransferFunction, w: np.ndarray) -> np.ndarray:
@@ -650,6 +962,7 @@ def loop_shaping_api():
     mode = data.get("mode", "manual")
     design_mode = data.get("design_mode", "general")
     warnings: List[str] = []
+    recipe_report: Optional[Dict[str, Any]] = None
 
     try:
         plant_cfg = data.get("plant", {})
@@ -680,8 +993,18 @@ def loop_shaping_api():
                 parsed.transfer, auto_targets
             )
             warnings.extend(auto_warnings)
+        elif mode == "recipe":
+            if parsed.transfer is None:
+                return ("Recipe mode requires a transfer function (not measured data).", 400)
+            controller_tf, report, recipe_warnings = _exam_recipe_controller(parsed.transfer, target_inputs)
+            recipe_report = report
+            warnings.extend(recipe_warnings)
+            controller_type = "Custom"
+            controller_params = {"expression": report.get("controller_expression", "")}
+            controller = controller_tf
 
-        controller = _controller_transfer(controller_type, controller_params)
+        if mode != "recipe":
+            controller = _controller_transfer(controller_type, controller_params)
 
         if parsed.transfer is None:
             w = parsed.frequencies
@@ -719,6 +1042,8 @@ def loop_shaping_api():
                 "ramp_slope": None,
                 "reference": target_inputs.get("reference", "step"),
                 "ramp_einf_required": bool(target_inputs.get("ramp_einf_required")),
+                "einf_mode": target_inputs.get("einf_mode", "none"),
+                "einf_value": target_inputs.get("einf_value"),
             }
         else:
             loop_tf = controller * parsed.transfer
@@ -773,6 +1098,8 @@ def loop_shaping_api():
                 "ramp_slope": ramp_slope,
                 "reference": target_inputs.get("reference", "step"),
                 "ramp_einf_required": bool(target_inputs.get("ramp_einf_required")),
+                "einf_mode": target_inputs.get("einf_mode", "none"),
+                "einf_value": target_inputs.get("einf_value"),
             }
 
         sensitivity = 1 / (1 + loop_response)
@@ -819,6 +1146,13 @@ def loop_shaping_api():
             target_checks["gm"] = measured["gm"] >= targets_display["gm"]
         if targets_display.get("mp") is not None and measured["mp"] is not None:
             target_checks["mp"] = measured["mp"] <= targets_display["mp"]
+
+        # e∞ checks: support both checkboxes (legacy) and numeric entry (preferred)
+        einf_mode = str(target_inputs.get("einf_mode") or "none").lower()
+        einf_value = target_inputs.get("einf_value")
+        reference_sel = str(target_inputs.get("reference") or "step").lower()
+
+        # Legacy checkbox behavior
         if targets_display.get("einf_required") and measured["e_inf"] is not None:
             target_checks["e_inf"] = abs(measured["e_inf"]) <= 0.02
         if targets_display.get("ramp_einf_required"):
@@ -827,6 +1161,35 @@ def loop_shaping_api():
                 target_checks["e_inf_ramp"] = abs(ramp_error_value) <= 0.02
             elif steady_state.get("ramp_error_infinite"):
                 target_checks["e_inf_ramp"] = False
+
+        # Preferred: numeric e∞ entry (incl. 0 for exact)
+        try:
+            if einf_mode in {"numeric", "zero"}:
+                einf_num = float(einf_value) if einf_value is not None else None
+            else:
+                einf_num = None
+        except Exception:
+            einf_num = None
+
+        if einf_mode == "zero":
+            if reference_sel == "step":
+                if steady_state.get("system_type") is not None:
+                    target_checks["e_inf"] = steady_state["system_type"] >= 1
+            elif reference_sel == "ramp":
+                if steady_state.get("system_type") is not None:
+                    target_checks["e_inf_ramp"] = steady_state["system_type"] >= 2
+        elif einf_mode == "numeric" and einf_num is not None and einf_num >= 0:
+            tol = max(0.02, 0.05 * einf_num)  
+            if reference_sel == "step":
+                step_err = steady_state.get("step_error")
+                if step_err is not None:
+                    target_checks["e_inf"] = abs(step_err) <= einf_num + tol
+            elif reference_sel == "ramp":
+                ramp_err = steady_state.get("ramp_error")
+                if ramp_err is not None and np.isfinite(ramp_err):
+                    target_checks["e_inf_ramp"] = abs(ramp_err) <= einf_num + tol
+                elif steady_state.get("ramp_error_infinite"):
+                    target_checks["e_inf_ramp"] = False
 
         return jsonify(
             {
@@ -855,6 +1218,7 @@ def loop_shaping_api():
                 "reference": targets_display.get("reference", "step"),
                 "target_checks": target_checks,
                 "warnings": warnings,
+                "recipe": recipe_report,
             }
         )
     except Exception as exc:

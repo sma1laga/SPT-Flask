@@ -44,6 +44,12 @@
   .loop-toggle input {width: 1.05rem; height: 1.05rem; accent-color: #2563eb;}
   .loop-hidden {display: none;}
   .loop-footer {font-size: 0.85rem; color: #6b7280;}
+  .loop-recipe-step {padding: 0.55rem 0.7rem; border-radius: 12px; background: #fff; border: 1px solid #e5e7eb; margin-bottom: 0.55rem;}
+  .loop-recipe-step strong {display: block; margin-bottom: 0.25rem; color: #111827;}
+  .loop-table {width: 100%; border-collapse: collapse; font-size: 0.92rem;}
+  .loop-table th, .loop-table td {border: 1px solid #e5e7eb; padding: 0.45rem 0.55rem; vertical-align: top;}
+  .loop-table th {background: #f3f4f6; text-align: left; color: #111827;}
+  .loop-table code {background: #f3f4f6; padding: 0.05rem 0.25rem; border-radius: 6px;}
   @media (max-width: 1100px) {
     .loop-grid {grid-template-columns: 1fr;}
   }
@@ -137,6 +143,14 @@
             <label class="loop-toggle" for="targetEinfReqRamp">
               <input id="targetEinfReqRamp" type="checkbox"> e∞ = 0 required (ramp)
             </label>
+          </div>
+        </div>
+
+        <div class="loop-row">
+          <div class="loop-field">
+            <label for="targetEinfValue">e∞ target (optional, enter 0 for exact)</label>
+            <input id="targetEinfValue" type="number" step="0.001" placeholder="e.g. 0.05">
+            <div class="loop-note">If set, this overrides the “e∞ = 0” checkbox. Use <strong>0</strong> for “stationär genau”. For ramps, e∞ refers to the ramp tracking error for the chosen slope a.</div>
           </div>
         </div>
         <div id="examInputs">
@@ -248,7 +262,14 @@
           <option value="Lag">Lag</option>
           <option value="Lead-Lag">Lead-Lag</option>
           <option value="Notch">Notch (optional)</option>
+          <option value="Custom">Custom (expression)</option>
         </select>
+      </div>
+
+      <div class="loop-field" data-controller="Custom">
+        <label for="controllerExpression">Custom controller expression GR(s)</label>
+        <input id="controllerExpression" type="text" placeholder="74.87*(1+0.087*s)/s^2">
+        <div class="loop-note">Use <code>s</code> as Laplace variable. Allowed: + - * / ( ) and powers via <code>^</code> or <code>**</code>.</div>
       </div>
 
       <div class="loop-field" data-controller="P PI PD PID Lead Lag Lead-Lag Notch">
@@ -336,6 +357,20 @@
         </div>
         <div class="loop-note">Note: heuristic only! Uses the targets defined above.</div>
       </div>
+
+      <h3>7) Klausur‑Rezept (Frequenzkennlinienverfahren)</h3>
+      <div class="loop-note">Applies the common course recipe: ωD=1.5/T_an and Φ_req≈70°−Mp, then enforces system type (ν) for step/ramp accuracy and adds lead/lag blocks as needed. This is designed to match typical exam solutions.</div>
+      <div class="loop-actions">
+        <button class="loop-btn primary" id="recipeBtn">Apply exam recipe</button>
+      </div>
+      <div class="loop-panel" id="recipePanel" style="margin-top: 0.8rem;">
+        <h4>Recipe summary</h4>
+        <div id="recipeSummary" class="loop-note">—</div>
+        <div style="margin-top:0.6rem;"></div>
+        <h4>Recipe steps</h4>
+        <div id="recipeSteps"></div>
+        <div class="loop-note" id="recipeExpression"></div>
+      </div>
     </div>
 
     <div class="loop-card">
@@ -407,6 +442,7 @@ const toggleBox = (toggleId, boxId) => {
 
 const getControllerParams = () => {
   return {
+    expression: $('controllerExpression') ? $('controllerExpression').value : '',
     k: parseFloat($('paramK').value || 1),
     ti: parseFloat($('paramTi').value || 1),
     td: parseFloat($('paramTd').value || 0.1),
@@ -424,6 +460,9 @@ const getControllerParams = () => {
 };
 
 const setControllerParams = (params) => {
+  if (params.expression !== undefined && $('controllerExpression')) {
+    $('controllerExpression').value = params.expression;
+  }
   if (params.k !== undefined) $('paramK').value = params.k;
   if (params.ti !== undefined) $('paramTi').value = params.ti;
   if (params.td !== undefined) $('paramTd').value = params.td;
@@ -459,6 +498,24 @@ const applyStableDefaults = () => {
 
 const buildPayload = (mode = 'manual') => {
   const designMode = $('designMode').value;
+  const reference = $('referenceType').value;
+  const einfRaw = ($('targetEinfValue').value || '').trim();
+  const einfNum = parseFloat(einfRaw);
+  const hasNumericEinf = einfRaw.length > 0 && isFinite(einfNum) && einfNum >= 0;
+  let einfMode = 'none';
+  let einfValue = null;
+  if (hasNumericEinf) {
+    einfMode = (einfNum === 0) ? 'zero' : 'numeric';
+    einfValue = einfNum;
+  } else {
+    if (reference === 'ramp' && $('targetEinfReqRamp').checked) {
+      einfMode = 'zero';
+    }
+    if (reference === 'step') {
+      const stepZero = designMode === 'general' ? $('targetEinfReq').checked : $('targetEinfReqExam').checked;
+      if (stepZero) einfMode = 'zero';
+    }
+  }
   return {
     mode,
     design_mode: designMode,
@@ -478,8 +535,10 @@ const buildPayload = (mode = 'manual') => {
       mp: designMode === 'general' ? $('targetMpGeneral').value : $('targetMp').value,
       einf_required: designMode === 'general' ? $('targetEinfReq').checked : $('targetEinfReqExam').checked,
       ramp_einf_required: $('targetEinfReqRamp').checked,
-      reference: $('referenceType').value,
+      reference,
       ramp_slope: $('rampSlope').value,
+      einf_mode: einfMode,
+      einf_value: einfValue,
       wc: $('targetWc').value,
       pm_min: $('targetPmMin').value,
       gm_min: $('targetGmMin').value,
@@ -544,6 +603,9 @@ const formatValue = (val, unit = '') => (
 
 const setSteadyState = (steady) => {
   if (!steady) return;
+  const einfMode = String(steady.einf_mode || 'none').toLowerCase();
+  const einfValue = steady.einf_value;
+
   $('steadyType').textContent = steady.system_type === null ? '—' : steady.system_type;
   $('steadyKp').textContent = formatValue(steady.kp);
   $('steadyKv').textContent = formatValue(steady.kv);
@@ -551,18 +613,50 @@ const setSteadyState = (steady) => {
   $('steadyRamp').textContent = steady.ramp_error_infinite
     ? '∞'
     : (steady.ramp_error === null ? '—' : formatValue(steady.ramp_error));
+
   $('steadyRampNote').textContent = steady.ramp_error_sim === null || steady.ramp_error_sim === undefined
     ? ''
     : `Simulation: e∞ ≈ ${formatValue(steady.ramp_error_sim)} (numerically approximated).`;
-  $('steadyHint').textContent = 'For ramps, you typically need a higher system type (more integrators in the open loop).';
-  if (steady.reference === 'ramp' && steady.ramp_einf_required) {
-    if (steady.system_type !== null && steady.system_type < 2) {
-      $('steadyRecommendation').textContent = 'Not possible with the current structure; you need two integrators in the open loop.';
+
+  // Hint about system type
+  let hint = 'System type ν counts integrators in the open loop L(s)=GR(s)G(s).';
+  hint += ' For ramps, you typically need a higher ν (more integrators) than for steps.';
+  if (einfMode === 'zero') {
+    hint += ' Spec: e∞=0 ⇒ ν≥1 for step, ν≥2 for ramp.';
+  } else if (einfMode === 'numeric' && einfValue !== null && einfValue !== undefined) {
+    hint += ` Spec: e∞≤${einfValue}.`;
+  }
+  $('steadyHint').textContent = hint;
+
+  // Recommendation text (kept simple and exam-aligned)
+  const ref = String(steady.reference || 'step').toLowerCase();
+  if (ref === 'ramp') {
+    if (einfMode === 'zero') {
+      if (steady.system_type !== null && steady.system_type < 2) {
+        $('steadyRecommendation').textContent = 'Ramp tracking with e∞=0 needs ν≥2 → add two integrators in the open loop.';
+      } else {
+        $('steadyRecommendation').textContent = 'Ramp tracking with e∞=0 is feasible (ν≥2).';
+      }
+    } else if (einfMode === 'numeric') {
+      if (steady.system_type !== null && steady.system_type < 1) {
+        $('steadyRecommendation').textContent = 'Finite ramp error requires ν≥1 (at least one integrator in the open loop).';
+      } else {
+        $('steadyRecommendation').textContent = 'Finite ramp error can be met by gain shaping (Kv) if ν≥1.';
+      }
     } else {
-      $('steadyRecommendation').textContent = 'Target e∞ = 0 for a ramp is feasible: system type ν ≥ 2.';
+      $('steadyRecommendation').textContent = '';
     }
   } else {
-    $('steadyRecommendation').textContent = '';
+    // step
+    if (einfMode === 'zero') {
+      if (steady.system_type !== null && steady.system_type < 1) {
+        $('steadyRecommendation').textContent = 'Step tracking with e∞=0 needs ν≥1 → add one integrator in the open loop.';
+      } else {
+        $('steadyRecommendation').textContent = 'Step tracking with e∞=0 is feasible (ν≥1).';
+      }
+    } else {
+      $('steadyRecommendation').textContent = '';
+    }
   }
 };
 
@@ -633,6 +727,89 @@ const renderPlots = (data) => {
   Plotly.react('sensPlot', [sensTrace, compTrace], sensLayout, plotConfig);
 };
 
+const renderRecipe = (recipe) => {
+  const stepsBox = $('recipeSteps');
+  const expr = $('recipeExpression');
+  const summary = $('recipeSummary');
+  if (!stepsBox || !expr || !summary) return;
+
+  stepsBox.innerHTML = '';
+  expr.textContent = '';
+  summary.innerHTML = '—';
+  if (!recipe) return;
+
+  // ----- Summary (Exam style) -----
+  const fmt = (v, unit='') => (v === null || v === undefined || !isFinite(v)) ? '—' : `${Number(v).toFixed(4)}${unit ? ' ' + unit : ''}`;
+  const fmtInt = (v) => (v === null || v === undefined || !isFinite(v)) ? '—' : `${parseInt(v, 10)}`;
+  const blocks = Array.isArray(recipe.blocks) ? recipe.blocks : [];
+  const blocksHtml = blocks.map((b) => {
+    if (!b || !b.type) return '';
+    if (b.type === 'Gain') return `K=${fmt(b.k)}`;
+    if (b.type === 'Integrator') return `${b.label || ('1/s^' + (b.n||1))}`;
+    if (b.type === 'Lead') return `Lead (ωz=${fmt(b.wz,'rad/s')}, ωp=${fmt(b.wp,'rad/s')})`;
+    if (b.type === 'Lag') return `Lag (ωz=${fmt(b.wz,'rad/s')}, ωp=${fmt(b.wp,'rad/s')})`;
+    return b.type;
+  }).filter(Boolean);
+
+  const einfText = (() => {
+    if (recipe.einf_mode === 'zero') return 'e∞=0 (stationär genau)';
+    if (recipe.einf_mode === 'numeric') return `e∞=${recipe.einf_value}`;
+    return '—';
+  })();
+
+  const rows = [
+    ['Reference', recipe.reference || '—'],
+    ['ωD', fmt(recipe.w_d, 'rad/s')],
+    ['Φreq', fmt(recipe.phi_req, '°')],
+    ['ν (plant)', fmtInt(recipe.plant_type)],
+    ['ν required', fmtInt(recipe.nu_req)],
+    ['Added integrators', fmtInt(recipe.n_add)],
+    ['Steady-state spec', einfText],
+    ['K source', recipe.k_source || '—'],
+    ['K (chosen)', fmt(recipe.k)],
+    ['Kcross @ ωD', fmt(recipe.k_cross)],
+    ['Lead', recipe.lead ? `yes (α=${fmt(recipe.alpha)})` : 'no'],
+    ['Lag', recipe.lag ? (recipe.beta ? `yes (β=${fmt(recipe.beta)})` : 'yes') : 'no'],
+    ['Blocks', blocksHtml.length ? blocksHtml.join(' · ') : '—'],
+  ];
+
+  const table = document.createElement('table');
+  table.className = 'loop-table';
+  const tbody = document.createElement('tbody');
+  rows.forEach(([k, v]) => {
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = k;
+    const td = document.createElement('td');
+    td.textContent = String(v);
+    tr.appendChild(th);
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  summary.innerHTML = '';
+  summary.appendChild(table);
+
+  // ----- Steps -----
+  if (Array.isArray(recipe.steps)) {
+    recipe.steps.forEach((step) => {
+      const div = document.createElement('div');
+      div.className = 'loop-recipe-step';
+      const title = document.createElement('strong');
+      title.textContent = step.title || '';
+      const text = document.createElement('div');
+      text.textContent = step.text || '';
+      div.appendChild(title);
+      div.appendChild(text);
+      stepsBox.appendChild(div);
+    });
+  }
+
+  if (recipe.controller_expression) {
+    expr.textContent = `GR(s) = ${recipe.controller_expression}`;
+  }
+};
+
 const updatePlots = async (mode = 'manual') => {
   const response = await fetch('{{ url_for('loop_shaping.loop_shaping_api') }}', {
     method: 'POST',
@@ -670,9 +847,16 @@ const updatePlots = async (mode = 'manual') => {
   setInterpretation(data.interpretation.notes);
   renderPlots(data);
 
+  renderRecipe(data.recipe);
+
   if (mode === 'auto' && data.controller) {
     $('controllerType').value = data.controller.type;
     setControllerParams(data.controller.params || {});
+    fieldsByController();
+  }
+  if (mode === 'recipe' && data.recipe) {
+    $('controllerType').value = 'Custom';
+    setControllerParams({expression: data.recipe.controller_expression || ''});
     fieldsByController();
   }
 };
@@ -697,9 +881,9 @@ const debouncedUpdateIfAllowed = () => {
   }
 };
 
-['tfExpression', 'controllerType', 'paramK', 'paramTi', 'paramTd', 'paramN',
+['tfExpression', 'controllerType', 'controllerExpression', 'paramK', 'paramTi', 'paramTd', 'paramN',
  'paramWz', 'paramWp', 'paramLeadWz', 'paramLeadWp', 'paramLagWz', 'paramLagWp', 'paramW0', 'paramZetaZ',
- 'paramZetaP', 'freqData', 'freqDataFormat', 'designMode', 'referenceType', 'rampSlope', 'targetTan', 'targetMp',
+ 'paramZetaP', 'freqData', 'freqDataFormat', 'designMode', 'referenceType', 'rampSlope', 'targetEinfValue', 'targetTan', 'targetMp',
  'targetWc', 'targetPmMin', 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('input', debouncedUpdateIfAllowed);
@@ -749,6 +933,7 @@ $('autoToggle').addEventListener('change', () => toggleBox('autoToggle', 'autoBo
 
 $('updateBtn').addEventListener('click', () => updatePlots('manual'));
 $('autoBtn').addEventListener('click', () => updatePlots('auto'));
+$('recipeBtn').addEventListener('click', () => updatePlots('recipe'));
 $('resetBtn').addEventListener('click', () => {
   $('tfExpression').value = exampleData[0].expression;
   $('tfNumerator').value = '';
