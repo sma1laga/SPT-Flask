@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container wide-container">
+  <div class="page-header">
+    <div>
+      <h1>2D Normal Distributions</h1>
+      <p>
+        Interact with a correlated bivariate normal density. Adjust the means, standard deviations, and
+        correlation to see how they reshape the joint surface and the marginal PDFs. Rotate or zoom the
+        3D plot to get a clearer sense of the bowl shape and elliptical level curves.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-cubes"></i>3D surface</div>
+      <div class="pill pill-subtle"><i class="fa fa-superscript"></i>Elliptic contours</div>
+      <div class="pill pill-subtle"><i class="fa fa-area-chart"></i>Marginals</div>
+    </div>
+  </div>
+
+  <style>
+    .wide-container{max-width:1360px}
+    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+    .chip-row{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.86rem}
+    .pill-subtle{background:#f3f4f6;color:#4b5563}
+    .card{border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white}
+    .layout-grid{display:grid;grid-template-columns:minmax(340px,380px) 1fr;gap:14px;margin-top:12px;align-items:start}
+    .control-group{display:grid;gap:8px;margin-top:6px}
+    .kv-row{display:grid;grid-template-columns:140px 1fr 70px;align-items:center;gap:10px}
+    .kv-row label{font-weight:600;font-size:0.95rem}
+    .kv-row input[type=range]{width:100%}
+    .kv-row input[type=number]{width:100%;padding:6px;border:1px solid #d1d5db;border-radius:8px}
+    .toggle-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-weight:600;color:#1f2937}
+    .formula-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:10px;font-size:0.95rem;line-height:1.5}
+    .formula-wide{font-size:1.05rem;text-align:center;overflow-x:auto}
+    .plot-wrapper{height:560px;width:100%}
+    .subtitle{margin:2px 0 8px;color:#475569;font-size:0.95rem}
+    .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:8px}
+    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+    .summary-label{font-size:0.82rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;font-weight:700}
+    .summary-value{font-size:0.98rem;font-weight:700;color:#111827}
+    .control-card .subtitle{margin-bottom:4px}
+    body.dark-mode .pill{background:rgba(96,165,250,0.15);color:#dbeafe;}
+    body.dark-mode .kv-row label,
+    body.dark-mode .subtitle,
+    body.dark-mode .summary-value{color:#e5e7eb;}
+    body.dark-mode .toggle-row{color:#e5e7eb;}
+    body.dark-mode .formula-box{
+      background:#1f2733;
+      border-color:#3a4250;
+      color:#e8edf5;
+      box-shadow:none;
+    }
+    body.dark-mode #formula{color:#e8edf5;}
+    body.dark-mode .summary-item{background:#1f2733;border-color:#3a4250;}
+    body.dark-mode .summary-label{color:#cbd5e1;}
+    @media(max-width:1300px){
+      .layout-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:1100px){.plot-wrapper{height:520px}}
+  </style>
+
+  <div class="layout-grid">
+    <div class="card control-card">
+      <div class="pill" style="margin-bottom:4px;"><i class="fa fa-sliders"></i>Controls</div>
+      <p class="subtitle">Drag the sliders or enter values to highlight a parameter in the joint PDF.</p>
+      <div class="control-group">
+        <div class="kv-row">
+          <label for="rho">Correlation ρ</label>
+          <input id="rho" type="range" min="-0.95" max="0.95" step="0.01" value="{{ defaults.rho }}">
+          <span id="rho_val">{{ '%.2f' % defaults.rho }}</span>
+        </div>
+        <div class="kv-row">
+          <label for="mean_x">Mean μ<sub>X</sub></label>
+          <input id="mean_x" type="range" min="-5" max="5" step="0.1" value="{{ defaults.mean_x }}">
+          <span id="mean_x_val">{{ '%.1f' % defaults.mean_x }}</span>
+        </div>
+        <div class="kv-row">
+          <label for="mean_y">Mean μ<sub>Y</sub></label>
+          <input id="mean_y" type="range" min="-5" max="5" step="0.1" value="{{ defaults.mean_y }}">
+          <span id="mean_y_val">{{ '%.1f' % defaults.mean_y }}</span>
+        </div>
+        <div class="kv-row">
+          <label for="sigma_x">Std σ<sub>X</sub></label>
+          <input id="sigma_x" type="range" min="0.3" max="4.0" step="0.05" value="{{ defaults.sigma_x }}">
+          <span id="sigma_x_val">{{ '%.2f' % defaults.sigma_x }}</span>
+        </div>
+        <div class="kv-row">
+          <label for="sigma_y">Std σ<sub>Y</sub></label>
+          <input id="sigma_y" type="range" min="0.3" max="4.0" step="0.05" value="{{ defaults.sigma_y }}">
+          <span id="sigma_y_val">{{ '%.2f' % defaults.sigma_y }}</span>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <label><input type="checkbox" id="contours" checked> Project contours</label>
+        <label><input type="checkbox" id="marginals" checked> Marginal PDFs</label>
+        <label><input type="checkbox" id="wireframe"> Wireframe surface</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="pill"><i class="fa fa-area-chart"></i>Joint + marginals</div>
+        <div class="summary-grid" style="flex:1;min-width:320px;">
+          <div class="summary-item">
+            <div class="summary-label">Peak height</div>
+            <div id="peak" class="summary-value">—</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Contour type</div>
+            <div class="summary-value">Ellipses unless ρ = 0</div>
+          </div>
+        </div>
+      </div>
+      <div class="formula-box formula-wide" aria-live="polite">
+        <div style="font-weight:700;margin-bottom:4px;">Joint PDF</div>
+        <div id="formula"></div>
+      </div>
+      <div class="plot-wrapper" id="plot"></div>
+    </div>
+  </div>
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const endpoint = "{{ url_for('demos_normal2d.compute') }}";
+  let state = {{ initial | tojson }};
+  const formulaEl = document.getElementById('formula');
+  const peakEl = document.getElementById('peak');
+
+  const inputs = ['rho','mean_x','mean_y','sigma_x','sigma_y'];
+  const labels = {
+    rho: '\\rho',
+    mean_x: '\\mu_X',
+    mean_y: '\\mu_Y',
+    sigma_x: '\\sigma_X',
+    sigma_y: '\\sigma_Y'
+  };
+  const highlightColor = '#e11d48';
+  function highlightFormula(key){
+    const tpl = `f_{XY}(x,y)=\\frac{1}{2\\pi\\sigma_X\\sigma_Y\\sqrt{1-\\rho^2}}\\exp\\Big[-\\frac{1}{2(1-\\rho^2)}\\big(\\frac{(x-\\mu_X)^2}{\\sigma_X^2}-\\frac{2\\rho(x-\\mu_X)(y-\\mu_Y)}{\\sigma_X\\sigma_Y}+\\frac{(y-\\mu_Y)^2}{\\sigma_Y^2}\\big)\\Big]`;
+    const emphasize = (token, match) => key===match ? `\\color{${highlightColor}}{${token}}` : token;
+    const replaced = tpl
+      .replaceAll(labels.rho, emphasize(labels.rho,'rho'))
+      .replaceAll(labels.mean_x, emphasize(labels.mean_x,'mean_x'))
+      .replaceAll(labels.mean_y, emphasize(labels.mean_y,'mean_y'))
+      .replaceAll(labels.sigma_x, emphasize(labels.sigma_x,'sigma_x'))
+      .replaceAll(labels.sigma_y, emphasize(labels.sigma_y,'sigma_y'));
+    formulaEl.innerHTML = `\\(${replaced}\\)`;
+    if(window.MathJax){ MathJax.typesetPromise(); }
+  }
+
+  function traces(data){
+    const arr = [];
+    const showContours = document.getElementById('contours').checked;
+    const showMarginals = document.getElementById('marginals').checked;
+    const wireframe = document.getElementById('wireframe').checked;
+
+    arr.push({
+      x:data.x_grid, y:data.y_grid, z:data.z_grid,
+      type:'surface', name:'f_{XY}(x,y)',
+      colorscale:'Viridis', showscale:false,
+      opacity:0.92,
+      contours:{z:{show:showContours, usecolormap:true, project:{z:true}}},
+      hidesurface: wireframe,
+    });
+
+    if(showMarginals){
+      arr.push({
+        x:data.marginal_x.x, y:data.marginal_x.y, z:data.marginal_x.z,
+        mode:'lines', type:'scatter3d',
+        line:{color:'#be123c', width:5}, name:'f_X(x)'
+      });
+      arr.push({
+        x:data.marginal_y.x, y:data.marginal_y.y, z:data.marginal_y.z,
+        mode:'lines', type:'scatter3d',
+        line:{color:'#0f172a', width:5}, name:'f_Y(y)'
+      });
+    }
+    return arr;
+  }
+
+  function draw(){
+    Plotly.newPlot('plot', traces(state), {
+      scene:{
+        xaxis:{title:'x'},
+        yaxis:{title:'y'},
+        zaxis:{title:'f_{XY}(x,y)'},
+        aspectmode:'cube'
+      },
+      margin:{t:30, l:0, r:0},
+      legend:{orientation:'h', x:0, y:1.02}
+    }, {responsive:true});
+    peakEl.textContent = state.z_peak ? state.z_peak.toFixed(3) : '—';
+  }
+
+  function fetchData(activeKey){
+    const payload = Object.fromEntries(inputs.map(id=>[id, parseFloat(document.getElementById(id).value)]));
+    fetch(endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    })
+    .then(r=>r.json())
+    .then(({data})=>{ state = data; draw(); highlightFormula(activeKey); })
+    .catch(console.error);
+  }
+
+  inputs.forEach(key=>{
+    const el = document.getElementById(key);
+    const label = document.getElementById(`${key}_val`);
+    el.addEventListener('input', ()=>{
+      label.textContent = parseFloat(el.value).toFixed(key.startsWith('sigma') ? 2 : (key==='rho'?2:1));
+    });
+    el.addEventListener('change', ()=>fetchData(key));
+  });
+
+  document.getElementById('contours').addEventListener('change', draw);
+  document.getElementById('marginals').addEventListener('change', draw);
+  document.getElementById('wireframe').addEventListener('change', draw);
+
+  highlightFormula();
+  draw();
+</script>
+{% endblock %}

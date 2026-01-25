@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container wide-container clt-layout">
+  <div class="page-header">
+    <div>
+      <h1>Central Limit Theorem</h1>
+      <p>
+        Watch how repeatedly summing independent random variables nudges their distribution toward a Gaussian.
+        Pick a base law, tune its parameters, and animate the convolution steps with a normal curve for comparison.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-area-chart"></i>Statistical demo</div>
+      <div class="pill pill-subtle"><i class="fa fa-play"></i>Animated convolution</div>
+    </div>
+  </div>
+
+  <div class="demo-grid">
+    <div class="card">
+      <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Controls</div>
+      <div class="kv-row">
+        <label for="distribution">Distribution</label>
+        <select id="distribution">
+          <option value="laplace">Laplace</option>
+          <option value="uniform">Uniform</option>
+          <option value="rayleigh">Rayleigh</option>
+          <option value="exponential">Exponential</option>
+          <option value="gamma">Gamma</option>
+        </select>
+        <div></div>
+      </div>
+      <div id="distribution-controls"></div>
+      <hr>
+      <div class="kv-row">
+        <label for="num_vars">Variables</label>
+        <input type="range" id="num_vars" min="1" max="20" step="1">
+        <span id="num_vars_val"></span>
+      </div>
+      <div class="cta-row">
+        <button id="run" class="btn-primary"><i class="fa fa-play"></i> Animate</button>
+        <span class="inline-note">Each frame is one additional convolution.</span>
+      </div>
+      <div id="error" class="error" aria-live="polite"></div>
+    </div>
+
+    <div class="card plot-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="pill"><i class="fa fa-line-chart"></i>PDF toward normal</div>
+        <div id="frame-label" class="inline-note"></div>
+      </div>
+      <div id="clt-plot"></div>
+      <div class="stat-grid" aria-live="polite">
+        <div class="stat-box">
+          <div class="stat-label">Current step</div>
+          <div id="stat-step" class="stat-value">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Mean</div>
+          <div id="stat-mean" class="stat-value">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Variance</div>
+          <div id="stat-var" class="stat-value">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const distributionConfig = {
+    laplace: [
+      { key: 'variance', label: 'Variance', min: 0.1, max: 8, step: 0.1, value: defaults.laplace.variance },
+      { key: 'mean', label: 'Mean', min: -4, max: 4, step: 0.1, value: defaults.laplace.mean },
+    ],
+    uniform: [
+      { key: 'x_max', label: 'X_max', min: -1, max: 8, step: 0.1, value: defaults.uniform.x_max },
+      { key: 'x_min', label: 'X_min', min: -8, max: 1, step: 0.1, value: defaults.uniform.x_min },
+    ],
+    rayleigh: [
+      { key: 'sigma', label: 'Sigma', min: 0.2, max: 4, step: 0.05, value: defaults.rayleigh.sigma },
+    ],
+    exponential: [
+      { key: 'lambda', label: 'Lambda', min: 0.1, max: 3, step: 0.05, value: defaults.exponential.lambda },
+    ],
+    gamma: [
+      { key: 'shape', label: 'Shape (k)', min: 0.2, max: 6, step: 0.1, value: defaults.gamma.shape },
+      { key: 'rate', label: 'Rate (λ)', min: 0.05, max: 2, step: 0.05, value: defaults.gamma.rate },
+    ]
+  };
+
+  const distSelect = document.getElementById('distribution');
+  const controlsContainer = document.getElementById('distribution-controls');
+  const numVarsInput = document.getElementById('num_vars');
+  const numVarsLabel = document.getElementById('num_vars_val');
+  const runBtn = document.getElementById('run');
+  const errorEl = document.getElementById('error');
+  const frameLabel = document.getElementById('frame-label');
+  const statStep = document.getElementById('stat-step');
+  const statMean = document.getElementById('stat-mean');
+  const statVar = document.getElementById('stat-var');
+  const plotEl = document.getElementById('clt-plot');
+
+  function buildControlRow(cfg){
+    const row = document.createElement('div');
+    row.className = 'kv-row';
+    row.innerHTML = `
+      <label for="${cfg.key}">${cfg.label}</label>
+      <input type="range" id="${cfg.key}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.value}">
+      <span id="${cfg.key}_val">${cfg.value}</span>
+    `;
+    return row;
+  }
+
+  function renderControls(){
+    controlsContainer.innerHTML = '';
+    const selected = distSelect.value;
+    const cfg = distributionConfig[selected];
+    cfg.forEach(c => controlsContainer.appendChild(buildControlRow(c)));
+  }
+
+  function readParams(){
+    const selected = distSelect.value;
+    const cfg = distributionConfig[selected];
+    const params = {};
+    cfg.forEach(c => {
+      const input = document.getElementById(c.key);
+      params[c.key] = parseFloat(input.value);
+    });
+    return params;
+  }
+
+  function attachRangeListeners(){
+    controlsContainer.querySelectorAll('input[type="range"]').forEach(input => {
+      const label = document.getElementById(`${input.id}_val`);
+      input.addEventListener('input', () => { label.textContent = input.value; });
+    });
+  }
+
+  async function fetchFrames(){
+    errorEl.textContent = '';
+    runBtn.disabled = true;
+    frameLabel.textContent = 'Computing …';
+    const payload = {
+      distribution: distSelect.value,
+      num_vars: parseInt(numVarsInput.value, 10),
+    };
+    payload[distSelect.value] = readParams();
+
+    try {
+      const res = await fetch('./compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok){
+        throw new Error(data.error || 'Computation failed');
+      }
+      renderPlot(data.steps);
+    } catch (err){
+      errorEl.textContent = err.message;
+      frameLabel.textContent = '';
+    } finally {
+      runBtn.disabled = false;
+    }
+  }
+
+  function renderPlot(steps){
+    if(!steps || !steps.length){
+      return;
+    }
+    const frames = steps.map(step => ({
+      name: `n${step.n}`,
+      data: [
+        {
+          x: step.x,
+          y: step.pdf,
+          name: 'Sum PDF',
+          line: { color: '#2563eb', width: 3 },
+          fill: 'tozeroy',
+          opacity: 0.85
+        },
+        {
+          x: step.x,
+          y: step.normal_pdf,
+          name: 'Normal approx',
+          line: { color: '#ef4444', width: 2, dash: 'dash' }
+        }
+      ],
+      layout: { title: `Summing ${step.n} variable(s)` }
+    }));
+
+    const sliderSteps = steps.map(step => ({
+      label: `${step.n}`,
+      method: 'animate',
+      args: [[`n${step.n}`], { mode: 'immediate', frame: { duration: 450, redraw: true }, transition: { duration: 200 } }]
+    }));
+
+    const layout = {
+      height: 430,
+      margin: { t: 30, r: 14, l: 55, b: 38 },
+      xaxis: { title: 'x', zeroline: true },
+      yaxis: { title: 'Probability density', rangemode: 'tozero' },
+      legend: { orientation: 'h', x: 0, y: 1.04 },
+      sliders: [{
+        pad: { t: 8, b: 0 },
+        currentvalue: { prefix: 'Summands: ', visible: true, font: { size: 12 } },
+        steps: sliderSteps
+      }],
+      updatemenus: [{
+        type: 'buttons',
+        pad: { r: 6, t: 2 },
+        x: 0.52,
+        y: 1.15,
+        buttons: [
+          { label: 'Play', method: 'animate', args: [null, { fromcurrent: true, frame: { duration: 450, redraw: true }, transition: { duration: 250 } }] },
+          { label: 'Pause', method: 'animate', args: [[null], { mode: 'immediate', frame: { duration: 0, redraw: false }, transition: { duration: 0 } }] }
+        ]
+      }]
+    };
+
+    Plotly.newPlot(plotEl, frames[0].data, layout, {responsive: true, displaylogo: false}).then(() => {
+      Plotly.addFrames(plotEl, frames);
+      updateStats(steps[0]);
+      frameLabel.textContent = `Start: 1 variable${steps.length > 1 ? 's' : ''}`;
+    });
+
+    plotEl.on('plotly_sliderchange', evt => {
+      const label = evt.step && evt.step.label ? evt.step.label : `${evt.stepNumber + 1}`;
+      const idx = steps.findIndex(s => `${s.n}` === label);
+      if(idx >= 0){
+        updateStats(steps[idx]);
+      }
+    });
+    plotEl.on('plotly_animated', evt => {
+      const idx = evt.frame ? frames.findIndex(f => f.name === evt.name) : -1;
+      if(idx >= 0){
+        updateStats(steps[idx]);
+      }
+    });
+  }
+
+  function updateStats(step){
+    statStep.textContent = `${step.n} variable${step.n > 1 ? 's' : ''}`;
+    statMean.textContent = step.mean.toFixed(3);
+    statVar.textContent = step.variance.toFixed(3);
+    frameLabel.textContent = `After ${step.n - 1} convolution${step.n > 2 ? 's' : ''}`;
+  }
+
+  distSelect.addEventListener('change', () => {
+    renderControls();
+    attachRangeListeners();
+  });
+  runBtn.addEventListener('click', fetchFrames);
+  numVarsInput.addEventListener('input', () => { numVarsLabel.textContent = numVarsInput.value; });
+
+  numVarsInput.value = defaults.num_vars;
+  numVarsLabel.textContent = defaults.num_vars;
+  renderControls();
+  attachRangeListeners();
+  fetchFrames();
+</script>
+{% endblock %}

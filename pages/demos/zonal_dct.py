@@ -161,9 +161,9 @@ def _block_dct_quantize(img: np.ndarray, matrix: np.ndarray) -> Tuple[np.ndarray
         for x in range(0, width, BLOCK_SIZE):
             block = img[y : y + BLOCK_SIZE, x : x + BLOCK_SIZE]
             dct_block = dctn(block, norm="ortho")
-            quantized = np.where(
-                matrix > 0, np.round(dct_block / matrix) * matrix, 0.0
-            )
+            scale = np.zeros_like(dct_block)
+            np.divide(dct_block, matrix, out=scale, where=matrix > 0)
+            quantized = np.round(scale) * matrix
             coeffs[y : y + BLOCK_SIZE, x : x + BLOCK_SIZE] = quantized
             reconstruction[y : y + BLOCK_SIZE, x : x + BLOCK_SIZE] = idctn(
                 quantized, norm="ortho"

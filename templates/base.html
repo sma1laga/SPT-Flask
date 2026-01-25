@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/tooltips.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/demos.css') }}">
+  {% if is_statsip_demo|default(false) %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/statsip.css') }}">
+  {% endif %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-T2U5EbsJ6S+Td1FeqdKV1gi48feRMsWBsaOZXrCgOytcVQ1Wf+QoKMW6Wikptzs8wqkv+qsSV4OVMBnb7+AE3w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   {% block styles %}{% endblock %}
 
@@ -32,6 +35,9 @@
 {% endif %}
 {% if request.cookies.get('darkMode') == 'true' %}
   {% set _ = body_classes.append('dark-mode') %}
+{% endif %}
+{% if is_collapsible_demo|default(false) %}
+  {% set _ = body_classes.append('demo-sidebar-collapsible') %}
 {% endif %}
 <body{% if body_classes %} class="{{ body_classes | join(' ') }}"{% endif %}>
   <div class="outer-wrapper">
@@ -75,6 +81,16 @@
     {% set is_discrete = request.path.startswith('/discrete') or request.path.startswith('/inverse_z') %}
     <div class="content-wrapper" style="display:flex;">
       <button id="sidebar-toggle" class="sidebar-toggle"><i class="fas fa-bars"></i> Menu</button>
+        {% if is_collapsible_demo %}
+        <button id="demo-sidebar-toggle"
+                class="sidebar-collapse-btn"
+                type="button"
+                aria-expanded="true">
+          <i class="fas fa-angle-double-left" aria-hidden="true"></i>
+          <span class="label-expanded">Collapse sidebar</span>
+          <span class="label-collapsed">Show sidebar</span>
+        </button>
+        {% endif %}
         <aside class="sidebar modern-sidebar">
           {% if is_demos %}
             <h3>{{ demos_section_name or "Demos" }}</h3>
@@ -250,10 +266,10 @@
         </a>
       </div>
       <p>
-        © 2025 Signal Processing Toolkit. All rights reserved.<br>
+        © 2026 Signal Processing Toolkit. All rights reserved.<br>
         For inquiries, please email:
         <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a><br>
-        Version 1.1.1 (17.12.2025)
+        Version 1.1.1 (21.01.2026)
       </p>
       <div class="legal-links">
         <a href="{{ url_for('info.impressum') }}">Impressum</a> |
