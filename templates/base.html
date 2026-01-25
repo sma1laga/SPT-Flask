@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Signal Processing Toolkit</title>
+  <meta name="description" content="Signal Processing Toolkit (SPT) – interactive FAU platform for plotting signals, exploring convolution, DFT/FFT and other transforms. Continuous and discrete modules for students and researchers.">
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="any">
   <link rel="icon" type="image/png" sizes="48x48" href="{{ url_for('static', filename='images/favicon-48.png') }}">
   <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/apple-touch-icon-180.png') }}">
@@ -138,11 +139,9 @@
                 <!-- <li><a href="{{ url_for('fourier.fourier') }}" class="sidebar-link{% if request.endpoint == 'fourier.fourier' %} active{% endif %}">
                   Fourier Transform</a>
                 </li> -->
-                <!-- TODO under revision -->
-                 <!-- <li><a href="{{ url_for('bode_plot.bode_plot') }}" class="sidebar-link{% if request.endpoint == 'bode_plot.bode_plot' %} active{% endif %}">
-                  Bode Plot</a>
-                </li> -->
-
+                <li><a href="{{ url_for('bode_plot.bode_plot') }}" class="sidebar-link{% if request.endpoint == 'bode_plot.bode_plot' %} active{% endif %}">
+                  Bode Plotter</a>
+                </li>
                 <li class="section-title">Convolution</li>
                 <li><a href="{{ url_for('convolution.convolution') }}" class="sidebar-link{% if request.endpoint == 'convolution.convolution' %} active{% endif %}">
                   Convolution Calc</a>
