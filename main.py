@@ -1,5 +1,5 @@
 # main.py
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 import crash_logging
 from pages.plot_function import plot_function_bp
@@ -116,6 +116,13 @@ def create_app():
         response.headers.pop("Expires", None)
         return response
     
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(
+            os.path.join(app.root_path, "static", "images"),
+            "favicon.ico",
+            mimetype="image/vnd.microsoft.icon",
+        )
     @app.context_processor
     def inject_demos_sidebar():
         """Expose demo metadata for building the section-aware demo sidebar."""
