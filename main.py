@@ -1,7 +1,7 @@
 # main.py
 import os
 
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, current_app, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 import crash_logging
 from pages.plot_function import plot_function_bp
@@ -141,6 +141,12 @@ def create_app():
             "favicon.ico",
             mimetype="image/vnd.microsoft.icon",
         )
+
+    @app.route("/google724380b13da45fea.html")
+    def google_site_verification():
+        """Serve Google Search Console verification file"""
+        return send_from_directory(current_app.static_folder, "google724380b13da45fea.html")
+    
     @app.context_processor
     def inject_demos_sidebar():
         """Expose demo metadata for building the section-aware demo sidebar."""
