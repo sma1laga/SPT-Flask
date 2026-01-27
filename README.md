@@ -129,7 +129,7 @@ docker-compose down && docker-compose up -d
 ```
 
 ## Logging
-While crashes are reported in ./logs/crashes.log file, access logs can be seen via dockers logs command.
+While crashes are reported in ./logs/crashes.log, access logs can be seen via dockers logs command.
 ```bash
 docker logs spt-flask_app_1 # change to the correct container name shown by docker ps
 ```
