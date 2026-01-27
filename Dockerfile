@@ -1,14 +1,15 @@
+# base image  
 FROM python:3.13-slim
 
 # setup environment variables
 ENV TZ="Europe/Berlin"
-ENV DockerHOME=/home/app/analytics-service
+ENV DockerHOME=/home/app/spt
 
 # set work directories 
 RUN mkdir -p $DockerHOME \
     mkdir -pv /var/log/gunicorn/ \
     mkdir -pv /var/run/gunicorn/
-WORKDIR $DockerHOME
+WORKDIR $DockerHOME  
 
 # disable saving python bytecode 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -27,4 +28,7 @@ RUN pip install --upgrade pip &&\
 # copy whole project
 COPY . .
 
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
+EXPOSE 8000
+
+# start server
+CMD ["gunicorn", "main:create_app()", "--bind", "0.0.0.0:8000", "--workers", "2"]

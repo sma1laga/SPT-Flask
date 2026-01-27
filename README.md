@@ -1,6 +1,6 @@
 # Signal Processing Toolkit (SPT‑Flask)
 
-**SPT‑Flask** is a modern, browser‑based environment for learning and experimenting with digital and analogue signal‑processing concepts. It was created at the Lehrstuhl für Multimediale Signalverarbeitung (LMS), FAU Erlangen‑Nürnberg and is provided licence‑free for educational and research use. The current hosted instance is available at https://lms-spt.e-technik.uni-erlangen.de/.
+**SPT‑Flask** is a modern, browser‑based environment for learning and experimenting with digital and analogue signal‑processing concepts. It was created at the Lehrstuhl für Multimediakommunikation und Signalverarbeitung (LMS), FAU Erlangen‑Nürnberg and is provided licence‑free for educational and research use. The current hosted instance is available at https://lms-spt.e-technik.uni-erlangen.de/.
 
 ## Project goals
 
@@ -95,6 +95,59 @@
 
 ## Installation
 
+The easiest way to self-host the Signal Processing Toolkit is by Docker using Docker-compose.
+
+### 1. Create a separate directory for the toolkit
+```bash
+mkdir ~/SPT-Flask/
+cd ~/SPT-Flask/
+```
+### 2. Download the docker-compose.yml file and move it into this directory
+### 3. Create a .env-File specifying a SECRET_KEY
+```bash
+echo SECRET_KEY=[PUT_YOUR_SECRET_KEY_HERE] > .env
+```
+### 4. Create a logs folder and a crashes.log file
+```bash
+mkdir ./logs
+touch ./logs/crashes.log
+```
+### 5. Pull the latest images
+```bash
+docker-compose pull
+```
+### 6. Start the server
+```bash
+docker-compose up -d
+```
+
+## Updating
+To update your installation, just pull the newest images and restart all containers.
+```bash
+docker-compose pull
+docker-compose down && docker-compose up -d
+```
+
+## Logging
+While crashes are reported in ./logs/crashes.log, access logs can be seen via dockers logs command.
+```bash
+docker logs spt-flask_app_1 # change to the correct container name shown by docker ps
+```
+
+## Contributing
+
+Pull requests are welcome! If you want to propose a feature or fix a bug:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/yourFeature`)
+3. Commit your changes (`git commit -m 'Add some feature'`)
+4. Push to the branch (`git push origin feature/yourFeature`)
+5. Open a Pull Request
+
+> **Everyone who contributes to this repository will be mentioned in the Hall of Fame on our website.**
+
+## Set Up Development Server
+
 ```bash
 git clone https://github.com/sma1laga/SPT-Flask.git
 cd SPT-Flask
@@ -115,18 +168,6 @@ executes the test suite automatically on every push and pull request.
 pip install -r requirements.txt
 pytest -q
 ```
-
-## Contributing
-
-Pull requests are welcome! If you want to propose a feature or fix a bug:
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/yourFeature`)
-3. Commit your changes (`git commit -m 'Add some feature'`)
-4. Push to the branch (`git push origin feature/yourFeature`)
-5. Open a Pull Request
-
-> **Everyone who contributes to this repository will be mentioned in the Hall of Fame on our website.**
 
 ## 👤 License
 
