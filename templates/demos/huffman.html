@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="demo">
+<div class="demo huffman-demo">
   <div class="card control-card">
     <div class="card-title">Huffman coding</div>
     <p class="control-subtitle">Switch between luminance, chrominance, and white noise examples.</p>
@@ -57,25 +57,37 @@
   body.dark-mode .mode-button:hover,
   body.dark-mode .mode-button:focus,
   body.dark-mode .mode-button.active { background: rgba(158,203,255,0.14); color: #eaf2ff; }
-  .image-card { display: flex; flex-direction: column; gap: 12px; box-shadow: none; transform: none; }
+  .huffman-demo { --demo-image-height: clamp(220px, 30vh, 360px); --plot-height: clamp(200px, 26vh, 300px); --plot-max-height: clamp(240px, 32vh, 340px); }
+  .image-card { display: flex; flex-direction: column; gap: 10px; box-shadow: none; transform: none; }
   .image-card:hover { box-shadow: none; transform: none; }
-  .image-shell { display: flex; justify-content: center; align-items: center; padding: 12px; }
-  .demo-image { width: min(100%, 720px); max-height: 520px; border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; margin: 0 auto; }
+  .image-shell { display: flex; justify-content: center; align-items: center; padding: 10px; }
+  .demo-image { width: min(100%, 640px); max-height: var(--demo-image-height); border-radius: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); object-fit: contain; margin: 0 auto; }
   body.dark-mode .demo-image { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
   .variant-desc { margin: 0; color: var(--demo-description-color, #465063); }
   body.dark-mode .variant-desc { color: #d8e3f5; }
-  .header-row { display: flex; flex-direction: column; gap: 10px; }
-  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 12px; font-size: 0.95rem; }
+  .header-row { display: flex; flex-direction: column; gap: 8px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(160px, 1fr)); gap: 4px 10px; font-size: 0.9rem; }
   .metric-grid div:nth-child(odd) { color: var(--demo-description-color, #465063); }
   body.dark-mode .metric-grid div:nth-child(odd) { color: #c6d4ea; }
-  .plots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; }
-  .plot-card { padding: 14px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); }
+  .plots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+  .plot-card { padding: 12px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); border-radius: 12px; box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); }
   body.dark-mode .plot-card { border-color: rgba(158,203,255,0.18); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
-  .plot-image { width: 100%; min-height: 320px; max-height: 480px; object-fit: contain; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); }
+  .plot-image { width: 100%; min-height: var(--plot-height); max-height: var(--plot-max-height); object-fit: contain; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.1)); }
   body.dark-mode .plot-image { border-color: rgba(158,203,255,0.18); }
   .image-and-info { display: flex; gap: 16px; align-items: flex-start; }
+  @media (min-width: 1100px) {
+    .header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 360px); align-items: start; }
+  }
   @media (max-width: 768px) {
     .image-and-info { flex-direction: column; }
+  }
+  body.demo-sidebar-collapsed .huffman-demo {
+    --demo-image-height: clamp(220px, 28vh, 340px);
+    --plot-height: clamp(190px, 24vh, 270px);
+    --plot-max-height: clamp(230px, 30vh, 320px);
+  }
+  body.demo-sidebar-collapsed .huffman-demo .plots-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
 </style>
 

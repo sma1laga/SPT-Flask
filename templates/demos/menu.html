@@ -1,668 +1,296 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-  :root {
-    --demo-eyebrow-color: #0b5ebd;
-    --demo-hero-bg: #f6f8fb;
-    --demo-hero-border: rgba(11, 94, 189, 0.12);
-    --demo-hero-card-bg: #ffffff;
-    --demo-hero-card-border: rgba(13, 53, 109, 0.1);
-    --demo-hero-card-shadow: 0 10px 26px rgba(15, 35, 95, 0.08);
-    --demo-hero-heading: #0e1a2b;
-    --demo-hero-text: #3a3f4b;
-    --demo-hero-card-text: rgba(10, 31, 68, 0.72);
-    --demo-hero-icon-color: #0b5ebd;
-    --demo-lecture-pill-bg: rgba(11, 94, 189, 0.12);
-    --demo-lecture-pill-text: #0b5ebd;
-    --demo-heading-color: #0e1a2b;
-    --demo-description-color: #465063;
-    --demo-section-title: #202c45;
-    --demo-section-count: rgba(32, 44, 69, 0.7);
-    --demo-card-bg: #ffffff;
-    --demo-card-border: rgba(13, 53, 109, 0.1);
-    --demo-card-shadow: 0 12px 26px rgba(15, 35, 95, 0.06);
-    --demo-card-shadow-hover: 0 16px 32px rgba(15, 35, 95, 0.09);
-    --demo-card-heading: #15223a;
-    --demo-card-body: rgba(21, 34, 58, 0.78);
-    --demo-card-subtitle: rgba(21, 34, 58, 0.678);
-    --demo-icon-bg: rgba(11, 94, 189, 0.08);
-    --demo-icon-color: #0b3d78;
-    --demo-button-bg: rgba(11, 94, 189, 0.12);
-    --demo-button-color: #0b5ebd;
-    --demo-button-hover-bg: rgba(11, 94, 189, 0.2);
-    --demo-button-hover-color: #073b75;
-    --demo-strong-accent: #0b3d78;
-  }
-
-  body.dark-mode {
-    --demo-eyebrow-color: #8dc8ff;
-    --demo-hero-bg: rgba(16, 26, 46, 0.9);
-    --demo-hero-border: rgba(148, 173, 215, 0.24);
-    --demo-hero-card-bg: rgba(20, 28, 45, 0.95);
-    --demo-hero-card-border: rgba(148, 173, 215, 0.24);
-    --demo-hero-card-shadow: 0 14px 34px rgba(6, 12, 28, 0.48);
-    --demo-hero-heading: #f1f5ff;
-    --demo-hero-text: #cfd8e6;
-    --demo-hero-card-text: #b7c4e5;
-    --demo-hero-icon-color: #8dc8ff;
-    --demo-lecture-pill-bg: rgba(64, 139, 255, 0.22);
-    --demo-lecture-pill-text: #d9e8ff;
-    --demo-heading-color: #f1f5ff;
-    --demo-description-color: #aab6d5;
-    --demo-section-title: #e0e7ff;
-    --demo-section-count: rgba(206, 213, 243, 0.75);
-    --demo-card-bg: rgba(18, 24, 39, 0.95);
-    --demo-card-border: rgba(148, 173, 215, 0.18);
-    --demo-card-shadow: 0 12px 32px rgba(8, 12, 32, 0.54);
-    --demo-card-shadow-hover: 0 18px 40px rgba(10, 16, 40, 0.6);
-    --demo-card-heading: #f6f9ff;
-    --demo-card-body: #c2cff1;
-    --demo-card-subtitle: rgba(198, 209, 247, 0.76);
-    --demo-icon-bg: rgba(77, 120, 202, 0.22);
-    --demo-icon-color: #d8e5ff;
-    --demo-button-bg: rgba(93, 171, 255, 0.28);
-
-    --demo-button-color: #e4f1ff;
-    --demo-button-hover-bg: rgba(93, 171, 255, 0.38);
-    --demo-button-hover-color: #ffffff;
-    --demo-strong-accent: #f0f6ff;
-  }
-
-  body.dark-mode .lecture-block.compression-track .demo-card {
-    background: linear-gradient(160deg, rgba(116, 93, 204, 0.32), rgba(160, 136, 230, 0.24));
-    border-color: rgba(195, 169, 255, 0.46);
-    box-shadow: 0 18px 40px rgba(32, 24, 68, 0.56);
-  }
-
-  body.dark-mode .lecture-block.compression-track .demo-button {
-    background: rgba(195, 169, 255, 0.32);
-    color: #f4f0ff;
-  }
-
-  body.dark-mode .lecture-block.compression-track .demo-button:hover {
-    background: rgba(195, 169, 255, 0.45);
-    color: #ffffff;
-  }
-
-  body.dark-mode .lecture-jump.discrete-track {
-    background: rgba(93, 171, 255, 0.32);
-    color: #e7f1ff;
-    border-color: rgba(93, 171, 255, 0.5);
-  }
-
-  body.dark-mode .lecture-jump.discrete-track:hover {
-    background: rgba(93, 171, 255, 0.45);
-    color: #ffffff;
-  }
-
-  body.dark-mode .lecture-jump.compression-track {
-    background: rgba(195, 169, 255, 0.32);
-    color: #f4f0ff;
-    border-color: rgba(195, 169, 255, 0.54);
-  }
-
-  body.dark-mode .lecture-jump.compression-track:hover {
-    background: rgba(195, 169, 255, 0.45);
-    color: #ffffff;
-  }
-  body.dark-mode .lecture-block.discrete-track .demo-card {
-    background: linear-gradient(160deg, rgba(32, 64, 130, 0.6), rgba(14, 28, 64, 0.78));
-    border-color: rgba(120, 170, 255, 0.36);
-    box-shadow: 0 18px 40px rgba(8, 12, 32, 0.58);
-  }
-
-  body.dark-mode .lecture-block.discrete-track .demo-icon {
-    background: rgba(93, 171, 255, 0.26);
-    color: #deecff;
-  }
-
-  body.dark-mode .lecture-block.discrete-track .demo-button {
-    background: rgba(93, 171, 255, 0.32);
-    color: #e7f1ff;
-  }
-
-  body.dark-mode .lecture-block.discrete-track .demo-button:hover {
-    background: rgba(93, 171, 255, 0.45);
-    color: #ffffff;
-  }
-  .demo-hero {
-    background: var(--demo-hero-bg);
-    border: 1px solid var(--demo-hero-border);
-    border-radius: 18px;
-    padding: 26px 32px;
-    margin-bottom: 36px;
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    gap: 24px;
-    align-items: center;
-    box-shadow: 0 14px 36px rgba(12, 38, 92, 0.12);
-
-  }
-
-  .hero-intro {
-    display: grid;
-    gap: 12px;
-    max-width: 640px;
-  }
-
-  .hero-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    font-weight: 600;
-    color: var(--demo-eyebrow-color);
-  }
-
-  .hero-eyebrow i {
-    font-size: 0.9rem;
-  }
-
-  .demo-hero h1 {
-    font-size: clamp(2rem, 4vw, 2.6rem);
-    margin: 0;
-    font-weight: 700;
-    color: var(--demo-hero-heading);
-  }
-
-  .demo-hero p {
-    margin: 0;
-    font-size: 0.98rem;
-    line-height: 1.6;
-    color: var(--demo-hero-text);
-  }
-
-  .demo-hero .hero-card {
-    background: var(--demo-hero-card-bg);
-    border-radius: 16px;
-    padding: 20px 22px;
-    box-shadow: var(--demo-hero-card-shadow);
-    border: 1px solid var(--demo-hero-card-border);
-    display: grid;
-    gap: 14px;
-  }
-
-  .demo-hero .hero-card h2 {
-    margin: 0;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--demo-eyebrow-color);
-  }
-
-  .demo-hero .hero-card p {
-    margin: 0;
-    font-size: 0.92rem;
-    color: var(--demo-hero-card-text);
-  }
-  .lecture-jumps {
-    margin: 0 0 32px;
-    display: grid;
-    gap: 12px;
-  }
-
-  .lecture-jumps h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--demo-section-title);
-  }
-
-  .lecture-jump-row {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .lecture-jump {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 8px;
-    padding: 18px 22px;
-    border-radius: 18px;
-    font-weight: 800;
-    font-size: 1.08rem;
-    text-decoration: none;
-    border: 1px solid var(--demo-card-border);
-    box-shadow: var(--demo-card-shadow);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .lecture-jump:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--demo-card-shadow-hover);
-  }
-
-  .lecture-jump .jump-meta {
-    font-weight: 600;
-    font-size: 0.92rem;
-    opacity: 0.82;
-  }
-
-  .lecture-jump.discrete-track {
-    background: rgba(0, 119, 255, 0.18);
-    color: #0a4aa0;
-    border-color: rgba(0, 119, 255, 0.32);
-  }
-
-  .lecture-jump.discrete-track:hover {
-    background: rgba(0, 119, 255, 0.28);
-    color: #063579;
-  }
-
-  .lecture-jump.compression-track {
-    background: rgba(150, 110, 235, 0.26);
-    color: #4b2f8c;
-    border-color: rgba(150, 110, 235, 0.38);
-  }
-
-  .lecture-jump.compression-track:hover {
-    background: rgba(150, 110, 235, 0.36);
-    color: #362165;
-  }
-
-  .lecture-jump.ss1-track {
-    background: var(--demo-card-bg);
-    color: var(--demo-card-heading);
-    border-color: var(--demo-card-border);
-  }
-
-  .lecture-jump.ss1-track:hover {
-    background: var(--demo-hero-bg);
-    color: var(--demo-section-title);
-  }
-
-  .hero-guidelines {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    display: grid;
-    gap: 12px;
-  }
-
-  .hero-guidelines li {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    font-size: 0.92rem;
-    color: var(--demo-hero-card-text);
-  }
-
-  .hero-guidelines i {
-    color: var(--demo-hero-icon-color);
-    font-size: 1rem;
-    margin-top: 2px;
-  }
-  .demo-controls {
-    display: grid;
-    gap: 14px;
-    margin-bottom: 26px;
-  }
-
-  .filter-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    padding: 12px 14px;
-    background: var(--demo-card-bg);
-    border-radius: 14px;
-    border: 1px solid var(--demo-card-border);
-    box-shadow: var(--demo-card-shadow);
-  }
-
-  .chip-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .filter-chip {
-    border: 1px solid var(--demo-card-border);
-    background: var(--demo-button-bg);
-    color: var(--demo-button-color);
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .filter-chip.is-active {
-    background: var(--demo-button-hover-bg);
-    color: var(--demo-button-hover-color);
-  }
-
-  .filter-hint {
-    font-size: 0.9rem;
-    color: var(--demo-section-count);
-    margin-left: auto;
-  }
-
-  .lecture-block {
-    margin-bottom: 56px;
-  }
-
-  .lecture-heading {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-  }
-
-  .lecture-pill {
-    background: var(--demo-lecture-pill-bg);
-    color: var(--demo-lecture-pill-text);
-    font-weight: 600;
-    padding: 8px 16px;
-    border-radius: 999px;
-    letter-spacing: 0.05em;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-  }
-
-  .lecture-heading h2 {
-    margin: 0;
-    font-size: clamp(1.7rem, 3vw, 2.3rem);
-    color: var(--demo-heading-color);
-  }
-
-  .lecture-description {
-    margin: 0 0 28px;
-    max-width: 720px;
-    color: var(--demo-description-color);
-    line-height: 1.6;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 16px;
-    margin: 28px 0 18px;
-  }
-
-  .section-header h3 {
-    margin: 0;
-    font-size: 1.35rem;
-    color: var(--demo-section-title);
-  }
-
-  .section-count {
-    font-size: 0.9rem;
-    color: var(--demo-section-count);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-  }
-
-  .module-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 22px;
-  }
-
-  .demo-card {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    background: var(--demo-card-bg);
-    border-radius: 16px;
-    padding: 24px;
-    border: 1px solid var(--demo-card-border);
-    box-shadow: var(--demo-card-shadow);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-
-  }
-
-  .demo-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--demo-card-shadow-hover);
-  }
-
-  .demo-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    color: var(--demo-icon-color);
-    background: var(--demo-icon-bg);
-    font-size: 1.3rem;
-
-  }
-
-  .demo-body h4 {
-    margin: 0 0 10px;
-    font-size: 1.1rem;
-    color: var(--demo-card-heading);
-  }
-
-  .demo-body p {
-    margin: 0;
-    color: var(--demo-card-body);
-    line-height: 1.6;
-    font-size: 0.97rem;
-  }
-
-  .demo-body h4 strong {
-    color: var(--demo-strong-accent);
-  }
-
-  .demo-body .demo-subtitle {
-    color: var(--demo-card-subtitle);
-    font-size: 0.94rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-  }
-
-  .demo-button {
-    margin-top: auto;
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    background: var(--demo-button-bg);
-    color: var(--demo-button-color);
-    font-weight: 600;
-    text-decoration: none;
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-
-  .demo-button:hover {
-    background: var(--demo-button-hover-bg);
-    color: var(--demo-button-hover-color);
-  }
-
-  .demo-card.accent-sky,
-  .demo-card.accent-grape,
-  .demo-card.accent-sun,
-  .demo-card.accent-lagoon {
-    border-color: var(--demo-card-border);
-
-  }
-  .lecture-block.compression-track .demo-card {
-    background: linear-gradient(150deg, rgba(150, 110, 235, 0.16), rgba(190, 155, 255, 0.13));
-    border-color: rgba(150, 110, 235, 0.34);
-    box-shadow: 0 14px 32px rgba(66, 40, 120, 0.15);
-  }
-
-  .lecture-block.compression-track .demo-icon {
-    background: rgba(150, 110, 235, 0.2);
-    color: #4b2f8c;
-  }
-
-  .lecture-block.compression-track .demo-button {
-    background: rgba(150, 110, 235, 0.26);
-    color: #4b2f8c;
-  }
-
-  .lecture-block.compression-track .demo-button:hover {
-    background: rgba(150, 110, 235, 0.36);
-    color: #362165;
-  }
-  .lecture-block.discrete-track .demo-card {
-    background: linear-gradient(150deg, rgba(0, 119, 255, 0.09), rgba(0, 200, 255, 0.06));
-    border-color: rgba(0, 119, 255, 0.22);
-    box-shadow: 0 14px 32px rgba(12, 38, 92, 0.1);
-  }
-
-  .lecture-block.discrete-track .demo-icon {
-    background: rgba(0, 119, 255, 0.12);
-    color: #0a4aa0;
-  }
-
-  .lecture-block.discrete-track .demo-button {
-    background: rgba(0, 119, 255, 0.18);
-    color: #0a4aa0;
-  }
-
-  .lecture-block.discrete-track .demo-button:hover {
-    background: rgba(0, 119, 255, 0.28);
-    color: #063579;
-  }
-
-
-  .demo-card.is-hidden {
-    display: none;
-  }
-
-  .empty-state {
-    padding: 18px;
-    border-radius: 12px;
-    border: 1px dashed var(--demo-card-border);
-    color: var(--demo-description-color);
-    background: var(--demo-hero-bg);
-    display: none;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .empty-state.is-visible {
-    display: inline-flex;
-  }
-
-  .section-header .section-count[data-count="0"] {
-    color: #c0392b;
-  }
-  @media (max-width: 960px) {
-    .demo-hero {
-      grid-template-columns: 1fr;
-      text-align: left;
-      padding: 22px;
-    }
-
-    .demo-hero .hero-card {
-      justify-self: stretch;
-      max-width: none;
-    }
-
-    .lecture-heading {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .section-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .demo-icon {
-      margin: 0 auto;
-    }
-
-    .demo-button {
-      align-self: center;
-    }
-  }
-</style>
-
-<div class="demo-hero">
-  <div class="hero-intro">
-    <span class="hero-eyebrow"><i class="fa-solid fa-bolt"></i> Interactive demo library</span>
-    <h1>Signal Processing demos at a glance</h1>
-    <p>Explore concise, guided simulations from Signals and Systems I &amp; II. Pick a lecture and launch the module you
-      need in seconds. These demos are created and used at FAU for lectures and tutorials, yet they're ready to support
-      anyone curious about the topics.</p>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/demos_menu.css') }}">
+
+<div class="demo-library">
+  <header class="library-hero" aria-label="Demo library overview">
+    <div class="library-hero__text">
+      <div class="library-eyebrow"><i class="fa-solid fa-bolt"></i> Interactive demo library</div>
+      <h1>Signal Processing demos</h1>
+        <p>Explore concise, guided simulations from Signals and Systems I &amp; II. Pick a lecture and launch the module you
+          need in seconds. These demos are created and used at University of Erlangen-Nuremberg for lectures and tutorials, yet they're ready to support
+          anyone curious about the topics.
+        </p>
     </div>
-  <div class="hero-card">
-    <h2>Quick tips</h2>
-    <p>Select a lecture below to open a focused workspace tailored to that topic.</p>
-    <ul class="hero-guidelines">
-      <li><i class="fa-solid fa-sliders"></i> Adjust parameters and watch the response update instantly.</li>
-      <li><i class="fa-solid fa-chart-line"></i> Keep plots and controls together for quick comparisons.</li>
-      <li><i class="fa-solid fa-graduation-cap"></i> Follow the lecture-friendly flow for fast intuition.</li>
-    </ul>
-  </div>
-</div>
 
-<div class="lecture-jumps" aria-label="Jump to lecture">
-  <h3>Jump to lecture</h3>
-  <div class="lecture-jump-row">
-    {% for lecture, sections in demos.items() %}
-      {% if lecture == 'Image and Video Compression' %}
-        {% set track_class = 'compression-track' %}
-      {% elif lecture == 'Signals and Systems I' %}
-        {% set track_class = 'ss1-track' %}
-      {% else %}
-        {% set track_class = 'discrete-track' %}
-      {% endif %}
-      <a class="lecture-jump {{ track_class }}" href="#{{ lecture | replace(' ', '-') | lower }}">
-        <span>{{ lecture }}</span>
-        <span class="jump-meta">Open module cards</span>
-      </a>
-    {% endfor %}
-  </div>
-</div>
+    <div class="library-hero__meta">
+      <div class="meta-pill" title="Shortcut: press / to focus the search">
+        <kbd>/</kbd> Search
+      </div>
+      <div class="meta-pill" title="Shortcut: Esc clears the search">
+        <kbd>Esc</kbd> Clear
+      </div>
+    </div>
+  </header>
 
-{% for lecture, sections in demos.items() %}
-  <section class="lecture-block {% if lecture == 'Signals and Systems II' %}discrete-track{% endif %}{% if lecture == 'Image and Video Compression' %} compression-track{% endif %}" id="{{ lecture | replace(' ', '-') | lower }}">
-    <header class="lecture-heading">
-      <span class="lecture-pill">Lecture</span>
-      <h2>{{ lecture }}</h2>
-    </header>
+  <div class="library-controls" aria-label="Search and lecture jump">
+    <div class="controls-row controls-row--primary">
+      <div class="searchbox" role="search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input id="demoSearch" type="text" placeholder="Search (Convolution, DFT, Transform…)" autocomplete="off">
+        <button id="clearSearch" class="icon-btn" type="button" aria-label="Clear search">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          <span class="sr-only">Clear</span>
+        </button>
+      </div>
 
-    {% for section, demo_list in sections.items() %}
-      {% if demo_list %}
-        <div class="section-header">
-          <h3>{{ section }}</h3>
-          <span class="section-count" data-count="{{ demo_list | length }}">{{ demo_list | length }} demos</span>
-        </div>
-        <div class="module-grid" data-section="{{ section }}">
-          {% set swap_titles = section == 'Lecture' %}
-          {% for d in demo_list %}
-            <article class="demo-card {{ loop.cycle('accent-sky', 'accent-grape', 'accent-sun', 'accent-lagoon') }}"
-              data-demo-title="{{ d.title | lower }} {{ d.title_desc | lower }}"
-              data-section-name="{{ section }}">
-              <div class="demo-body">
-                <h4>
-                  {% if swap_titles %}
-                    <strong>{{ d.title_desc }}</strong>
-                  {% else %}
-                    <strong>{{ d.title }}</strong>
-                  {% endif %}
-                </h4>
-                <p class="demo-subtitle">
-                  {% if swap_titles %}
-                    {{ d.title }}
-                  {% else %}
-                    {{ d.title_desc }}
-                  {% endif %}
-                </p>
-              </div>
-              <a class="demo-button" href="{{ url_for(d.endpoint) }}">Launch demo <i class="fa-solid fa-arrow-right"></i></a>
-            </article>
+      <div class="results" aria-live="polite">
+        <span class="results-label">Showing</span>
+        <span class="results-strong" id="activeFilterLabel">All lectures</span>
+        <span class="results-count" id="resultsCount">0 demos</span>
+      </div>
+    </div>
+
+    <div class="controls-row controls-row--secondary" aria-label="Lecture jump pills">
+      <div class="lecture-pills" id="lecturePills" role="list" aria-label="Click a lecture to jump">
+        <button class="lecture-pill is-active" type="button" data-lecture="__all" data-lecture-label="All lectures">
+          All <span class="pill-count" id="allLectureCount">0</span>
+        </button>
+
+        {% for lecture, sections in demos.items() %}
+          {% set lecture_key = lecture | replace(' ', '-') | lower %}
+          {% set ns = namespace(total=0) %}
+          {% for section, demo_list in sections.items() %}
+            {% if demo_list %}{% set ns.total = ns.total + (demo_list | length) %}{% endif %}
           {% endfor %}
-        </div>
-      {% endif %}
-    {% endfor %}
-  </section>
-{% endfor %}
+          <button class="lecture-pill" type="button" data-lecture="{{ lecture_key }}" data-lecture-label="{{ lecture }}">
+            <span class="pill-dot" aria-hidden="true"></span>
+            {{ lecture }} <span class="pill-count">{{ ns.total }}</span>
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div id="resultsEmpty" class="empty-state" role="status" aria-live="polite">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    No demos match your search. Try a shorter keyword (e.g., "Convolution", "DFT" or "Transform”).
+  </div>
+
+  <!-- RESULTS -->
+  <main class="library-main" aria-label="Demo results">
+    <div class="lecture-groups">
+      {% for lecture, sections in demos.items() %}
+        {% set lecture_key = lecture | replace(' ', '-') | lower %}
+        {% set ns = namespace(total=0) %}
+        {% for section, demo_list in sections.items() %}
+          {% if demo_list %}{% set ns.total = ns.total + (demo_list | length) %}{% endif %}
+        {% endfor %}
+
+        <section class="lecture-group" id="{{ lecture_key }}" data-lecture="{{ lecture_key }}">
+          <header class="lecture-head">
+            <h2>
+              <span class="lecture-accent" aria-hidden="true"></span>
+              {{ lecture }}
+            </h2>
+            <span class="lecture-count">{{ ns.total }} demos</span>
+          </header>
+
+          {% for section, demo_list in sections.items() %}
+            {% if demo_list %}
+              <div class="section-block" data-section="{{ section | replace(' ', '-') | lower }}">
+                <div class="section-head">
+                  <h3>{{ section }}</h3>
+                  <span class="section-count">{{ demo_list | length }}</span>
+                </div>
+
+                <div class="demo-grid" aria-label="{{ lecture }} — {{ section }}">
+                  {% set swap_titles = section == 'Lecture' %}
+                  {% for d in demo_list %}
+                    <article class="demo-card"
+                      data-lecture="{{ lecture_key }}"
+                      data-demo-search="{{ (lecture ~ ' ' ~ section ~ ' ' ~ d.title ~ ' ' ~ d.title_desc) | lower }}">
+                      <div class="demo-main">
+                        <div class="demo-icon" aria-hidden="true">
+                          <i class="fa-solid fa-square-root-variable"></i>
+                        </div>
+                        <div class="demo-text">
+                          <div class="demo-tags">
+                            <span class="tag">{{ section }}</span>
+                          </div>
+
+                          <h4 class="demo-title">
+                            {% if swap_titles %}
+                              {{ d.title_desc }}
+                            {% else %}
+                              {{ d.title }}
+                            {% endif %}
+                          </h4>
+
+                          <p class="demo-desc">
+                            {% if swap_titles %}
+                              {{ d.title }}
+                            {% else %}
+                              {{ d.title_desc }}
+                            {% endif %}
+                          </p>
+                        </div>
+                      </div>
+
+                      <a class="demo-launch" href="{{ url_for(d.endpoint) }}">
+                        Launch <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                      </a>
+                    </article>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </section>
+      {% endfor %}
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const root = document.querySelector('.demo-library');
+  if (!root) return;
+
+  const search = document.getElementById('demoSearch');
+  const clearBtn = document.getElementById('clearSearch');
+
+  const resultsCountEl = document.getElementById('resultsCount');
+  const activeFilterLabel = document.getElementById('activeFilterLabel');
+  const emptyState = document.getElementById('resultsEmpty');
+
+  const lectureButtons = Array.from(document.querySelectorAll('.lecture-pill[data-lecture]'));
+  const cards = Array.from(document.querySelectorAll('.demo-card[data-demo-search]'));
+  const sectionBlocks = Array.from(document.querySelectorAll('.section-block'));
+  const lectureGroups = Array.from(document.querySelectorAll('.lecture-group'));
+
+  const allCountEl = document.getElementById('allLectureCount');
+  const totalAll = cards.length;
+  if (allCountEl) allCountEl.textContent = totalAll;
+
+  let activeLecture = '__all';
+  const norm = (s) => (s || '').toLowerCase().trim();
+
+  const palette = [
+    "#0B5ED7", // blue
+    "#0284C7", // sky
+    "#06B6D4", // cyan
+    "#14B8A6", // teal
+    "#10B981", // emerald
+    "#2563EB", // blue
+    "#4F46E5", // indigo
+    "#7C3AED"  // purple
+  ];
+
+  function hashString(str){
+    let h = 2166136261;
+    for (let i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0);
+  }
+
+  function hexToRgba(hex, a){
+    const m = (hex || "").replace("#","").match(/^([0-9a-f]{6})$/i);
+    if (!m) return `rgba(0,0,0,${a})`;
+    const n = parseInt(m[1], 16);
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  lectureGroups.forEach((g) => {
+    const key = g.dataset.lecture || "";
+    const color = palette[hashString(key) % palette.length];
+    g.style.setProperty("--lecture-accent", color);
+    g.style.setProperty("--lecture-accent-soft", hexToRgba(color, 0.16));
+    g.style.setProperty("--lecture-accent-softer", hexToRgba(color, 0.10));
+  });
+
+  lectureButtons.forEach((btn) => {
+    const key = btn.dataset.lecture || "";
+    if (key === "__all") return;
+    const color = palette[hashString(key) % palette.length];
+    btn.style.setProperty("--pill-accent", color);
+    btn.style.setProperty("--pill-accent-soft", hexToRgba(color, 0.14));
+  });
+
+  function jumpTo(lectureKey) {
+    if (!lectureKey || lectureKey === "__all") return;
+    const target = document.getElementById(lectureKey);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function setActiveLecture(key, doJump=false) {
+    activeLecture = key;
+    lectureButtons.forEach(b => b.classList.toggle('is-active', b.dataset.lecture === key));
+
+    const label = (key === '__all')
+      ? 'All lectures'
+      : (lectureButtons.find(b => b.dataset.lecture === key)?.dataset.lectureLabel || 'Filtered');
+
+    activeFilterLabel.textContent = label || 'Filtered';
+    applyFilters();
+
+    if (doJump) jumpTo(key);
+  }
+
+  function applyFilters() {
+    const q = norm(search.value);
+    let visible = 0;
+
+    for (const card of cards) {
+      const lectureKey = card.dataset.lecture;
+      const hay = card.dataset.demoSearch;
+
+      const okLecture = (activeLecture === '__all') || (lectureKey === activeLecture);
+      const okQuery = !q || hay.includes(q);
+
+      const show = okLecture && okQuery;
+      card.classList.toggle('is-hidden', !show);
+      if (show) visible += 1;
+    }
+
+    for (const sec of sectionBlocks) {
+      const anyVisible = sec.querySelector('.demo-card:not(.is-hidden)');
+      sec.classList.toggle('is-hidden', !anyVisible);
+    }
+
+    for (const lec of lectureGroups) {
+      const anySection = lec.querySelector('.section-block:not(.is-hidden)');
+      lec.classList.toggle('is-hidden', !anySection);
+    }
+
+    resultsCountEl.textContent = `${visible} demo${visible === 1 ? '' : 's'}`;
+    emptyState.classList.toggle('is-visible', visible === 0);
+  }
+
+  // Events
+  search.addEventListener('input', applyFilters);
+  clearBtn.addEventListener('click', () => { search.value = ''; search.focus(); applyFilters(); });
+
+  lectureButtons.forEach(btn => btn.addEventListener('click', () => {
+    const key = btn.dataset.lecture;
+    setActiveLecture(key, key !== "__all");
+  }));
+
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    const typing = (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable);
+
+    if (!typing && e.key === '/') {
+      e.preventDefault();
+      search.focus();
+    }
+    if (e.key === 'Escape') {
+      if (document.activeElement === search || norm(search.value)) {
+        search.value = '';
+        search.blur();
+        applyFilters();
+      }
+    }
+  });
+
+  applyFilters();
+})();
+</script>
+
 {% endblock %}

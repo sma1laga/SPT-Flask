@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container wide-container foi-layout">
+  <div class="page-header foi-header">
+    <div class="foi-title">
+      <h1>Finite Observation intervals</h1>
+      <p>
+        Choose a signal (sinusoid, white/coloured noise, or speech), adjust the observation length, and compare real
+        measurements against the theoretical autocorrelation and power spectral density.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-sliders"></i>Compact controls</div>
+      <div class="pill pill-subtle"><i class="fa fa-signal"></i>Speech-friendly option</div>
+    </div>
+  </div>
+
+  <div class="control-card">
+    <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Controls above plots</div>
+    <div class="control-grid">
+      <div>
+        <div class="kv-row">
+          <label for="freq-slider">Sinusoid frequency (Hz)</label>
+          <input type="range" id="freq-slider" min="10" max="3500" step="1" value="{{ defaults.frequency }}">
+          <input type="number" id="freq-input" min="10" max="3500" step="1" value="{{ defaults.frequency }}">
+        </div>
+        <div class="kv-row">
+          <label for="samples-slider">Observation samples</label>
+          <input type="range" id="samples-slider" min="0" max="1" step="0.01">
+          <input type="number" id="samples-input" min="200" max="16000" step="100" value="{{ defaults.sample_count }}">
+        </div>
+        <div class="select-row">
+          <label for="signal-select">Signal type</label>
+          <select id="signal-select" class="form-control">
+            <option value="sinusoid">Sinusoid</option>
+            <option value="white_noise">White noise</option>
+            <option value="colored_noise">Coloured noise (LP filtered)</option>
+            <option value="speech">Speech (static sample)</option>
+          </select>
+        </div>
+        <div class="select-row">
+          <label for="mode-select">Observation mode</label>
+          <select id="mode-select" class="form-control">
+            <option value="real">Real (finite, biased)</option>
+            <option value="ideal">Ideal (theoretical)</option>
+          </select>
+        </div>
+        <button id="update-btn" class="btn-primary"><i class="fa fa-refresh"></i> Update plots</button>
+      </div>
+      <div class="meta-card">
+        <p class="inline-note">Controls stay pinned above the plots. Ideal mode falls back to a real measurement for the speech option.</p>
+        <div class="stat-row">
+          <div class="stat-chip">
+            <h4 class="stat-heading">Frequency</h4>
+            <div id="stat-freq" class="stat-value">—</div>
+          </div>
+          <div class="stat-chip">
+            <h4 class="stat-heading">Samples</h4>
+            <div id="stat-samples" class="stat-value">—</div>
+          </div>
+          <div class="stat-chip">
+            <h4 class="stat-heading">Mode</h4>
+            <div id="stat-mode" class="stat-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="plots-grid">
+    <div class="plot-box"><h4><i class="fa fa-wave-square"></i> Signal</h4><div id="plot-signal" class="plot"></div></div>
+    <div class="plot-box"><h4><i class="fa fa-random"></i> Normalised autocorrelation</h4><div id="plot-acorr" class="plot"></div></div>
+    <div class="plot-box"><h4><i class="fa fa-line-chart"></i> Power spectral density</h4><div id="plot-psd" class="plot"></div></div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const computeUrl = "{{ url_for('demos_finite_observation_intervals.compute') }}";
+  const freqSlider = document.getElementById('freq-slider');
+  const freqInput = document.getElementById('freq-input');
+  const samplesSlider = document.getElementById('samples-slider');
+  const samplesInput = document.getElementById('samples-input');
+  const signalSelect = document.getElementById('signal-select');
+  const modeSelect = document.getElementById('mode-select');
+  const updateBtn = document.getElementById('update-btn');
+  const layoutRoot = document.querySelector('.foi-layout');
+  const demoSidebarToggle = document.getElementById('demo-sidebar-toggle');
+
+  const statEls = {
+    freq: document.getElementById('stat-freq'),
+    samples: document.getElementById('stat-samples'),
+    mode: document.getElementById('stat-mode'),
+  };
+  function getPlotHeight(){
+    if(!layoutRoot){
+      return 230;
+    }
+    const raw = getComputedStyle(layoutRoot).getPropertyValue('--plot-height');
+    const parsed = parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : 230;
+  }
+  function buildLayout(layout){
+    const isDark = document.body.classList.contains('dark-mode');
+    const axisColor = isDark ? '#e2e8f0' : '#111827';
+    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const merged = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { color: axisColor },
+      ...layout,
+    };
+    const baseX = layout.xaxis || {};
+    const baseY = layout.yaxis || {};
+    merged.xaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseX, color: axisColor };
+    merged.yaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseY, color: axisColor };
+    return merged;
+  }
+
+  const SAMPLE_MIN = 200;
+  const SAMPLE_MAX = 16000;
+
+  function sliderToSamples(v){
+    const logMin = Math.log10(SAMPLE_MIN);
+    const logMax = Math.log10(SAMPLE_MAX);
+    const val = Math.pow(10, logMin + v * (logMax - logMin));
+    return Math.round(val);
+  }
+
+  function samplesToSlider(count){
+    const clamped = Math.min(Math.max(count, SAMPLE_MIN), SAMPLE_MAX);
+    const logMin = Math.log10(SAMPLE_MIN);
+    const logMax = Math.log10(SAMPLE_MAX);
+    return (Math.log10(clamped) - logMin) / (logMax - logMin);
+  }
+
+  function syncSamplesFromSlider(){
+    const samples = sliderToSamples(parseFloat(samplesSlider.value));
+    samplesInput.value = samples;
+  }
+
+  function syncSamplesFromInput(){
+    const samples = parseInt(samplesInput.value || defaults.sample_count, 10);
+    samplesSlider.value = samplesToSlider(samples);
+  }
+
+  function syncFreqFromSlider(){
+    freqInput.value = parseFloat(freqSlider.value);
+  }
+
+  function syncFreqFromInput(){
+    freqSlider.value = freqInput.value;
+  }
+
+  async function fetchData(){
+    const payload = {
+      frequency: parseFloat(freqInput.value),
+      sample_count: parseInt(samplesInput.value, 10) || defaults.sample_count,
+      signal_kind: signalSelect.value,
+      mode: modeSelect.value,
+    };
+
+    const response = await fetch(computeUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!response.ok){
+      throw new Error('Server error: ' + response.status);
+    }
+    return response.json();
+  }
+
+  function renderLine(target, x, y, xLabel, yLabel, color='#2563eb'){
+    const trace = {x, y, mode: 'lines', line: {color, width: 2}};
+    const layout = buildLayout({
+      margin:{l:50,r:10,b:45,t:10},
+      xaxis:{title:xLabel},
+      yaxis:{title:yLabel},
+      height:getPlotHeight()
+    });
+    Plotly.newPlot(target, [trace], layout, {displaylogo:false, responsive:true});
+  }
+
+  function renderPsd(target, x, y){
+    const trace = {x, y, mode:'lines', line:{color:'#dc2626', width:2}};
+    const layout = buildLayout({
+      margin:{l:50,r:10,b:45,t:10},
+      xaxis:{title:'frequency [Hz]'},
+      yaxis:{title:'10log_{10}(S_{xx})'},
+      height:getPlotHeight()
+    });
+    Plotly.newPlot(target, [trace], layout, {displaylogo:false, responsive:true});
+  }
+
+  function render(data){
+    renderLine('plot-signal', data.time_ms, data.signal, 't [ms]', 'Amplitude');
+    renderLine('plot-acorr', data.acorr.lags, data.acorr.values, 'Time lag τ [#samples]', 'R_{xx}', '#0f766e');
+    renderPsd('plot-psd', data.psd.freqs, data.psd.values_db);
+
+    statEls.freq.textContent = `${data.meta.frequency.toFixed(0)} Hz`;
+    statEls.samples.textContent = `${data.meta.sample_count}`;
+    statEls.mode.textContent = data.meta.mode === 'ideal' ? 'Ideal (theoretical)' : 'Real (finite)';
+    resizePlotsToHeight();
+  }
+
+  function resizePlotsToHeight(){
+    const h = getPlotHeight();
+    ['plot-signal','plot-acorr','plot-psd'].forEach((id) => {
+      const el = document.getElementById(id);
+      if(el && el.data){
+        Plotly.relayout(el, { height: h });
+      }
+    });
+  }
+
+  async function update(){
+    syncFreqFromInput();
+    syncSamplesFromInput();
+    const data = await fetchData();
+    render(data);
+  }
+
+  freqSlider.addEventListener('input', syncFreqFromSlider);
+  freqInput.addEventListener('change', syncFreqFromInput);
+  samplesSlider.addEventListener('input', syncSamplesFromSlider);
+  samplesInput.addEventListener('change', syncSamplesFromInput);
+  updateBtn.addEventListener('click', update);
+  if(demoSidebarToggle){
+    demoSidebarToggle.addEventListener('click', () => {
+      setTimeout(resizePlotsToHeight, 260);
+    });
+  }
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resizePlotsToHeight, 120);
+  });
+
+  samplesSlider.value = samplesToSlider(parseInt(samplesInput.value, 10));
+  update()
+    .then(() => setTimeout(resizePlotsToHeight, 260))
+    .catch((err) => console.error(err));
+</script>
+{% endblock %}

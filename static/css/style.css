@@ -462,6 +462,34 @@ body.nav-open {
   min-height: 70vh;
   margin-top: 20px;
 }
+.sidebar-collapse-btn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(120deg, #0f4c81, #2c7cc0);
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  margin: 0 10px 12px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(15, 76, 129, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.sidebar-collapse-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 76, 129, 0.22);
+}
+.sidebar-collapse-btn .label-collapsed {
+  display: none;
+}
+.demo-sidebar-collapsed .sidebar-collapse-btn .label-expanded {
+  display: none;
+}
+.demo-sidebar-collapsed .sidebar-collapse-btn .label-collapsed {
+  display: inline;
+}
 
 /* Sidebar */
 .sidebar {
@@ -611,6 +639,31 @@ body.dark-mode .modern-sidebar ul.sidebar-menu li a.sidebar-link.active {
   border-radius: 4px;
   font-size: 1rem;
   cursor: pointer;
+}
+/* Demo sidebar collapse */
+body.demo-sidebar-collapsible .sidebar-collapse-btn {
+  display: inline-flex;
+  flex-basis: 100%;
+  justify-content: flex-start;
+}
+body.demo-sidebar-collapsible .content-wrapper {
+  flex-wrap: wrap;
+}
+body.demo-sidebar-collapsible .modern-sidebar {
+  transition: width 0.25s ease, margin 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+}
+body.demo-sidebar-collapsed .modern-sidebar {
+  width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+body.demo-sidebar-collapsed .main-content {
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 /* --- Sidebar Tabs styling --- */
