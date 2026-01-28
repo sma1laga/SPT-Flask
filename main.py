@@ -1,5 +1,7 @@
 # main.py
 import os
+from datetime import datetime, timezone
+from xml.sax.saxutils import escape
 
 from flask import Flask, current_app, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
@@ -116,7 +118,9 @@ COLLAPSIBLE_DEMO_SECTIONS = {
     "Image and Video Compression",
 }
 
-
+SITE_BASE_URL = os.getenv(
+    "SITE_BASE_URL", "https://lms-spt.e-technik.uni-erlangen.de"
+).rstrip("/")
 
 
 
@@ -146,6 +150,41 @@ def create_app():
     def google_site_verification():
         """Serve Google Search Console verification file"""
         return send_from_directory(current_app.static_folder, "google724380b13da45fea.html")
+
+    def _iter_sitemap_rules():
+        for rule in app.url_map.iter_rules():
+            if "GET" not in rule.methods:
+                continue
+            if rule.arguments:
+                continue
+            if rule.endpoint in {"static", "sitemap", "robots", "favicon"}:
+                continue
+            if rule.rule.startswith("/static"):
+                continue
+            yield rule
+
+    @app.route("/sitemap.xml")
+    def sitemap():
+        lastmod = datetime.now(timezone.utc).date().isoformat()
+        url_entries = []
+        for rule in sorted(_iter_sitemap_rules(), key=lambda item: item.rule):
+            loc = f"{SITE_BASE_URL}{rule.rule}"
+            url_entries.append(
+                f"  <url><loc>{escape(loc)}</loc><lastmod>{lastmod}</lastmod></url>"
+            )
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + "\n".join(url_entries)
+            + "\n</urlset>\n"
+        )
+        return current_app.response_class(xml, mimetype="application/xml")
+
+    @app.route("/robots.txt")
+    def robots():
+        sitemap_url = f"{SITE_BASE_URL}/sitemap.xml"
+        body = f"User-agent: *\nAllow: /\nSitemap: {sitemap_url}\n"
+        return current_app.response_class(body, mimetype="text/plain")
     
     @app.context_processor
     def inject_demos_sidebar():
