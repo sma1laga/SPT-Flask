@@ -20,7 +20,27 @@
   {% block styles %}{% endblock %}
 
   <!-- MathJax for LaTeX rendering -->
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script>
+    (function () {
+      const needsPolyfill = !(
+        'Promise' in window &&
+        'Map' in window &&
+        'Set' in window &&
+        'Symbol' in window &&
+        Array.from
+      );
+      if (needsPolyfill) {
+        const poly = document.createElement('script');
+        poly.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
+        poly.defer = true;
+        document.head.appendChild(poly);
+      }
+    })();
+    window.MathJax = {
+      loader: {load: ['input/tex', 'output/chtml']},
+      tex: {inlineMath: [['\\(', '\\)'], ['$', '$']]}
+    };
+  </script>
   <script id="MathJax-script" async
     src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 

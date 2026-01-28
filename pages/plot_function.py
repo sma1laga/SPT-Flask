@@ -54,7 +54,7 @@ def plot_function():
 
 @plot_function_bp.route("/update", methods=["POST"])
 def plot_function_update():
-    data = request.get_json(force=True) or {}
+    data = request.get_json(silent=True) or {}
 
     func1_str, func2_str = data.get("func1", "").strip(), data.get("func2", "").strip()
 
