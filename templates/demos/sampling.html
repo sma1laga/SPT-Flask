@@ -18,7 +18,7 @@
 </p>
 
 
-<div class="demo row">
+<div class="demo row" data-sampling-defaults='{{ defaults | tojson | e }}' data-compute-url="{{ url_for('sampling.compute') }}">
   <div class="card">
     <div class="toolbar">
       <div>
@@ -83,75 +83,5 @@
 
 
 {% block scripts %}
-<script>
-  const $ = (id) => document.getElementById(id);
-
-  let inFlight = null;
-  let debounceTimer = null;
-  let SEQ = 0;
-
-  function payload() {
-    return {
-      w_g_over_pi: parseFloat($("wg_over_pi").value),
-      w_a_over_pi: parseFloat($("wa_over_pi").value),
-      show_xt: $("show_xt").checked,
-      show_xa: $("show_xa").checked,
-      show_yt: $("show_yt").checked,
-      show_partials: $("show_partials").checked,
-      show_X: $("show_X").checked,
-      show_Xa: $("show_Xa").checked,
-      show_Y: $("show_Y").checked,
-      seq: ++SEQ
-    };
-  }
-
-  async function recompute() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      if (inFlight) inFlight.abort();
-      inFlight = new AbortController();
-
-      const body = payload();
-
-      try {
-        const resp = await fetch("./compute", {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify(body),
-          signal: inFlight.signal
-        });
-        if (!resp.ok) return;
-        const data = await resp.json();
-        if (data.seq !== undefined && data.seq < SEQ) return;
-        if (data.image) $("plot").src = data.image;
-      } catch(e) {
-    
-      } finally {
-        inFlight = null;
-      }
-    }, 80);
-  }
-
-  ["wg_over_pi","wa_over_pi","show_xt","show_xa","show_yt","show_partials","show_X","show_Xa","show_Y"].forEach(id => {
-    $(id).addEventListener("input",  recompute);
-    $(id).addEventListener("change", recompute);
-  });
-
-  $("run").addEventListener("click", recompute);
-
-  $("reset").addEventListener("click", () => {
-    $("wg_over_pi").value = "{{ defaults.w_g_over_pi }}";
-    $("wa_over_pi").value = "{{ defaults.w_a_over_pi }}";
-    $("show_xt").checked = {{ 'true' if defaults.show_xt else 'false' }};
-    $("show_xa").checked = {{ 'true' if defaults.show_xa else 'false' }};
-    $("show_yt").checked = {{ 'true' if defaults.show_yt else 'false' }};
-    $("show_partials").checked = {{ 'true' if defaults.show_partials else 'false' }};
-    $("show_X").checked = {{ 'true' if defaults.show_X else 'false' }};
-    $("show_Xa").checked = {{ 'true' if defaults.show_Xa else 'false' }};
-    $("show_Y").checked = {{ 'true' if defaults.show_Y else 'false' }};
-    recompute();
-  });
-
-  window.addEventListener("load", recompute);
-</script>
+<script src="{{ url_for('static', filename='js/demos/sampling.js') }}"></script>
 {% endblock %}
