@@ -64,7 +64,7 @@
         </div>
         <div class="summary-item">
           <div class="summary-label">Notable</div>
-          <div id="note-label" class="summary-value strong">Dirac masses appear as stems</div>
+          <div id="note-label" class="summary-value strong">Dirac masses appear as stem arrows</div>
         </div>
       </div>
       <div class="plots-grid">
@@ -277,15 +277,29 @@
     );
 
     if(mapping === 'quantizer'){
+      const stemX = [];
+      const stemY = [];
+      data.y_positions.forEach((pos, idx) => {
+        stemX.push(pos, pos, null);
+        stemY.push(0, data.masses[idx], null);
+      });
       Plotly.newPlot(
         plotYEl,
-        [{
-          x: data.y_positions,
-          y: data.masses,
-          type: 'bar',
-          marker: { color: '#f59e0b' },
-        }],
-        { ...baseLayout('y'), yaxis: { title: 'f_Y(y)' }, bargap: 0.3 },
+        [
+          {
+            x: stemX,
+            y: stemY,
+            mode: 'lines',
+            line: { color: '#f59e0b', width: 2 },
+          },
+          {
+            x: data.y_positions,
+            y: data.masses,
+            mode: 'markers',
+            marker: { color: '#f59e0b', size: 10, symbol: 'triangle-up' },
+          }
+        ],
+        { ...baseLayout('y'), yaxis: { title: 'f_Y(y)' } },
         { responsive: true }
       );
     } else {
@@ -301,7 +315,7 @@
     mappingLabel.textContent = describeMapping(mapping, data.params || {});
     latexTitleEl.textContent = `Mapping: ${data.dist_label} → Y = g(X)`;
     metaEl.textContent = mapping === 'quantizer' ? `${data.y_positions.length} quantizer levels` : `Samples: ${x.length}`;
-    noteLabel.textContent = mapping === 'quantizer' ? 'Probability masses shown as bars' : 'Continuous density after mapping';
+    noteLabel.textContent = mapping === 'quantizer' ? 'Probability masses shown as stem arrows' : 'Continuous density after mapping';
     resizePlots();
   }
 

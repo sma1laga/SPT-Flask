@@ -139,90 +139,90 @@ DEMOS = {
             },
         ],
     },
-    # "Statistical Signal Processing": {
-    #     "Probability Calculus and Random Variables": [
-    #         {
-    #             "slug": "conditional-distributions",
-    #             "title": "Conditional Distributions",
-    #             "title_desc": "Conditional Distributions",
-    #             "desc": "Condition uniform/normal/exponential laws on an interval and compare the resulting PDF/CDF.",
-    #             "endpoint": "demos_conditional_distributions.page",
-    #         },
-    #         {
-    #             "slug": "mapping-random-variables",
-    #             "title": "Mapping of Random Variables",
-    #             "title_desc": "Mapping Random Variables",
-    #             "desc": "Map uniform/normal/exponential/rayleigh/cauchy laws through linear, quadratic, quantizer, or custom mappings.",
-    #             "endpoint": "mapping_random_variables.page",
-    #         },
-    #         {
-    #             "slug": "2d-normal-distributions",
-    #             "title": "2D Normal distributions",
-    #             "title_desc": "Correlated Gaussian surface",
-    #             "desc": "Explore the bivariate normal PDF in 3D with controllable means, variances, and correlation, plus projected marginals.",
-    #             "endpoint": "demos_normal2d.page",
-    #         },
-    #         {
-    #             "slug": "central-limit-theorem",
-    #             "title": "Central Limit Theorem",
-    #             "title_desc": "Animated convolution",
-    #             "desc": "Iteratively convolve Laplace, uniform, Rayleigh, exponential, or gamma PDFs and watch them converge toward a Gaussian.",
-    #             "endpoint": "demos_central_limit_theorem.page",
-    #         },
-    #         {
-    #             "slug": "distributions",
-    #             "title": "Distributions",
-    #             "title_desc": "PDF & CDF Explorer",
-    #             "desc": "Interactively plot PDFs and CDFs for 12 continuous and discrete laws (normal, Laplace, Rayleigh, Poisson, etc.).",
-    #             "endpoint": "demos_distributions.page",
-    #         }
+    "Statistical Signal Processing": {
+        "Probability Calculus and Random Variables": [
+            {
+                "slug": "conditional-distributions",
+                "title": "Conditional Distributions",
+                "title_desc": "Conditional Distributions",
+                "desc": "Condition uniform/normal/exponential laws on an interval and compare the resulting PDF/CDF.",
+                "endpoint": "demos_conditional_distributions.page",
+            },
+            {
+                "slug": "mapping-random-variables",
+                "title": "Mapping of Random Variables",
+                "title_desc": "Mapping Random Variables",
+                "desc": "Map uniform/normal/exponential/rayleigh/cauchy laws through linear, quadratic, quantizer, or custom mappings.",
+                "endpoint": "mapping_random_variables.page",
+            },
+            {
+                "slug": "2d-normal-distributions",
+                "title": "2D Normal distributions",
+                "title_desc": "Correlated Gaussian surface",
+                "desc": "Explore the bivariate normal PDF in 3D with controllable means, variances, and correlation, plus projected marginals.",
+                "endpoint": "demos_normal2d.page",
+            },
+            {
+                "slug": "central-limit-theorem",
+                "title": "Central Limit Theorem",
+                "title_desc": "Animated convolution",
+                "desc": "Iteratively convolve Laplace, uniform, Rayleigh, exponential, or gamma PDFs and watch them converge toward a Gaussian.",
+                "endpoint": "demos_central_limit_theorem.page",
+            },
+            {
+                "slug": "distributions",
+                "title": "Distributions",
+                "title_desc": "PDF & CDF Explorer",
+                "desc": "Interactively plot PDFs and CDFs for 12 continuous and discrete laws (normal, Laplace, Rayleigh, Poisson, etc.).",
+                "endpoint": "demos_distributions.page",
+            }
 
-    #     ],
-    #     "Stochastic Processes": [
-    #         {
-    #             "slug": "averaging-over-time",
-    #             "title": "Averaging over time or ensemble",
-    #             "title_desc": "Mean vs ensemble weighting",
-    #             "desc": "Blend three realizations (audio, AR noise, or random sinusoids) with custom probabilities to compare time and ensemble averages.",
-    #             "endpoint": "demos_averaging_over_time.page",
-    #         },
-    #         {
-    #             "slug": "autocorrelation-stationary",
-    #             "title": "Autocorrelation",
-    #             "title_desc": "Stationary AR(1) process",
-    #             "desc": "Animate multiple realizations of a stationary AR(1) process and compare sample vs. theoretical autocorrelation.",
-    #             "endpoint": "demos_autocorrelation_stationary.page",
-    #         },
-    #         {
-    #             "slug": "delay-estimation",
-    #             "title": "Delay Estimation (time domain)",
-    #             "title_desc": "Cross-correlation peak",
-    #             "desc": "Inject independent noise into two observations, shift one in time, and locate the delay via cross-correlation.",
-    #             "endpoint": "demos_delay_estimation.page",
-    #         },
-    #         {
-    #             "slug": "delay-estimation-frequency",
-    #             "title": "Delay Estimation (frequency domain)",
-    #             "title_desc": "Cross-PSD magnitude & phase",
-    #             "desc": "Match the MATLAB CPSD demo: adjust SNR, signal, and delay, then inspect cross-correlation plus cross power spectral density magnitude and phase.",
-    #             "endpoint": "demos_delay_estimation_freq.page",
-    #         },
-    #         {
-    #             "slug": "harmonic-detection",
-    #             "title": "Harmonic detection",
-    #             "title_desc": "Sinusoid in noise",
-    #             "desc": "Sweep SNR and sample count, then inspect clipped/normalized autocorrelation or PSD of a noisy harmonic.",
-    #             "endpoint": "demos_harmonic_detection.page",
-    #         },
-    #         {
-    #             "slug": "finite-observation-intervals",
-    #             "title": "Finite Observation intervals",
-    #             "title_desc": "Autocorr & PSD",
-    #             "desc": "Replica of the MATLAB time/frequency demo with sinusoid/noise/speech, ideal vs. finite observation windows.",
-    #             "endpoint": "demos_finite_observation_intervals.page",
-    #         },
-    #         ],
-    # },
+        ],
+        "Stochastic Processes": [
+            {
+                "slug": "averaging-over-time",
+                "title": "Averaging over time or ensemble",
+                "title_desc": "Mean vs ensemble weighting",
+                "desc": "Blend three realizations (audio, AR noise, or random sinusoids) with custom probabilities to compare time and ensemble averages.",
+                "endpoint": "demos_averaging_over_time.page",
+            },
+            {
+                "slug": "autocorrelation-stationary",
+                "title": "Autocorrelation",
+                "title_desc": "Stationary AR(1) process",
+                "desc": "Animate multiple realizations of a stationary AR(1) process and compare sample vs. theoretical autocorrelation.",
+                "endpoint": "demos_autocorrelation_stationary.page",
+            },
+            {
+                "slug": "delay-estimation",
+                "title": "Delay Estimation (time domain)",
+                "title_desc": "Cross-correlation peak",
+                "desc": "Inject independent noise into two observations, shift one in time, and locate the delay via cross-correlation.",
+                "endpoint": "demos_delay_estimation.page",
+            },
+            {
+                "slug": "delay-estimation-frequency",
+                "title": "Delay Estimation (frequency domain)",
+                "title_desc": "Cross-PSD magnitude & phase",
+                "desc": "Match the MATLAB CPSD demo: adjust SNR, signal, and delay, then inspect cross-correlation plus cross power spectral density magnitude and phase.",
+                "endpoint": "demos_delay_estimation_freq.page",
+            },
+            {
+                "slug": "harmonic-detection",
+                "title": "Harmonic detection",
+                "title_desc": "Sinusoid in noise",
+                "desc": "Sweep SNR and sample count, then inspect clipped/normalized autocorrelation or PSD of a noisy harmonic.",
+                "endpoint": "demos_harmonic_detection.page",
+            },
+            {
+                "slug": "finite-observation-intervals",
+                "title": "Finite Observation intervals",
+                "title_desc": "Autocorr & PSD",
+                "desc": "Replica of the MATLAB time/frequency demo with sinusoid/noise/speech, ideal vs. finite observation windows.",
+                "endpoint": "demos_finite_observation_intervals.page",
+            },
+            ],
+    },
     # "Image and Video Compression": {
     #     "Lecture": [
     #         {

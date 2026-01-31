@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=STIX+Two+Text:wght@400;600;700&display=swap');
 /* Statistical Signal Processing demos */
 
 /* Conditional Distributions */
@@ -11,7 +12,7 @@
 .conditional-distributions-layout .plot-card,
 .conditional-distributions-layout .summary-card{border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,0.05);background:white}
 .conditional-distributions-layout .control-card{grid-area:controls}
-.conditional-distributions-layout .plot-card{grid-area:plot;display:flex;flex-direction:column;gap:8px}
+.conditional-distributions-layout .plot-card{grid-area:plot;display:flex;flex-direction:column;gap:8px;min-width:0}
 .conditional-distributions-layout .summary-card{grid-area:summary}
 .conditional-distributions-layout .kv-row{display:grid;grid-template-columns:104px 1fr 54px;gap:6px;align-items:center;margin:1px 0}
 .conditional-distributions-layout .kv-row label{font-weight:600;font-size:0.9rem;color:#111827}
@@ -23,7 +24,7 @@
 .conditional-distributions-layout .error{color:#b91c1c;font-weight:600;margin-top:6px}
 .conditional-distributions-layout .plot-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .conditional-distributions-layout .plot-meta{display:flex;align-items:center;gap:10px}
-.conditional-distributions-layout .plot-wrapper{height:clamp(500px,60vh,680px);min-height:500px;width:100%}
+.conditional-distributions-layout .plot-wrapper{height:clamp(500px,60vh,680px);min-height:500px;width:100%;min-width:0;overflow:hidden}
 .conditional-distributions-layout .summary-card{display:grid;gap:8px}
 .conditional-distributions-layout .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
 .conditional-distributions-layout .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 9px;display:flex;flex-direction:column;gap:2px}
@@ -68,11 +69,9 @@ body.dark-mode .conditional-distributions-layout input[type=range]{
 
 /* Mapping Random Variables */
 .mapping-rv-layout{--plot-height:230px;max-width:min(1220px, calc(100vw - 28px));}
-body.demo-sidebar-collapsed .mapping-rv-layout{max-width:min(1280px, calc(100vw - 18px));}
-body.demo-sidebar-collapsed .mapping-rv-layout{--plot-height:220px;}
 .mapping-rv-layout .page-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:4px;}
 .mapping-rv-layout .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
-.mapping-rv-layout .demo-grid{display:grid;grid-template-columns:320px 1fr;gap:12px;align-items:start;margin-top:10px;}
+.mapping-rv-layout .demo-grid{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin-top:10px;}
 .mapping-rv-layout .control-card,
 .mapping-rv-layout .plot-card{border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white;}
 .mapping-rv-layout .plots-card{display:flex;flex-direction:column;gap:8px;}
@@ -122,7 +121,6 @@ body.dark-mode .mapping-rv-layout input[type=text]{
   border-color:#3a4250;
 }
 @media(max-width:1100px){
-  .mapping-rv-layout .demo-grid{grid-template-columns:1fr}
   .mapping-rv-layout{--plot-height:220px;}
 }
 @media(max-height:900px){
