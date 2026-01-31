@@ -25,6 +25,7 @@
     .pill-subtle{background:#f3f4f6;color:#4b5563}
     .card{border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white}
     .layout-grid{display:grid;grid-template-columns:minmax(340px,380px) 1fr;gap:14px;margin-top:12px;align-items:start}
+    body:not(.demo-sidebar-collapsed) .layout-grid{grid-template-columns:1fr}
     .control-group{display:grid;gap:8px;margin-top:6px}
     .kv-row{display:grid;grid-template-columns:140px 1fr 70px;align-items:center;gap:10px}
     .kv-row label{font-weight:600;font-size:0.95rem}
@@ -54,7 +55,7 @@
     body.dark-mode #formula{color:#e8edf5;}
     body.dark-mode .summary-item{background:#1f2733;border-color:#3a4250;}
     body.dark-mode .summary-label{color:#cbd5e1;}
-    @media(max-width:1300px){
+    @media(max-width:1050px){
       .layout-grid{grid-template-columns:1fr}
     }
     @media(max-width:1100px){.plot-wrapper{height:520px}}
@@ -128,6 +129,8 @@
   let state = {{ initial | tojson }};
   const formulaEl = document.getElementById('formula');
   const peakEl = document.getElementById('peak');
+  const plotEl = document.getElementById('plot');
+  let resizeTimeout = 0;
 
   const inputs = ['rho','mean_x','mean_y','sigma_x','sigma_y'];
   const labels = {
@@ -182,7 +185,7 @@
   }
 
   function draw(){
-    Plotly.newPlot('plot', traces(state), {
+    Plotly.newPlot(plotEl, traces(state), {
       scene:{
         xaxis:{title:'x', range: state.x_range || undefined},
         yaxis:{title:'y', range: state.y_range || undefined},
@@ -193,6 +196,15 @@
       legend:{orientation:'h', x:0, y:1.02}
     }, {responsive:true});
     peakEl.textContent = state.z_peak ? state.z_peak.toFixed(3) : '—';
+  }
+  function schedulePlotResize(delay = 0){
+    if (!window.Plotly || !plotEl) return;
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = window.setTimeout(() => {
+      Plotly.Plots.resize(plotEl);
+    }, delay);
   }
 
   function fetchData(activeKey){
@@ -222,5 +234,17 @@
 
   highlightFormula();
   draw();
+
+  const sidebar = document.querySelector('.modern-sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'width') {
+        schedulePlotResize(50);
+      }
+    });
+  }
+  const classObserver = new MutationObserver(() => schedulePlotResize(300));
+  classObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', () => schedulePlotResize());
 </script>
 {% endblock %}

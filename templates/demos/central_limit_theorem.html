@@ -114,6 +114,7 @@
   const statVarLabel = document.getElementById('stat-var-label');
   const plotEl = document.getElementById('clt-plot');
   let currentSteps = [];
+  let plotResizeObserver = null;
 
   const scaleConfig = {
     sum: {
@@ -258,10 +259,10 @@
 
     const layout = {
       height: 430,
-      margin: { t: 30, r: 14, l: 55, b: 38 },
+      margin: { t: 70, r: 14, l: 55, b: 38 },
       xaxis: { title: config.xTitle, zeroline: true },
       yaxis: { title: 'Probability density', rangemode: 'tozero' },
-      legend: { orientation: 'h', x: 0, y: 1.04 },
+      legend: { orientation: 'h', x: 0, y: 1.02 },
       sliders: [{
         pad: { t: 8, b: 0 },
         currentvalue: { prefix: 'Summands: ', visible: true, font: { size: 12 } },
@@ -270,8 +271,10 @@
       updatemenus: [{
         type: 'buttons',
         pad: { r: 6, t: 2 },
-        x: 0.52,
-        y: 1.15,
+        x: 1,
+        y: 1.22,
+        xanchor: 'right',
+        yanchor: 'top',
         buttons: [
           { label: 'Play', method: 'animate', args: [null, { fromcurrent: true, frame: { duration: 450, redraw: true }, transition: { duration: 250 } }] },
           { label: 'Pause', method: 'animate', args: [[null], { mode: 'immediate', frame: { duration: 0, redraw: false }, transition: { duration: 0 } }] }
@@ -283,6 +286,15 @@
       Plotly.addFrames(plotEl, frames);
       updateStats(scaledSteps[0], config);
       frameLabel.textContent = `Start: 1 variable${steps.length > 1 ? 's' : ''} • View: ${config.label}`;
+      if (!plotResizeObserver) {
+        const target = plotEl.parentElement || plotEl;
+        plotResizeObserver = new ResizeObserver(() => {
+          if (plotEl && plotEl.data) {
+            Plotly.Plots.resize(plotEl);
+          }
+        });
+        plotResizeObserver.observe(target);
+      }
     });
     if (plotEl.removeAllListeners) {
       plotEl.removeAllListeners('plotly_sliderchange');
