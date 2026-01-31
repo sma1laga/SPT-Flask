@@ -190,6 +190,10 @@ body.demo-sidebar-collapsed .clt-layout .demo-grid{grid-template-columns:320px 1
 .clt-layout .error{color:#b91c1c;font-weight:600;min-height:20px;margin-top:4px}
 .clt-layout .inline-note{color:#4b5563;font-size:0.9rem;margin-top:4px}
 .clt-layout .plot-card{display:flex;flex-direction:column;gap:8px}
+.clt-layout .plot-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.clt-layout .plot-control-row{display:flex;align-items:center;gap:6px;font-weight:600;color:#1f2937}
+.clt-layout .plot-control-row label{font-size:0.85rem}
+.clt-layout .plot-control-row select{border-radius:8px;border:1px solid #d1d5db;padding:4px 8px}
 .clt-layout .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .clt-layout .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px}
 .clt-layout .stat-label{font-size:0.78rem;color:#6b7280;font-weight:700;letter-spacing:0.03em;text-transform:uppercase}
