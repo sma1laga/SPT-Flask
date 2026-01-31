@@ -303,10 +303,24 @@
         { responsive: true }
       );
     } else {
+      const quadraticEps = 1e-12;
+      const yTrace = mapping === 'quadratic'
+        ? data.pdf_y.map(val => Math.log10(val + quadraticEps))
+        : data.pdf_y;
+      const traces = [
+        { x: data.y, y: yTrace, mode: 'lines', line:{color:'#f59e0b', width:3} }
+      ];
       Plotly.newPlot(
         plotYEl,
-        [{ x: data.y, y: data.pdf_y, mode: 'lines', line:{color:'#f59e0b', width:3} }],
-        { ...baseLayout('y'), yaxis: { title: 'f_Y(y)' } },
+        traces,
+        {
+          ...baseLayout('y'),
+          yaxis: {
+            title: mapping === 'quadratic' ? 'log10 f_Y(y)' : 'f_Y(y)',
+            type: 'linear',
+            autorange: true
+          }
+        },
         { responsive: true }
       );
     }
@@ -315,7 +329,9 @@
     mappingLabel.textContent = describeMapping(mapping, data.params || {});
     latexTitleEl.textContent = `Mapping: ${data.dist_label} → Y = g(X)`;
     metaEl.textContent = mapping === 'quantizer' ? `${data.y_positions.length} quantizer levels` : `Samples: ${x.length}`;
-    noteLabel.textContent = mapping === 'quantizer' ? 'Probability masses shown as stem arrows' : 'Continuous density after mapping';
+    noteLabel.textContent = mapping === 'quantizer'
+      ? 'Probability masses shown as stem arrows'
+      : (mapping === 'quadratic' ? 'Quadratic density shown as log10-scaled curve' : 'Continuous density after mapping');
     resizePlots();
   }
 
