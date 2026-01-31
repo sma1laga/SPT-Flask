@@ -207,7 +207,22 @@
   let timer = null;
   let cursor = 0;
   let playing = false;
+  let resizeTimeout = null;
 
+  function schedulePlotResize(delay = 0){
+    if (!window.Plotly) return;
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = window.setTimeout(() => {
+      plotIds.forEach((plotId) => {
+        const plotEl = document.getElementById(plotId);
+        if (plotEl) {
+          Plotly.Plots.resize(plotEl);
+        }
+      });
+    }, delay);
+  }
   function readWeights(){
     return wInputs.map(inp => parseFloat(inp.value) || 0);
   }
@@ -483,5 +498,18 @@
   signalSelect.value = defaults.signal_type;
   updateWeightSum(defaults.weights);
   window.addEventListener('load', run);
+  window.addEventListener('resize', () => schedulePlotResize());
+
+  const sidebar = document.querySelector('.modern-sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'width') {
+        schedulePlotResize(50);
+      }
+    });
+  }
+
+  const classObserver = new MutationObserver(() => schedulePlotResize(300));
+  classObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 </script>
 {% endblock %}

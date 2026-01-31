@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container wide-container">
+<div class="container wide-container normal2d-page">
   <div class="page-header">
     <div>
       <h1>2D Normal Distributions</h1>
@@ -24,6 +24,8 @@
     .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.86rem}
     .pill-subtle{background:#f3f4f6;color:#4b5563}
     .card{border:1px solid #d9dfe7;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white}
+    .normal2d-page .card:hover{transform:none;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+    .normal2d-page .card{transition:none}
     .layout-grid{display:grid;grid-template-columns:minmax(340px,380px) 1fr;gap:14px;margin-top:12px;align-items:start}
     body:not(.demo-sidebar-collapsed) .layout-grid{grid-template-columns:1fr}
     .control-group{display:grid;gap:8px;margin-top:6px}
@@ -131,6 +133,7 @@
   const peakEl = document.getElementById('peak');
   const plotEl = document.getElementById('plot');
   let resizeTimeout = 0;
+  let currentCamera = null;
 
   const inputs = ['rho','mean_x','mean_y','sigma_x','sigma_y'];
   const labels = {
@@ -185,16 +188,20 @@
   }
 
   function draw(){
-    Plotly.newPlot(plotEl, traces(state), {
+    const layout = {
       scene:{
         xaxis:{title:'x', range: state.x_range || undefined},
         yaxis:{title:'y', range: state.y_range || undefined},
         zaxis:{title:'f_{XY}(x,y)'},
-        aspectmode:'cube'
+        aspectmode:'cube',
+        uirevision:'normal2d',
+        camera: currentCamera || undefined
       },
       margin:{t:30, l:0, r:0},
-      legend:{orientation:'h', x:0, y:1.02}
-    }, {responsive:true});
+      legend:{orientation:'h', x:0, y:1.02},
+      uirevision:'normal2d'
+    };
+    Plotly.react(plotEl, traces(state), layout, {responsive:true});
     peakEl.textContent = state.z_peak ? state.z_peak.toFixed(3) : '—';
   }
   function schedulePlotResize(delay = 0){
@@ -234,6 +241,15 @@
 
   highlightFormula();
   draw();
+  if (plotEl) {
+    plotEl.on('plotly_relayout', (eventData) => {
+      if (eventData && eventData['scene.camera']) {
+        currentCamera = eventData['scene.camera'];
+        return;
+      }
+      currentCamera = plotEl.layout?.scene?.camera || currentCamera;
+    });
+  }
 
   const sidebar = document.querySelector('.modern-sidebar');
   if (sidebar) {
