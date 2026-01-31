@@ -23,6 +23,12 @@ DEFAULTS: Dict[str, float] = {
 
 
 _DEF_STEP = 120
+_MEAN_MIN = -5.0
+_MEAN_MAX = 5.0
+_SIGMA_MAX = 4.0
+_AXIS_PADDING_SIGMA = 4.0
+_AXIS_MIN = _MEAN_MIN - _AXIS_PADDING_SIGMA * _SIGMA_MAX
+_AXIS_MAX = _MEAN_MAX + _AXIS_PADDING_SIGMA * _SIGMA_MAX
 
 
 def _sanitize(payload: Dict[str, float]) -> Dict[str, float]:
@@ -41,10 +47,9 @@ def _sanitize(payload: Dict[str, float]) -> Dict[str, float]:
 
 
 def _grid_limits(mean_x: float, mean_y: float, sigma_x: float, sigma_y: float):
-    span = max(4.0 * max(sigma_x, sigma_y), 8.0)
     return (
-        np.linspace(mean_x - span, mean_x + span, _DEF_STEP),
-        np.linspace(mean_y - span, mean_y + span, _DEF_STEP),
+        np.linspace(_AXIS_MIN, _AXIS_MAX, _DEF_STEP),
+        np.linspace(_AXIS_MIN, _AXIS_MAX, _DEF_STEP),
     )
 
 
@@ -85,6 +90,8 @@ def _build_payload(params: Dict[str, float]):
         "x_grid": x_grid.tolist(),
         "y_grid": y_grid.tolist(),
         "z_grid": z_grid.tolist(),
+        "x_range": [_AXIS_MIN, _AXIS_MAX],
+        "y_range": [_AXIS_MIN, _AXIS_MAX],
         "marginal_x": {
             "x": x_axis.tolist(),
             "y": np.full_like(x_axis, y_axis.max()).tolist(),

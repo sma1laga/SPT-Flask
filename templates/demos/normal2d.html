@@ -184,8 +184,8 @@
   function draw(){
     Plotly.newPlot('plot', traces(state), {
       scene:{
-        xaxis:{title:'x'},
-        yaxis:{title:'y'},
+        xaxis:{title:'x', range: state.x_range || undefined},
+        yaxis:{title:'y', range: state.y_range || undefined},
         zaxis:{title:'f_{XY}(x,y)'},
         aspectmode:'cube'
       },
