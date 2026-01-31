@@ -33,7 +33,7 @@
 .conditional-distributions-layout .summary-value.accent{color:#2563eb}
 .conditional-distributions-layout .summary-value.strong{color:#16a34a}
 .conditional-distributions-layout .latex-title{font-size:0.95rem;font-weight:700;text-align:left;margin:0;color:#0f172a}
-.conditional-distributions-layout .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 6px;font-weight:600;color:#111827;font-size:0.9rem}
+.conditional-distributions-layout .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 6px;font-weight:600;color:#111827;font-size:1.05rem}
 .conditional-distributions-layout .subplot-label{text-align:left}
 body.dark-mode .conditional-distributions-layout .control-card,
 body.dark-mode .conditional-distributions-layout .plot-card,
@@ -73,13 +73,13 @@ body.dark-mode .conditional-distributions-layout input[type=range]{
 .mapping-rv-layout .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
 .mapping-rv-layout .demo-grid{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin-top:10px;}
 .mapping-rv-layout .control-card,
-.mapping-rv-layout .plot-card{border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white;}
+.mapping-rv-layout .plot-card{border:1px solid #d9dfe7;border-radius:12px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white;}
 .mapping-rv-layout .plots-card{display:flex;flex-direction:column;gap:8px;}
-.mapping-rv-layout .kv-row{display:grid;grid-template-columns:112px 1fr 52px;gap:6px;align-items:center;margin:4px 0;}
+.mapping-rv-layout .kv-row{display:grid;grid-template-columns:112px 1fr 52px;gap:6px;align-items:center;margin:2px 0;}
 .mapping-rv-layout .kv-row label{font-weight:600;font-size:0.93rem;}
 .mapping-rv-layout .kv-row input[type=range],
 .mapping-rv-layout .kv-row input[type=text]{width:100%;}
-.mapping-rv-layout .control-grid{display:grid;gap:6px;}
+.mapping-rv-layout .control-grid{display:grid;gap:4px;}
 .mapping-rv-layout .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.86rem;}
 .mapping-rv-layout .pill-subtle{background:#f3f4f6;color:#4b5563;}
 .mapping-rv-layout .inline-note{color:#4b5563;font-size:0.9rem;margin-top:2px;}
