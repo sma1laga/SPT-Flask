@@ -580,7 +580,10 @@ body.demo-sidebar-collapsed .foi-layout{--plot-height:220px;}
 .foi-layout .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;margin-top:8px}
 .foi-layout .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
 .foi-layout .plot-box h4{margin:4px 6px;font-size:0.9rem;color:#111827;display:flex;align-items:center;gap:6px}
-.foi-layout .plot{width:100%;height:var(--plot-height)}
+.foi-layout .plot-box{overflow:hidden;min-width:0}
+.foi-layout .plot{width:100%;height:var(--plot-height);min-width:0}
+.foi-layout .plot .js-plotly-plot,
+.foi-layout .plot .plotly-graph-div{width:100% !important;min-width:0}
 .foi-layout .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 11px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.22);margin-top:2px}
 .foi-layout .stat-row{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
 .foi-layout .stat-chip{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;min-width:160px;display:flex;flex-direction:column;gap:2px}

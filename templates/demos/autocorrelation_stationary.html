@@ -354,6 +354,18 @@
       }
     }
   }
+  let resizeTimer;
+  function schedulePlotResize(delay = 0) {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      ['processPlot', 'acfPlotRaw', 'acfPlotNorm'].forEach((plotId) => {
+        const plotEl = document.getElementById(plotId);
+        if (plotEl) {
+          Plotly.Plots.resize(plotEl);
+        }
+      });
+    }, delay);
+  }
 
   function tick() {
     if (!state.playing || state.paused) return;
@@ -464,6 +476,17 @@
     regenerate();
     if (wasPlaying) startPlayback();
   });
+  window.addEventListener('resize', () => schedulePlotResize());
+  const sidebar = document.querySelector('.modern-sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'width') {
+        schedulePlotResize(50);
+      }
+    });
+  }
+  const classObserver = new MutationObserver(() => schedulePlotResize(300));
+  classObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   syncLabels();
   generateSignals();

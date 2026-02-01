@@ -74,6 +74,9 @@
 {% if is_collapsible_demo|default(false) %}
   {% set _ = body_classes.append('demo-sidebar-collapsible') %}
 {% endif %}
+{% if disable_card_hover|default(false) %}
+  {% set _ = body_classes.append('no-card-hover') %}
+{% endif %}
 <body{% if body_classes %} class="{{ body_classes | join(' ') }}"{% endif %}>
   <div class="outer-wrapper">
     <!-- HEADER -->

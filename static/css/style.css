@@ -866,6 +866,15 @@ body.sisy2-page .card:hover {
   transform: none;
   box-shadow: var(--sisy2-card-shadow, var(--box-shadow));
 } 
+
+body.no-card-hover .card {
+  transition: none;
+}
+
+body.no-card-hover .card:hover {
+  transform: none;
+  box-shadow: var(--box-shadow);
+}
 /* Hero Section */
 .hero {
   text-align: center;

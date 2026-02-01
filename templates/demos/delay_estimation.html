@@ -190,6 +190,37 @@
       updateBtn.textContent = 'Update';
     }
   }
+  const plotTargets = ['plot-signal1', 'plot-signal2', 'plot-xcorr'];
+  let resizeTimeout;
+
+  function schedulePlotResize(delay = 0) {
+    if (!window.Plotly) {
+      return;
+    }
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = window.setTimeout(() => {
+      plotTargets.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          Plotly.Plots.resize(el);
+        }
+      });
+    }, delay);
+  }
+
+  const sidebar = document.querySelector('.modern-sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'width') {
+        schedulePlotResize(80);
+      }
+    });
+  }
+  const classObserver = new MutationObserver(() => schedulePlotResize(200));
+  classObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', () => schedulePlotResize());
 
   updateBtn.addEventListener('click', update);
   window.addEventListener('load', update);
