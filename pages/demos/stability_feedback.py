@@ -1,6 +1,7 @@
 # pages/demos/stability_feedback.py
 from __future__ import annotations
 import threading, io, base64
+import math
 from functools import lru_cache
 import numpy as np
 from flask import Blueprint, render_template, request, jsonify
@@ -61,6 +62,23 @@ def _fig_to_svg_data_url(fig) -> str:
         return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
     except Exception:
         return fig_to_base64(fig)
+def _coerce_float(value, default: float) -> float:
+    if value is None or value == "":
+        return default
+    try:
+        candidate = float(value)
+    except (TypeError, ValueError):
+        return default
+    return candidate if math.isfinite(candidate) else default
+
+def _coerce_int(value, default: int) -> int:
+    if value is None or value == "":
+        return default
+    try:
+        candidate = int(value)
+    except (TypeError, ValueError):
+        return default
+    return candidate
 
 @lru_cache(maxsize=8192)
 def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
@@ -114,10 +132,10 @@ def compute():
     data = request.get_json(force=True) or {}
 
     # Read inputs
-    a = float(data.get("a", DEFAULTS["a"]))
-    b = float(data.get("b", DEFAULTS["b"]))
-    K = float(data.get("K", DEFAULTS["K"]))
-    seq = int(data.get("seq", 0))  # monotonically increasing from client
+    a = _coerce_float(data.get("a", DEFAULTS["a"]), DEFAULTS["a"])
+    b = _coerce_float(data.get("b", DEFAULTS["b"]), DEFAULTS["b"])
+    K = _coerce_float(data.get("K", DEFAULTS["K"]), DEFAULTS["K"])
+    seq = _coerce_int(data.get("seq", 0), 0)  # monotonically increasing from client
 
     with META_LOCK:
         if seq > _LATEST_SEQ:
