@@ -10,6 +10,10 @@
   let inFlight = null;
   let debounceTimer = null;
   let SEQ = 0;
+  const sanitizeNumber = (value, fallback) => {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
 
   function send() {
     clearTimeout(debounceTimer);
@@ -19,9 +23,9 @@
 
       const mySeq = ++SEQ;
       const body = {
-        a: parseFloat($("a").value),
-        b: parseFloat($("b").value),
-        K: parseFloat($("K").value),
+        a: sanitizeNumber($("a").value, defaults.a),
+        b: sanitizeNumber($("b").value, defaults.b),
+        K: sanitizeNumber($("K").value, defaults.K),
         seq: mySeq
       };
 
@@ -38,6 +42,9 @@
         if (data.seq !== undefined && data.seq < SEQ) return;
 
         if (data.image) $("plot").src = data.image;
+        if (Number.isFinite(data.a)) $("a").value = data.a;
+        if (Number.isFinite(data.b)) $("b").value = data.b;
+        if (Number.isFinite(data.K)) $("K").value = data.K;
       } catch (e) {
         // ignore aborts
       } finally {
