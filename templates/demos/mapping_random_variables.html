@@ -303,10 +303,13 @@
         { responsive: true }
       );
     } else {
-      const quadraticEps = 1e-12;
-      const yTrace = mapping === 'quadratic'
-        ? data.pdf_y.map(val => Math.log10(val + quadraticEps))
-        : data.pdf_y;
+      let yTrace = data.pdf_y;
+      let quadraticCap = null;
+      if(mapping === 'quadratic'){
+        const quadraticMax = data.pdf_y.reduce((max, val) => Math.max(max, val), 0);
+        quadraticCap = quadraticMax <= 1 ? 1 : 10;
+        yTrace = data.pdf_y.map(val => Math.min(val, quadraticCap));
+      }
       const traces = [
         { x: data.y, y: yTrace, mode: 'lines', line:{color:'#f59e0b', width:3} }
       ];
@@ -316,9 +319,10 @@
         {
           ...baseLayout('y'),
           yaxis: {
-            title: mapping === 'quadratic' ? 'log10 f_Y(y)' : 'f_Y(y)',
+            title: 'f_Y(y)',
             type: 'linear',
-            autorange: true
+            autorange: mapping !== 'quadratic',
+            range: mapping === 'quadratic' ? [0, quadraticCap] : undefined
           }
         },
         { responsive: true }
@@ -331,7 +335,7 @@
     metaEl.textContent = mapping === 'quantizer' ? `${data.y_positions.length} quantizer levels` : `Samples: ${x.length}`;
     noteLabel.textContent = mapping === 'quantizer'
       ? 'Probability masses shown as stem arrows'
-      : (mapping === 'quadratic' ? 'Quadratic density shown as log10-scaled curve' : 'Continuous density after mapping');
+      : (mapping === 'quadratic' ? 'Quadratic density shown with capped linear scale' : 'Continuous density after mapping');
     resizePlots();
   }
 

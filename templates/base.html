@@ -7,7 +7,7 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-3WC4B04QBJ');
+    gtag('config', 'G-3WC4B040QBJ');
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -73,9 +73,6 @@
 {% endif %}
 {% if is_collapsible_demo|default(false) %}
   {% set _ = body_classes.append('demo-sidebar-collapsible') %}
-{% endif %}
-{% if disable_card_hover|default(false) %}
-  {% set _ = body_classes.append('no-card-hover') %}
 {% endif %}
 <body{% if body_classes %} class="{{ body_classes | join(' ') }}"{% endif %}>
   <div class="outer-wrapper">
@@ -305,7 +302,7 @@
         © 2026 Signal Processing Toolkit. All rights reserved.<br>
         For inquiries, please email:
         <a href="mailto:tarik.smailagic@fau.de">tarik.smailagic@fau.de</a><br>
-        Version 1.1.1 (21.01.2026)
+        Version 1.1.1 (1.02.2026)
       </p>
       <div class="legal-links">
         <a href="{{ url_for('info.impressum') }}">Impressum</a> |
