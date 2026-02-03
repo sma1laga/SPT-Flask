@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=STIX+Two+Text:wght@400;600;700&display=swap');
 /* Statistical Signal Processing demos */
 
 /* Conditional Distributions */
@@ -11,7 +12,7 @@
 .conditional-distributions-layout .plot-card,
 .conditional-distributions-layout .summary-card{border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 6px 16px rgba(0,0,0,0.05);background:white}
 .conditional-distributions-layout .control-card{grid-area:controls}
-.conditional-distributions-layout .plot-card{grid-area:plot;display:flex;flex-direction:column;gap:8px}
+.conditional-distributions-layout .plot-card{grid-area:plot;display:flex;flex-direction:column;gap:8px;min-width:0}
 .conditional-distributions-layout .summary-card{grid-area:summary}
 .conditional-distributions-layout .kv-row{display:grid;grid-template-columns:104px 1fr 54px;gap:6px;align-items:center;margin:1px 0}
 .conditional-distributions-layout .kv-row label{font-weight:600;font-size:0.9rem;color:#111827}
@@ -23,7 +24,7 @@
 .conditional-distributions-layout .error{color:#b91c1c;font-weight:600;margin-top:6px}
 .conditional-distributions-layout .plot-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .conditional-distributions-layout .plot-meta{display:flex;align-items:center;gap:10px}
-.conditional-distributions-layout .plot-wrapper{height:clamp(500px,60vh,680px);min-height:500px;width:100%}
+.conditional-distributions-layout .plot-wrapper{height:clamp(500px,60vh,680px);min-height:500px;width:100%;min-width:0;overflow:hidden}
 .conditional-distributions-layout .summary-card{display:grid;gap:8px}
 .conditional-distributions-layout .summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
 .conditional-distributions-layout .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 9px;display:flex;flex-direction:column;gap:2px}
@@ -32,7 +33,7 @@
 .conditional-distributions-layout .summary-value.accent{color:#2563eb}
 .conditional-distributions-layout .summary-value.strong{color:#16a34a}
 .conditional-distributions-layout .latex-title{font-size:0.95rem;font-weight:700;text-align:left;margin:0;color:#0f172a}
-.conditional-distributions-layout .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 6px;font-weight:600;color:#111827;font-size:0.9rem}
+.conditional-distributions-layout .subplot-labels{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 6px;font-weight:600;color:#111827;font-size:1.05rem}
 .conditional-distributions-layout .subplot-label{text-align:left}
 body.dark-mode .conditional-distributions-layout .control-card,
 body.dark-mode .conditional-distributions-layout .plot-card,
@@ -68,19 +69,17 @@ body.dark-mode .conditional-distributions-layout input[type=range]{
 
 /* Mapping Random Variables */
 .mapping-rv-layout{--plot-height:230px;max-width:min(1220px, calc(100vw - 28px));}
-body.demo-sidebar-collapsed .mapping-rv-layout{max-width:min(1280px, calc(100vw - 18px));}
-body.demo-sidebar-collapsed .mapping-rv-layout{--plot-height:220px;}
 .mapping-rv-layout .page-header{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:4px;}
 .mapping-rv-layout .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
-.mapping-rv-layout .demo-grid{display:grid;grid-template-columns:320px 1fr;gap:12px;align-items:start;margin-top:10px;}
+.mapping-rv-layout .demo-grid{display:flex;flex-direction:column;gap:12px;align-items:stretch;margin-top:10px;}
 .mapping-rv-layout .control-card,
-.mapping-rv-layout .plot-card{border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white;}
+.mapping-rv-layout .plot-card{border:1px solid #d9dfe7;border-radius:12px;padding:10px;box-shadow:0 4px 12px rgba(0,0,0,0.05);background:white;}
 .mapping-rv-layout .plots-card{display:flex;flex-direction:column;gap:8px;}
-.mapping-rv-layout .kv-row{display:grid;grid-template-columns:112px 1fr 52px;gap:6px;align-items:center;margin:4px 0;}
+.mapping-rv-layout .kv-row{display:grid;grid-template-columns:112px 1fr 52px;gap:6px;align-items:center;margin:2px 0;}
 .mapping-rv-layout .kv-row label{font-weight:600;font-size:0.93rem;}
 .mapping-rv-layout .kv-row input[type=range],
 .mapping-rv-layout .kv-row input[type=text]{width:100%;}
-.mapping-rv-layout .control-grid{display:grid;gap:6px;}
+.mapping-rv-layout .control-grid{display:grid;gap:4px;}
 .mapping-rv-layout .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.86rem;}
 .mapping-rv-layout .pill-subtle{background:#f3f4f6;color:#4b5563;}
 .mapping-rv-layout .inline-note{color:#4b5563;font-size:0.9rem;margin-top:2px;}
@@ -122,7 +121,6 @@ body.dark-mode .mapping-rv-layout input[type=text]{
   border-color:#3a4250;
 }
 @media(max-width:1100px){
-  .mapping-rv-layout .demo-grid{grid-template-columns:1fr}
   .mapping-rv-layout{--plot-height:220px;}
 }
 @media(max-height:900px){
@@ -192,6 +190,10 @@ body.demo-sidebar-collapsed .clt-layout .demo-grid{grid-template-columns:320px 1
 .clt-layout .error{color:#b91c1c;font-weight:600;min-height:20px;margin-top:4px}
 .clt-layout .inline-note{color:#4b5563;font-size:0.9rem;margin-top:4px}
 .clt-layout .plot-card{display:flex;flex-direction:column;gap:8px}
+.clt-layout .plot-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.clt-layout .plot-control-row{display:flex;align-items:center;gap:6px;font-weight:600;color:#1f2937}
+.clt-layout .plot-control-row label{font-size:0.85rem}
+.clt-layout .plot-control-row select{border-radius:8px;border:1px solid #d1d5db;padding:4px 8px}
 .clt-layout .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .clt-layout .stat-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px}
 .clt-layout .stat-label{font-size:0.78rem;color:#6b7280;font-weight:700;letter-spacing:0.03em;text-transform:uppercase}
@@ -578,7 +580,10 @@ body.demo-sidebar-collapsed .foi-layout{--plot-height:220px;}
 .foi-layout .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;margin-top:8px}
 .foi-layout .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
 .foi-layout .plot-box h4{margin:4px 6px;font-size:0.9rem;color:#111827;display:flex;align-items:center;gap:6px}
-.foi-layout .plot{width:100%;height:var(--plot-height)}
+.foi-layout .plot-box{overflow:hidden;min-width:0}
+.foi-layout .plot{width:100%;height:var(--plot-height);min-width:0}
+.foi-layout .plot .js-plotly-plot,
+.foi-layout .plot .plotly-graph-div{width:100% !important;min-width:0}
 .foi-layout .btn-primary{background:#2563eb;color:white;border:none;border-radius:8px;padding:8px 11px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.22);margin-top:2px}
 .foi-layout .stat-row{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
 .foi-layout .stat-chip{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;min-width:160px;display:flex;flex-direction:column;gap:2px}

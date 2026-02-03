@@ -108,6 +108,7 @@
     const merged = {
       paper_bgcolor: 'transparent',
       plot_bgcolor: 'transparent',
+      autosize: true,
       font: { color: axisColor },
       ...layout,
     };
@@ -202,15 +203,16 @@
     statEls.freq.textContent = `${data.meta.frequency.toFixed(0)} Hz`;
     statEls.samples.textContent = `${data.meta.sample_count}`;
     statEls.mode.textContent = data.meta.mode === 'ideal' ? 'Ideal (theoretical)' : 'Real (finite)';
-    resizePlotsToHeight();
+    refreshPlots();
   }
 
-  function resizePlotsToHeight(){
+  function refreshPlots(){
     const h = getPlotHeight();
     ['plot-signal','plot-acorr','plot-psd'].forEach((id) => {
       const el = document.getElementById(id);
       if(el && el.data){
-        Plotly.relayout(el, { height: h });
+        Plotly.relayout(el, { height: h, autosize: true });
+        Plotly.Plots.resize(el);
       }
     });
   }
@@ -229,18 +231,24 @@
   updateBtn.addEventListener('click', update);
   if(demoSidebarToggle){
     demoSidebarToggle.addEventListener('click', () => {
-      setTimeout(resizePlotsToHeight, 260);
+      setTimeout(refreshPlots, 260);
     });
+  }
+  if (layoutRoot && 'ResizeObserver' in window) {
+    const observer = new ResizeObserver(() => {
+      requestAnimationFrame(refreshPlots);
+    });
+    observer.observe(layoutRoot);
   }
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(resizePlotsToHeight, 120);
+    resizeTimer = setTimeout(refreshPlots, 120);
   });
 
   samplesSlider.value = samplesToSlider(parseInt(samplesInput.value, 10));
   update()
-    .then(() => setTimeout(resizePlotsToHeight, 260))
+    .then(() => setTimeout(refreshPlots, 260))
     .catch((err) => console.error(err));
 </script>
 {% endblock %}

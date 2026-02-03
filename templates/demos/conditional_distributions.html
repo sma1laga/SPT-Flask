@@ -260,12 +260,12 @@
     const highlightCDF = cdf.map((v, i) => (mask[i] ? v : null));
 
     const traces = [
-      { x, y: cdf, mode: 'lines', name: 'F_X(x)', line: { color: '#2563eb', width: 3 }, xaxis: 'x', yaxis: 'y' },
+      { x, y: cdf, mode: 'lines', name: 'Fₓ(x)', line: { color: '#2563eb', width: 3 }, xaxis: 'x', yaxis: 'y' },
       { x: highlightX, y: highlightCDF, mode: 'lines', name: 'A interval', fill: 'tozeroy', line: { color: 'rgba(239,68,68,0.7)' }, xaxis: 'x', yaxis: 'y', hoverinfo: 'skip', showlegend: true },
-      { x, y: cond_cdf, mode: 'lines', name: 'F_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x2', yaxis: 'y2' },
-      { x, y: pdf, mode: 'lines', name: 'f_X(x)', line: { color: '#2563eb', width: 3 }, xaxis: 'x3', yaxis: 'y3' },
+      { x, y: cond_cdf, mode: 'lines', name: 'Fₓ|ₐ(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x2', yaxis: 'y2' },
+      { x, y: pdf, mode: 'lines', name: 'fₓ(x)', line: { color: '#2563eb', width: 3 }, xaxis: 'x3', yaxis: 'y3' },
       { x: highlightX, y: highlightPDF, mode: 'lines', name: 'A interval', fill: 'tozeroy', line: { color: 'rgba(239,68,68,0.7)' }, xaxis: 'x3', yaxis: 'y3', hoverinfo: 'skip', showlegend: false },
-      { x, y: cond_pdf, mode: 'lines', name: 'f_{X|A}(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x4', yaxis: 'y4' },
+      { x, y: cond_pdf, mode: 'lines', name: 'fₓ|ₐ(x)', line: { color: '#16a34a', width: 3 }, xaxis: 'x4', yaxis: 'y4' },
     ];
 
     const box = plotEl.getBoundingClientRect();
@@ -276,16 +276,17 @@
       grid: { rows: 2, columns: 2, pattern: 'independent' },
       height: plotHeight,
       margin: { l: 44, r: 10, t: 32, b: 32 },
+      font: { family: '"STIX Two Math","STIX Two Text","Times New Roman",serif', size: 13, color: '#111827' },
       legend: { orientation: 'h', y: -0.22, font: { size: 10 } },
-      xaxis: { title: '$x$', automargin: true },
-      yaxis: { title: '$F_X(x)$', rangemode: 'tozero', automargin: true },
-      xaxis2: { title: '$x$', automargin: true },
-      yaxis2: { title: '$F_{X|A}(x)$', rangemode: 'tozero', automargin: true },
-      xaxis3: { title: '$x$', automargin: true },
-      yaxis3: { title: '$f_X(x)$', rangemode: 'tozero', automargin: true },
-      xaxis4: { title: '$x$', automargin: true },
-      yaxis4: { title: '$f_{X|A}(x)$', rangemode: 'tozero', automargin: true },
-      title: { text: `${title}: F_X(x), F_{X|A}(x), f_X(x), f_{X|A}(x)`, x: 0.005, font: { size: 14 } },
+      xaxis: { title: { text: 'x', font: { size: 12 } }, automargin: true },
+      yaxis: { title: { text: 'Fₓ(x)', font: { size: 12 } }, rangemode: 'tozero', automargin: true },
+      xaxis2: { title: { text: 'x', font: { size: 12 } }, automargin: true },
+      yaxis2: { title: { text: 'Fₓ|ₐ(x)', font: { size: 12 } }, rangemode: 'tozero', automargin: true },
+      xaxis3: { title: { text: 'x', font: { size: 12 } }, automargin: true },
+      yaxis3: { title: { text: 'fₓ(x)', font: { size: 12 } }, rangemode: 'tozero', automargin: true },
+      xaxis4: { title: { text: 'x', font: { size: 12 } }, automargin: true },
+      yaxis4: { title: { text: 'fₓ|ₐ(x)', font: { size: 12 } }, rangemode: 'tozero', automargin: true },
+      title: { text: `${title}: Fₓ(x), Fₓ|ₐ(x), fₓ(x), fₓ|ₐ(x)`, x: 0.005, font: { size: 14 } },
       paper_bgcolor: 'white',
       plot_bgcolor: '#f8fafc',
       shapes: [
@@ -317,19 +318,67 @@
         }
       });
     }
+  function resizePlot() {
+    if (plotEl && window.Plotly?.Plots) {
+      window.Plotly.Plots.resize(plotEl);
+    }
+  }
 
   function attachListeners() {
     document.querySelectorAll('#controls input[type=range]').forEach(inp => {
       inp.addEventListener('input', recompute);
     });
   }
+  function observePlotResize() {
+    if (!plotEl || !window.ResizeObserver) {
+      return;
+    }
+    const observer = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.contentRect.width > 0) {
+          resizePlot();
+        }
+      });
+    });
+    observer.observe(plotEl);
+  }
+
+  function observeSidebarState() {
+    if (!document.body || !window.MutationObserver) {
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      window.requestAnimationFrame(resizePlot);
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
 
   document.getElementById('distribution').addEventListener('change', (e) => {
     renderControls(e.target.value);
     recompute();
   });
+  window.addEventListener('resize', () => {
+    window.requestAnimationFrame(resizePlot);
+  });
+
+  const demoSidebarToggle = document.getElementById('demo-sidebar-toggle');
+  if (demoSidebarToggle) {
+    demoSidebarToggle.addEventListener('click', () => {
+      window.setTimeout(resizePlot, 200);
+    });
+  }
+
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      window.setTimeout(resizePlot, 200);
+    });
+  }
 
   renderControls(document.getElementById('distribution').value);
   recompute();
+  observePlotResize();
+  observeSidebarState();
+  window.setTimeout(resizePlot, 0);
 </script>
 {% endblock %}
