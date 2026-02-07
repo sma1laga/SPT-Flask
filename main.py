@@ -319,7 +319,11 @@ def create_app():
     
     @app.route("/")
     def home():
-        return render_template("home.html")
+        return render_template(
+            "home.html",
+            page_title="Signal Processing Toolkit | Continuous & Discrete Signal Plotter",
+            meta_description="Signal Processing Toolkit provides a Signal Plotter, Convolution Calculator (Online), discrete signal plotter, DFT/FFT, Bode plotter, and much more useful tools.",
+        )
     
     return app
 

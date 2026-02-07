@@ -3,7 +3,12 @@
 
 {% block content %}
 <div class="page-header" style="text-align:center;margin-bottom:28px;">
-  <h1 style="font-size:2.4em;">Discrete Fourier Transform</h1>
+  <h1 style="font-size:2.4em;">DFT / FFT Tool (Online)</h1>
+<p style="max-width:960px;margin:0 auto 16px auto;text-align:center;">
+  This DFT / FFT tool (online) helps analyze discrete-time signals in the frequency domain.
+  Define a sequence, compute spectral magnitude and phase, and inspect how signal transformations affect the transform.
+  The interface is intended for practical coursework in discrete-time spectral analysis.
+</p>
 <p style="max-width:720px;margin:8px auto 0;text-align: left;color:var(--subtext-color);font-size:1em;">
   <strong>1 — Size:</strong> Pick a sequence length \(L\) and DFT length \(M\).<br>
   <strong>2 — Input:</strong> Type any Python-style expression to define \(x[k]\), e.g., <code>sin[2*pi*k/L]</code> or <code>0.8**k * step[k]</code>.<br>

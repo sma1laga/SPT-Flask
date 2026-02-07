@@ -170,4 +170,6 @@ def inverse_laplace():
         num_error=num_error,
         den_error=den_error,
         response_type=response_type,
+        page_title="Inverse Laplace Transform Tool (Online) | Signal Processing Toolkit",
+        meta_description="Use the inverse laplace tool to derive and plot impulse or step responses from rational system functions in the Laplace domain.",
     )

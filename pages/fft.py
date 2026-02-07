@@ -42,4 +42,9 @@ def fft():
             'T': T,
             'N': N
         }
-    return render_template('fft.html', result=result)
+    return render_template(
+        'fft.html',
+        result=result,
+        page_title='DFT / FFT Tool (Online) | Signal Processing Toolkit',
+        meta_description='Explore the DFT / FFT tool online to evaluate signal spectra, inspect magnitude and phase, and study frequency-domain behavior from user-defined signals.',
+    )

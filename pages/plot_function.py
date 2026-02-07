@@ -49,7 +49,11 @@ plot_function_bp = Blueprint("plot_function", __name__,
 
 @plot_function_bp.route("/", methods=["GET"])
 def plot_function():
-    return render_template("plot_function.html")
+    return render_template(
+        "plot_function.html",
+        page_title="Signal Plotter (Online) | Signal Processing Toolkit",
+        meta_description="Use the Signal Plotter (Online) to visualize continuous-time expressions, compare two signals, and apply shift, amplitude, and width transformations for analysis.",
+    )
 
 
 @plot_function_bp.route("/update", methods=["POST"])

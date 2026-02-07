@@ -40,7 +40,11 @@ def _adjust_k(k: np.ndarray, shift: float, width: float) -> np.ndarray:
 # -------------------------------------------------------------------- #
 @discrete_plot_functions_bp.route("/", methods=["GET"], endpoint="plot_functions")
 def discrete_plot_functions():
-    return render_template("discrete_plot_functions.html")
+    return render_template(
+        "discrete_plot_functions.html",
+        page_title="Discrete-Time Signal Plotter | Signal Processing Toolkit",
+        meta_description="The discrete signal plotter lets you define and inspect discrete-time sequences, compare two signals, and apply sequence-domain transformations.",
+    )
 
 
 # -------------------------------------------------------------------- #
