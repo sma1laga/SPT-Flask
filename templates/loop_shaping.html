@@ -21,6 +21,7 @@
   .loop-btn.secondary {background: #10b981; color: #fff;}
   .loop-btn.ghost {background: #f3f4f6; color: #1f2937;}
   .loop-btn.warning {background: #f59e0b; color: #fff;}
+  .loop-btn.example {background: #2563eb; color: #fff; border: 1px solid #1d4ed8;}
   .loop-badge {display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; border: 1px solid transparent;}
   .loop-badge.ok {background: #ecfdf5; color: #065f46; border-color: #a7f3d0;}
   .loop-badge.warn {background: #fff7ed; color: #9a3412; border-color: #fed7aa;}
@@ -50,6 +51,9 @@
   .loop-table th, .loop-table td {border: 1px solid #e5e7eb; padding: 0.45rem 0.55rem; vertical-align: top;}
   .loop-table th {background: #f3f4f6; text-align: left; color: #111827;}
   .loop-table code {background: #f3f4f6; padding: 0.05rem 0.25rem; border-radius: 6px;}
+  .loop-example-grid {display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;}
+  .loop-transfer {display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.55rem;}
+  .loop-transfer .bar {font-weight: 700; color: #6b7280;}
   @media (max-width: 1100px) {
     .loop-grid {grid-template-columns: 1fr;}
   }
@@ -70,52 +74,33 @@
 
   <section class="loop-grid">
     <div class="loop-card">
-      <h3>1) Plant / measured data</h3>
-      <div class="loop-field">
-        <label for="exampleSelect">Load example</label>
-        <select id="exampleSelect">
-          {% for ex in examples %}
-            <option value="{{ ex.id }}">{{ ex.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="loop-field">
-        <label for="tfExpression">Transfer function G(s)</label>
-        <input id="tfExpression" type="text" placeholder="(s+1)/(s*(s+2))" value="{{ examples[0].expression }}">
-        <div class="loop-note">Alternatively, enter numerator/denominator coefficients.</div>
-      </div>
-      <div class="loop-row">
+      <h3>1) Plant input function G(s)</h3>
+      <div class="loop-transfer">
         <div class="loop-field">
           <label for="tfNumerator">Numerator</label>
           <input id="tfNumerator" type="text" placeholder="1, 2, 1">
         </div>
+        <div class="bar">/</div>
         <div class="loop-field">
           <label for="tfDenominator">Denominator</label>
           <input id="tfDenominator" type="text" placeholder="1, 3, 2, 0">
         </div>
       </div>
       <div class="loop-field">
-        <label class="loop-toggle" for="useFreqData">
-          <input id="useFreqData" type="checkbox"> Use measured frequency-response data
-        </label>
+        <label for="tfExpression">Transfer function expression G(s)</label>
+        <input id="tfExpression" type="text" placeholder="(s+1)/(s*(s+2))" value="{{ examples[0].expression }}">
+        <div class="loop-note">You can enter either numerator/denominator or a full expression.</div>
       </div>
-      <div id="freqDataBox" class="loop-hidden">
-        <div class="loop-field">
-          <label for="freqDataFormat">Data format</label>
-          <select id="freqDataFormat">
-            <option value="mag_phase">ω, |G| (dB), Phase (°)</option>
-            <option value="real_imag">ω, Re, Im</option>
-          </select>
-        </div>
-        <div class="loop-field">
-          <label for="freqData">Measured data</label>
-          <textarea id="freqData" rows="6" placeholder="# ω, dB, deg
-1  -3  -45
-2  -9  -90"></textarea>
-        </div>
+      <div class="loop-example-grid" id="exampleButtons">
+        {% for ex in examples %}
+          <button type="button" class="loop-btn example" data-example-id="{{ ex.id }}">{{ ex.name }}</button>
+        {% endfor %}
       </div>
+      <div class="loop-note">Tap a blue example button for instant loading.</div>
+    </div>
 
-      <h3>2) Design mode</h3>
+    <div class="loop-card">
+      <h3>2) Parameters, exam recipe and targets</h3>
       <div class="loop-field">
         <label for="designMode">Design mode</label>
         <select id="designMode">
@@ -248,9 +233,36 @@
         <div class="loop-note" id="steadyRecommendation"></div>
       </div>
 
-      <div class="loop-note" id="modeHint"></div>
 
-      <h3>3) Controller GR(s)</h3>
+      <div class="loop-panel">
+        <h4>Measured frequency-response data (optional)</h4>
+        <div class="loop-field">
+          <label class="loop-toggle" for="useFreqData">
+            <input id="useFreqData" type="checkbox"> Use measured frequency-response data
+          </label>
+        </div>
+        <div id="freqDataBox" class="loop-hidden">
+          <div class="loop-field">
+            <label for="freqDataFormat">Data format</label>
+            <select id="freqDataFormat">
+              <option value="mag_phase">ω, |G| (dB), Phase (°)</option>
+              <option value="real_imag">ω, Re, Im</option>
+            </select>
+          </div>
+          <div class="loop-field">
+            <label for="freqData">Measured data</label>
+            <textarea id="freqData" rows="6" placeholder="# ω, dB, deg
+1  -3  -45
+2  -9  -90"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="loop-note" id="modeHint"></div>
+    </div>
+
+    <div class="loop-card">
+      <h3>3) Controllers</h3>
       <div class="loop-field">
         <label for="controllerType">Controller type (GR)</label>
         <select id="controllerType">
@@ -341,7 +353,6 @@
         <button class="loop-btn primary" id="updateBtn">Live update</button>
         <button class="loop-btn ghost" id="resetBtn">Reset</button>
         <button class="loop-btn secondary" id="stableBtn">Stable defaults</button>
-        <button class="loop-btn warning" id="exampleBtn">Load example</button>
       </div>
       <div class="loop-note">Tooltips: ω<sub>c</sub> = 0 dB crossover, PM = phase margin, GM = gain margin.</div>
 
@@ -374,7 +385,7 @@
     </div>
 
     <div class="loop-card">
-      <h3>4) Visualization & metrics</h3>
+      <h3>4) Plots & metrics</h3>
       <div class="loop-kv" id="metricRow">
         <span><strong>ωc</strong><span id="metricWc">—</span></span>
         <span><strong>Φ (PM)</strong><span id="metricPm">—</span></span>
@@ -478,13 +489,13 @@ const setControllerParams = (params) => {
   if (params.zeta_p !== undefined) $('paramZetaP').value = params.zeta_p;
 };
 
-const applyExample = () => {
-  const selected = $('exampleSelect').value;
+const applyExample = (exampleId = null) => {
+  const selected = exampleId || (exampleData[0] && exampleData[0].id);
   const example = exampleData.find((ex) => ex.id === selected);
   if (!example) return;
   $('tfExpression').value = example.expression;
-  $('tfNumerator').value = '';
-  $('tfDenominator').value = '';
+  $('tfNumerator').value = example.numerator || '';
+  $('tfDenominator').value = example.denominator || '';
   $('controllerType').value = example.controller.type;
   setControllerParams(example.controller.params);
   fieldsByController();
@@ -936,8 +947,8 @@ $('autoBtn').addEventListener('click', () => updatePlots('auto'));
 $('recipeBtn').addEventListener('click', () => updatePlots('recipe'));
 $('resetBtn').addEventListener('click', () => {
   $('tfExpression').value = exampleData[0].expression;
-  $('tfNumerator').value = '';
-  $('tfDenominator').value = '';
+  $('tfNumerator').value = exampleData[0].numerator || '';
+  $('tfDenominator').value = exampleData[0].denominator || '';
   $('controllerType').value = exampleData[0].controller.type;
   setControllerParams(exampleData[0].controller.params);
   fieldsByController();
@@ -947,13 +958,11 @@ $('stableBtn').addEventListener('click', () => {
   applyStableDefaults();
   updatePlots('manual');
 });
-$('exampleBtn').addEventListener('click', () => {
-  applyExample();
-  updatePlots('manual');
-});
-$('exampleSelect').addEventListener('change', () => {
-  applyExample();
-  updatePlots('manual');
+document.querySelectorAll('[data-example-id]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    applyExample(btn.dataset.exampleId);
+    updatePlots('manual');
+  });
 });
 
 const tabButtons = document.querySelectorAll('.loop-tab');
