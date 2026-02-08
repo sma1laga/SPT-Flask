@@ -385,6 +385,11 @@
     </div>
 
     <div class="loop-card">
+      <h3>Transfer function preview</h3>
+      <div class="loop-note" id="transferLatexBlock">\(G(s)=\text{—}\)</div>
+    </div>
+
+    <div class="loop-card">
       <h3>4) Plots & metrics</h3>
       <div class="loop-kv" id="metricRow">
         <span><strong>ωc</strong><span id="metricWc">—</span></span>
@@ -691,6 +696,26 @@ const setInterpretation = (notes) => {
     list.appendChild(li);
   });
 };
+const renderTransferLatex = (data) => {
+  const box = $('transferLatexBlock');
+  if (!box) return;
+
+  const plant = data.plant_latex;
+  const controller = data.controller_latex;
+  const hasController = controller && controller.trim() !== '';
+
+  if (!plant) {
+    box.innerHTML = '\\(G(s)=\\text{—}\\)';
+  } else if (hasController) {
+    box.innerHTML = `\\(G_w(s)=G_R(s)\\,G(s)=\\left(${controller}\\right)\\left(${plant}\\right)\\)`;
+  } else {
+    box.innerHTML = `\\(G(s)=${plant}\\)`;
+  }
+
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    window.MathJax.typesetPromise([box]).catch(() => {});
+  }
+};
 
 const renderPlots = (data) => {
   const f = data.frequency;
@@ -856,6 +881,7 @@ const updatePlots = async (mode = 'manual') => {
   }
   setBadges(data.interpretation.badges);
   setInterpretation(data.interpretation.notes);
+  renderTransferLatex(data);
   renderPlots(data);
 
   renderRecipe(data.recipe);

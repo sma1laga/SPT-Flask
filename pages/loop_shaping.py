@@ -151,6 +151,28 @@ def _parse_transfer_function(expression: str, numerator: str, denominator: str) 
         return control.TransferFunction(num_coeffs, den_coeffs)
     raise ValueError("Please provide a transfer function.")
 
+def _tf_to_latex(tf: control.TransferFunction) -> str:
+    """Convert a control.TransferFunction into a compact LaTeX fraction."""
+    s = sp.symbols("s")
+    num = [float(np.real_if_close(v)) for v in np.array(tf.num[0][0]).flatten()]
+    den = [float(np.real_if_close(v)) for v in np.array(tf.den[0][0]).flatten()]
+
+    def poly_from_coeffs(coeffs: List[float]) -> sp.Expr:
+        degree = len(coeffs) - 1
+        expr = sp.Integer(0)
+        for idx, coeff in enumerate(coeffs):
+            if abs(coeff) < 1e-12:
+                continue
+            power = degree - idx
+            expr += sp.Float(coeff, 6) * (s ** power)
+        return sp.simplify(expr if expr != 0 else sp.Integer(0))
+
+    num_expr = poly_from_coeffs(num)
+    den_expr = poly_from_coeffs(den)
+    if den_expr == 1:
+        return sp.latex(num_expr)
+    return sp.latex(num_expr / den_expr)
+
 
 def _parse_frequency_data(text: str, data_format: str) -> Tuple[np.ndarray, np.ndarray]:
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.strip().startswith("#")]
@@ -1025,6 +1047,8 @@ def loop_shaping_api():
 
         controller_response = _frequency_response(controller, w)
         loop_response = controller_response * plant_response
+        plant_latex = _tf_to_latex(parsed.transfer) if parsed.transfer is not None else None
+        controller_latex = _tf_to_latex(controller)
 
         mag = np.abs(loop_response)
         mag_db = 20 * np.log10(np.maximum(mag, 1e-12))
@@ -1229,6 +1253,8 @@ def loop_shaping_api():
                 "target_checks": target_checks,
                 "warnings": warnings,
                 "recipe": recipe_report,
+                "plant_latex": plant_latex,
+                "controller_latex": controller_latex,
             }
         )
     except Exception as exc:
