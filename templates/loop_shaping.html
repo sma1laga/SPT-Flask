@@ -54,6 +54,16 @@
   .loop-example-grid {display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;}
   .loop-transfer {display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 0.55rem;}
   .loop-transfer .bar {font-weight: 700; color: #6b7280;}
+  #transferLatexBlock {
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.8rem;
+    color: #000;
+    width: 100%;
+  }
   @media (max-width: 1100px) {
     .loop-grid {grid-template-columns: 1fr;}
   }
@@ -234,30 +244,6 @@
       </div>
 
 
-      <div class="loop-panel">
-        <h4>Measured frequency-response data (optional)</h4>
-        <div class="loop-field">
-          <label class="loop-toggle" for="useFreqData">
-            <input id="useFreqData" type="checkbox"> Use measured frequency-response data
-          </label>
-        </div>
-        <div id="freqDataBox" class="loop-hidden">
-          <div class="loop-field">
-            <label for="freqDataFormat">Data format</label>
-            <select id="freqDataFormat">
-              <option value="mag_phase">ω, |G| (dB), Phase (°)</option>
-              <option value="real_imag">ω, Re, Im</option>
-            </select>
-          </div>
-          <div class="loop-field">
-            <label for="freqData">Measured data</label>
-            <textarea id="freqData" rows="6" placeholder="# ω, dB, deg
-1  -3  -45
-2  -9  -90"></textarea>
-          </div>
-        </div>
-      </div>
-
       <div class="loop-note" id="modeHint"></div>
     </div>
 
@@ -306,30 +292,30 @@
 
       <div class="loop-row">
         <div class="loop-field" data-controller="Lead Lag">
-          <label for="paramWz">ω<sub>z</sub></label>
+          <label for="paramWz">T<sub>i</sub> (ω<sub>z</sub>)</label>
           <input id="paramWz" type="number" step="0.1" value="1">
         </div>
         <div class="loop-field" data-controller="Lead Lag">
-          <label for="paramWp">ω<sub>p</sub></label>
+          <label for="paramWp">T<sub>d</sub> (ω<sub>p</sub>)</label>
           <input id="paramWp" type="number" step="0.1" value="10">
         </div>
       </div>
 
       <div class="loop-row">
         <div class="loop-field" data-controller="Lead-Lag">
-          <label for="paramLeadWz">Lead ω<sub>z</sub></label>
+          <label for="paramLeadWz">Lead T<sub>i</sub> (ω<sub>z</sub>)</label>
           <input id="paramLeadWz" type="number" step="0.1" value="1">
         </div>
         <div class="loop-field" data-controller="Lead-Lag">
-          <label for="paramLeadWp">Lead ω<sub>p</sub></label>
+          <label for="paramLeadWp">Lead T<sub>d</sub> (ω<sub>p</sub>)</label>
           <input id="paramLeadWp" type="number" step="0.1" value="6">
         </div>
         <div class="loop-field" data-controller="Lead-Lag">
-          <label for="paramLagWz">Lag ω<sub>z</sub></label>
+          <label for="paramLagWz">Lag T<sub>i</sub> (ω<sub>z</sub>)</label>
           <input id="paramLagWz" type="number" step="0.1" value="0.2">
         </div>
         <div class="loop-field" data-controller="Lead-Lag">
-          <label for="paramLagWp">Lag ω<sub>p</sub></label>
+          <label for="paramLagWp">Lag T<sub>d</sub> (ω<sub>p</sub>)</label>
           <input id="paramLagWp" type="number" step="0.1" value="1">
         </div>
       </div>
@@ -399,7 +385,7 @@
       </div>
       <div class="loop-row" id="badgeRow"></div>
 
-      <div class="loop-note">Open-loop: L(s) = GR(s) · G(s).</div>
+      <div class="loop-note">Open-loop: G_o(s) = G_R(s) · G(s)</div>
       <div class="loop-tabs" data-tab-group="view">
         <button class="loop-tab active" data-tab="bode" data-group="view">Bode</button>
         <button class="loop-tab" data-tab="nyquist" data-group="view">Nyquist</button>
@@ -501,8 +487,8 @@ const applyExample = (exampleId = null) => {
   $('tfExpression').value = example.expression;
   $('tfNumerator').value = example.numerator || '';
   $('tfDenominator').value = example.denominator || '';
-  $('controllerType').value = example.controller.type;
-  setControllerParams(example.controller.params);
+  $('controllerType').value = 'P';
+  setControllerParams({k: 1});
   fieldsByController();
 };
 
@@ -539,8 +525,8 @@ const buildPayload = (mode = 'manual') => {
       expression: $('tfExpression').value,
       numerator: $('tfNumerator').value,
       denominator: $('tfDenominator').value,
-      frequency_data: $('useFreqData').checked ? $('freqData').value : '',
-      data_format: $('freqDataFormat').value
+      frequency_data: '',
+      data_format: 'mag_phase'
     },
     controller: {
       type: $('controllerType').value,
@@ -635,7 +621,7 @@ const setSteadyState = (steady) => {
     : `Simulation: e∞ ≈ ${formatValue(steady.ramp_error_sim)} (numerically approximated).`;
 
   // Hint about system type
-  let hint = 'System type ν counts integrators in the open loop L(s)=GR(s)G(s).';
+  let hint = 'System type ν counts integrators in the open loop G_w(s)=GR(s)G(s).';
   hint += ' For ramps, you typically need a higher ν (more integrators) than for steps.';
   if (einfMode === 'zero') {
     hint += ' Spec: e∞=0 ⇒ ν≥1 for step, ν≥2 for ramp.';
@@ -782,8 +768,8 @@ const renderRecipe = (recipe) => {
     if (!b || !b.type) return '';
     if (b.type === 'Gain') return `K=${fmt(b.k)}`;
     if (b.type === 'Integrator') return `${b.label || ('1/s^' + (b.n||1))}`;
-    if (b.type === 'Lead') return `Lead (ωz=${fmt(b.wz,'rad/s')}, ωp=${fmt(b.wp,'rad/s')})`;
-    if (b.type === 'Lag') return `Lag (ωz=${fmt(b.wz,'rad/s')}, ωp=${fmt(b.wp,'rad/s')})`;
+    if (b.type === 'Lead') return `Lead (Ti/ωz=${fmt(b.wz,'rad/s')}, Td/ωp=${fmt(b.wp,'rad/s')})`;
+    if (b.type === 'Lag') return `Lag (Ti/ωz=${fmt(b.wz,'rad/s')}, Td/ωp=${fmt(b.wp,'rad/s')})`;
     return b.type;
   }).filter(Boolean);
 
@@ -920,7 +906,7 @@ const debouncedUpdateIfAllowed = () => {
 
 ['tfExpression', 'controllerType', 'controllerExpression', 'paramK', 'paramTi', 'paramTd', 'paramN',
  'paramWz', 'paramWp', 'paramLeadWz', 'paramLeadWp', 'paramLagWz', 'paramLagWp', 'paramW0', 'paramZetaZ',
- 'paramZetaP', 'freqData', 'freqDataFormat', 'designMode', 'referenceType', 'rampSlope', 'targetEinfValue', 'targetTan', 'targetMp',
+ 'paramZetaP', 'designMode', 'referenceType', 'rampSlope', 'targetEinfValue', 'targetTan', 'targetMp',
  'targetWc', 'targetPmMin', 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('input', debouncedUpdateIfAllowed);
@@ -957,11 +943,6 @@ $('designMode').addEventListener('change', () => {
   });
 });
 
-$('useFreqData').addEventListener('change', () => {
-  toggleBox('useFreqData', 'freqDataBox');
-  debouncedUpdateIfAllowed();
-});
-
 $('autoToggle').addEventListener('change', () => toggleBox('autoToggle', 'autoBox'));
 ['targetEinfReqExam', 'targetEinfReq', 'targetEinfReqRamp'].forEach((id) => {
   const el = $(id);
@@ -975,8 +956,8 @@ $('resetBtn').addEventListener('click', () => {
   $('tfExpression').value = exampleData[0].expression;
   $('tfNumerator').value = exampleData[0].numerator || '';
   $('tfDenominator').value = exampleData[0].denominator || '';
-  $('controllerType').value = exampleData[0].controller.type;
-  setControllerParams(exampleData[0].controller.params);
+  $('controllerType').value = 'P';
+  setControllerParams({k: 1});
   fieldsByController();
   updatePlots('manual');
 });
