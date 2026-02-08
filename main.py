@@ -1,5 +1,9 @@
 # main.py
-from flask import Flask, render_template, request
+import os
+from datetime import datetime, timezone
+from xml.sax.saxutils import escape
+
+from flask import Flask, current_app, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 import crash_logging
 from pages.plot_function import plot_function_bp
@@ -85,6 +89,18 @@ from pages.demos.color_spaces import demos_color_spaces_bp
 from pages.demos.block_matching import demos_block_matching_bp
 from pages.demos.b_prediction import b_prediction_bp
 from pages.demos.image_sampling import demos_image_sampling_bp
+#VL STATSIP
+from pages.demos.conditional_distributions import demos_conditional_distributions_bp
+from pages.demos.mapping_random_variables import mapping_random_variables_bp
+from pages.demos.distributions import demos_distributions_bp
+from pages.demos.normal2d import demos_normal2d_bp
+from pages.demos.central_limit_theorem import demos_central_limit_theorem_bp
+from pages.demos.averaging_over_time import demos_averaging_over_time_bp
+from pages.demos.autocorrelation_stationary import (demos_autocorrelation_stationary_bp)
+from pages.demos.harmonic_detection import demos_harmonic_detection_bp
+from pages.demos.delay_estimation import demos_delay_estimation_bp
+from pages.demos.delay_estimation_frequency import demos_delay_estimation_freq_bp
+from pages.demos.finite_observation_intervals import demos_finite_observation_intervals_bp
 
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
@@ -98,8 +114,14 @@ def _build_demo_slug_map():
 
 
 DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
+COLLAPSIBLE_DEMO_SECTIONS = {
+    "Statistical Signal Processing",
+    "Image and Video Compression",
+}
 
-
+SITE_BASE_URL = os.getenv(
+    "SITE_BASE_URL", "https://lms-spt.e-technik.uni-erlangen.de"
+).rstrip("/")
 
 
 
@@ -117,6 +139,54 @@ def create_app():
         response.headers.pop("Expires", None)
         return response
     
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(
+            os.path.join(app.root_path, "static", "images"),
+            "favicon.ico",
+            mimetype="image/vnd.microsoft.icon",
+        )
+
+    @app.route("/google724380b13da45fea.html")
+    def google_site_verification():
+        """Serve Google Search Console verification file"""
+        return send_from_directory(current_app.static_folder, "google724380b13da45fea.html")
+
+    def _iter_sitemap_rules():
+        for rule in app.url_map.iter_rules():
+            if "GET" not in rule.methods:
+                continue
+            if rule.arguments:
+                continue
+            if rule.endpoint in {"static", "sitemap", "robots", "favicon"}:
+                continue
+            if rule.rule.startswith("/static"):
+                continue
+            yield rule
+
+    @app.route("/sitemap.xml")
+    def sitemap():
+        lastmod = datetime.now(timezone.utc).date().isoformat()
+        url_entries = []
+        for rule in sorted(_iter_sitemap_rules(), key=lambda item: item.rule):
+            loc = f"{SITE_BASE_URL}{rule.rule}"
+            url_entries.append(
+                f"  <url><loc>{escape(loc)}</loc><lastmod>{lastmod}</lastmod></url>"
+            )
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            + "\n".join(url_entries)
+            + "\n</urlset>\n"
+        )
+        return current_app.response_class(xml, mimetype="application/xml")
+
+    @app.route("/robots.txt")
+    def robots():
+        sitemap_url = f"{SITE_BASE_URL}/sitemap.xml"
+        body = f"User-agent: *\nAllow: /\nSitemap: {sitemap_url}\n"
+        return current_app.response_class(body, mimetype="text/plain")
+    
     @app.context_processor
     def inject_demos_sidebar():
         """Expose demo metadata for building the section-aware demo sidebar."""
@@ -133,6 +203,8 @@ def create_app():
             "demos_sidebar": DEMOS,
             "demos_section": section_data,
             "demos_section_name": section_name,
+            "is_statsip_demo": section_name == "Statistical Signal Processing",
+            "is_collapsible_demo": section_name in COLLAPSIBLE_DEMO_SECTIONS,
         }
 
     @app.errorhandler(Exception)
@@ -233,10 +305,27 @@ def create_app():
     app.register_blueprint(demos_block_matching_bp, url_prefix="/demos/block-matching")
     app.register_blueprint(b_prediction_bp, url_prefix="/demos/b-prediction")
     app.register_blueprint(demos_image_sampling_bp, url_prefix="/demos/image-sampling")
+    # STATSIP
+    app.register_blueprint(demos_conditional_distributions_bp, url_prefix="/demos/conditional-distributions")
+    app.register_blueprint(mapping_random_variables_bp, url_prefix="/demos/mapping-random-variables")
+    app.register_blueprint(demos_distributions_bp, url_prefix="/demos/distributions")
+    app.register_blueprint(demos_normal2d_bp, url_prefix="/demos/2d-normal-distributions")
+    app.register_blueprint(demos_central_limit_theorem_bp, url_prefix="/demos/central-limit-theorem")
+    app.register_blueprint(demos_averaging_over_time_bp, url_prefix="/demos/averaging-over-time")
+    app.register_blueprint(demos_autocorrelation_stationary_bp, url_prefix="/demos/autocorrelation-stationary")
+    app.register_blueprint(demos_harmonic_detection_bp, url_prefix="/demos/harmonic-detection")
+    app.register_blueprint(demos_delay_estimation_bp, url_prefix="/demos/delay-estimation")
+    app.register_blueprint(demos_delay_estimation_freq_bp, url_prefix="/demos/delay-estimation-frequency")
+    app.register_blueprint(demos_finite_observation_intervals_bp, url_prefix="/demos/finite-observation-intervals")
 
+    
     @app.route("/")
     def home():
-        return render_template("home.html")
+        return render_template(
+            "home.html",
+            page_title="Signal Processing Toolkit | Continuous & Discrete Signal Plotter",
+            meta_description="Signal Processing Toolkit provides a Signal Plotter, Convolution Calculator (Online), discrete signal plotter, DFT/FFT, Bode plotter, and much more useful tools.",
+        )
     
     return app
 

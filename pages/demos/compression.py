@@ -10,10 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
 import numpy as np
-from flask import Blueprint, current_app, render_template, url_for
+from flask import Blueprint, current_app, render_template
 from PIL import Image
 
-from .demo_images import cached_demo_image
 
 
 @dataclass
@@ -89,10 +88,25 @@ def _psnr(signal: np.ndarray, reconstruction: np.ndarray) -> float:
 def _format_value(value: float) -> float:
     return float(value) if math.isfinite(value) else math.inf
 
+def _cameraman_png(static_folder: str | Path) -> Path:
+    static_root = Path(static_folder)
+    png_path = static_root / "images" / "web" / "cameraman.png"
+    if png_path.exists():
+        return png_path
+
+    tiff_path = static_root / "images" / "cameraman.tif"
+    if not tiff_path.exists():
+        raise FileNotFoundError("cameraman.tif not found; cannot build cameraman.png")
+
+    png_path.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(tiff_path) as img:
+        img.convert("RGB").save(png_path, format="PNG")
+    return png_path
+
 
 def _build_results() -> Dict[str, CompressionResult]:
-    image_name, image_path = cached_demo_image(current_app.static_folder)
-    img, _ = _load_image(Path(image_path))
+    image_path = _cameraman_png(current_app.static_folder)
+    img, _ = _load_image(image_path)
     height, width = img.shape[0], img.shape[1]
     original_size = os.path.getsize(image_path)
 

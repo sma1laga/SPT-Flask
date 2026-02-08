@@ -10,7 +10,6 @@
           <img src="{{ lenna_src }}" alt="Demo image preview">
           <div>
             <div class="chip-label">Reference image</div>
-            <div class="chip-sub">Randomly chosen for histogram + quantization</div>
           </div>
         </div>
         <div class="controls-stack">
@@ -66,44 +65,54 @@
 </div>
 
 <style>
-  .lloyd-page { display: flex; flex-direction: column; gap: 16px; }
+  .lloyd-page {
+    --lloyd-plot-height: clamp(220px, 30vh, 300px);
+    --lloyd-curve-height: clamp(130px, 18vh, 170px);
+    --lloyd-image-max: clamp(240px, 32vh, 300px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  body.demo-sidebar-collapsed .lloyd-page {
+    --lloyd-plot-height: clamp(210px, 28vh, 280px);
+    --lloyd-curve-height: clamp(120px, 16vh, 160px);
+    --lloyd-image-max: clamp(228px, 28vh, 276px);
+  }
   .card-title { font-weight: 700; color: #0e1a2b; }
   body.dark-mode .card-title { color: #f1f5ff; }
-  .control-subtitle { margin: 4px 0 8px 0; color: var(--demo-description-color, #465063); }
+  .control-subtitle { margin: 4px 0 6px 0; color: var(--demo-description-color, #465063); }
   body.dark-mode .control-subtitle { color: #d8e3f5; }
   .lloyd-page .card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); transition: none; }
   .lloyd-page .card:hover { box-shadow: var(--demo-card-shadow, 0 12px 26px rgba(15,35,95,0.06)); transform: none; }
-  .lloyd-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 1.1fr); gap: 14px; align-items: start; box-shadow: none; border-radius: 14px; }
-  .hero-text { display: grid; gap: 12px; }
-  .hero-actions { display: grid; gap: 12px; align-items: stretch; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-  .lenna-chip { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); border-radius: 12px; padding: 10px; box-shadow: none; }
-  .lenna-chip img { width: 68px; height: 68px; border-radius: 12px; object-fit: cover; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); }
+  .lloyd-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 1.05fr); gap: 12px; align-items: start; box-shadow: none; border-radius: 14px; padding: 12px; }
+  .hero-text { display: grid; gap: 10px; }
+  .hero-actions { display: grid; gap: 10px; align-items: stretch; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .lenna-chip { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); background: var(--demo-card-bg, #fff); border-radius: 12px; padding: 8px 10px; box-shadow: none; }
+  .lenna-chip img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); }
   .chip-label { font-weight: 700; color: #0e1a2b; }
-  .chip-sub { font-size: 0.9rem; color: var(--demo-description-color, #465063); }
   body.dark-mode .lenna-chip { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
   body.dark-mode .lenna-chip img { border-color: rgba(158,203,255,0.24); }
   body.dark-mode .chip-label { color: #e8f1ff; }
-  body.dark-mode .chip-sub { color: #cbd6ea; }
   .controls-stack { display: grid; gap: 10px; }
   .slider-block { display: grid; gap: 6px; color: #0e1a2b; font-weight: 700; }
   .slider-block input[type=range] { width: 100%; accent-color: #0b5ebd; }
-  .slider-meta { display: flex; justify-content: space-between; color: var(--demo-description-color, #465063); font-weight: 600; font-size: 0.95rem; }
+  .slider-meta { display: flex; justify-content: space-between; color: var(--demo-description-color, #465063); font-weight: 600; font-size: 0.9rem; }
   body.dark-mode .slider-block { color: #dfe8ff; }
   body.dark-mode .slider-meta { color: #c6d4ea; }
-  .hero-plot { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 10px; background: var(--demo-card-bg, #fff); box-shadow: none; display: grid; gap: 8px; }
+  .hero-plot { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 8px; background: var(--demo-card-bg, #fff); box-shadow: none; display: grid; gap: 8px; }
   body.dark-mode .hero-plot { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
-  .plot-card { width: 100%; height: 100%; min-height: 320px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 10px; box-shadow: none; }
+  .plot-card { width: 100%; height: var(--lloyd-plot-height); border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 10px; box-shadow: none; }
   body.dark-mode .plot-card { border-color: rgba(158,203,255,0.18); }
-  .quantization-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
-  .quant-card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 14px; box-shadow: none; display: grid; gap: 12px; background: var(--demo-card-bg, #fff); }
+  .quantization-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .quant-card { border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 12px; padding: 12px; box-shadow: none; display: grid; gap: 10px; background: var(--demo-card-bg, #fff); }
   body.dark-mode .quant-card { background: rgba(16,26,46,0.7); border-color: rgba(158,203,255,0.18); }
-  .quant-header { display: grid; gap: 6px; }
+  .quant-header { display: grid; gap: 4px; }
   .quant-header p { margin: 0; color: var(--demo-description-color, #465063); }
   body.dark-mode .quant-header p { color: #cbd6ea; }
-  .quant-body { display: grid; gap: 10px; }
-  .quant-body img { width: 100%; border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); box-shadow: none; }
+  .quant-body { display: grid; gap: 8px; }
+  .quant-body img { width: 100%; max-height: var(--lloyd-image-max); border-radius: 10px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.16)); box-shadow: none; object-fit: contain; }
   body.dark-mode .quant-body img { border-color: rgba(158,203,255,0.24); }
-  .curve { width: 100%; height: 180px; border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 10px; }
+  .curve { width: 100%; height: var(--lloyd-curve-height); border: 1px solid var(--demo-card-border, rgba(13,53,109,0.12)); border-radius: 10px; }
   body.dark-mode .curve { border-color: rgba(158,203,255,0.18); }
   .metric-label { color: var(--demo-button-color, #0b5ebd); font-weight: 700; }
   body.dark-mode .metric-label { color: #d7e8ff; }
@@ -114,6 +123,7 @@
   body.dark-mode .level-toggle button.active { background: rgba(158,203,255,0.14); color: #d7e8ff; border-color: rgba(158,203,255,0.4); }
   .level-toggle.compact button { padding: 4px 8px; font-size: 0.95rem; }
   .quant-title-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  body.demo-sidebar-collapsed .lloyd-hero { grid-template-columns: minmax(0, 1fr) minmax(340px, 1.15fr); }
   @media (max-width: 960px) { .lloyd-hero { grid-template-columns: 1fr; } }
 </style>
 

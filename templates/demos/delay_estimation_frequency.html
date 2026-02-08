@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width:1180px;">
+  <div class="page-header compact-header">
+    <div>
+      <h1>Delay Estimation (frequency domain)</h1>
+      <p>
+        Two noisy observations of the same signal are shifted relative to each other. Inspect the
+        cross-correlation alongside the cross power spectral density (magnitude &amp; phase) to read
+        out the delay. Controls sit above the plots, mirroring the MATLAB demo.
+      </p>
+    </div>
+    <div class="chip-row compact-chips">
+      <div class="pill"><i class="fa fa-sliders"></i>Shifters above plots</div>
+      <div class="pill"><i class="fa fa-random"></i>Independent noises</div>
+      <div class="pill"><i class="fa fa-bolt"></i>Cross-spectral angle</div>
+    </div>
+  </div>
+
+  <style>
+    .compact-header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .compact-header h1{margin:0 0 4px;font-size:1.75rem}
+    .compact-header p{margin:0;font-size:0.95rem;line-height:1.4;color:#334155}
+    .compact-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .compact-chips .pill{background:#e5f0fb;color:#0f3b64;font-weight:700;border-radius:999px;padding:4px 10px;display:inline-flex;align-items:center;gap:6px;font-size:0.85rem}
+    .control-card{background:white;border:1px solid #d9dfe7;border-radius:12px;padding:12px;box-shadow:0 3px 10px rgba(0,0,0,0.05);margin-bottom:12px}
+    .control-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;align-items:end}
+    .plot-box{border:1px solid #e5e7eb;border-radius:10px;padding:6px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,0.03)}
+    .plot-box h4{margin:0 0 4px;color:#0f172a;font-size:1rem;line-height:1.3}
+    .stat-label{font-size:0.74rem;font-weight:800;color:#6b7280;text-transform:uppercase}
+    .stat-value{font-weight:800;color:#0f172a;font-size:0.92rem}
+    .stat-row{display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    .plots-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));grid-auto-flow:row dense;gap:10px}
+    .plot-box.wide{grid-column:1 / -1}
+    body.dark-mode .control-card{background:#0b1628;border-color:#1f2937;box-shadow:0 8px 18px rgba(0,0,0,0.35)}
+    body.dark-mode .plot-box{background:#0f172a;border-color:#27303f;box-shadow:0 8px 20px rgba(0,0,0,0.28)}
+    body.dark-mode .plot-box h4{color:#e2e8f0}
+    body.dark-mode .pill{background:rgba(59,130,246,0.14)!important;color:#e0e7ff!important}
+    body.dark-mode label, body.dark-mode .stat-label{color:#cbd5e1!important}
+    body.dark-mode .stat-value{color:#f8fafc}
+    body.dark-mode .btn-primary{background:#1d4ed8;color:#fff}
+  </style>
+
+  <div class="control-card">
+    <div class="control-grid">
+      <div>
+        <label for="signal-kind" style="font-weight:700;">Input signal</label>
+        <select id="signal-kind" class="form-control">
+          <option value="noise">White noise</option>
+          <option value="speech">Speech (static audio)</option>
+          <option value="sinusoid">Sinusoid 100 Hz</option>
+        </select>
+      </div>
+      <div>
+        <label for="snr-slider" style="font-weight:700;">SNR (dB)</label>
+        <div style="display:grid;grid-template-columns:1fr 88px;gap:8px;align-items:center;">
+          <input id="snr-slider" type="range" min="-10" max="40" step="0.1" value="{{ defaults.snr }}">
+          <input id="snr-input" type="number" step="0.1" class="form-control" value="{{ defaults.snr }}">
+        </div>
+      </div>
+      <div>
+        <label for="delay-slider" style="font-weight:700;">Delay (ms)</label>
+        <div style="display:grid;grid-template-columns:1fr 88px;gap:8px;align-items:center;">
+          <input id="delay-slider" type="range" min="-50" max="50" step="1" value="{{ defaults.delay_ms }}">
+          <input id="delay-input" type="number" step="1" class="form-control" value="{{ defaults.delay_ms }}">
+        </div>
+      </div>
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">Signal variance</div>
+          <div id="stat-svar" class="stat-value">—</div>
+        </div>
+        <div>
+          <div class="stat-label">Noise variance</div>
+          <div id="stat-nvar" class="stat-value">—</div>
+        </div>
+        <div>
+          <div class="stat-label">Delay [ms]</div>
+          <div id="stat-delay" class="stat-value">—</div>
+        </div>
+        <button id="update-btn" class="btn btn-primary" style="padding:10px 16px;font-weight:700;">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="plots-grid">
+    <div class="plot-box">
+      <h4>Observation Y₁(t) = X(t) + N₁(t)</h4>
+      <div id="plot-signal1" style="height:190px;"></div>
+    </div>
+    <div class="plot-box">
+      <h4>Observation Y₂(t) = X(t−τ₀) + N₂(t)</h4>
+      <div id="plot-signal2" style="height:190px;"></div>
+    </div>
+    <div class="plot-box">
+      <h4>Magnitude of Cross PSD</h4>
+      <div id="plot-cpsd-mag" style="height:190px;"></div>
+    </div>
+    <div class="plot-box">
+      <h4>Phase of Cross PSD</h4>
+      <div id="plot-cpsd-phase" style="height:190px;"></div>
+    </div>
+    <div class="plot-box wide">
+      <h4>Cross-correlation R<sub>Y₁Y₂</sub>(τ)</h4>
+      <div id="plot-xcorr" style="height:215px;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const computeUrl = "{{ url_for('demos_delay_estimation_freq.compute') }}";
+
+  const signalKind = document.getElementById('signal-kind');
+  const snrSlider = document.getElementById('snr-slider');
+  const snrInput = document.getElementById('snr-input');
+  const delaySlider = document.getElementById('delay-slider');
+  const delayInput = document.getElementById('delay-input');
+  const updateBtn = document.getElementById('update-btn');
+
+  const statEls = {
+    svar: document.getElementById('stat-svar'),
+    nvar: document.getElementById('stat-nvar'),
+    delay: document.getElementById('stat-delay'),
+  };
+
+  function buildLayout(layout){
+    const isDark = document.body.classList.contains('dark-mode');
+    const axisColor = isDark ? '#e2e8f0' : '#111827';
+    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const merged = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { color: axisColor },
+      ...layout,
+    };
+    const baseX = layout.xaxis || {};
+    const baseY = layout.yaxis || {};
+    merged.xaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseX, color: axisColor };
+    merged.yaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseY, color: axisColor };
+    return merged;
+  }
+
+  function syncSliderAndInput(slider, input) {
+    slider.addEventListener('input', () => {
+      input.value = slider.value;
+    });
+    input.addEventListener('change', () => {
+      slider.value = input.value;
+    });
+  }
+
+  syncSliderAndInput(snrSlider, snrInput);
+  syncSliderAndInput(delaySlider, delayInput);
+
+  async function fetchData() {
+    const payload = {
+      snr: parseFloat(snrInput.value),
+      delay_ms: parseFloat(delayInput.value),
+      signal_kind: signalKind.value,
+    };
+
+    const response = await fetch(computeUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error('Server error: ' + response.status);
+    }
+    return response.json();
+  }
+
+  function renderLine(target, x, y, xLabel, yLabel, extras = {}) {
+    const line = {
+      x,
+      y,
+      mode: 'lines',
+      line: {color: extras.color || '#2563eb', width: 2}
+    };
+    const layout = buildLayout({
+      margin: {l: 54, r: 8, b: 44, t: 8},
+      xaxis: {title: xLabel},
+      yaxis: {title: yLabel, range: extras.yRange},
+      height: extras.height || 190,
+    });
+    Plotly.newPlot(target, [line], layout, {displaylogo: false, responsive: true});
+  }
+
+  function renderPlots(data) {
+    renderLine('plot-signal1', data.time_ms, data.signal1, 't [ms]', 'Amplitude');
+    renderLine('plot-signal2', data.time_ms, data.signal2, 't [ms]', 'Amplitude');
+    renderLine('plot-xcorr', data.lags_ms, data.xcorr, 'τ [ms]', 'R_{Y₁Y₂}(τ)', {height: 215});
+    renderLine('plot-cpsd-mag', data.freqs, data.cpsd_mag_db, 'frequency [Hz]', '10log10(|S_{y1,y2}|)');
+    renderLine('plot-cpsd-phase', data.freqs, data.cpsd_phase, 'frequency [Hz]', 'ang(S_{y1,y2}) [rad/π]', {yRange: [-1, 1]});
+
+    statEls.svar.textContent = data.stats.signal_variance.toFixed(4);
+    statEls.nvar.textContent = data.stats.noise_variance.toFixed(4);
+    statEls.delay.textContent = data.stats.delay_ms.toFixed(1);
+  }
+
+  async function update() {
+    updateBtn.disabled = true;
+    updateBtn.textContent = 'Updating…';
+    try {
+      const data = await fetchData();
+      renderPlots(data);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    } finally {
+      updateBtn.disabled = false;
+      updateBtn.textContent = 'Update';
+    }
+  }
+  const plotTargets = [
+    'plot-signal1',
+    'plot-signal2',
+    'plot-cpsd-mag',
+    'plot-cpsd-phase',
+    'plot-xcorr'
+  ];
+  let resizeTimeout;
+
+  function schedulePlotResize(delay = 0) {
+    if (!window.Plotly) {
+      return;
+    }
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = window.setTimeout(() => {
+      plotTargets.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          Plotly.Plots.resize(el);
+        }
+      });
+    }, delay);
+  }
+
+  const sidebar = document.querySelector('.modern-sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'width') {
+        schedulePlotResize(80);
+      }
+    });
+  }
+  const classObserver = new MutationObserver(() => schedulePlotResize(200));
+  classObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', () => schedulePlotResize());
+
+  updateBtn.addEventListener('click', update);
+  window.addEventListener('load', update);
+</script>
+{% endblock %}

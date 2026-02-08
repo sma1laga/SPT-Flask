@@ -430,6 +430,8 @@ def _make_freq_vector(num, den, override=None):
 def bode_plot():
     error = ""
     warning = ""
+    page_title = "Bode Plot Tool (Online) | Signal Processing Toolkit"
+    meta_description = "Use the bode plot tool online to compute magnitude, phase, poles, zeros, and stability margins for transfer functions, with optional Nyquist view."
     # Default inputs; here we use a coefficient list for H(s) = (s+1)/(s^2+2)
     default_num = "(s+2)"
     default_den = "(s+10)(s+0.1)"
@@ -476,6 +478,8 @@ def bode_plot():
             nyquist_analysis=None,
             show_nyquist=show_nyquist,
             active_action=submit_action,
+            page_title=page_title,
+            meta_description=meta_description,
         )
     
     if request.method == 'POST':
@@ -520,6 +524,8 @@ def bode_plot():
                 nyquist_analysis=None,
                 show_nyquist=show_nyquist,
                 active_action=submit_action,
+                page_title=page_title,
+                meta_description=meta_description,
             )
     
     # Allow manual frequency range via optional form fields
@@ -640,6 +646,8 @@ def bode_plot():
         nyquist_analysis=nyquist_analysis,
         show_nyquist=show_nyquist,
         active_action=submit_action,
+        page_title=page_title,
+        meta_description=meta_description,
     )
 
     

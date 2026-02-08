@@ -1,0 +1,516 @@
+{% extends "base.html" %}
+{% set disable_card_hover = true %}
+{% block content %}
+<div class="container wide-container averaging-over-time-layout">
+  <div class="page-header">
+    <div>
+      <h1>Averaging over time or ensemble</h1>
+      <p>
+        Observe three sample realizations and how their time-averaged statistics compare to ensemble averages.
+        The playback controls mimic the MATLAB GUI: select signals, enable optional custom weights, then sweep a
+        window with play/pause/stop across five plots (x₁, x₂, x₃, ensemble mean, and ensemble variance).
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-random"></i>Stochastic process</div>
+      <div class="pill pill-subtle"><i class="fa fa-play"></i>Animated sweep</div>
+    </div>
+  </div>
+
+
+  <div class="demo-grid">
+    <div class="stacked-column">
+      <div class="controls-block">
+        <div class="card">
+          <div class="pill" style="margin-bottom:8px"><i class="fa fa-sliders"></i>Signal setup</div>
+          <div class="kv-row">
+            <label for="signal-type">Signal type</label>
+            <select id="signal-type">
+              <option value="audio">Audio (speech/music/noise)</option>
+              <option value="ar-noise">AR(1) noise</option>
+              <option value="random-amplitude-sine">Random amplitude sine</option>
+              <option value="random-phase-sine">Random phase sine</option>
+            </select>
+            <div></div>
+          </div>
+          <div class="kv-row">
+            <label for="weights-toggle">Custom weights?</label>
+            <input type="checkbox" id="weights-toggle">
+            <small>toggle edit</small>
+          </div>
+          <div class="kv-row">
+            <label for="w1">Weight 1</label>
+            <input type="number" id="w1" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[0]) }}" disabled>
+            <small>probability</small>
+          </div>
+          <div class="kv-row">
+            <label for="w2">Weight 2</label>
+            <input type="number" id="w2" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[1]) }}" disabled>
+            <small>probability</small>
+          </div>
+          <div class="kv-row">
+            <label for="w3">Weight 3</label>
+            <input type="number" id="w3" step="0.01" min="0" max="1" value="{{ '%.3f'|format(defaults.weights[2]) }}" disabled>
+            <small>probability</small>
+          </div>
+          <div class="cta-row">
+            <button id="run" class="btn-primary"><i class="fa fa-refresh"></i> Generate</button>
+            <span id="weight-sum" class="inline-note"></span>
+          </div>
+          <div id="error" class="error" aria-live="polite"></div>
+        </div>
+
+        <div class="card">
+          <div class="pill" style="margin-bottom:8px"><i class="fa fa-play"></i>Playback</div>
+          <div class="kv-row">
+            <label for="window-ms">Window size</label>
+            <input type="range" id="window-ms" min="200" max="1200" step="50" value="500">
+            <span id="window-ms-val">500 samples</span>
+          </div>
+          <div class="kv-row">
+            <label for="step-size">Step</label>
+            <input type="range" id="step-size" min="10" max="400" step="10" value="100">
+            <span id="step-size-val">100 samples</span>
+          </div>
+          <div class="cta-row">
+            <button id="play" class="btn-primary"><i class="fa fa-play"></i> Play</button>
+            <button id="pause" class="btn-secondary"><i class="fa fa-pause"></i> Pause</button>
+            <button id="stop" class="btn-secondary"><i class="fa fa-stop"></i> Stop</button>
+            <span class="inline-note">Disables source/weights during playback, like MATLAB.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card stats-card">
+        <div class="pill" style="margin-bottom:8px"><i class="fa fa-table"></i>At-a-glance stats</div>
+        <div class="stat-grid" aria-live="polite">
+          <div class="stat-box">
+            <div class="stat-label">Ensemble mean (scalar)</div>
+            <div id="stat-mean" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Ensemble variance (scalar)</div>
+            <div id="stat-var" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Weights</div>
+            <div id="stat-weights" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Mean x₁</div>
+            <div id="stat-m1" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Mean x₂</div>
+            <div id="stat-m2" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Mean x₃</div>
+            <div id="stat-m3" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Var x₁</div>
+            <div id="stat-v1" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Var x₂</div>
+            <div id="stat-v2" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Var x₃</div>
+            <div id="stat-v3" class="stat-value">—</div>
+          </div>
+        </div>
+        <div class="stat-grid" aria-live="polite">
+          <div class="stat-box">
+            <div class="stat-label">Current mₓ(t)</div>
+            <div id="stat-mean-point" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Current σ²(t)</div>
+            <div id="stat-var-point" class="stat-value">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Window position</div>
+            <div id="stat-window" class="stat-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="pill"><i class="fa fa-line-chart"></i>Five-panel view</div>
+        <div id="legend-labels" class="inline-note"></div>
+      </div>
+
+      <div class="plots-grid">
+        <div class="plot-box"><h4>x₁(t)</h4><div id="plot-x1" class="plot"></div></div>
+        <div class="plot-box"><h4>x₂(t)</h4><div id="plot-x2" class="plot"></div></div>
+        <div class="plot-box"><h4>x₃(t)</h4><div id="plot-x3" class="plot"></div></div>
+        <div class="plot-box"><h4>Ensemble mean mₓ(t)</h4><div id="plot-mean" class="plot"></div></div>
+        <div class="plot-box"><h4>Ensemble variance σ²(t)</h4><div id="plot-var" class="plot"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const computeUrl = "{{ url_for('demos_averaging_over_time.compute') }}";
+
+  const signalSelect = document.getElementById('signal-type');
+  const wInputs = [document.getElementById('w1'), document.getElementById('w2'), document.getElementById('w3')];
+  const weightsToggle = document.getElementById('weights-toggle');
+  const runBtn = document.getElementById('run');
+  const playBtn = document.getElementById('play');
+  const pauseBtn = document.getElementById('pause');
+  const stopBtn = document.getElementById('stop');
+  const windowSlider = document.getElementById('window-ms');
+  const windowSliderVal = document.getElementById('window-ms-val');
+  const stepSlider = document.getElementById('step-size');
+  const stepSliderVal = document.getElementById('step-size-val');
+  const weightSumLabel = document.getElementById('weight-sum');
+  const errorEl = document.getElementById('error');
+  const legendLabel = document.getElementById('legend-labels');
+
+  const statMean = document.getElementById('stat-mean');
+  const statVar = document.getElementById('stat-var');
+  const statWeights = document.getElementById('stat-weights');
+  const statM = [document.getElementById('stat-m1'), document.getElementById('stat-m2'), document.getElementById('stat-m3')];
+  const statV = [document.getElementById('stat-v1'), document.getElementById('stat-v2'), document.getElementById('stat-v3')];
+  const statMeanPoint = document.getElementById('stat-mean-point');
+  const statVarPoint = document.getElementById('stat-var-point');
+  const statWindow = document.getElementById('stat-window');
+
+  const plotIds = ['plot-x1','plot-x2','plot-x3','plot-mean','plot-var'];
+
+  function buildLayout(layout){
+    const isDark = document.body.classList.contains('dark-mode');
+    const axisColor = isDark ? '#e2e8f0' : '#111827';
+    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const merged = {
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { color: axisColor },
+      ...layout,
+    };
+    const baseX = layout.xaxis || {};
+    const baseY = layout.yaxis || {};
+    merged.xaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseX, color: axisColor };
+    merged.yaxis = { gridcolor: gridColor, zerolinecolor: gridColor, ...baseY, color: axisColor };
+    return merged;
+  }
+
+
+  let currentData = null;
+  let timer = null;
+  let cursor = 0;
+  let playing = false;
+  let resizeTimeout = null;
+
+  function schedulePlotResize(delay = 0){
+    if (!window.Plotly) return;
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = window.setTimeout(() => {
+      plotIds.forEach((plotId) => {
+        const plotEl = document.getElementById(plotId);
+        if (plotEl) {
+          Plotly.Plots.resize(plotEl);
+        }
+      });
+    }, delay);
+  }
+  function readWeights(){
+    return wInputs.map(inp => parseFloat(inp.value) || 0);
+  }
+
+  function setWeightsEnabled(enabled){
+    wInputs.forEach(inp => { inp.disabled = !enabled; });
+  }
+
+  function updateWeightSum(weights){
+    const total = weights.reduce((a,b)=>a+b,0);
+    weightSumLabel.textContent = `Sum: ${total.toFixed(3)} (must be 1.0)`;
+  }
+
+  function sliderToSamples(data){
+    if(!data || data.t.length < 2){
+      return { windowSamples: 500, stepSamples: 100 };
+    }
+    const windowSamples = parseInt(windowSlider.value, 10);
+    const stepSamples = parseInt(stepSlider.value, 10);
+    windowSliderVal.textContent = `${windowSamples} samples`;
+    stepSliderVal.textContent = `${stepSamples} samples`;
+    return { windowSamples, stepSamples };
+  }
+
+  function stopTimer(shouldUnlock = true){
+    if(timer){
+      clearInterval(timer);
+      timer = null;
+    }
+    playing = false;
+    playBtn.disabled = false;
+    pauseBtn.disabled = false;
+    stopBtn.disabled = false;
+    if(shouldUnlock){
+      unlockControls();
+    }
+  }
+
+  function lockControls(){
+    signalSelect.disabled = true;
+    weightsToggle.disabled = true;
+    setWeightsEnabled(false);
+  }
+
+  function unlockControls(){
+    signalSelect.disabled = false;
+    weightsToggle.disabled = false;
+    setWeightsEnabled(weightsToggle.checked);
+  }
+
+  function applyWindowPosition(data){
+    if(!data){ return; }
+    const { windowSamples } = sliderToSamples(data);
+    const start = Math.min(cursor, Math.max(0, data.t.length - windowSamples));
+    const end = start + windowSamples;
+    const xMin = data.t[start];
+    const xMax = data.t[Math.min(end, data.t.length - 1)];
+    const midIdx = Math.min(data.t.length - 1, start + Math.floor(windowSamples / 2));
+
+    const markerXs = [data.t[midIdx]];
+    const markerYs = [
+      data.signals[0][midIdx],
+      data.signals[1][midIdx],
+      data.signals[2][midIdx],
+      data.ensemble_mean[midIdx],
+      data.ensemble_var[midIdx]
+    ];
+
+    const markerTraceIndex = {
+      'plot-x1': 1,
+      'plot-x2': 1,
+      'plot-x3': 1,
+      'plot-mean': 2,
+      'plot-var': 2,
+    };
+
+    ['plot-x1','plot-x2','plot-x3','plot-mean','plot-var'].forEach((id, idx) => {
+      Plotly.relayout(id, { 'xaxis.range': [xMin, xMax] });
+      Plotly.restyle(id, { x: [markerXs], y: [[markerYs[idx]]]}, markerTraceIndex[id]);
+    });
+
+    statMeanPoint.textContent = formatNumber(data.ensemble_mean[midIdx]);
+    statVarPoint.textContent = formatNumber(data.ensemble_var[midIdx]);
+    statWindow.textContent = `${formatNumber(xMin)}s → ${formatNumber(xMax)}s`;
+  }
+
+  function play(){
+    if(!currentData){ return; }
+    stopTimer(false);
+    const { windowSamples, stepSamples } = sliderToSamples(currentData);
+    const maxCursor = Math.max(1, currentData.t.length - windowSamples);
+    playing = true;
+    lockControls();
+    playBtn.disabled = true;
+    timer = setInterval(() => {
+      cursor = (cursor + stepSamples) % maxCursor;
+      applyWindowPosition(currentData);
+    }, 120);
+  }
+
+  function pause(){
+    stopTimer(false);
+  }
+
+  function stopPlayback(){
+    stopTimer(true);
+    cursor = 0;
+    applyWindowPosition(currentData);
+  }
+
+  async function fetchData(){
+    const payload = {
+      signal_type: signalSelect.value,
+      weights: readWeights(),
+      use_custom_weights: weightsToggle.checked,
+    };
+    const response = await fetch(computeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if(!response.ok){
+      const msg = await response.json().catch(() => ({}));
+      const message = msg.error || `Server returned ${response.status}`;
+      throw new Error(message);
+    }
+    return await response.json();
+  }
+
+  function formatNumber(x){
+    if(!isFinite(x)) return '—';
+    return Math.abs(x) < 1e-3 ? x.toExponential(2) : x.toFixed(3);
+  }
+
+  function updateStats(data){
+    statMean.textContent = formatNumber(data.ensemble_mean_scalar);
+    statVar.textContent = formatNumber(data.ensemble_var_scalar);
+    statWeights.textContent = data.weights.map(w => formatNumber(w)).join(' , ');
+    data.means.forEach((m, idx) => { statM[idx].textContent = formatNumber(m); });
+    data.variances.forEach((v, idx) => { statV[idx].textContent = formatNumber(v); });
+    applyWindowPosition(data);
+  }
+
+  function plotSignals(data){
+    const signalTraces = data.signals.map((y, idx) => ({
+      x: data.t,
+      y,
+      name: data.signal_labels[idx] || `x${idx+1}(t)`,
+      line: { width: 1.6 }
+    }));
+    const markers = data.signals.map(() => ({
+      x: [data.t[0]],
+      y: [0],
+      mode: 'markers',
+      marker: { color: 'red', size: 8 },
+      showlegend: false
+    }));
+
+    Plotly.newPlot('plot-x1', [signalTraces[0], markers[0]], buildLayout({
+      margin: { t: 10, r: 8, l: 50, b: 32 },
+      xaxis: { title: 't [s]' },
+      yaxis: { title: 'x₁(t)', range: data.y_limits.signals[0] },
+      showlegend: false,
+    }), {responsive: true, displaylogo: false});
+
+    Plotly.newPlot('plot-x2', [signalTraces[1], markers[1]], buildLayout({
+      margin: { t: 10, r: 8, l: 50, b: 32 },
+      xaxis: { title: 't [s]' },
+      yaxis: { title: 'x₂(t)', range: data.y_limits.signals[1] },
+      showlegend: false,
+    }), {responsive: true, displaylogo: false});
+
+    Plotly.newPlot('plot-x3', [signalTraces[2], markers[2]], buildLayout({
+      margin: { t: 10, r: 8, l: 50, b: 32 },
+      xaxis: { title: 't [s]' },
+      yaxis: { title: 'x₃(t)', range: data.y_limits.signals[2] },
+      showlegend: false,
+    }), {responsive: true, displaylogo: false});
+  }
+
+  function plotMeanVar(data){
+    const isDark = document.body.classList.contains('dark-mode');
+    const scalarLineColor = isDark ? '#f8fafc' : '#111827';
+    const meanTrace = {
+      x: data.t,
+      y: data.ensemble_mean,
+      name: 'mₓ(t)',
+      line: { width: 2.6, color: '#2563eb' }
+    };
+    const meanScalar = {
+      x: data.t,
+      y: Array(data.t.length).fill(data.ensemble_mean_scalar),
+      name: 'time mean',
+      line: { dash: 'dash', color: scalarLineColor, width: 2 }
+    };
+    const meanMarker = { x: [data.t[0]], y: [0], mode: 'markers', marker: { color: 'red', size: 8 }, showlegend: false };
+
+    Plotly.newPlot('plot-mean', [meanTrace, meanScalar, meanMarker], buildLayout({
+      margin: { t: 10, r: 8, l: 50, b: 32 },
+      xaxis: { title: 't [s]' },
+      yaxis: { title: 'mₓ(t)', range: data.y_limits.mean },
+      showlegend: true,
+      legend: { orientation: 'h' }
+    }), {responsive: true, displaylogo: false});
+
+    const varTrace = {
+      x: data.t,
+      y: data.ensemble_var,
+      name: 'σ²(t)',
+      line: { width: 2.6, color: '#7c3aed' }
+    };
+    const varScalar = {
+      x: data.t,
+      y: Array(data.t.length).fill(data.ensemble_var_scalar),
+      name: 'scalar variance',
+      line: { dash: 'dash', color: scalarLineColor, width: 2 }
+    };
+    const varMarker = { x: [data.t[0]], y: [0], mode: 'markers', marker: { color: 'red', size: 8 }, showlegend: false };
+
+    Plotly.newPlot('plot-var', [varTrace, varScalar, varMarker], buildLayout({
+      margin: { t: 10, r: 8, l: 50, b: 32 },
+      xaxis: { title: 't [s]' },
+      yaxis: { title: 'σ²(t)', range: data.y_limits.var },
+      showlegend: true,
+      legend: { orientation: 'h' }
+    }), {responsive: true, displaylogo: false});
+  }
+
+  async function run(){
+    errorEl.textContent = '';
+    stopTimer();
+    runBtn.disabled = true;
+    try{
+      const weights = readWeights();
+      if(weightsToggle.checked){
+        const total = weights.reduce((a,b)=>a+b,0);
+        if(total < 0.99 || total > 1.01 || weights.some(w => w < 0)){
+          throw new Error('Weights must be nonnegative and sum to 1.00 (±0.01).');
+        }
+      }
+      const data = await fetchData();
+      currentData = data;
+      cursor = 0;
+      updateWeightSum(weightsToggle.checked ? weights : defaults.weights);
+      legendLabel.textContent = data.signal_labels.join(' · ');
+      plotSignals(data);
+      plotMeanVar(data);
+      updateStats(data);
+    } catch(err){
+      console.error(err);
+      errorEl.textContent = err.message;
+    } finally {
+      runBtn.disabled = false;
+      unlockControls();
+    }
+  }
+
+  weightsToggle.addEventListener('change', (evt) => {
+    const enabled = evt.target.checked;
+    setWeightsEnabled(enabled);
+    if(!enabled){
+      wInputs.forEach((inp, idx) => { inp.value = defaults.weights[idx].toFixed(3); });
+    }
+    updateWeightSum(readWeights());
+  });
+
+  windowSlider.addEventListener('input', () => applyWindowPosition(currentData));
+  stepSlider.addEventListener('input', () => sliderToSamples(currentData));
+  runBtn.addEventListener('click', run);
+  playBtn.addEventListener('click', play);
+  pauseBtn.addEventListener('click', pause);
+  stopBtn.addEventListener('click', stopPlayback);
+  signalSelect.value = defaults.signal_type;
+  updateWeightSum(defaults.weights);
+  window.addEventListener('load', run);
+  window.addEventListener('resize', () => schedulePlotResize());
+
+  const sidebar = document.querySelector('.modern-sidebar');
+  if (sidebar) {
+    sidebar.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'width') {
+        schedulePlotResize(50);
+      }
+    });
+  }
+
+  const classObserver = new MutationObserver(() => schedulePlotResize(300));
+  classObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

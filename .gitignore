@@ -127,3 +127,6 @@ contact.log
 
 # Mac stuff
 .DS_Store
+
+# environment variables
+.env

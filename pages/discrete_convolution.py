@@ -18,7 +18,11 @@ discrete_convolution_bp = Blueprint(
 # ------------------------------------------------------------------ page view
 @discrete_convolution_bp.route("/", methods=["GET"])
 def discrete_convolution():
-    return render_template("discrete_convolution.html")
+    return render_template(
+        "discrete_convolution.html",
+        page_title="Discrete-Time Convolution Calculator | Signal Processing Toolkit",
+        meta_description="Compute and inspect discrete-time convolution for two sequences with the discrete convolution calculator, including sequence and result plots.",
+    )
 
 def _rewrite_expr(expr: str) -> str:
     """Rewrite expression to match the discrete symbols/functions.

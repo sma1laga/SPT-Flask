@@ -1,6 +1,7 @@
 # pages/demos/stability_feedback.py
 from __future__ import annotations
 import threading, io, base64
+import math
 from functools import lru_cache
 import numpy as np
 from flask import Blueprint, render_template, request, jsonify
@@ -29,9 +30,6 @@ BOUNDS   = dict(a=(-3, 3), b=(-2, 2), K=(-6, 6))
 
 # concurrency controls
 RENDER_LOCK = threading.Lock()   # for Matplotlib
-META_LOCK = threading.Lock()   # for sequencing state
-_LAST_IMG: str | None = None
-_LATEST_SEQ = 0                  # highest seq number weave seen from any client
 
 def _bg_for_stability(pole_real: float) -> str:
     return "#ccffcc" if pole_real < 0 else "#ffcccc"
@@ -61,6 +59,23 @@ def _fig_to_svg_data_url(fig) -> str:
         return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
     except Exception:
         return fig_to_base64(fig)
+def _coerce_float(value, default: float) -> float:
+    if value is None or value == "":
+        return default
+    try:
+        candidate = float(value)
+    except (TypeError, ValueError):
+        return default
+    return candidate if math.isfinite(candidate) else default
+
+def _coerce_int(value, default: int) -> int:
+    if value is None or value == "":
+        return default
+    try:
+        candidate = int(value)
+    except (TypeError, ValueError):
+        return default
+    return candidate
 
 @lru_cache(maxsize=8192)
 def _render_cached(a_q: int, b_q: int, K_q: int) -> str:
@@ -96,6 +111,14 @@ except Exception:
 
 @stability_feedback_bp.route("/", methods=["GET"])
 def page():
+    try:
+        initial_image = _render_cached(
+            int(round(DEFAULTS["a"] * 2)),
+            int(round(DEFAULTS["b"] * 2)),
+            int(round(DEFAULTS["K"] * 2)),
+        )
+    except Exception:
+        initial_image = None
     return render_template(
         "demos/stability_feedback.html",
         defaults=dict(
@@ -104,28 +127,20 @@ def page():
             min_a=BOUNDS["a"][0], max_a=BOUNDS["a"][1],
             min_b=BOUNDS["b"][0], max_b=BOUNDS["b"][1],
             min_K=BOUNDS["K"][0], max_K=BOUNDS["K"][1],
-        )
+        ),
+        initial_image=initial_image,
     )
 
 @stability_feedback_bp.route("/compute", methods=["POST"])
 def compute():
-    """Render only the newest request: older ones are dropped immediately."""
-    global _LATEST_SEQ, _LAST_IMG
     data = request.get_json(force=True) or {}
 
     # Read inputs
-    a = float(data.get("a", DEFAULTS["a"]))
-    b = float(data.get("b", DEFAULTS["b"]))
-    K = float(data.get("K", DEFAULTS["K"]))
-    seq = int(data.get("seq", 0))  # monotonically increasing from client
+    a = _coerce_float(data.get("a", DEFAULTS["a"]), DEFAULTS["a"])
+    b = _coerce_float(data.get("b", DEFAULTS["b"]), DEFAULTS["b"])
+    K = _coerce_float(data.get("K", DEFAULTS["K"]), DEFAULTS["K"])
+    seq = _coerce_int(data.get("seq", 0), 0)  # monotonically increasing from client
 
-    with META_LOCK:
-        if seq > _LATEST_SEQ:
-            _LATEST_SEQ = seq
-        is_latest = (seq == _LATEST_SEQ)
-
-    if not is_latest:
-        return jsonify(dict(image=_LAST_IMG, seq=seq, note="superseded")), 200
 
     a = float(np.clip(a, *BOUNDS["a"]))
     b = float(np.clip(b, *BOUNDS["b"]))
@@ -134,21 +149,23 @@ def compute():
     b_q = int(round(b * 2.0))
     K_q = int(round(K * 2.0))
 
-    with META_LOCK:
-        if seq != _LATEST_SEQ:
-            return jsonify(dict(image=_LAST_IMG, seq=seq, note="preempted")), 200
 
     try:
         with RENDER_LOCK:
             img = _render_cached(a_q, b_q, K_q)
-            _LAST_IMG = img
-        return jsonify(dict(image=img, seq=seq)), 200
+        return jsonify(dict(image=img, seq=seq, a=a, b=b, K=K)), 200
     except Exception:
-        #  return last-good or default
-        if _LAST_IMG is not None:
-            return jsonify(dict(image=_LAST_IMG, seq=seq, note="served_last_good")), 200
-        img = _render_cached(int(round(DEFAULTS["a"]*2)),
-                             int(round(DEFAULTS["b"]*2)),
-                             int(round(DEFAULTS["K"]*2)))
-        _LAST_IMG = img
-        return jsonify(dict(image=img, seq=seq, note="served_default")), 200
+        with RENDER_LOCK:
+            img = _render_cached(
+                int(round(DEFAULTS["a"] * 2)),
+                int(round(DEFAULTS["b"] * 2)),
+                int(round(DEFAULTS["K"] * 2)),
+            )
+        return jsonify(dict(
+            image=img,
+            seq=seq,
+            note="served_default",
+            a=DEFAULTS["a"],
+            b=DEFAULTS["b"],
+            K=DEFAULTS["K"],
+        )), 200

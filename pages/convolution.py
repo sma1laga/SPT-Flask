@@ -9,7 +9,11 @@ convolution_bp = Blueprint("convolution", __name__)
 @convolution_bp.route("/", methods=["GET"])
 def convolution():
     # Renders the convolution page; plots are generated client-side via AJAX + Plotly
-    return render_template("convolution.html")
+    return render_template(
+        "convolution.html",
+        page_title="Convolution Calculator (Online) | Signal Processing Toolkit",
+        meta_description="Use the convolution online calculator to compute and visualize continuous-time convolution of two user-defined signals.",
+    )
 
 @convolution_bp.route("/update", methods=["GET", "POST"])
 def convolution_update():

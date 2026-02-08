@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% set disable_card_hover = true %}
+{% block content %}
+<div class="container wide-container">
+  <div class="page-header">
+    <div>
+      <h1>Distributions</h1>
+      <p class="lead">
+        Explore twelve common probability distributions from statistical signal processing. Adjust parameters, toggle axis limits,
+        and view the resulting PDF and CDF side by side with the associated formulas.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-bolt"></i>Interactive demo</div>
+      <div class="pill pill-subtle"><i class="fa fa-line-chart"></i>Plotly visualizations</div>
+    </div>
+  </div>
+
+  <style>
+    .wide-container{max-width:1320px}
+    .page-header{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px}
+    .chip-row{display:flex;gap:10px;flex-wrap:wrap}
+    .demo-grid{display:grid;grid-template-columns:minmax(320px,360px) 1fr;gap:16px;align-items:start;margin-top:4px}
+    .card{border:1px solid #d9dfe7;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(0,0,0,0.06);background:white;height:100%;display:flex;flex-direction:column;gap:10px}
+    .card.card-plot{gap:12px}
+    .card h3{margin-top:0;font-size:1.1rem;margin-bottom:12px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1f2a6b;font-weight:600;font-size:0.9rem}
+    .pill-subtle{background:#f3f4f6;color:#4b5563}
+    .kv-row{display:grid;grid-template-columns:120px 1fr 58px;gap:10px;align-items:center;margin:6px 0}
+    .kv-row label{font-weight:600;font-size:0.95rem}
+    .kv-row input[type=range]{width:100%}
+    .control-grid{display:grid;gap:8px}
+    .inline-note{color:#4b5563;font-size:0.92rem;margin-top:4px}
+    .error{color:#b91c1c;font-weight:700;margin-top:10px}
+    .plots-wrapper{height:clamp(360px,45vh,480px)}
+    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:6px 0 4px}
+    .summary-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px}
+    .summary-label{font-size:0.82rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:0.03em}
+    .summary-value{font-size:1.05rem;font-weight:700;color:#0f172a}
+    .summary-value.accent{color:#2563eb}
+    .summary-value.subtle{color:#4b5563;font-weight:600;font-size:0.98rem}
+    .meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:2px}
+    .formula-block{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:10px;height:100%}
+    .formula-block h4{margin:0 0 4px;font-size:0.98rem}
+    .toggle-row{display:flex;align-items:center;gap:10px;margin:8px 0}
+    .toggle-row input{width:18px;height:18px}
+    body.dark-mode .card{background:var(--card-background);border-color:var(--border-color);color:var(--text-color);box-shadow:none;}
+    body.dark-mode .kv-row label,
+    body.dark-mode .summary-value,
+    body.dark-mode .inline-note{color:#e5e7eb;}
+    body.dark-mode .summary-label{color:#cbd5e1;}
+    body.dark-mode .summary-item{background:#1f2733;border-color:#3a4250;}
+    body.dark-mode .formula-block{background:#1f2733;border-color:#3a4250;color:#e8edf5;}
+    body.dark-mode .formula-block h4{color:#f8fafc;}
+    body.dark-mode #pdf-formula,
+    body.dark-mode #cdf-formula{color:#e8edf5;}
+    body.dark-mode .pill{background:rgba(96,165,250,0.15);color:#dbeafe;}
+    body.dark-mode select,
+    body.dark-mode input[type=range],
+    body.dark-mode input[type=number]{
+      background:#111827;
+      color:#e5e7eb;
+      border-color:#3a4250;
+    }
+    @media(max-width:1240px){
+      .demo-grid{grid-template-columns:1fr}
+      .plots-wrapper{height:clamp(360px,52vh,520px)}
+    }
+  </style>
+
+  <div class="demo-grid">
+    <div class="card">
+      <div class="pill"><i class="fa fa-sliders"></i>Controls</div>
+      <div class="kv-row">
+        <label for="distribution">Distribution</label>
+        <select id="distribution">
+          <option value="normal">Normal</option>
+          <option value="laplace">Laplace</option>
+          <option value="rayleigh">Rayleigh</option>
+          <option value="exponential">Exponential</option>
+          <option value="cauchy">Cauchy</option>
+          <option value="binomial">Binomial</option>
+          <option value="geometric">Geometric</option>
+          <option value="poisson">Poisson</option>
+          <option value="gamma">Gamma</option>
+          <option value="erlang">Erlang</option>
+          <option value="chi_square">Chi-square</option>
+          <option value="uniform">Uniform</option>
+        </select>
+        <div></div>
+      </div>
+      <div id="controls" class="control-grid"></div>
+      <div id="fixed-row" class="toggle-row" style="display:none">
+        <input type="checkbox" id="fixed_limits" checked>
+        <label for="fixed_limits" id="fixed-label">Limit x-axes</label>
+      </div>
+      <div id="control-note" class="inline-note"></div>
+      <div id="error" class="error" aria-live="polite"></div>
+    </div>
+
+    <div class="card card-plot">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="pill"><i class="fa fa-area-chart"></i>PDF &amp; CDF</div>
+        <div id="dist-kind" class="inline-note"></div>
+      </div>
+      <div class="plots-wrapper" id="plot"></div>
+      <div class="meta-grid">
+        <div class="summary">
+          <div class="summary-item">
+            <div class="summary-label">Distribution</div>
+            <div id="dist-label" class="summary-value accent">Normal</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Support</div>
+            <div id="support-label" class="summary-value">(-∞, ∞)</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Mean</div>
+            <div id="mean-label" class="summary-value">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Variance</div>
+            <div id="var-label" class="summary-value">1.00</div>
+          </div>
+        </div>
+        <div class="formula-block">
+          <h4>PDF</h4>
+          <div id="pdf-formula">\( f_X(x) = \dots \)</div>
+        </div>
+        <div class="formula-block">
+          <h4>CDF</h4>
+          <div id="cdf-formula">\( F_X(x) = \dots \)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const endpoint = "{{ url_for('demos_distributions.compute') }}";
+
+  const CONFIG = {
+    normal: {
+      label: 'Normal',
+      params: [
+        { key: 'mean', label: 'Mean', min: -10, max: 10, step: 0.1, value: defaults.mean },
+        { key: 'sigma', label: 'Sigma', min: 0.1, max: 10, step: 0.1, value: defaults.sigma },
+      ],
+      showFixed: true,
+      fixedLabel: 'Limit x axes to [ -10 , 10 ]',
+      note: 'Gaussian distribution with mean μ and standard deviation σ.',
+    },
+    laplace: {
+      label: 'Laplace',
+      params: [
+        { key: 'mean', label: 'Mean', min: -10, max: 10, step: 0.1, value: defaults.mean },
+        { key: 'laplace_sigma', label: 'Sigma', min: 0.001, max: 10, step: 0.1, value: defaults.laplace_sigma },
+      ],
+      showFixed: true,
+      fixedLabel: 'Limit x axes to [ -10 , 10 ]',
+      note: 'Double exponential distribution with symmetric decay around μ.',
+    },
+    rayleigh: {
+      label: 'Rayleigh',
+      params: [
+        { key: 'rayleigh_sigma', label: 'Sigma', min: 0.01, max: 10, step: 0.01, value: defaults.rayleigh_sigma },
+      ],
+      showFixed: true,
+      fixedLabel: 'Limit x axes to [ 0 , 10 ]',
+      note: 'Amplitude of a 2D Gaussian vector with scale σ.',
+    },
+    exponential: {
+      label: 'Exponential',
+      params: [
+        { key: 'lambda', label: 'Lambda', min: 0.001, max: 4, step: 0.01, value: defaults.lambda },
+      ],
+      showFixed: true,
+      fixedLabel: 'Limit x axes to [ 0 , 10 ]',
+      note: 'Waiting-time model with rate λ (support ≥ 0).',
+    },
+    cauchy: {
+      label: 'Cauchy',
+      params: [
+        { key: 'cauchy_a', label: 'a (location)', min: -10, max: 10, step: 0.1, value: defaults.cauchy_a },
+        { key: 'cauchy_b', label: 'b (scale)', min: 0.001, max: 10, step: 0.1, value: defaults.cauchy_b },
+      ],
+      showFixed: true,
+      fixedLabel: 'Limit x axes to [ -10 , 10 ]',
+      note: 'Heavy-tailed distribution with undefined mean/variance.',
+    },
+    binomial: {
+      label: 'Binomial',
+      params: [
+        { key: 'binom_p', label: 'Probability', min: 0.001, max: 0.999, step: 0.001, value: defaults.binom_p },
+        { key: 'binom_n', label: 'Trials (N)', min: 1, max: 100, step: 1, value: defaults.binom_n, type: 'number' },
+      ],
+      note: 'Discrete successes over N trials with success probability p.',
+    },
+    geometric: {
+      label: 'Geometric',
+      params: [
+        { key: 'geom_p', label: 'Probability', min: 0.001, max: 0.999, step: 0.001, value: defaults.geom_p },
+      ],
+      note: 'Number of failures before first success (support starts at 0).',
+    },
+    poisson: {
+      label: 'Poisson',
+      params: [
+        { key: 'poisson_a', label: 'λ', min: 0.001, max: 50, step: 0.1, value: defaults.poisson_a },
+      ],
+      note: 'Counts with expected value λ and variance λ.',
+    },
+    gamma: {
+      label: 'Gamma',
+      params: [
+        { key: 'gamma_a', label: 'a (shape)', min: 0.001, max: 4, step: 0.01, value: defaults.gamma_a },
+        { key: 'gamma_lambda', label: 'lambda', min: 0.01, max: 2, step: 0.01, value: defaults.gamma_lambda },
+      ],
+      note: 'Shape a and rate λ on [0, ∞).',
+    },
+    erlang: {
+      label: 'Erlang',
+      params: [
+        { key: 'erlang_lambda', label: 'Lambda', min: 0.01, max: 4, step: 0.01, value: defaults.erlang_lambda },
+        { key: 'erlang_n', label: 'n (integer)', min: 1, max: 6, step: 1, value: defaults.erlang_n, type: 'number' },
+      ],
+      note: 'Special case of Gamma with integer shape n.',
+    },
+    chi_square: {
+      label: 'Chi-square',
+      params: [
+        { key: 'chi_b', label: 'b (dof)', min: 0.001, max: 10, step: 0.01, value: defaults.chi_b },
+      ],
+      note: 'Sum of squared standard normal variables (degrees of freedom b).',
+    },
+    uniform: {
+      label: 'Uniform',
+      params: [
+        { key: 'uniform_max', label: 'X_max', min: 0, max: 10, step: 0.1, value: defaults.uniform_max },
+        { key: 'uniform_min', label: 'X_min', min: -10, max: 0, step: 0.1, value: defaults.uniform_min },
+      ],
+      showFixed: true,
+      fixedLabel: 'Limit x axes to [ -10 , 10 ]',
+      note: 'Constant density on [X_min, X_max]. Ensure X_min < X_max.',
+    },
+  };
+
+  const controlsEl = document.getElementById('controls');
+  const distSelect = document.getElementById('distribution');
+  const fixedRow = document.getElementById('fixed-row');
+  const fixedBox = document.getElementById('fixed_limits');
+  const fixedLabel = document.getElementById('fixed-label');
+  const noteEl = document.getElementById('control-note');
+  const errorEl = document.getElementById('error');
+  const plotEl = document.getElementById('plot');
+  const pdfFormulaEl = document.getElementById('pdf-formula');
+  const cdfFormulaEl = document.getElementById('cdf-formula');
+  const distLabelEl = document.getElementById('dist-label');
+  const supportLabelEl = document.getElementById('support-label');
+  const meanLabelEl = document.getElementById('mean-label');
+  const varLabelEl = document.getElementById('var-label');
+  const distKindEl = document.getElementById('dist-kind');
+
+  function buildControlRow({ key, label, min, max, step, value, type }) {
+    const row = document.createElement('div');
+    row.className = 'kv-row';
+    const inputType = type === 'number' ? 'number' : 'range';
+    row.innerHTML = `
+      <label for="${key}">${label}</label>
+      <input type="${inputType}" id="${key}" min="${min}" max="${max}" step="${step}" value="${value}">
+      <span id="${key}_val">${value}</span>
+    `;
+    return row;
+  }
+
+  function renderControls() {
+    const dist = distSelect.value;
+    const cfg = CONFIG[dist];
+    controlsEl.innerHTML = '';
+    cfg.params.forEach((p) => {
+      const row = buildControlRow(p);
+      controlsEl.appendChild(row);
+    });
+    document.querySelectorAll('#controls input').forEach((input) => {
+      input.addEventListener('input', syncLabels);
+      input.addEventListener('change', compute);
+    });
+    syncLabels();
+    noteEl.textContent = cfg.note || '';
+    if (cfg.showFixed) {
+      fixedRow.style.display = 'flex';
+      fixedLabel.textContent = cfg.fixedLabel || 'Limit x axis';
+      fixedBox.checked = defaults.fixed_limits;
+    } else {
+      fixedRow.style.display = 'none';
+    }
+  }
+
+  function syncLabels() {
+    document.querySelectorAll('#controls input').forEach((el) => {
+      const out = document.getElementById(`${el.id}_val`);
+      if (out) {
+        const val = el.type === 'number' ? parseFloat(el.value) : parseFloat(el.value).toFixed(3).replace(/\.0+$/, '.0');
+        out.textContent = val;
+      }
+    });
+  }
+
+  function payload() {
+    const dist = distSelect.value;
+    const cfg = CONFIG[dist];
+    const data = { distribution: dist };
+    cfg.params.forEach((p) => {
+      const el = document.getElementById(p.key);
+      data[p.key] = el.type === 'number' ? parseFloat(el.value) : parseFloat(el.value);
+    });
+    data.fixed_limits = fixedBox.checked;
+    return data;
+  }
+
+  function typeset() {
+    if (window.MathJax?.typesetPromise) {
+      window.MathJax.typesetPromise();
+    }
+  }
+
+  function renderPlot(data) {
+    const isDiscrete = data.kind === 'discrete';
+    const pdfTrace = {
+      x: data.x_pdf,
+      y: data.pdf,
+      type: isDiscrete ? 'bar' : 'scatter',
+      mode: isDiscrete ? undefined : 'lines',
+      name: 'PDF',
+      marker: { color: '#2563eb' },
+      line: { width: 3 },
+      xaxis: 'x1',
+      yaxis: 'y1',
+    };
+    const cdfTrace = {
+      x: data.x_cdf,
+      y: data.cdf,
+      type: 'scatter',
+      mode: 'lines',
+      line: { shape: isDiscrete ? 'hv' : 'linear', width: 3, color: '#16a34a' },
+      name: 'CDF',
+      xaxis: 'x2',
+      yaxis: 'y2',
+    };
+
+    const calculatedHeight = Math.max(360, Math.min(520, plotEl.clientHeight || 440));
+    const layout = {
+      grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
+      margin: { t: 30, r: 10, l: 55, b: 55 },
+      height: calculatedHeight,
+      showlegend: false,
+      xaxis: { title: 'x', zeroline: true },
+      yaxis: { title: 'f_X(x)', rangemode: 'tozero' },
+      xaxis2: { title: 'x', zeroline: true },
+      yaxis2: { title: 'F_X(x)', range: [0, 1] },
+      paper_bgcolor: 'white',
+      plot_bgcolor: 'white',
+    };
+    Plotly.react(plotEl, [pdfTrace, cdfTrace], layout, { responsive: true });
+  }
+
+  function updateSummary(data) {
+    const dist = distSelect.value;
+    const cfg = CONFIG[dist];
+    distLabelEl.textContent = cfg.label || dist;
+    supportLabelEl.textContent = data.support;
+    distKindEl.textContent = data.kind === 'discrete' ? 'Discrete probability mass' : 'Continuous density';
+    meanLabelEl.textContent = data.mean === null ? '—' : data.mean.toFixed(3);
+    varLabelEl.textContent = data.variance === null ? '—' : data.variance.toFixed(3);
+    pdfFormulaEl.innerHTML = `\\( ${data.pdf_formula} \\)`;
+    cdfFormulaEl.innerHTML = `\\( ${data.cdf_formula} \\)`;
+    typeset();
+  }
+
+  async function compute() {
+    try {
+      errorEl.textContent = '';
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload()),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error || 'Unable to compute distribution.');
+      }
+      renderPlot(data);
+      updateSummary(data);
+    } catch (err) {
+      errorEl.textContent = err.message;
+    }
+  }
+
+  distSelect.addEventListener('change', () => { renderControls(); compute(); });
+  fixedBox.addEventListener('change', compute);
+
+
+  renderControls();
+  compute();
+</script>
+{% endblock %}

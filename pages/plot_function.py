@@ -49,12 +49,16 @@ plot_function_bp = Blueprint("plot_function", __name__,
 
 @plot_function_bp.route("/", methods=["GET"])
 def plot_function():
-    return render_template("plot_function.html")
+    return render_template(
+        "plot_function.html",
+        page_title="Signal Plotter (Online) | Signal Processing Toolkit",
+        meta_description="Use the Signal Plotter (Online) to visualize continuous-time expressions, compare two signals, and apply shift, amplitude, and width transformations for analysis.",
+    )
 
 
 @plot_function_bp.route("/update", methods=["POST"])
 def plot_function_update():
-    data = request.get_json(force=True) or {}
+    data = request.get_json(silent=True) or {}
 
     func1_str, func2_str = data.get("func1", "").strip(), data.get("func2", "").strip()
 

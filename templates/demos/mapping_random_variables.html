@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container wide-container mapping-rv-layout">
+  <div class="page-header">
+    <div>
+      <h1>Mapping Random Variables</h1>
+      <p>
+        Explore how transforming a random variable reshapes its probability density. Choose a source distribution,
+        pick a mapping (linear, quadratic, quantizer, or custom piecewise), and see both the mapping function and the
+        resulting output density update instantly.
+      </p>
+    </div>
+    <div class="chip-row">
+      <div class="pill"><i class="fa fa-random"></i>Statistical demo</div>
+      <div class="pill pill-subtle"><i class="fa fa-area-chart"></i>Interactive plots</div>
+    </div>
+  </div>
+
+  <div class="demo-grid">
+    <div class="control-card">
+      <div class="pill"><i class="fa fa-sliders"></i>Controls</div>
+      <div class="kv-row">
+        <label for="distribution">Distribution</label>
+        <select id="distribution">
+          <option value="uniform">Uniform</option>
+          <option value="normal">Normal</option>
+          <option value="exponential">Exponential</option>
+          <option value="rayleigh">Rayleigh</option>
+          <option value="cauchy">Cauchy</option>
+        </select>
+        <div></div>
+      </div>
+      <div id="distribution-controls" class="control-grid"></div>
+      <hr>
+      <div class="kv-row">
+        <label for="mapping">Mapping</label>
+        <select id="mapping">
+          <option value="linear">Linear</option>
+          <option value="quadratic">Quadratic</option>
+          <option value="quantizer">Quantizer</option>
+          <option value="custom">Custom Points</option>
+        </select>
+        <div></div>
+      </div>
+      <div id="mapping-controls" class="control-grid"></div>
+      <div id="error" class="error" aria-live="polite"></div>
+
+    </div>
+
+    <div class="plot-card plots-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div class="pill"><i class="fa fa-line-chart"></i>PDF mapping</div>
+        <div id="meta-label" class="inline-note"></div>
+      </div>
+      <div id="plot-title" class="latex-title" aria-live="polite"></div>
+      <div class="summary-strip" aria-live="polite">
+        <div class="summary-item">
+          <div class="summary-label">Source</div>
+          <div id="source-label" class="summary-value accent">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Mapping</div>
+          <div id="mapping-label" class="summary-value">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Notable</div>
+          <div id="note-label" class="summary-value strong">Dirac masses appear as stem arrows</div>
+        </div>
+      </div>
+      <div class="plots-grid">
+        <div class="plot-frame">
+          <div class="plot-label"><i class="fa fa-area-chart"></i>Input PDF \(f_X(x)\)</div>
+          <div id="plot-x" class="plot-wrapper"></div>
+        </div>
+        <div class="plot-frame">
+          <div class="plot-label"><i class="fa fa-exchange"></i>Mapping \(g(x)\)</div>
+          <div id="plot-g" class="plot-wrapper"></div>
+        </div>
+        <div class="plot-frame">
+          <div class="plot-label"><i class="fa fa-line-chart"></i>Mapped PDF \(f_Y(y)\)</div>
+          <div id="plot-y" class="plot-wrapper"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script>
+  const defaults = {{ defaults | tojson }};
+  const quantizers = {{ quantizers | tojson }};
+  const plotXEl = document.getElementById('plot-x');
+  const plotGEl = document.getElementById('plot-g');
+  const plotYEl = document.getElementById('plot-y');
+  const latexTitleEl = document.getElementById('plot-title');
+  const errorEl = document.getElementById('error');
+  const metaEl = document.getElementById('meta-label');
+  const sourceLabel = document.getElementById('source-label');
+  const mappingLabel = document.getElementById('mapping-label');
+  const noteLabel = document.getElementById('note-label');
+  const layoutRoot = document.querySelector('.mapping-rv-layout');
+
+  const DIST_CONFIG = {
+    uniform: [
+      { key: 'x_max', label: 'X_max', min: 0.2, max: 9.9, step: 0.1, value: defaults.uniform.x_max },
+      { key: 'x_min', label: 'X_min', min: -9.9, max: -0.2, step: 0.1, value: defaults.uniform.x_min }
+    ],
+    normal: [
+      { key: 'mean', label: 'Mean', min: -5, max: 5, step: 0.1, value: defaults.normal.mean },
+      { key: 'variance', label: 'Variance', min: 0.2, max: 6, step: 0.1, value: defaults.normal.variance }
+    ],
+    exponential: [
+      { key: 'lambda', label: 'Lambda', min: 0.05, max: 2, step: 0.05, value: defaults.exponential.lambda }
+    ],
+    rayleigh: [
+      { key: 'sigma', label: 'Sigma', min: 0.2, max: 4, step: 0.05, value: defaults.rayleigh.sigma }
+    ],
+    cauchy: [
+      { key: 'loc', label: 'Location', min: -5, max: 5, step: 0.1, value: defaults.cauchy.loc },
+      { key: 'scale', label: 'Scale', min: 0.2, max: 4, step: 0.1, value: defaults.cauchy.scale }
+    ]
+  };
+
+  const MAPPING_CONFIG = {
+    linear: [
+      { key: 'a', label: 'a (slope)', min: -4, max: 4, step: 0.05, value: defaults.linear.a },
+      { key: 'b', label: 'b (offset)', min: -6, max: 6, step: 0.1, value: defaults.linear.b }
+    ],
+    quadratic: [
+      { key: 'a', label: 'a (>0)', min: 0.1, max: 4, step: 0.05, value: defaults.quadratic.a },
+      { key: 'b', label: 'b (offset)', min: -2, max: 6, step: 0.1, value: defaults.quadratic.b }
+    ],
+    quantizer: [
+      { key: 'preset', label: 'Preset', type: 'select' }
+    ],
+    custom: [
+      { key: 'points', label: 'Points (x:y,...)', type: 'text', value: defaults.custom.points }
+    ]
+  };
+
+  function buildControlRow(cfg){
+    const row = document.createElement('div');
+    row.className = 'kv-row';
+    if(cfg.type === 'select'){
+      row.innerHTML = `
+        <label>${cfg.label}</label>
+        <select id="${cfg.key}"></select>
+        <div></div>
+      `;
+      const select = row.querySelector('select');
+      Object.entries(quantizers).forEach(([key, val]) => {
+        const opt = document.createElement('option');
+        opt.value = key; opt.textContent = val.label;
+        select.appendChild(opt);
+      });
+      select.value = defaults.quantizer.preset;
+    } else if(cfg.type === 'text') {
+      row.innerHTML = `
+        <label>${cfg.label}</label>
+        <input type="text" id="${cfg.key}" value="${cfg.value}">
+        <div></div>
+      `;
+    } else {
+      row.innerHTML = `
+        <label>${cfg.label}</label>
+        <input type="range" id="${cfg.key}" min="${cfg.min}" max="${cfg.max}" step="${cfg.step}" value="${cfg.value}">
+        <span id="${cfg.key}_val">${cfg.value}</span>
+      `;
+    }
+    return row;
+  }
+
+  function renderDistributionControls(){
+    const dist = document.getElementById('distribution').value;
+    const container = document.getElementById('distribution-controls');
+    container.innerHTML = '';
+    DIST_CONFIG[dist].forEach(cfg => container.appendChild(buildControlRow(cfg)));
+    syncLabels();
+  }
+
+  function renderMappingControls(){
+    const mapping = document.getElementById('mapping').value;
+    const container = document.getElementById('mapping-controls');
+    container.innerHTML = '';
+    MAPPING_CONFIG[mapping].forEach(cfg => container.appendChild(buildControlRow(cfg)));
+    syncLabels();
+  }
+
+  function syncLabels(){
+    document.querySelectorAll('.kv-row input[type=range]').forEach(inp => {
+      const span = document.getElementById(`${inp.id}_val`);
+      if(span){ span.textContent = parseFloat(inp.value).toFixed(2); }
+    });
+  }
+
+  function payload(){
+    const dist = document.getElementById('distribution').value;
+    const mapping = document.getElementById('mapping').value;
+    const data = { distribution: dist, mapping };
+    DIST_CONFIG[dist].forEach(cfg => {
+      const el = document.getElementById(cfg.key);
+      data[cfg.key] = cfg.type === 'text' ? el.value : parseFloat(el.value);
+    });
+    MAPPING_CONFIG[mapping].forEach(cfg => {
+      const el = document.getElementById(cfg.key);
+      data[cfg.key] = cfg.type === 'text' ? el.value : (cfg.type === 'select' ? el.value : parseFloat(el.value));
+    });
+    return data;
+  }
+
+  function describeMapping(mapping, params){
+    if(mapping === 'linear'){ return `Linear: y = ${params.a.toFixed(2)}x + ${params.b.toFixed(2)}`; }
+    if(mapping === 'quadratic'){ return `Quadratic: y = ${params.a.toFixed(2)}x² + ${params.b.toFixed(2)}`; }
+    if(mapping === 'quantizer'){ return 'Quantizer: step mapping'; }
+    return 'Custom piecewise mapping';
+  }
+
+  async function updatePlots(){
+    errorEl.textContent = '';
+    try{
+      const resp = await fetch('./compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload())
+      });
+      const data = await resp.json();
+      if(!resp.ok){ throw new Error(data.error || 'Computation failed'); }
+      renderPlot(data);
+    }catch(err){
+      errorEl.textContent = err.message;
+    }
+  }
+  function getPlotHeight(){
+    if(!layoutRoot){ return 230; }
+    const raw = getComputedStyle(layoutRoot).getPropertyValue('--plot-height');
+    const num = parseInt(raw, 10);
+    return Number.isFinite(num) ? num : 230;
+  }
+
+  const baseLayout = (title) => ({
+    margin: { t: 30, r: 6, b: 40, l: 46 },
+    template: 'plotly_white',
+    showlegend: false,
+    height: getPlotHeight(),
+    xaxis: { title: title },
+  });
+  function resizePlots(){
+    if(typeof Plotly === 'undefined'){ return; }
+    const height = getPlotHeight();
+    [plotXEl, plotGEl, plotYEl].forEach(el => {
+      if(el && el.data){
+        Plotly.relayout(el, { height });
+        Plotly.Plots.resize(el);
+      }
+    });
+  }
+
+  function renderPlot(data){
+    const { x, pdf_x, mapping, mapping_points } = data;
+
+    Plotly.newPlot(
+      plotXEl,
+      [{ x, y: pdf_x, mode: 'lines', line: { color: '#2563eb', width: 3 } }],
+      { ...baseLayout('x'), yaxis: { title: 'f_X(x)' } },
+      { responsive: true }
+    );
+
+    const mappingTrace = mapping === 'quantizer'
+      ? { x: mapping_points[0], y: mapping_points[1], mode: 'lines+markers', line:{color:'#10b981'} }
+      : { x: mapping_points[0], y: mapping_points[1], mode: 'lines', line:{color:'#10b981', width:3} };
+
+    Plotly.newPlot(
+      plotGEl,
+      [mappingTrace],
+      { ...baseLayout('x'), yaxis: { title: 'g(x)' } },
+      { responsive: true }
+    );
+
+    if(mapping === 'quantizer'){
+      const stemX = [];
+      const stemY = [];
+      data.y_positions.forEach((pos, idx) => {
+        stemX.push(pos, pos, null);
+        stemY.push(0, data.masses[idx], null);
+      });
+      Plotly.newPlot(
+        plotYEl,
+        [
+          {
+            x: stemX,
+            y: stemY,
+            mode: 'lines',
+            line: { color: '#f59e0b', width: 2 },
+          },
+          {
+            x: data.y_positions,
+            y: data.masses,
+            mode: 'markers',
+            marker: { color: '#f59e0b', size: 10, symbol: 'triangle-up' },
+          }
+        ],
+        { ...baseLayout('y'), yaxis: { title: 'f_Y(y)' } },
+        { responsive: true }
+      );
+    } else {
+      let yTrace = data.pdf_y;
+      let quadraticCap = null;
+      if(mapping === 'quadratic'){
+        const quadraticMax = data.pdf_y.reduce((max, val) => Math.max(max, val), 0);
+        quadraticCap = quadraticMax <= 1 ? 1 : 10;
+        yTrace = data.pdf_y.map(val => Math.min(val, quadraticCap));
+      }
+      const traces = [
+        { x: data.y, y: yTrace, mode: 'lines', line:{color:'#f59e0b', width:3} }
+      ];
+      Plotly.newPlot(
+        plotYEl,
+        traces,
+        {
+          ...baseLayout('y'),
+          yaxis: {
+            title: 'f_Y(y)',
+            type: 'linear',
+            autorange: mapping !== 'quadratic',
+            range: mapping === 'quadratic' ? [0, quadraticCap] : undefined
+          }
+        },
+        { responsive: true }
+      );
+    }
+
+    sourceLabel.textContent = data.dist_label;
+    mappingLabel.textContent = describeMapping(mapping, data.params || {});
+    latexTitleEl.textContent = `Mapping: ${data.dist_label} → Y = g(X)`;
+    metaEl.textContent = mapping === 'quantizer' ? `${data.y_positions.length} quantizer levels` : `Samples: ${x.length}`;
+    noteLabel.textContent = mapping === 'quantizer'
+      ? 'Probability masses shown as stem arrows'
+      : (mapping === 'quadratic' ? 'Quadratic density shown with capped linear scale' : 'Continuous density after mapping');
+    resizePlots();
+  }
+
+  document.getElementById('distribution').addEventListener('change', () => { renderDistributionControls(); updatePlots(); });
+  document.getElementById('mapping').addEventListener('change', () => { renderMappingControls(); updatePlots(); });
+  document.addEventListener('input', (evt) => {
+    if(evt.target.closest('.control-card')){
+      syncLabels();
+      updatePlots();
+    }
+  });
+  const demoSidebarToggle = document.getElementById('demo-sidebar-toggle');
+  if(demoSidebarToggle){
+    demoSidebarToggle.addEventListener('click', () => {
+      setTimeout(resizePlots, 220);
+    });
+  }
+  window.addEventListener('resize', () => resizePlots());
+
+  renderDistributionControls();
+  renderMappingControls();
+  updatePlots();
+</script>
+{% endblock %}

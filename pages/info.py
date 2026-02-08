@@ -81,17 +81,14 @@ def terms():
 def news():
     releases = [
         # Default template with: version / codename / date / whats the acctual update (highlights)
-        # @Paul - noch nicht wichtig, erst nach launch dann...
-        { 
-            "version": "1.1.1vUI",
-            "codename": "UI Refresh",
-            "date": "September 20, 2025",
-            "highlights": [
-                "Refined dashboard styling for better readability.",
-                "Introduced the dedicated news page for release notes.",
-                "Improved footer accessibility links."
-            ],
-        },
+         { 
+             "version": "1.2.1",
+             "codename": "Statistical Signal Processing Demos",
+             "date": "February 2, 2026",
+             "highlights": [
+                 "11 new modules on Statistical Signal Processing separated in Probability Calculus and Random Variables & Stochastic Processes",
+             ],
+         },
 
     ]
     return render_template('news.html', releases=releases)

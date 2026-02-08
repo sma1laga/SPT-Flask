@@ -88,7 +88,11 @@ def compute_dft(x: np.ndarray, dft_len: int):
 # ---------------------------------------------------------------------------
 @discrete_fourier_bp.route("/", methods=["GET"], endpoint="show_dft")
 def dft():
-    return render_template("dft.html")
+    return render_template(
+        "dft.html",
+        page_title="DFT / FFT Tool (Online) | Signal Processing Toolkit",
+        meta_description="Use the DFT / FFT tool online to define discrete-time signals, compute spectral magnitude and phase, and study transform-domain effects.",
+    )
 
 @dft_bp.route("/update", methods=["POST"])
 def update_dft():

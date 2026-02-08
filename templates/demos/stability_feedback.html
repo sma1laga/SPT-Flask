@@ -9,7 +9,7 @@
   The background indicates a stable system: green for stable, red for unstable.
 </p>
 
-<div class="demo row">
+<div class="demo row" data-stability-defaults='{{ defaults | tojson | e }}' data-compute-url="{{ url_for('stability_feedback.compute') }}">
   <div class="card">
     <div class="toolbar">
       <div>
@@ -39,70 +39,12 @@
   </div>
 
   <div class="card">
-    <img id="plot" alt="Pole diagrams of H(s) and Q(s)" decoding="async" loading="eager">
+    <img id="plot" src="{{ initial_image }}" alt="Pole diagrams of H(s) and Q(s)" decoding="async" loading="eager">
   </div>
 </div>
 {% endblock %}
 
 
 {% block scripts %}
-<script>
-  const DEFAULTS = {{ defaults | tojson }};
-  const $ = (id) => document.getElementById(id);
-
-  let inFlight = null;
-  let debounceTimer = null;
-  let SEQ = 0; 
-
-  function send() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      if (inFlight) inFlight.abort();
-      inFlight = new AbortController();
-
-      const mySeq = ++SEQ;  
-      const body = {
-        a: parseFloat($("a").value),
-        b: parseFloat($("b").value),
-        K: parseFloat($("K").value),
-        seq: mySeq
-      };
-
-      try {
-        const resp = await fetch("./compute", {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify(body),
-          signal: inFlight.signal
-        });
-        if (!resp.ok) return;
-        const data = await resp.json();
-
-        if (data.seq !== undefined && data.seq < SEQ) return;
-
-        if (data.image) $("plot").src = data.image;
-      } catch (e) {
-        /* aborted – ignr */
-      } finally {
-        inFlight = null;
-      }
-    }, 80); 
-  }
-
-  ["a","b","K"].forEach(id => {
-    $(id).addEventListener("input", send);
-    $(id).addEventListener("change", send);
-    $(id).addEventListener("keyup", e => { if (e.key === "Enter") send(); });
-  });
-
-  window.addEventListener("load", send);
-
-  $("run").addEventListener("click", send);
-
-  $("reset").addEventListener("click", () => {
-    ["a","b","K"].forEach(id => { $(id).value = DEFAULTS[id]; });
-    send();
-  });
-</script>
-
+<script src="{{ url_for('static', filename='js/demos/stability_feedback.js') }}"></script>
 {% endblock %}

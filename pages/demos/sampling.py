@@ -50,9 +50,7 @@ w_grid = np.linspace(W_MIN, W_MAX, W_N)
 
 # Concurrency 
 RENDER_LOCK = threading.Lock()
-META_LOCK = threading.Lock()
-_LAST_IMG = None
-_LATEST_SEQ = 0
+
 
 
 def si(x: np.ndarray) -> np.ndarray:
@@ -245,17 +243,8 @@ def page():
 
 @sampling_bp.route("/compute", methods=["POST"])
 def compute():
-    global _LATEST_SEQ, _LAST_IMG
     data = request.get_json(force=True) or {}
     seq = int(data.get("seq", 0))
-
-    with META_LOCK:
-        if seq > _LATEST_SEQ:
-            _LATEST_SEQ = seq
-        is_latest = (seq == _LATEST_SEQ)
-
-    if not is_latest:
-        return jsonify(dict(image=_LAST_IMG, seq=seq, note="superseded")), 200
 
     wg_over_pi = float(data.get("w_g_over_pi", DEFAULTS["w_g_over_pi"]))
     wa_over_pi = float(data.get("w_a_over_pi", DEFAULTS["w_a_over_pi"]))
@@ -270,20 +259,15 @@ def compute():
     wg_q = int(round(wg_over_pi * 2.0))
     wa_q = int(round(wa_over_pi * 2.0))
 
-    with META_LOCK:
-        if seq != _LATEST_SEQ:
-            return jsonify(dict(image=_LAST_IMG, seq=seq, note="preempted")), 200
-
     try:
         with RENDER_LOCK:
             img = _render_cached(wg_q, wa_q, flags)
-            _LAST_IMG = img
         return jsonify(dict(image=img, seq=seq)), 200
     except Exception:
-        if _LAST_IMG is not None:
-            return jsonify(dict(image=_LAST_IMG, seq=seq, note="served_last_good")), 200
-        img = _render_cached(int(round(DEFAULTS["w_g_over_pi"]*2)),
-                             int(round(DEFAULTS["w_a_over_pi"]*2)),
-                             _flags_from_defaults())
-        _LAST_IMG = img
+        with RENDER_LOCK:
+            img = _render_cached(
+                int(round(DEFAULTS["w_g_over_pi"] * 2)),
+                int(round(DEFAULTS["w_a_over_pi"] * 2)),
+                _flags_from_defaults(),
+            )
         return jsonify(dict(image=img, seq=seq, note="served_default")), 200
