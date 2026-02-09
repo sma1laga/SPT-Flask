@@ -129,9 +129,20 @@ docker-compose down && docker-compose up -d
 ```
 
 ## Logging
-While crashes are reported in ./logs/crashes.log, access logs can be seen via dockers logs command.
+While crashes are reported in `./logs/crashes.log`, access logs can be seen via docker logs command.
 ```bash
 docker logs spt-flask_app_1 # change to the correct container name shown by docker ps
+```
+Crash entries are stored as JSON lines and include useful debugging fields such as:
+- `timestamp` (UTC)
+- `error_type`, `error_message`, `stack_trace`
+- `path`, `method`, `endpoint`, `query_string`, request payload fields
+- `client_ip`, `user_agent`, `referrer`, `origin`
+- `anonymous_user_id` (hash from IP + user-agent for rough user clustering)
+
+To analyze a crash log and detect repeated vs. single-occurrence issues (including likely single-user vs multi-user patterns), run:
+```bash
+python utils/analyze_crashes.py ./logs/crashes.log
 ```
 
 ## Contributing
