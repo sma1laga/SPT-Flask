@@ -114,8 +114,15 @@ def _build_demo_slug_map():
 
 DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
 COLLAPSIBLE_DEMO_SECTIONS = {
+    "Signals and Systems I",
+    "Signals and Systems II",
     "Statistical Signal Processing",
     "Image and Video Compression",
+}
+
+COLLAPSIBLE_ENDPOINTS = {
+#    "plot_function.plot_function",
+#    "bode_plot.bode_plot",
 }
 
 SITE_BASE_URL = os.getenv(
@@ -189,9 +196,11 @@ def create_app():
     @app.context_processor
     def inject_demos_sidebar():
         """Expose demo metadata for building the section-aware demo sidebar."""
-
+        endpoint_collapsible = request.endpoint in COLLAPSIBLE_ENDPOINTS
         if not request.path.startswith("/demos"):
-            return {}
+            return {
+                "is_collapsible_demo": endpoint_collapsible,
+            }
 
         parts = [part for part in request.path.split("/") if part]
         slug = parts[1] if len(parts) > 1 else None
@@ -203,7 +212,9 @@ def create_app():
             "demos_section": section_data,
             "demos_section_name": section_name,
             "is_statsip_demo": section_name == "Statistical Signal Processing",
-            "is_collapsible_demo": section_name in COLLAPSIBLE_DEMO_SECTIONS,
+            "is_collapsible_demo": (
+                section_name in COLLAPSIBLE_DEMO_SECTIONS or endpoint_collapsible
+            ),
         }
 
     @app.errorhandler(Exception)
