@@ -371,7 +371,12 @@ function collectDemodParams(){
 
 function showError(targetId, err) {
   const el = $(targetId);
-  if (el) el.innerHTML = `<div class="muted">${err}</div>`;
+  if (!el) return;
+  el.replaceChildren();
+  const msg = document.createElement('div');
+  msg.className = 'muted';
+  msg.textContent = String(err ?? '');
+  el.appendChild(msg);
 }
 
 async function plotPam() {
