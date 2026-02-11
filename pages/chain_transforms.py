@@ -1,4 +1,5 @@
 import numpy as np
+from utils.eval_helpers import safe_eval
 
 # -----------------------------------------------------------
 def rect(w,width=1): return np.where(np.abs(w)<=width/2,1.0,0.0)
@@ -94,9 +95,9 @@ def apply_multiplication(signal, param, w):
         return K * shift(signal, sign*ω0)
 
     # --- fallback expression ------------------------------------------
-    safe = {"np":np,"w":w,"sin":np.sin,"cos":np.cos,"exp":np.exp,
+    safe = {"w":w,"sin":np.sin,"cos":np.cos,"exp":np.exp,
             "rect":rect,"tri":tri,"j":1j}
-    factor = eval(param, {"__builtins__":{}}, safe)
+    factor = safe_eval(param, safe)
     return signal * factor
 
 # -----------------------------------------------------------
@@ -120,8 +121,8 @@ def apply_filter(signal,param,w):
 # -----------------------------------------------------------
 def apply_generic(signal,param,w):
     if not param: return signal
-    safe={"np":np,"w":w,"x":signal,"rect":rect,"tri":tri}
-    return eval(param,{"__builtins__":{}},safe)
+    safe={"w":w,"x":signal,"rect":rect,"tri":tri}
+    return safe_eval(param,safe)
 def no_op(signal,param,w): return signal
 
 

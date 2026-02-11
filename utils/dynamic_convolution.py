@@ -3,6 +3,7 @@ from functools import partial
 import numpy as np
 from scipy.signal import convolve
 from utils.math_utils import rect, tri, step, cos, sin, delta, inv_t, si, delta_train
+from utils.eval_helpers import safe_eval
 
 
 functions = [
@@ -35,7 +36,7 @@ def conv_json(data: dict):
     t_calc = np.linspace(-4*DISP_RANGE-0.1, 4*DISP_RANGE+0.1, 8001)
     dt = t_calc[1] - t_calc[0]
     ctx = {
-        "t": t_calc, "np": np, "pi": np.pi, "e": np.e,
+        "t": t_calc, "pi": np.pi, "e": np.e,
         "rect": rect, "tri": tri, "step": step,
         "cos": partial(cos, t_norm=np.pi), "sin": partial(sin, t_norm=np.pi),
         "delta": delta, "delta_train": delta_train,
@@ -43,8 +44,8 @@ def conv_json(data: dict):
     }
 
     try:
-        y1_calc = eval(f1_str, ctx) if f1_str else np.zeros_like(t_calc)
-        y2_calc = eval(f2_str, ctx) if f2_str else np.zeros_like(t_calc)
+        y1_calc = safe_eval(f1_str, ctx) if f1_str else np.zeros_like(t_calc)
+        y2_calc = safe_eval(f2_str, ctx) if f2_str else np.zeros_like(t_calc)
     except Exception as e:
         return jsonify(error=f"Extended‐domain eval error: {e}"), 400
 
@@ -55,11 +56,11 @@ def conv_json(data: dict):
     ctx_disp = ctx.copy()
     ctx_disp["t"] = t_disp
     try:
-        y1_disp = eval(f1_str, ctx_disp) if f1_str else np.zeros_like(t_disp)
+        y1_disp = safe_eval(f1_str, ctx_disp) if f1_str else np.zeros_like(t_disp)
     except Exception as e:
         return jsonify(error=f"Function 1 eval error: {e}"), 400
     try:
-        y2_disp = eval(f2_str, ctx_disp) if f2_str else np.zeros_like(t_disp)
+        y2_disp = safe_eval(f2_str, ctx_disp) if f2_str else np.zeros_like(t_disp)
     except Exception as e:
         return jsonify(error=f"Function 2 eval error: {e}"), 400
 

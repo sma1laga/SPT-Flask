@@ -5,6 +5,7 @@ import re
 from utils.math_utils import (
     rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
 )
+from utils.eval_helpers import safe_eval
 
 discrete_fourier_bp = Blueprint("discrete_fourier", __name__,
                                 template_folder="templates")
@@ -49,7 +50,7 @@ def make_sequence(func_str: str, L: int, M: int, shift: float,
     # safe evaluation sandbox
     ctx = {
         "k": k_prime, "n": k_prime, "L": L, "M": M,
-        "np": np, "pi": np.pi, "e": np.e, "i": 1j, "j": 1j,
+        "pi": np.pi, "e": np.e, "i": 1j, "j": 1j,
         "rect": rect_N, "tri": tri_N, "step": step,
         "sin": sin, "cos": cos, "tan": np.tan,
         "exp": np.exp, "exp_iwt": exp_iwt, "log": np.log, "sqrt": np.sqrt,
@@ -58,7 +59,7 @@ def make_sequence(func_str: str, L: int, M: int, shift: float,
     }
 
     try:
-        x = eval(func_str, ctx) if func_str else np.zeros_like(k, dtype=float)
+        x = safe_eval(func_str, ctx) if func_str else np.zeros_like(k, dtype=float)
         if not isinstance(x, np.ndarray):
             x = np.ones(L, dtype=float) * x  # convert scalar to array
     except Exception as e:

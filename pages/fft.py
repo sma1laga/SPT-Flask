@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request
 import numpy as np
 import json
+from utils.eval_helpers import safe_eval
 
 # Blueprint setup
 fft_bp = Blueprint('fft', __name__, template_folder='templates')
@@ -11,7 +12,7 @@ def fft():
     result = None
     if request.method == 'POST':
         # Parse form inputs
-        expr = request.form.get('expression', 'np.sin(2*np.pi*50*t)')
+        expr = request.form.get('expression', 'sin(2*pi*50*t)')
         fs = float(request.form.get('fs', 500.0))
         T = float(request.form.get('duration', 1.0))
         N = int(request.form.get('n_samples', 1024))
@@ -21,7 +22,7 @@ def fft():
         # Time axis
         t = np.linspace(0, T, N, endpoint=False)
         # Evaluate signal safely
-        x = eval(expr, {'np': np, 't': t, 'sqrt': np.sqrt})
+        x = safe_eval(expr, {'sin': np.sin,'pi': np.pi, 't': t, 'sqrt': np.sqrt})
 
         # Compute FFT
         X = np.fft.fft(x)
