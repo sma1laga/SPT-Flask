@@ -3,6 +3,7 @@ from flask import Blueprint, render_template
 import numpy as np
 from scipy.signal import convolve
 from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+from utils.eval_helpers import safe_eval
 
 convolution_bp = Blueprint("convolution", __name__)
 
@@ -29,7 +30,7 @@ def compute_convolution(func1_str, func2_str):
 
     # 2. Safe-Eval-Kontext
     ctx = {
-        "t": t_scan, "np": np,
+        "t": t_scan,
         "rect": rect, "tri": tri, "step": step,
         "cos": cos, "sin": sin, "sign": sign,
         "delta": delta, "exp_iwt": exp_iwt,
@@ -38,11 +39,11 @@ def compute_convolution(func1_str, func2_str):
 
     # 3. Auswertung der beiden Funktionen
     try:
-        y1_scan = eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(t_scan)
+        y1_scan = safe_eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(t_scan)
     except Exception as e:
         return {"error": f"Error evaluating Function 1: {e}"}
     try:
-        y2_scan = eval(func2_str, ctx) if func2_str.strip() else np.zeros_like(t_scan)
+        y2_scan = safe_eval(func2_str, ctx) if func2_str.strip() else np.zeros_like(t_scan)
     except Exception as e:
         return {"error": f"Error evaluating Function 2: {e}"}
 
@@ -104,8 +105,8 @@ def compute_convolution(func1_str, func2_str):
 
     ctx1 = ctx.copy(); ctx1["t"] = t1
     ctx2 = ctx.copy(); ctx2["t"] = t2
-    y1 = eval(func1_str, ctx1) if func1_str.strip() else np.zeros_like(t1)
-    y2 = eval(func2_str, ctx2) if func2_str.strip() else np.zeros_like(t2)
+    y1 = safe_eval(func1_str, ctx1) if func1_str.strip() else np.zeros_like(t1)
+    y2 = safe_eval(func2_str, ctx2) if func2_str.strip() else np.zeros_like(t2)
 
     # 4b. Convolution on a wide axis to avoid boundary effects
     t_full = np.linspace(2*t_scan[0], 2*t_scan[-1], 2*len(t_scan) - 1)

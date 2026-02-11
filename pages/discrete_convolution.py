@@ -5,6 +5,7 @@ import re
 from utils.math_utils import (
     rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si
 )
+from utils.eval_helpers import safe_eval
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Blueprint
@@ -51,7 +52,7 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
     k_scan = np.arange(-100, 100 + ds, ds)
 
     ctx = dict(
-        n=k_scan, k=k_scan, np=np,
+        n=k_scan, k=k_scan,
         pi=np.pi, e=np.e,
         rect=rect_N, tri=tri_N, step=step,
         cos=cos, sin=sin, sign=sign,
@@ -60,11 +61,11 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
     )
         
     try:
-        y1_scan = eval(func1_str, ctx) if func1_str else np.zeros_like(k_scan)
+        y1_scan = safe_eval(func1_str, ctx) if func1_str else np.zeros_like(k_scan)
     except Exception as e:
         raise ValueError(f"Error in sequence 1: {e}")
     try:
-        y2_scan = eval(func2_str, ctx) if func2_str else np.zeros_like(k_scan)
+        y2_scan = safe_eval(func2_str, ctx) if func2_str else np.zeros_like(k_scan)
     except Exception as e:
         raise ValueError(f"Error in sequence 2: {e}")
 
@@ -123,8 +124,8 @@ def compute_discrete_convolution(func1_str, func2_str, ds=1.0):
     ctx_final["k"] = k
     ctx_final["n"] = k
 
-    y1 = eval(func1_str, ctx_final) if func1_str else np.zeros_like(k)
-    y2 = eval(func2_str, ctx_final) if func2_str else np.zeros_like(k)
+    y1 = safe_eval(func1_str, ctx_final) if func1_str else np.zeros_like(k)
+    y2 = safe_eval(func2_str, ctx_final) if func2_str else np.zeros_like(k)
 
     # Convolve on the wide scanning axis to avoid artificial truncation for
     # unbounded sequences (e.g., step[k]).  The full result is then sampled back

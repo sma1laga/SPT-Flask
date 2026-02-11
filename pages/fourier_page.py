@@ -2,6 +2,7 @@ from flask import Blueprint, render_template
 import numpy as np
 from scipy.fftpack import fftfreq, fftshift
 from utils.math_utils import rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si
+from utils.eval_helpers import safe_eval
 
 fourier_bp = Blueprint("fourier", __name__)
 
@@ -21,14 +22,14 @@ def compute_fourier(func_str, phase_rad):
     t_broad = np.linspace(-100, 100, 8000)
 
     sandbox = {
-        "np": np, "rect": rect, "tri": tri, "step": step,
+        "rect": rect, "tri": tri, "step": step,
         "cos": cos, "sin": sin, "sign": sign, "delta": delta,
         "exp_iwt": exp_iwt, "inv_t": inv_t, "si": si, "exp": np.exp, "sqrt": np.sqrt
     }
     sandbox["t"] = t_broad
 
     try:
-        y_broad = eval(func_str, sandbox) * np.exp(1j * phase_rad)
+        y_broad = safe_eval(func_str, sandbox) * np.exp(1j * phase_rad)
     except Exception as e:
         return {"error": f"Error evaluating function: {e}"}
 
@@ -44,7 +45,7 @@ def compute_fourier(func_str, phase_rad):
     sandbox["t"] = t
     
     try:
-        y = eval(func_str, sandbox) * np.exp(1j * phase_rad)
+        y = safe_eval(func_str, sandbox) * np.exp(1j * phase_rad)
     except Exception as e:
         return {"error": f"Error evaluating function: {e}"}
 

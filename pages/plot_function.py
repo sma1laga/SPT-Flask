@@ -5,7 +5,7 @@ from functools import partial
 from utils.math_utils import (
     rect, tri, step, cos, sin, sign, exp_iwt, inv_t, si
 )
-from utils.eval_helpers import error_data
+from utils.eval_helpers import error_data, safe_eval
 
 
 # additional special functions kept local to this module
@@ -87,7 +87,7 @@ def plot_function_update():
     end = center + MAX_T
     t = np.linspace(start, end, 4097)
 
-    ns = dict(t=_adjust_t1(t), np=np, pi=np.pi, e=np.e, j=1j,
+    ns = dict(t=_adjust_t1(t), pi=np.pi, e=np.e, j=1j,
               rect=rect, tri=tri, step=step,
               cos=cos, sin=sin,
               sign=sign, delta=partial(delta_plotting, th=0.1*w1), exp_iwt=exp_iwt, inv_t=inv_t,
@@ -97,7 +97,7 @@ def plot_function_update():
               gauss=gauss)
 
     try:
-        y1 = a1 * eval(func1_str, ns) if func1_str else np.zeros_like(t)
+        y1 = a1 * safe_eval(func1_str, ns) if func1_str else np.zeros_like(t)
     except Exception as e:
         return jsonify(error_data("Error in f₁(t): ", e)), 400
     if np.any(np.isinf(y1)):
@@ -108,7 +108,7 @@ def plot_function_update():
         try:
             ns["t"] = _adjust_t2(t)
             ns["delta"] = partial(delta_plotting, th=0.1*w2)
-            y2 = a2 * eval(func2_str, ns)
+            y2 = a2 * safe_eval(func2_str, ns)
         except Exception as e:
             return jsonify(error_data("Error in f₂(t): ", e)), 400
         if np.any(np.isinf(y2)):
