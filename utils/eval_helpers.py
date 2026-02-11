@@ -20,5 +20,5 @@ def safe_eval(expression, allowed_names):
     # check for not explicitly allowed names
     for name in bytecode.co_names:
         if name not in allowed_names:
-            raise NameError(f"Use of {name} not allowed")
+            raise NameError(f"Use of {name} not allowed!")
     return eval(bytecode, {"__builtins__": {}}, allowed_names)
