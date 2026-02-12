@@ -91,8 +91,8 @@ def compute_dft(x: np.ndarray, dft_len: int):
 def dft():
     return render_template(
         "dft.html",
-        page_title="DFT / FFT Tool (Online) | Signal Processing Toolkit",
-        meta_description="Use the DFT / FFT tool online to define discrete-time signals, compute spectral magnitude and phase, and study transform-domain effects.",
+        page_title = "DFT Plot Online – Discrete-Time Spectrum (Magnitude & Phase)",
+        meta_description = "Compute the DFT/FFT of a discrete-time signal online. Plot magnitude and phase spectrum, explore frequency resolution and leakage, and export data.",
     )
 
 @dft_bp.route("/update", methods=["POST"])

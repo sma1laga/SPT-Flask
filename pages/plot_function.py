@@ -51,8 +51,8 @@ plot_function_bp = Blueprint("plot_function", __name__,
 def plot_function():
     return render_template(
         "plot_function.html",
-        page_title="Signal Plotter (Online) | Signal Processing Toolkit",
-        meta_description="Use the Signal Plotter (Online) to visualize continuous-time expressions, compare two signals, and apply shift, amplitude, and width transformations for analysis.",
+        page_title = "Signal Plotter Online – Plot x(t), Compare Signals, Shift & Scale",
+        meta_description = "Free online signal plotter to visualize continuous-time expressions x(t). Compare two signals and apply time shift, amplitude scaling, and width/time scaling instantly.", 
     )
 
 
