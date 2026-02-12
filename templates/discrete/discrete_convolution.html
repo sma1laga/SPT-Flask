@@ -1,17 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Discrete Convolution Calculator{% endblock %}
+{% block title %}Discrete Convolution Calculator – Compute y[n]=x[n]*h[n] Online{% endblock %}
 
 {% block content %}
 <div class="page-header" style="margin-bottom:30px;text-align:center;">
   <h1 style="font-size:2.5em;">Discrete Convolution Calculator</h1>
-  <p style="color:var(--subtext-color);max-width:640px;margin:0 auto;">
-    Enter two sequences \(x[k]\) and \(h[k]\) (as functions of the time index \(k\)),
-    and click <b>Compute</b> to display
-    both sequences and their discrete convolution.
-  </p>
-  <p style="font-size:1.1em;color:var(--subtext-color);max-width:600px;margin:8px auto 0;">
-    The discrete convolution of \(x[k]\) with \(h[k]\) is defined as
-    $$ y[k] = x[k]*h[k] = \sum_{\kappa=-\infty}^{\infty} x[\kappa]h[k-\kappa] $$
+  <p style="font-size:1.05em;color:var(--subtext-color);max-width:760px;margin:0 auto;line-height:1.5;">
+    Enter discrete-time sequences \(x[n]\) and \(h[n]\) using the notation below.
+    You get stem plots of \(x[n]\), \(h[n]\), and their output \(y[n]=x[n]*h[n]\) instantly.
+    Example: \(\mathrm{rect}_4[n] * \mathrm{tri}_3[n]\).
+    <a href="{{ url_for('discrete_dynamic_convolution.index') }}">See step-by-step overlap (Dynamic Explorer)</a>.
+    Use the Dynamic Explorer to slide \(n\) and visualize the overlap \(x[k]\cdot h[n-k]\).
   </p>
 </div>
 
@@ -26,6 +24,12 @@
     <span style="font-size:1.5em;font-weight:bold;position:relative;top:-4px;">*</span>
     <input id="func2" placeholder="h[k]" onfocus="setActiveField(this)"
            style="width:45%;padding:8px;border:1px solid #ccd0d5;border-radius:4px;font-size:1em;">
+  </div>
+  <div style="max-width:760px;margin:0 auto 16px auto;text-align:left;background:#f8f9fb;border:1px solid #d9dee7;border-radius:6px;padding:10px 12px;font-size:0.92em;line-height:1.4;">
+    <strong>Supported notation &amp; limits</strong><br>
+    Primitives/synonyms: \(\mathrm{rect}\), \(\mathrm{tri}\), \(\sin\), \(\cos\), \(\exp\), \(\mathrm{step}\) / \(u[n]\) / \(\mathrm{heaviside}\), \(\delta\) / \(\delta\), \(\mathrm{sign}\), \(\mathrm{si}\).<br>
+    Syntax: use \( * \) for multiplication and brackets/parentheses, e.g. \(\sin[\pi n / 4] * u[n]\).<br>
+    Limits: advanced piecewise expressions may fail, finite index range is used, and numeric resolution may affect sharp transitions in \(y[n]\).
   </div>
 
   <!-- quick buttons -->
@@ -58,6 +62,9 @@
   <div style="margin-bottom:30px;">
     <button id="computeBtn" type="button" class="action-btn green">Compute</button>
     <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
+    <div style="margin-top:8px;">
+      <a href="{{ url_for('discrete_dynamic_convolution.index') }}" class="explorer-cta">See step-by-step overlap (Dynamic Explorer)</a>
+    </div>
   </div>
 </form>
 
@@ -201,6 +208,19 @@ clearBtn.onclick = ()=>{
   }
   input.input-error{
     border-color: var(--lms-red);
+  }
+
+  .explorer-cta{
+    display:inline-block;
+    padding:5px 10px;
+    font-size:.84em;
+    border-radius:4px;
+    text-decoration:none;
+    background:#4b6cb7;
+    color:#fff;
+  }
+  .explorer-cta:hover{
+    background:#3f5ea1;
   }
 </style>
 {% endblock %}
