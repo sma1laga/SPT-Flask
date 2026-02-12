@@ -25,7 +25,7 @@
     <input id="func2" placeholder="h[k]" onfocus="setActiveField(this)"
            style="width:45%;padding:8px;border:1px solid #ccd0d5;border-radius:4px;font-size:1em;">
   </div>
-  <div style="max-width:760px;margin:0 auto 16px auto;text-align:left;background:#f8f9fb;border:1px solid #d9dee7;border-radius:6px;padding:10px 12px;font-size:0.92em;line-height:1.4;">
+  <div class="notation-box" style="max-width:760px;margin:0 auto 16px auto;text-align:left;background:#f8f9fb;border:1px solid #d9dee7;border-radius:6px;padding:10px 12px;font-size:0.92em;line-height:1.4;">
     <strong>Supported notation &amp; limits</strong><br>
     Primitives/synonyms: \(\mathrm{rect}\), \(\mathrm{tri}\), \(\sin\), \(\cos\), \(\exp\), \(\mathrm{step}\) / \(u[n]\) / \(\mathrm{heaviside}\), \(\delta\) / \(\delta\), \(\mathrm{sign}\), \(\mathrm{si}\).<br>
     Syntax: use \( * \) for multiplication and brackets/parentheses, e.g. \(\sin[\pi n / 4] * u[n]\).<br>
@@ -60,11 +60,11 @@
 
   <!-- action buttons --------------------------------------------- -->
   <div style="margin-bottom:30px;">
+    <div style="margin-bottom:8px;">
+      <a href="{{ url_for('discrete_dynamic_convolution.index') }}" class="explorer-cta">See step-by-step overlap (Demo)</a>
+    </div>
     <button id="computeBtn" type="button" class="action-btn green">Compute</button>
     <button id="clearBtn"   type="button" class="action-btn red">Clear</button>
-    <div style="margin-top:8px;">
-      <a href="{{ url_for('discrete_dynamic_convolution.index') }}" class="explorer-cta">See step-by-step overlap (Dynamic Explorer)</a>
-    </div>
   </div>
 </form>
 
@@ -212,8 +212,8 @@ clearBtn.onclick = ()=>{
 
   .explorer-cta{
     display:inline-block;
-    padding:5px 10px;
-    font-size:.84em;
+    padding:4px 9px;
+    font-size:.8em;
     border-radius:4px;
     text-decoration:none;
     background:#4b6cb7;
@@ -221,6 +221,9 @@ clearBtn.onclick = ()=>{
   }
   .explorer-cta:hover{
     background:#3f5ea1;
+  }
+  .notation-box{
+    color:#1f2937;
   }
 </style>
 {% endblock %}

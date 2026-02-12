@@ -12,9 +12,8 @@ def convolution():
     # Renders the convolution page; plots are generated client-side via AJAX + Plotly
     return render_template(
         "convolution.html",
-        page_title="Convolution Calculator (Online) | Signal Processing Toolkit",
-        meta_description="Use the convolution online calculator to compute and visualize continuous-time convolution of two user-defined signals.",
-    )
+        page_title="Online Convolution Calculator",
+        meta_description="Free convolution calculator with interactive visualization. Compute y(t)=x(t)*h(t) instantly and explore signal overlap step-by-step.",)
 
 @convolution_bp.route("/update", methods=["GET", "POST"])
 def convolution_update():
