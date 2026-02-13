@@ -64,15 +64,15 @@
     <label><input type="checkbox" id="showShifted" checked> shifted h</label>
     <label><input type="checkbox" id="showProduct" checked> product shading</label>
   </div>
-  <canvas id="topChart" height="240" style="width:100%; border:1px solid #ccc; border-radius:4px;"></canvas>
+  <div id="topChart" style="height:240px; width:100%; border:1px solid #ccc; border-radius:4px;"></div>
   <p class="plot-caption">Sum of \(x[n]h[k-n]\) equals \(y[k]\).</p>
   <div id="inline-slider-wrapper" style="display:flex; justify-content:center; align-items:center; margin:0.35em 0;">
     <input type="range" id="tauSliderInline" min="-10" max="10" step="1" value="0" style="width:65%; max-width:350px; height:4px;">
   </div>
-  <canvas id="bottomChart" height="220" style="width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></canvas>
+  <div id="bottomChart" style="height:220px; width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
 let tData = [], y1Data = [], y2Data = [], yConvData = [];
 let kExt = [], y2DataExt = [];
@@ -116,42 +116,29 @@ function renderPresetButtons(){
 }
 
 function initCharts(){
-  if(topChart) topChart.destroy();
-  if(bottomChart) bottomChart.destroy();
+  topChart = document.getElementById('topChart');
+  bottomChart = document.getElementById('bottomChart');
 
-  const topCtx = document.getElementById('topChart').getContext('2d');
-  const bottomCtx = document.getElementById('bottomChart').getContext('2d');
+  Plotly.newPlot(topChart, [
+    { x: tData, y: y1Data, type: 'scatter', mode: 'markers', name: 'x[n]', marker: { color: 'blue', size: 9 } },
+    { x: tData, y: [], type: 'scatter', mode: 'markers', name: 'h[k−n]', marker: { color: 'orange', size: 9 } },
+    { x: tData, y: [], type: 'scatter', mode: 'markers', name: 'x·h', marker: { color: 'rgba(255,0,0,0.6)', size: 11, line: { color: 'red', width: 1 } } }
+  ], {
+    margin: { t: 20, b: 40, l: 50, r: 10 },
+    xaxis: { title: 'n' },
+    paper_bgcolor: '#f6f7fb',
+    plot_bgcolor: '#f6f7fb'
+  }, {displayModeBar: false, responsive: true});
 
-  topChart = new Chart(topCtx, {
-    type: 'scatter',
-    data: {
-      datasets: [
-        { label: 'x[n]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
-        { label: 'h[k−n]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
-        { label: 'x·h', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.45)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
-      ]
-    },
-    options: {
-      animation: false,
-      maintainAspectRatio: false,
-      scales: { x: { title: { display: true, text: 'n' } } }
-    }
-  });
-
-  bottomChart = new Chart(bottomCtx, {
-    type: 'scatter',
-    data: {
-      datasets: [
-        { label: 'y[k]', data: pairData(tData, yConvData), borderColor: 'darkblue', backgroundColor: 'darkblue', showLine: false },
-        { label: 'Marker', data: [], pointRadius: 5, showLine: false, borderColor: 'red', backgroundColor: 'red' }
-      ]
-    },
-    options: {
-      animation: false,
-      maintainAspectRatio: false,
-      scales: { x: { title: { display: true, text: 'k' } } }
-    }
-  });
+  Plotly.newPlot(bottomChart, [
+    { x: tData, y: yConvData, type: 'scatter', mode: 'markers', name: 'y[k]', marker: { color: 'darkblue', size: 9 } },
+    { x: [], y: [], type: 'scatter', mode: 'markers', name: 'Marker', marker: { color: 'red', size: 9 } }
+  ], {
+    margin: { t: 20, b: 40, l: 50, r: 10 },
+    xaxis: { title: 'k' },
+    paper_bgcolor: '#f6f7fb',
+    plot_bgcolor: '#f6f7fb'
+  }, {displayModeBar: false, responsive: true});
 }
 
 function fetchData(){
@@ -194,20 +181,22 @@ function updatePlots(){
     window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
   }
   const y2shift = tData.map(v => window.y2Dict[kVal - v] ?? 0);
-  topChart.data.datasets[1].data = pairData(tData, y2shift);
 
 
   const yMul = y1Data.map((v,i) => v * y2shift[i]);
-  topChart.data.datasets[2].data = pairData(tData, yMul);
-  topChart.data.datasets[0].hidden = !document.getElementById('showX').checked;
-  topChart.data.datasets[1].hidden = !document.getElementById('showShifted').checked;
-  topChart.data.datasets[2].hidden = !document.getElementById('showProduct').checked;
-  topChart.update('none');
+  Plotly.restyle(topChart, {
+    x: [tData], y: [y1Data], visible: [document.getElementById('showX').checked]
+  }, [0]);
+  Plotly.restyle(topChart, {
+    x: [tData], y: [y2shift], visible: [document.getElementById('showShifted').checked]
+  }, [1]);
+  Plotly.restyle(topChart, {
+    x: [tData], y: [yMul], visible: [document.getElementById('showProduct').checked]
+  }, [2]);
 
   const idx = tData.indexOf(kVal);
   const convVal = idx >= 0 ? yConvData[idx] : 0;
-  bottomChart.data.datasets[1].data = [{ x: kVal, y: convVal }];
-  bottomChart.update('none');
+  Plotly.restyle(bottomChart, { x: [[kVal]], y: [[convVal]] }, [1]);
 
   const card = document.getElementById('currentValueCard');
   card.innerHTML = `\\(k=${kVal},\;y[k]=${convVal.toFixed(4)}\\)`;
@@ -350,7 +339,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   #speedSelect { min-width: 92px; width: auto; }
 
-  #dynamic-plot-wrapper canvas { background: #f6f7fb; }
+  #dynamic-plot-wrapper #topChart,
+  #dynamic-plot-wrapper #bottomChart { background: #f6f7fb; }
 
   @media (max-width: 720px) {
     .controls-row { flex-direction: column; }

@@ -64,15 +64,15 @@
       <label><input type="checkbox" id="showShifted" checked> shifted h</label>
       <label><input type="checkbox" id="showProduct" checked> product shading</label>
     </div>
-    <canvas id="topChart" height="240" style="width:100%; display:block; border:1px solid #ccd0d5; border-radius:4px;"></canvas>
+    <div id="topChart" style="height:240px; width:100%; display:block; border:1px solid #ccd0d5; border-radius:4px;"></div>
     <p class="plot-caption">Area under \(x(\tau)h(t-\tau)\) equals \(y(t)\).</p>
     <div id="inline-slider-wrapper" style="display:flex; justify-content:center; align-items:center; margin:0.35em 0;">
       <input type="range" id="tauSliderInline" min="-3.5" max="3.5" step="0.1" value="0" style="width:65%; max-width:350px; height:4px;">
     </div>
-    <canvas id="bottomChart" height="220" style="width:100%; margin-top:1em; display:block; border:1px solid #ccd0d5; border-radius:4px;"></canvas>
+    <div id="bottomChart" style="height:220px; width:100%; margin-top:1em; display:block; border:1px solid #ccd0d5; border-radius:4px;"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
   <script>
     let tData = [];
     let y1Data = [];
@@ -117,47 +117,32 @@
     }
 
     function initCharts() {
-      const topCtx = document.getElementById('topChart').getContext('2d');
-      const bottomCtx = document.getElementById('bottomChart').getContext('2d');
+      topChart = document.getElementById('topChart');
+      bottomChart = document.getElementById('bottomChart');
 
-      if (topChart) topChart.destroy();
-      if (bottomChart) bottomChart.destroy();
+      Plotly.newPlot(topChart, [
+        { x: tData, y: y1Data, type: 'scatter', mode: 'lines', name: 'x(τ)', line: { color: 'blue', width: 2 } },
+        { x: tData, y: [], type: 'scatter', mode: 'lines', name: 'h(t−τ)', line: { color: 'orange', width: 2 } },
+        { x: tData, y: [], type: 'scatter', mode: 'lines', name: 'x(τ)·h(t−τ)', fill: 'tozeroy', fillcolor: 'rgba(255,0,0,0.45)', line: { color: 'red', width: 1 } }
+      ], {
+        margin: { t: 20, b: 40, l: 50, r: 10 },
+        xaxis: { range: [-3.5, 3.5], title: 'τ' },
+        yaxis: { range: [-2.1, 2.1] },
+        paper_bgcolor: '#f6f7fb',
+        plot_bgcolor: '#f6f7fb',
+        showlegend: true
+      }, {displayModeBar: false, responsive: true});
 
-      topChart = new Chart(topCtx, {
-        type: 'line',
-        data: {
-          labels: tData,
-          datasets: [
-            { label: 'x(τ)', data: y1Data, borderColor: 'blue', fill: false, pointRadius: 0, borderWidth: 2, borderJoinStyle: 'round' },
-            { label: 'h(t−τ)', data: [], borderColor: 'orange', fill: false, pointRadius: 0, borderWidth: 2, borderJoinStyle: 'round' },
-            { label: 'x(τ)·h(t−τ)', data: [], borderColor: 'red', fill: true, backgroundColor: 'rgba(255,0,0,0.45)', borderWidth: 1, pointRadius: 0, borderJoinStyle: 'round' }
-          ]
-        },
-        options: {
-          animation: false,
-          maintainAspectRatio: false,
-          scales: {
-            x: { type: 'linear', min: -3.5, max: 3.5, title: { display: true, text: 'τ' } },
-            y: { min: -2.1, max: 2.1 }
-          }
-        }
-      });
-
-      bottomChart = new Chart(bottomCtx, {
-        type: 'line',
-        data: {
-          labels: tData,
-          datasets: [
-            { label: 'y(t)', data: yConvData, borderColor: 'darkblue', fill: false, pointRadius: 0, borderWidth: 2, borderJoinStyle: 'round' },
-            { label: 'Current Output', data: [], pointRadius: 5, showLine: false, borderColor: 'red' }
-          ]
-        },
-        options: {
-          animation: false,
-          maintainAspectRatio: false,
-          scales: { x: { type: 'linear', min: -3.5, max: 3.5, title: { display: true, text: 't' } } }
-        }
-      });
+      Plotly.newPlot(bottomChart, [
+        { x: tData, y: yConvData, type: 'scatter', mode: 'lines', name: 'y(t)', line: { color: 'darkblue', width: 2 } },
+        { x: [], y: [], type: 'scatter', mode: 'markers', name: 'Current Output', marker: { color: 'red', size: 8 } }
+      ], {
+        margin: { t: 20, b: 40, l: 50, r: 10 },
+        xaxis: { range: [-3.5, 3.5], title: 't' },
+        paper_bgcolor: '#f6f7fb',
+        plot_bgcolor: '#f6f7fb',
+        showlegend: true
+      }, {displayModeBar: false, responsive: true});
     }
 
     function fetchData() {
@@ -203,12 +188,19 @@
         const hi = Math.ceil(idx);
         y2shift[i] = (lo < 0 || hi >= N) ? 0 : y2Data[lo] * (1 - (idx - lo)) + y2Data[hi] * (idx - lo);
       }
-      topChart.data.datasets[1].data = y2shift;
-      topChart.data.datasets[2].data = y1Data.map((v, i) => v * y2shift[i]);
-      topChart.data.datasets[0].hidden = !document.getElementById('showX').checked;
-      topChart.data.datasets[1].hidden = !document.getElementById('showShifted').checked;
-      topChart.data.datasets[2].hidden = !document.getElementById('showProduct').checked;
-      topChart.update('none');
+      const product = y1Data.map((v, i) => v * y2shift[i]);
+      Plotly.restyle(topChart, {
+        y: [y1Data],
+        visible: [document.getElementById('showX').checked]
+      }, [0]);
+      Plotly.restyle(topChart, {
+        y: [y2shift],
+        visible: [document.getElementById('showShifted').checked]
+      }, [1]);
+      Plotly.restyle(topChart, {
+        y: [product],
+        visible: [document.getElementById('showProduct').checked]
+      }, [2]);
 
       const idx = (tau - tData[0]) / dt;
       let convAt = 0;
@@ -216,8 +208,7 @@
         const lo = Math.floor(idx), hi = Math.ceil(idx), w = idx - lo;
         convAt = yConvData[lo] * (1 - w) + yConvData[hi] * w;
       }
-      bottomChart.data.datasets[1].data = [{ x: tau, y: convAt }];
-      bottomChart.update('none');
+      Plotly.restyle(bottomChart, { x: [[tau]], y: [[convAt]] }, [1]);
       const card = document.getElementById('currentValueCard');
       card.innerHTML = `\\(t=${tau.toFixed(1)},\;y(t)=${convAt.toFixed(4)}\\)`;
       if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([card]);
@@ -373,7 +364,8 @@
 
     #speedSelect { min-width: 92px; width: auto; }
 
-    #dynamic-plot-wrapper canvas { background: #f6f7fb; }
+    #dynamic-plot-wrapper #topChart,
+    #dynamic-plot-wrapper #bottomChart { background: #f6f7fb; }
 
     @media (max-width: 720px) {
       .controls-row { flex-direction: column; }
