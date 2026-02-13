@@ -44,14 +44,14 @@
     </div>
 
     <div class="controls-row">
-      <button id="playPauseBtn" class="preset-btn" aria-label="Play animation">Play</button>
+      <button id="playPauseBtn" type="button" class="conv-action-btn" aria-label="Play animation">Play</button>
       <select id="speedSelect" aria-label="Animation speed">
         <option value="0.25">0.5×</option>
         <option value="0.5" selected>1×</option>
         <option value="1">2×</option>
         <option value="2">4×</option>
       </select>
-      <button id="resetBtn" class="preset-btn" aria-label="Reset slider">Reset</button>
+      <button id="resetBtn" type="button" class="conv-secondary-btn" aria-label="Reset slider">Reset</button>
       <div id="currentValueCard" class="value-card">\(t=0.0,\;y(t)=0\)</div>
     </div>
 
@@ -81,6 +81,7 @@
     let topChart, bottomChart;
     let rafId = null;
     let lastTs = 0;
+    let hasData = false;
 
     const tauSlider = document.getElementById('tauSlider');
     const tauSliderInline = document.getElementById('tauSliderInline');
@@ -101,7 +102,7 @@
       row.innerHTML = '';
       continuousPresets.forEach((p, idx) => {
         const btn = document.createElement('button');
-        btn.className = 'preset-btn';
+        btn.className = 'conv-secondary-btn';
         btn.textContent = p.label;
         btn.setAttribute('aria-label', `Continuous preset ${idx + 1}: ${p.label}`);
         btn.onclick = () => {
@@ -174,9 +175,14 @@
         y1Data = d.y1 || [];
         y2Data = d.y2 || [];
         yConvData = d.y_conv || [];
-        if (!tData.length) return;
+        hasData = tData.length > 0;
+        if (!hasData) {
+          setPlayButtonState(false, true);
+          return;
+        }
         initCharts();
         updatePlots();
+        setPlayButtonState(false, false);
       })
       .catch(e => alert('Error: ' + e));
     }
@@ -222,14 +228,19 @@
       if (origin !== tauSliderInline) tauSliderInline.value = value;
       if (!skipUpdate) updatePlots();
     }
+    function setPlayButtonState(isPlaying, disabled = false) {
+      const btn = document.getElementById('playPauseBtn');
+      btn.disabled = disabled;
+      btn.textContent = isPlaying ? 'Pause' : 'Play';
+      btn.setAttribute('aria-label', isPlaying ? 'Pause animation' : 'Play animation');
+      btn.dataset.playing = isPlaying ? 'true' : 'false';
+    }
 
     function stopAnimation() {
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = null;
       lastTs = 0;
-      const btn = document.getElementById('playPauseBtn');
-      btn.textContent = 'Play';
-      btn.setAttribute('aria-label', 'Play animation');
+      setPlayButtonState(false, !hasData);
     }
 
     function animate(ts) {
@@ -254,14 +265,13 @@
     }
 
     function toggleAnimation() {
+      if (!hasData) return;
       if (rafId !== null) {
         stopAnimation();
         return;
       }
-      syncTau(sliderMin, null);
-      const btn = document.getElementById('playPauseBtn');
-      btn.textContent = 'Pause';
-      btn.setAttribute('aria-label', 'Pause animation');
+      if (Number(tauSlider.value) >= sliderMax) syncTau(sliderMin, null);
+      setPlayButtonState(true, false);
       rafId = requestAnimationFrame(animate);
     }
 
@@ -306,13 +316,40 @@
     .secondary-cta { font-size: 0.9em; color: inherit; text-decoration: underline; }
 
     .preset-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin: 8px 0 14px; }
-    .preset-btn {
-      border: 1px solid #b9c0ca;
-      border-radius: 4px;
-      background: transparent;
-      padding: 5px 10px;
+    .conv-action-btn,
+    .conv-secondary-btn {
+      border-radius: 8px;
+      padding: 7px 13px;
       cursor: pointer;
-      font-size: 0.98em;
+      font-size: 0.96em;
+      font-weight: 600;
+      margin-right: 0;
+    }
+
+    .conv-action-btn {
+      background: linear-gradient(135deg, #1565c0, #1e88e5);
+      border: 1px solid #1565c0;
+      color: #fff;
+      min-width: 76px;
+    }
+
+    .conv-secondary-btn {
+      border: 1px solid #b8c1ce;
+      background: #eef2f7;
+      color: #1f2937;
+    }
+
+    .conv-action-btn:hover,
+    .conv-secondary-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.98);
+    }
+
+    .conv-action-btn:disabled,
+    .conv-secondary-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
     }
 
     .controls-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin-bottom:6px; }
@@ -327,6 +364,14 @@
 
     .trace-toggles { display:flex; flex-wrap:wrap; gap:14px; margin: 2px 0 8px; font-weight: 600; }
     .plot-caption { margin: 0.45em 0; font-size: 0.95em; color: var(--subtext-color); text-align:center; }
+    #dynamic-form select {
+      min-width: 190px;
+      width: auto;
+      color: #111827;
+      background-color: #fff;
+    }
+
+    #speedSelect { min-width: 92px; width: auto; }
 
     #dynamic-plot-wrapper canvas { background: #f6f7fb; }
 
