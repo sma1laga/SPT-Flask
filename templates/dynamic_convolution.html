@@ -81,6 +81,7 @@
     let topChart, bottomChart;
     let rafId = null;
     let lastTs = 0;
+    let animatedTau = 0;
     let hasData = false;
 
     const tauSlider = document.getElementById('tauSlider');
@@ -231,6 +232,7 @@
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = null;
       lastTs = 0;
+      animatedTau = Number(tauSlider.value);
       setPlayButtonState(false, !hasData);
     }
 
@@ -243,8 +245,10 @@
       const elapsed = ts - lastTs;
       if (elapsed >= 20) {
         const speed = Number(document.getElementById('speedSelect').value);
-        const next = Number(tauSlider.value) + (0.05 * speed);
+        animatedTau += (0.05 * speed);
+        const next = animatedTau;
         if (next >= sliderMax) {
+          animatedTau = sliderMax;
           syncTau(sliderMax, null);
           stopAnimation();
           return;
@@ -262,6 +266,7 @@
         return;
       }
       if (Number(tauSlider.value) >= sliderMax) syncTau(sliderMin, null);
+      animatedTau = Number(tauSlider.value);
       setPlayButtonState(true, false);
       rafId = requestAnimationFrame(animate);
     }

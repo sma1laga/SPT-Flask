@@ -87,10 +87,10 @@ const sliderMax = Number(tauSlider.max);
 
 const discretePresets = [
   { label: 'delta * x', func1: 'rect_4(k)', func2: 'delta(k)' },
-  { label: 'box3 * box3', func1: 'rect_4(k)', func2: 'rect_4(k)' },
-  { label: 'box3 * tri5', func1: 'rect_4(k)', func2: 'tri_3(k)' },
+  { label: 'rect4 * rect4', func1: 'rect_4(k)', func2: 'rect_4(k)' },
+  { label: 'rect4 * tri3', func1: 'rect_4(k)', func2: 'tri_3(k)' },
   { label: '[1,2,1] * [1,1,1]', func1: 'tri_3(k)', func2: 'rect_4(k)' },
-  { label: 'alternating sign * box', func1: '(-0.5)**k*step(k)', func2: 'rect_4(k)' },
+  { label: 'alternating sign * rect', func1: '(-0.5)**k*step(k)', func2: 'rect_4(k)' },
   { label: 'short pulse * moving-average', func1: 'delta(k)+delta(k-1)', func2: 'rect_4(k)' }
 ];
 
