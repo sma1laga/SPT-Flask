@@ -4,10 +4,6 @@
   <div class="page-header" style="margin-bottom: 24px; text-align: center;">
     <h1 style="font-size: 2.2em; margin-bottom: 8px;">Convolution Step-by-Step Visualization</h1>
     <p class="conv-steps">Flip/shift \(h(t-\tau)\) → Multiply \(x(\tau)h(t-\tau)\) → Integrate \(y(t)\)</p>
-    <div class="conv-ctas">
-      <a href="{{ url_for('convolution.convolution') }}" class="secondary-cta">Compute full convolution (Calculator)</a>
-      <a href="{{ url_for('training_convolution.training_convolution') }}" class="secondary-cta">Need theory &amp; examples? See Convolution Training</a>
-    </div>
     <p style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
       Slide \(t\) to see how the overlap between \(x(\tau)\) and \(h(t-\tau)\) produces the convolved output
       $$ y(t)=\int_{-\infty}^{\infty}x(\tau)h(t-\tau)\,\mathrm d\tau $$
@@ -66,6 +62,44 @@
     </div>
     <div id="bottomChart" style="height:220px; width:100%; margin-top:1em; display:block; border:1px solid #ccd0d5; border-radius:4px;"></div>
   </div>
+  <section class="learning-section" aria-label="Convolution definition and properties">
+    <h2>Convolution: definition &amp; properties</h2>
+
+    <div class="learning-card">
+      <h3>Definition</h3>
+      <p class="math-line">\(y(t)=\int_{-\infty}^{\infty} x(\tau)h(t-\tau)\,d\tau\)</p>
+      <p>Graphically: reverse/shift \(h\), multiply with \(x\), then integrate the overlap to get one output sample \(y(t)\).</p>
+      <p>Moving the slider changes overlap, so the output curve is traced point by point.</p>
+    </div>
+
+    <div class="learning-card">
+      <h3>Key properties</h3>
+      <ul>
+        <li><strong>Commutative:</strong> \(x*h=h*x\) — swapping inputs gives the same output.</li>
+        <li><strong>Shift (delta):</strong> \(x*\delta(t-T)=x(t-T)\) — a shifted impulse shifts the signal.</li>
+        <li><strong>Identity:</strong> \(x*\delta=x\) — the impulse acts like a neutral element.</li>
+        <li><strong>Support hint:</strong> \(\operatorname{supp}(y)\approx\operatorname{supp}(x)+\operatorname{supp}(h)\).</li>
+      </ul>
+    </div>
+
+    <div class="learning-card">
+      <h3>Try it</h3>
+      <div class="try-buttons">
+        <button type="button" class="conv-secondary-btn mini-try-btn" id="tryIdentityBtn">Identity (delta)</button>
+        <button type="button" class="conv-secondary-btn mini-try-btn" id="tryShiftBtn">Shift with delta</button>
+        <button type="button" class="conv-secondary-btn mini-try-btn" id="trySwapBtn">Commutative (swap x,h)</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="next-steps-card" aria-label="Next steps">
+    <h2>Next steps</h2>
+    <p>This demo visualizes graphical convolution. Use the Calculator for arbitrary signals or Training for guided exercises.</p>
+    <div class="next-step-links">
+      <a href="{{ url_for('convolution.convolution') }}" class="conv-action-btn">Compute full convolution (Calculator)</a>
+      <a href="{{ url_for('training_convolution.training_convolution') }}" class="conv-secondary-btn">Need practice &amp; examples? See Convolution Training</a>
+    </div>
+  </section>
 
   <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
   <script>
@@ -238,6 +272,13 @@
       setPlayButtonState(true, false);
       rafId = requestAnimationFrame(animate);
     }
+    function applyExample({ func1, func2, tau }) {
+      stopAnimation();
+      if (func1 !== undefined) document.getElementById('func1').value = func1;
+      if (func2 !== undefined) document.getElementById('func2').value = func2;
+      syncTau(tau ?? 0, null, true);
+      fetchData();
+    }
 
     document.getElementById('func1').onchange = fetchData;
     document.getElementById('func2').onchange = fetchData;
@@ -246,6 +287,13 @@
 
     document.getElementById('playPauseBtn').onclick = toggleAnimation;
     document.getElementById('resetBtn').onclick = () => { stopAnimation(); syncTau(sliderMin, null); };
+    document.getElementById('tryIdentityBtn').onclick = () => applyExample({ func2: 'delta(t)', tau: 0 });
+    document.getElementById('tryShiftBtn').onclick = () => applyExample({ func2: 'delta(t)', tau: 1 });
+    document.getElementById('trySwapBtn').onclick = () => {
+      const func1 = document.getElementById('func1').value;
+      const func2 = document.getElementById('func2').value;
+      applyExample({ func1: func2, func2: func1, tau: 0 });
+    };
     document.getElementById('showX').onchange = updatePlots;
     document.getElementById('showShifted').onchange = updatePlots;
     document.getElementById('showProduct').onchange = updatePlots;
@@ -281,8 +329,6 @@
       font-weight: 600;
       font-size: 0.98em;
     }
-    .conv-ctas { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:10px; }
-    .secondary-cta { font-size: 0.9em; color: inherit; text-decoration: underline; }
 
     .conv-action-btn,
     .conv-secondary-btn {
@@ -343,10 +389,47 @@
 
     #dynamic-plot-wrapper #topChart,
     #dynamic-plot-wrapper #bottomChart { background: #f6f7fb; }
+    .learning-section,
+    .next-steps-card {
+      max-width: 760px;
+      margin: 20px auto 0;
+      padding: 14px;
+      border: 1px solid #d7dce5;
+      border-radius: 10px;
+      background: #fafbfe;
+    }
+
+    .learning-section h2,
+    .next-steps-card h2 {
+      text-align: center;
+      margin: 0 0 12px;
+      font-size: 1.3rem;
+    }
+
+    .learning-card {
+      border: 1px solid #e1e6ef;
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .learning-card h3 { margin: 0 0 6px; font-size: 1.02rem; }
+    .learning-card p { margin: 4px 0; color: var(--subtext-color); }
+    .math-line { font-weight: 600; color: inherit; }
+    .learning-card ul { margin: 0; padding-left: 18px; }
+    .learning-card li { margin: 4px 0; }
+    .try-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mini-try-btn { font-size: 0.88em; padding: 6px 10px; }
+
+    .next-steps-card { text-align: center; margin-top: 14px; }
+    .next-steps-card p { margin: 0 0 10px; color: var(--subtext-color); }
+    .next-step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 
     @media (max-width: 720px) {
       .controls-row { flex-direction: column; }
       .value-card { width: 100%; max-width: 270px; }
+      .try-buttons,
+      .next-step-links { flex-direction: column; align-items: stretch; }
     }
   </style>
 {% endblock %}

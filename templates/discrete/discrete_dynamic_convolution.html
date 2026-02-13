@@ -4,10 +4,6 @@
 <div class="page-header" style="margin-bottom: 24px; text-align: center;">
   <h1 style="font-size: 2.2em; margin-bottom: 8px;">Convolution Step-by-Step Visualization</h1>
   <p class="conv-steps">Reverse/shift \(h[k-n]\) → Multiply \(x[n]h[k-n]\) → Sum \(y[k]\)</p>
-  <div class="conv-ctas">
-    <a href="{{ url_for('convolution.convolution') }}" class="secondary-cta">Compute full convolution (Calculator)</a>
-    <a href="{{ url_for('training_convolution.training_convolution') }}" class="secondary-cta">Need theory &amp; examples? See Convolution Training</a>
-  </div>
   <p style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
     Slide \(k\) to see how the overlap between \(x[n]\) and \(h[k-n]\) produces the convolved output
     $$ y[k]=\sum_{n=-\infty}^{\infty}x[n]h[k-n] $$
@@ -66,6 +62,44 @@
   </div>
   <div id="bottomChart" style="height:220px; width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></div>
 </div>
+<section class="learning-section" aria-label="Convolution definition and properties">
+  <h2>Convolution: definition &amp; properties</h2>
+
+  <div class="learning-card">
+    <h3>Definition</h3>
+    <p class="math-line">\(y[k]=\sum_{n=-\infty}^{\infty} x[n]h[k-n]\)</p>
+    <p>Graphically: reverse/shift \(h\), multiply sample-by-sample with \(x\), then sum all products to get one output sample \(y[k]\).</p>
+    <p>Changing \(k\) moves the overlap window and traces the output sequence.</p>
+  </div>
+
+  <div class="learning-card">
+    <h3>Key properties</h3>
+    <ul>
+      <li><strong>Commutative:</strong> \(x*h=h*x\) — swapping inputs gives the same sequence.</li>
+      <li><strong>Shift (delta):</strong> \(x[n]*\delta[n-k_0]=x[n-k_0]\) — a shifted impulse shifts the signal.</li>
+      <li><strong>Identity:</strong> \(x[n]*\delta[n]=x[n]\) — the impulse is the neutral element.</li>
+      <li><strong>Length hint:</strong> \(\mathrm{len}(y)=\mathrm{len}(x)+\mathrm{len}(h)-1\) for finite-length sequences.</li>
+    </ul>
+  </div>
+
+  <div class="learning-card">
+    <h3>Try it</h3>
+    <div class="try-buttons">
+      <button type="button" class="conv-secondary-btn mini-try-btn" id="tryIdentityBtn">Identity (delta)</button>
+      <button type="button" class="conv-secondary-btn mini-try-btn" id="tryShiftBtn">Shift with delta</button>
+      <button type="button" class="conv-secondary-btn mini-try-btn" id="trySwapBtn">Commutative (swap x,h)</button>
+    </div>
+  </div>
+</section>
+
+<section class="next-steps-card" aria-label="Next steps">
+  <h2>Next steps</h2>
+  <p>This demo visualizes graphical convolution. Use the Calculator for arbitrary signals or Training for guided exercises.</p>
+  <div class="next-step-links">
+    <a href="{{ url_for('convolution.convolution') }}" class="conv-action-btn">Compute full convolution (Calculator)</a>
+    <a href="{{ url_for('training_convolution.training_convolution') }}" class="conv-secondary-btn">Need practice &amp; examples? See Convolution Training</a>
+  </div>
+</section>
 
 <script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
 <script>
@@ -223,6 +257,13 @@ function togglePlay(){
     syncTau(next, null);
   }, intervalMs);
 }
+function applyExample({ func1, func2, tau }){
+  stopPlay();
+  if (func1 !== undefined) document.getElementById('func1').value = func1;
+  if (func2 !== undefined) document.getElementById('func2').value = func2;
+  syncTau(tau ?? 0, null, true);
+  fetchData();
+}
 
 window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('func1').onchange = fetchData;
@@ -234,6 +275,13 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('showProduct').onchange = updatePlots;
   document.getElementById('playPauseBtn').onclick = togglePlay;
   document.getElementById('resetBtn').onclick = () => { stopPlay(); syncTau(sliderMin, null); };
+  document.getElementById('tryIdentityBtn').onclick = () => applyExample({ func2: 'delta(k)', tau: 0 });
+  document.getElementById('tryShiftBtn').onclick = () => applyExample({ func2: 'delta(k)', tau: 2 });
+  document.getElementById('trySwapBtn').onclick = () => {
+    const func1 = document.getElementById('func1').value;
+    const func2 = document.getElementById('func2').value;
+    applyExample({ func1: func2, func2: func1, tau: 0 });
+  };
 
   [tauSlider, tauSliderInline].forEach(slider => slider.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopPlay();
@@ -264,8 +312,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
     font-weight: 600;
     font-size: 0.98em;
   }
-  .conv-ctas { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:10px; }
-  .secondary-cta { font-size: 0.9em; color: inherit; text-decoration: underline; }
+
 
   .controls-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin-bottom:6px; }
   .conv-action-btn,
@@ -326,10 +373,47 @@ window.addEventListener('DOMContentLoaded', ()=>{
 
   #dynamic-plot-wrapper #topChart,
   #dynamic-plot-wrapper #bottomChart { background: #f6f7fb; }
+  .learning-section,
+  .next-steps-card {
+    max-width: 760px;
+    margin: 20px auto 0;
+    padding: 14px;
+    border: 1px solid #d7dce5;
+    border-radius: 10px;
+    background: #fafbfe;
+  }
+
+  .learning-section h2,
+  .next-steps-card h2 {
+    text-align: center;
+    margin: 0 0 12px;
+    font-size: 1.3rem;
+  }
+
+  .learning-card {
+    border: 1px solid #e1e6ef;
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .learning-card h3 { margin: 0 0 6px; font-size: 1.02rem; }
+  .learning-card p { margin: 4px 0; color: var(--subtext-color); }
+  .math-line { font-weight: 600; color: inherit; }
+  .learning-card ul { margin: 0; padding-left: 18px; }
+  .learning-card li { margin: 4px 0; }
+  .try-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  .mini-try-btn { font-size: 0.88em; padding: 6px 10px; }
+
+  .next-steps-card { text-align: center; margin-top: 14px; }
+  .next-steps-card p { margin: 0 0 10px; color: var(--subtext-color); }
+  .next-step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 
   @media (max-width: 720px) {
     .controls-row { flex-direction: column; }
     .value-card { width: 100%; max-width: 270px; }
+    .try-buttons,
+    .next-step-links { flex-direction: column; align-items: stretch; }
   }
 </style>
 {% endblock %}
