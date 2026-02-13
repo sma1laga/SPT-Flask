@@ -1,86 +1,140 @@
 {% extends "base.html" %}
 {% block content %}
-<!-- Page Header -->
-<div class="page-header" style="margin-bottom: 30px; text-align: center;">
-  <h1 style="font-size: 2.5em; margin-bottom: 10px;">Dynamic Convolution Explorer</h1>
-  <p style="font-size: 1.1em; color: var(--subtext-color); max-width: 600px; margin: 0 auto;">
-    Slide \(k\) to see how the overlap between \(x[\kappa]\) and \(h[k - \kappa]\) produces the convolved output
-    $$ y[k]=\sum_{\kappa=-\infty}^{\infty} x[\kappa] h[k - \kappa] $$    </p>
-</div>
-
-<div style="margin-bottom:1em;">
-  <label>\(x[k]\):</label>
-  <select id="func1">
-    <option value="">-- none --</option>
-    {% for label, val in functions %}
-      <option value="{{ val }}">{{ label }}</option>
-    {% endfor %}
-  </select>
-
-  <label>\(h[k]\):</label>
-  <select id="func2">
-    <option value="">-- none --</option>
-    {% for label, val in functions %}
-      <option value="{{ val }}">{{ label }}</option>
-    {% endfor %}
-  </select>
-</div>
-
-<div style="margin-bottom:1em;">
-  <label>Shift \(k\):</label>
-  <input type="range" id="tauSlider" min="-10" max="10" step="1" value="0">
-  <span id="tauValue">0</span>
-</div>
-
-<div id="dynamic-plot-wrapper" style="max-width: 650px; margin: auto;">
-  <canvas id="topChart" height="200" style="width:100%; border:1px solid #ccc; border-radius:4px;"></canvas>
-  <div id="inline-slider-wrapper" style="display:flex; justify-content:center; align-items:center; margin:0.35em 0;">
-    <input
-      type="range"
-      id="tauSliderInline"
-      min="-10"
-      max="10"
-      step="1"
-      value="0"
-      style="width:65%; max-width:350px; height:4px;"
-    >
+<script>document.title = "Convolution Step-by-Step Visualization – Dynamic Explorer";</script>
+<div class="page-header" style="margin-bottom: 26px; text-align: center;">
+  <h1 style="font-size: 2.4em; margin-bottom: 10px;">Convolution Step-by-Step Visualization</h1>
+  <ul class="conv-bullets">
+    <li>Reverse/shift: \(h[k-n]\)</li>
+    <li>Multiply: \(x[n]\cdot h[k-n]\)</li>
+    <li>Sum \(\rightarrow y[k]\)</li>
+  </ul>
+  <div class="conv-ctas">
+    <a href="{{ url_for('convolution.convolution') }}" class="secondary-cta">Compute full convolution (Calculator)</a>
+    <a href="{{ url_for('training_convolution.training_convolution') }}" class="secondary-cta">Need theory &amp; examples? See Convolution Training</a>
   </div>
-  <canvas id="bottomChart" height="150" style="width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></canvas>
+  <p style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
+    Slide \(k\) to see how the overlap between \(x[n]\) and \(h[k-n]\) produces the convolved output
+    $$ y[k]=\sum_{n=-\infty}^{\infty}x[n]h[k-n] $$
+  </p>
 </div>
 
-<!-- Chart.js -->
+<div id="dynamic-form" style="max-width: 760px; margin: 0 auto;">
+  <div class="inputs" style="display:flex; flex-wrap:wrap; gap:14px; align-items:end; justify-content:center; margin-bottom:12px;">
+    <div>
+      <label for="func1" style="font-weight:bold;">\(x[k]\):</label><br>
+      <select id="func1">
+        {% for label, val in functions %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="func2" style="font-weight:bold;">\(h[k]\):</label><br>
+      <select id="func2">
+        {% for label, val in functions %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="tauSlider" style="font-weight:bold;">Shift \(k\):</label><br>
+      <input type="range" id="tauSlider" min="-10" max="10" step="1" value="0">
+      <span id="tauValue" style="display:inline-block; width:32px; font-weight:bold;">0</span>
+    </div>
+  </div>
+
+  <div class="controls-row">
+    <button id="playPauseBtn" class="preset-btn" aria-label="Play animation">Play</button>
+    <select id="speedSelect" aria-label="Animation speed">
+      <option value="0.5">0.5×</option>
+      <option value="1" selected>1×</option>
+      <option value="2">2×</option>
+      <option value="4">4×</option>
+    </select>
+    <button id="resetBtn" class="preset-btn" aria-label="Reset slider">Reset</button>
+    <div id="currentValueCard" class="value-card">\(k=0,\;y[k]=0\)</div>
+  </div>
+
+  <div class="preset-row" id="presetRow"></div>
+</div>
+
+<div id="dynamic-plot-wrapper" style="max-width: 700px; margin: auto;">
+  <div class="trace-toggles">
+    <label><input type="checkbox" id="showX" checked> x</label>
+    <label><input type="checkbox" id="showShifted" checked> shifted h</label>
+    <label><input type="checkbox" id="showProduct" checked> product shading</label>
+  </div>
+  <canvas id="topChart" height="240" style="width:100%; border:1px solid #ccc; border-radius:4px;"></canvas>
+  <p class="plot-caption">Sum of \(x[n]h[k-n]\) equals \(y[k]\).</p>
+  <div id="inline-slider-wrapper" style="display:flex; justify-content:center; align-items:center; margin:0.35em 0;">
+    <input type="range" id="tauSliderInline" min="-10" max="10" step="1" value="0" style="width:65%; max-width:350px; height:4px;">
+  </div>
+  <canvas id="bottomChart" height="220" style="width:100%; margin-top:1em; border:1px solid #ccc; border-radius:4px;"></canvas>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let tData = [], y1Data = [], y2Data = [], yConvData = [];
-let kExt = [], y1DataExt = [], y2DataExt = [];
+let kExt = [], y2DataExt = [];
 let topChart, bottomChart;
+let playTimer = null;
+
+const tauSlider = document.getElementById('tauSlider');
+const tauSliderInline = document.getElementById('tauSliderInline');
+const sliderMin = Number(tauSlider.min);
+const sliderMax = Number(tauSlider.max);
+
+const discretePresets = [
+  { label: 'delta * x', func1: 'rect_4(k)', func2: 'delta(k)' },
+  { label: 'box3 * box3', func1: 'rect_4(k)', func2: 'rect_4(k)' },
+  { label: 'box3 * tri5', func1: 'rect_4(k)', func2: 'tri_3(k)' },
+  { label: '[1,2,1] * [1,1,1]', func1: 'tri_3(k)', func2: 'rect_4(k)' },
+  { label: 'alternating sign * box', func1: '(-0.5)**k*step(k)', func2: 'rect_4(k)' },
+  { label: 'short pulse * moving-average', func1: 'delta(k)+delta(k-1)', func2: 'rect_4(k)' }
+];
+
 function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
 
-const tauSlider       = document.getElementById('tauSlider');
-const tauSliderInline = document.getElementById('tauSliderInline');
-
-function syncTau(value, origin){
-  if(origin !== tauSlider)       tauSlider.value = value;
-  if(origin !== tauSliderInline) tauSliderInline.value = value;
-  updatePlots();
+function renderPresetButtons(){
+  const row = document.getElementById('presetRow');
+  row.innerHTML = '';
+  discretePresets.forEach((preset, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.textContent = preset.label;
+    btn.setAttribute('aria-label', `Discrete preset ${idx + 1}: ${preset.label}`);
+    btn.onclick = () => {
+      stopPlay();
+      document.getElementById('func1').value = preset.func1;
+      document.getElementById('func2').value = preset.func2;
+      syncTau(0, null, true);
+      fetchData();
+    };
+    row.appendChild(btn);
+  });
 }
 
 function initCharts(){
   if(topChart) topChart.destroy();
   if(bottomChart) bottomChart.destroy();
-  const topCtx = document.getElementById("topChart").getContext("2d");
-  const bottomCtx = document.getElementById("bottomChart").getContext("2d");
+
+  const topCtx = document.getElementById('topChart').getContext('2d');
+  const bottomCtx = document.getElementById('bottomChart').getContext('2d');
 
   topChart = new Chart(topCtx, {
     type: 'scatter',
     data: {
       datasets: [
-        { label: 'x[κ]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
-        { label: 'h[k−κ]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
-        { label: 'x·h', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.5)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
+        { label: 'x[n]', data: pairData(tData, y1Data), borderColor: 'blue', backgroundColor: 'blue', showLine: false },
+        { label: 'h[k−n]', data: [], borderColor: 'orange', backgroundColor: 'orange', showLine: false },
+        { label: 'x·h', data: [], borderColor: 'red', backgroundColor: 'rgba(255,0,0,0.45)', showLine: false, pointRadius: 6, pointBorderWidth: 2 }
       ]
     },
-    options: { animation: false, scales: { x: { title: { display: true, text: 'κ' } } } }
+    options: {
+      animation: false,
+      maintainAspectRatio: false,
+      scales: { x: { title: { display: true, text: 'n' } } }
+    }
   });
 
   bottomChart = new Chart(bottomCtx, {
@@ -91,7 +145,11 @@ function initCharts(){
         { label: 'Marker', data: [], pointRadius: 5, showLine: false, borderColor: 'red', backgroundColor: 'red' }
       ]
     },
-    options: { animation: false, scales: { x: { title: { display: true, text: 'k' } } } }
+    options: {
+      animation: false,
+      maintainAspectRatio: false,
+      scales: { x: { title: { display: true, text: 'k' } } }
+    }
   });
 }
 
@@ -105,56 +163,153 @@ function fetchData(){
     })
   })
   .then(r => r.json().then(d => r.ok ? d : Promise.reject(d.error)))
-      .then(d => {
-        tData       = d.k;
-        kExt        = d.k_ext;
-      y1Data      = d.y1;
-      y2Data      = d.y2;
-      y1DataExt   = d.y1_ext;
-      y2DataExt   = d.y2_ext;
-        window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
-      yConvData   = d.y_conv;
-      initCharts();
-      updatePlots();
-    })
+  .then(d => {
+    tData = d.k || [];
+    kExt = d.k_ext || [];
+    y1Data = d.y1 || [];
+    y2Data = d.y2 || [];
+    y2DataExt = d.y2_ext || [];
+    yConvData = d.y_conv || [];
+    if (!tData.length) return;
+    window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
+    initCharts();
+    updatePlots();
+  })
   .catch(e => alert('Error: ' + e));
 }
 
 function updatePlots(){
-  const τ = parseInt(tauSlider.value);
-  document.getElementById('tauValue').textContent = τ;
+  if (!topChart || !bottomChart || !tData.length) return;
 
-  // Shifted h[k] lookup using extended domain to avoid edge truncation
-    if(!window.y2Dict){
-      window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
+  const kVal = parseInt(tauSlider.value, 10);
+  document.getElementById('tauValue').textContent = kVal;
+
+  if(!window.y2Dict){
+    window.y2Dict = Object.fromEntries(kExt.map((k,idx)=>[k, y2DataExt[idx]]));
   }
-  const y2shift = tData.map(v => window.y2Dict[τ - v] ?? 0);
+  const y2shift = tData.map(v => window.y2Dict[kVal - v] ?? 0);
   topChart.data.datasets[1].data = pairData(tData, y2shift);
 
-  // Pointwise product
+
   const yMul = y1Data.map((v,i) => v * y2shift[i]);
   topChart.data.datasets[2].data = pairData(tData, yMul);
-  topChart.update();
+  topChart.data.datasets[0].hidden = !document.getElementById('showX').checked;
+  topChart.data.datasets[1].hidden = !document.getElementById('showShifted').checked;
+  topChart.data.datasets[2].hidden = !document.getElementById('showProduct').checked;
+  topChart.update('none');
 
-  // Convolution marker
-  const idx = tData.indexOf(τ);
+  const idx = tData.indexOf(kVal);
   const convVal = idx >= 0 ? yConvData[idx] : 0;
-  bottomChart.data.datasets[1].data = [{ x: τ, y: convVal }];
-  bottomChart.update();
+  bottomChart.data.datasets[1].data = [{ x: kVal, y: convVal }];
+  bottomChart.update('none');
+
+  const card = document.getElementById('currentValueCard');
+  card.innerHTML = `\\(k=${kVal},\;y[k]=${convVal.toFixed(4)}\\)`;
+  if(window.MathJax?.typesetPromise){ window.MathJax.typesetPromise([card]); }
+}
+
+function syncTau(value, origin, skipUpdate = false){
+  if(origin !== tauSlider) tauSlider.value = value;
+  if(origin !== tauSliderInline) tauSliderInline.value = value;
+  if (!skipUpdate) updatePlots();
+}
+
+function stopPlay(){
+  if(playTimer){ clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById('playPauseBtn');
+  btn.textContent = 'Play';
+  btn.setAttribute('aria-label', 'Play animation');
+}
+
+function togglePlay(){
+  if (playTimer){
+    stopPlay();
+    return;
+  }
+
+  syncTau(sliderMin, null);
+  const btn = document.getElementById('playPauseBtn');
+  btn.textContent = 'Pause';
+  btn.setAttribute('aria-label', 'Pause animation');
+
+  const speed = Number(document.getElementById('speedSelect').value);
+  const intervalMs = Math.max(60, Math.round(160 / speed));
+  playTimer = setInterval(() => {
+    const next = Number(tauSlider.value) + 1;
+    if (next > sliderMax){
+      syncTau(sliderMax, null);
+      stopPlay();
+      return;
+    }
+    syncTau(next, null);
+  }, intervalMs);
 }
 
 window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('func1').onchange = fetchData;
   document.getElementById('func2').onchange = fetchData;
-  tauSlider.oninput       = (e) => syncTau(e.target.value, tauSlider);
-  tauSliderInline.oninput = (e) => syncTau(e.target.value, tauSliderInline);
-  initCharts();
+  tauSlider.oninput = (e) => { stopPlay(); syncTau(e.target.value, tauSlider); };
+  tauSliderInline.oninput = (e) => { stopPlay(); syncTau(e.target.value, tauSliderInline); };
+  document.getElementById('showX').onchange = updatePlots;
+  document.getElementById('showShifted').onchange = updatePlots;
+  document.getElementById('showProduct').onchange = updatePlots;
+  document.getElementById('playPauseBtn').onclick = togglePlay;
+  document.getElementById('resetBtn').onclick = () => { stopPlay(); syncTau(0, null); };
+
+  [tauSlider, tauSliderInline].forEach(slider => slider.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopPlay();
+  }));
+
+  renderPresetButtons();
+  document.getElementById('func1').value = 'rect_4(k)';
+  document.getElementById('func2').value = 'rect_4(k)';
+  tauSlider.value = 0;
+  tauSliderInline.value = 0;
+  fetchData();
 });
 </script>
 <style>
-  /* light backgrounds for better contrast in darkmode */
-  #dynamic-plot-wrapper canvas {
-    background: #f6f7fb;
+  #dynamic-form select,
+  #dynamic-form input[type="range"],
+  #speedSelect {
+    padding: 6px;
+    border: 1px solid #ccd0d5;
+    border-radius: 4px;
+    font-size: 1em;
+  }
+
+  .conv-bullets { list-style: disc; text-align: left; max-width: 340px; margin: 0 auto 10px; }
+  .conv-ctas { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:10px; }
+  .secondary-cta { font-size: 0.9em; color: inherit; text-decoration: underline; }
+
+  .controls-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin-bottom:6px; }
+  .preset-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin: 8px 0 14px; }
+  .preset-btn {
+    border: 1px solid #b9c0ca;
+    border-radius: 4px;
+    background: transparent;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.98em;
+  }
+
+  .value-card {
+    border: 1px solid #ccd0d5;
+    border-radius: 4px;
+    padding: 6px 10px;
+    min-width: 190px;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .trace-toggles { display:flex; flex-wrap:wrap; gap:14px; margin: 2px 0 8px; font-weight: 600; }
+  .plot-caption { margin: 0.45em 0; font-size: 0.95em; color: var(--subtext-color); text-align:center; }
+
+  #dynamic-plot-wrapper canvas { background: #f6f7fb; }
+
+  @media (max-width: 720px) {
+    .controls-row { flex-direction: column; }
+    .value-card { width: 100%; max-width: 270px; }
   }
 </style>
 {% endblock %}
