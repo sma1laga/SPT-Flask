@@ -113,12 +113,19 @@ const tauSlider = document.getElementById('tauSlider');
 const tauSliderInline = document.getElementById('tauSliderInline');
 const sliderMin = Number(tauSlider.min);
 const sliderMax = Number(tauSlider.max);
+function getPlotTheme(){
+  const isDark = document.body.classList.contains('dark-mode');
+  return isDark
+    ? { paperBg: '#0f172a', plotBg: '#0f172a', axisColor: '#e2e8f0', gridColor: '#334155' }
+    : { paperBg: '#f6f7fb', plotBg: '#f6f7fb', axisColor: '#1f2937', gridColor: '#d1d5db' };
+}
 
 function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
 
 function initCharts(){
   topChart = document.getElementById('topChart');
   bottomChart = document.getElementById('bottomChart');
+  const theme = getPlotTheme();
 
   Plotly.newPlot(topChart, [
     { x: tData, y: y1Data, type: 'scatter', mode: 'markers', name: 'x[n]', marker: { color: 'blue', size: 9 } },
@@ -126,9 +133,11 @@ function initCharts(){
     { x: tData, y: [], type: 'scatter', mode: 'markers', name: 'x·h', marker: { color: 'rgba(255,0,0,0.6)', size: 11, line: { color: 'red', width: 1 } } }
   ], {
     margin: { t: 20, b: 40, l: 50, r: 10 },
-    xaxis: { title: 'n' },
-    paper_bgcolor: '#f6f7fb',
-    plot_bgcolor: '#f6f7fb'
+    xaxis: { title: 'n', color: theme.axisColor, gridcolor: theme.gridColor },
+    yaxis: { color: theme.axisColor, gridcolor: theme.gridColor },
+    paper_bgcolor: theme.paperBg,
+    plot_bgcolor: theme.plotBg,
+    font: { color: theme.axisColor }
   }, {displayModeBar: false, responsive: true});
 
   Plotly.newPlot(bottomChart, [
@@ -136,9 +145,11 @@ function initCharts(){
     { x: [], y: [], type: 'scatter', mode: 'markers', name: 'Marker', marker: { color: 'red', size: 9 } }
   ], {
     margin: { t: 20, b: 40, l: 50, r: 10 },
-    xaxis: { title: 'k' },
-    paper_bgcolor: '#f6f7fb',
-    plot_bgcolor: '#f6f7fb'
+    xaxis: { title: 'k', color: theme.axisColor, gridcolor: theme.gridColor },
+    yaxis: { color: theme.axisColor, gridcolor: theme.gridColor },
+    paper_bgcolor: theme.paperBg,
+    plot_bgcolor: theme.plotBg,
+    font: { color: theme.axisColor }
   }, {displayModeBar: false, responsive: true});
 }
 
@@ -365,8 +376,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
   #dynamic-form select {
     min-width: 190px;
     width: auto;
-    color: #111827;
-    background-color: #fff;
+    color: var(--text-color);
+    background-color: var(--card-bg);
   }
 
   #speedSelect { min-width: 92px; width: auto; }
@@ -414,6 +425,47 @@ window.addEventListener('DOMContentLoaded', ()=>{
     .value-card { width: 100%; max-width: 270px; }
     .try-buttons,
     .next-step-links { flex-direction: column; align-items: stretch; }
+  }
+
+
+  body.dark-mode #dynamic-form select,
+  body.dark-mode #dynamic-form input[type="range"],
+  body.dark-mode #speedSelect,
+  body.dark-mode .value-card {
+    background: #0f172a;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  body.dark-mode #dynamic-plot-wrapper #topChart,
+  body.dark-mode #dynamic-plot-wrapper #bottomChart {
+    background: #0f172a;
+    border-color: #334155;
+  }
+
+  body.dark-mode .learning-section,
+  body.dark-mode .next-steps-card {
+    background: #0b1220;
+    border-color: #334155;
+  }
+
+  body.dark-mode .learning-card {
+    background: #111827;
+    border-color: #334155;
+  }
+
+  body.dark-mode .learning-card p,
+  body.dark-mode .learning-card li,
+  body.dark-mode .next-steps-card p,
+  body.dark-mode .plot-caption,
+  body.dark-mode .conv-steps {
+    color: #cbd5e1;
+  }
+
+  body.dark-mode .conv-secondary-btn {
+    background: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
   }
 </style>
 {% endblock %}
