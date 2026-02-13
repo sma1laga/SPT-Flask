@@ -1,13 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
   <script>document.title = "Convolution Step-by-Step Visualization – Dynamic Explorer";</script>
-  <div class="page-header" style="margin-bottom: 26px; text-align: center;">
-    <h1 style="font-size: 2.4em; margin-bottom: 10px;">Convolution Step-by-Step Visualization</h1>
-    <ul class="conv-bullets">
-      <li>Flip/shift: \(h(t-\tau)\)</li>
-      <li>Multiply: \(x(\tau)\cdot h(t-\tau)\)</li>
-      <li>Integrate area \(\rightarrow y(t)\)</li>
-    </ul>
+  <div class="page-header" style="margin-bottom: 24px; text-align: center;">
+    <h1 style="font-size: 2.2em; margin-bottom: 8px;">Convolution Step-by-Step Visualization</h1>
+    <p class="conv-steps">Flip/shift \(h(t-\tau)\) → Multiply \(x(\tau)h(t-\tau)\) → Integrate \(y(t)\)</p>
     <div class="conv-ctas">
       <a href="{{ url_for('convolution.convolution') }}" class="secondary-cta">Compute full convolution (Calculator)</a>
       <a href="{{ url_for('training_convolution.training_convolution') }}" class="secondary-cta">Need theory &amp; examples? See Convolution Training</a>
@@ -46,16 +42,15 @@
     <div class="controls-row">
       <button id="playPauseBtn" type="button" class="conv-action-btn" aria-label="Play animation">Play</button>
       <select id="speedSelect" aria-label="Animation speed">
-        <option value="0.25">0.5×</option>
-        <option value="0.5" selected>1×</option>
-        <option value="1">2×</option>
-        <option value="2">4×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
       </select>
       <button id="resetBtn" type="button" class="conv-secondary-btn" aria-label="Reset slider">Reset</button>
       <div id="currentValueCard" class="value-card">\(t=0.0,\;y(t)=0\)</div>
     </div>
 
-    <div class="preset-row" id="presetRow"></div>
   </div>
 
   <div id="dynamic-plot-wrapper" style="max-width: 700px; margin: auto;">
@@ -88,34 +83,6 @@
     const tauSliderInline = document.getElementById('tauSliderInline');
     const sliderMin = Number(tauSlider.min);
     const sliderMax = Number(tauSlider.max);
-
-    const continuousPresets = [
-      { label: 'rect(t) * rect(t)', func1: 'rect(t)', func2: 'rect(t)' },
-      { label: 'rect(t) * tri(t)', func1: 'rect(t)', func2: 'tri(t)' },
-      { label: 'δ(t) * x(t)', func1: 'rect(t)', func2: 'delta(t)' },
-      { label: 'step(t) * exp(-t)step(t)', func1: 'step(t)', func2: 'exp(-t)*step(t)' },
-      { label: 'exp(-t)step(t) * exp(-t)step(t)', func1: 'exp(-t)*step(t)', func2: 'exp(-t)*step(t)' },
-      { label: 'sin(t)step(t) * exp(-t)step(t)', func1: 'sin(t)*step(t)', func2: 'exp(-t)*step(t)' }
-    ];
-
-    function renderPresetButtons() {
-      const row = document.getElementById('presetRow');
-      row.innerHTML = '';
-      continuousPresets.forEach((p, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'conv-secondary-btn';
-        btn.textContent = p.label;
-        btn.setAttribute('aria-label', `Continuous preset ${idx + 1}: ${p.label}`);
-        btn.onclick = () => {
-          stopAnimation();
-          document.getElementById('func1').value = p.func1;
-          document.getElementById('func2').value = p.func2;
-          syncTau(0, null, true);
-          fetchData();
-        };
-        row.appendChild(btn);
-      });
-    }
 
     function initCharts() {
       topChart = document.getElementById('topChart');
@@ -245,7 +212,8 @@
       const elapsed = ts - lastTs;
       if (elapsed >= 20) {
         const speed = Number(document.getElementById('speedSelect').value);
-        animatedTau += (0.05 * speed);
+        const baseRangePerSecond = (sliderMax - sliderMin) / 10;
+        animatedTau += ((elapsed / 1000) * baseRangePerSecond * speed);
         const next = animatedTau;
         if (next >= sliderMax) {
           animatedTau = sliderMax;
@@ -277,7 +245,7 @@
     tauSliderInline.oninput = (e) => { stopAnimation(); syncTau(e.target.value, tauSliderInline); };
 
     document.getElementById('playPauseBtn').onclick = toggleAnimation;
-    document.getElementById('resetBtn').onclick = () => { stopAnimation(); syncTau(0, null); };
+    document.getElementById('resetBtn').onclick = () => { stopAnimation(); syncTau(sliderMin, null); };
     document.getElementById('showX').onchange = updatePlots;
     document.getElementById('showShifted').onchange = updatePlots;
     document.getElementById('showProduct').onchange = updatePlots;
@@ -286,7 +254,6 @@
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopAnimation();
     }));
 
-    renderPresetButtons();
     document.getElementById('func1').value = 'rect(t)';
     document.getElementById('func2').value = 'rect(t)';
     tauSlider.value = 0;
@@ -307,11 +274,16 @@
       font-size: 1em;
     }
 
-    .conv-bullets { list-style: disc; text-align: left; max-width: 340px; margin: 0 auto 10px; }
+    .conv-steps {
+      margin: 0 auto 10px;
+      max-width: 680px;
+      color: var(--subtext-color);
+      font-weight: 600;
+      font-size: 0.98em;
+    }
     .conv-ctas { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:10px; }
     .secondary-cta { font-size: 0.9em; color: inherit; text-decoration: underline; }
 
-    .preset-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin: 8px 0 14px; }
     .conv-action-btn,
     .conv-secondary-btn {
       border-radius: 8px;

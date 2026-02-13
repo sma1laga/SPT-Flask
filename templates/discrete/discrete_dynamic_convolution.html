@@ -1,13 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 <script>document.title = "Convolution Step-by-Step Visualization – Dynamic Explorer";</script>
-<div class="page-header" style="margin-bottom: 26px; text-align: center;">
-  <h1 style="font-size: 2.4em; margin-bottom: 10px;">Convolution Step-by-Step Visualization</h1>
-  <ul class="conv-bullets">
-    <li>Reverse/shift: \(h[k-n]\)</li>
-    <li>Multiply: \(x[n]\cdot h[k-n]\)</li>
-    <li>Sum \(\rightarrow y[k]\)</li>
-  </ul>
+<div class="page-header" style="margin-bottom: 24px; text-align: center;">
+  <h1 style="font-size: 2.2em; margin-bottom: 8px;">Convolution Step-by-Step Visualization</h1>
+  <p class="conv-steps">Reverse/shift \(h[k-n]\) → Multiply \(x[n]h[k-n]\) → Sum \(y[k]\)</p>
   <div class="conv-ctas">
     <a href="{{ url_for('convolution.convolution') }}" class="secondary-cta">Compute full convolution (Calculator)</a>
     <a href="{{ url_for('training_convolution.training_convolution') }}" class="secondary-cta">Need theory &amp; examples? See Convolution Training</a>
@@ -55,7 +51,6 @@
     <div id="currentValueCard" class="value-card">\(k=0,\;y[k]=0\)</div>
   </div>
 
-  <div class="preset-row" id="presetRow"></div>
 </div>
 
 <div id="dynamic-plot-wrapper" style="max-width: 700px; margin: auto;">
@@ -85,35 +80,7 @@ const tauSliderInline = document.getElementById('tauSliderInline');
 const sliderMin = Number(tauSlider.min);
 const sliderMax = Number(tauSlider.max);
 
-const discretePresets = [
-  { label: 'delta * x', func1: 'rect_4(k)', func2: 'delta(k)' },
-  { label: 'rect4 * rect4', func1: 'rect_4(k)', func2: 'rect_4(k)' },
-  { label: 'rect4 * tri3', func1: 'rect_4(k)', func2: 'tri_3(k)' },
-  { label: '[1,2,1] * [1,1,1]', func1: 'tri_3(k)', func2: 'rect_4(k)' },
-  { label: 'alternating sign * rect', func1: '(-0.5)**k*step(k)', func2: 'rect_4(k)' },
-  { label: 'short pulse * moving-average', func1: 'delta(k)+delta(k-1)', func2: 'rect_4(k)' }
-];
-
 function pairData(xArr, yArr){ return xArr.map((x,i)=>({ x:x, y:yArr[i] })); }
-
-function renderPresetButtons(){
-  const row = document.getElementById('presetRow');
-  row.innerHTML = '';
-  discretePresets.forEach((preset, idx) => {
-    const btn = document.createElement('button');
-    btn.className = 'conv-secondary-btn';
-    btn.textContent = preset.label;
-    btn.setAttribute('aria-label', `Discrete preset ${idx + 1}: ${preset.label}`);
-    btn.onclick = () => {
-      stopPlay();
-      document.getElementById('func1').value = preset.func1;
-      document.getElementById('func2').value = preset.func2;
-      syncTau(0, null, true);
-      fetchData();
-    };
-    row.appendChild(btn);
-  });
-}
 
 function initCharts(){
   topChart = document.getElementById('topChart');
@@ -232,9 +199,22 @@ function togglePlay(){
   setPlayButtonState(true, false);
 
   const speed = Number(document.getElementById('speedSelect').value);
-  const intervalMs = Math.max(60, Math.round(160 / speed));
+  const range = sliderMax - sliderMin;
+  const baseUnitsPerSecond = range / 10;
+  let carry = 0;
+  let prevTs = performance.now();
+
+  const intervalMs = 20;
   playTimer = setInterval(() => {
-    const next = Number(tauSlider.value) + 1;
+    const now = performance.now();
+    const dt = (now - prevTs) / 1000;
+    prevTs = now;
+    carry += dt * baseUnitsPerSecond * speed;
+    const step = Math.floor(carry);
+    if (step <= 0) return;
+    carry -= step;
+
+    const next = Number(tauSlider.value) + step;
     if (next > sliderMax){
       syncTau(sliderMax, null);
       stopPlay();
@@ -253,13 +233,13 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('showShifted').onchange = updatePlots;
   document.getElementById('showProduct').onchange = updatePlots;
   document.getElementById('playPauseBtn').onclick = togglePlay;
-  document.getElementById('resetBtn').onclick = () => { stopPlay(); syncTau(0, null); };
+  document.getElementById('resetBtn').onclick = () => { stopPlay(); syncTau(sliderMin, null); };
 
   [tauSlider, tauSliderInline].forEach(slider => slider.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopPlay();
   }));
 
-  renderPresetButtons();
+
   document.getElementById('func1').value = 'rect_4(k)';
   document.getElementById('func2').value = 'rect_4(k)';
   tauSlider.value = 0;
@@ -277,12 +257,17 @@ window.addEventListener('DOMContentLoaded', ()=>{
     font-size: 1em;
   }
 
-  .conv-bullets { list-style: disc; text-align: left; max-width: 340px; margin: 0 auto 10px; }
+  .conv-steps {
+    margin: 0 auto 10px;
+    max-width: 680px;
+    color: var(--subtext-color);
+    font-weight: 600;
+    font-size: 0.98em;
+  }
   .conv-ctas { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:10px; }
   .secondary-cta { font-size: 0.9em; color: inherit; text-decoration: underline; }
 
   .controls-row { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; margin-bottom:6px; }
-  .preset-row { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin: 8px 0 14px; }
   .conv-action-btn,
   .conv-secondary-btn {
     border-radius: 8px;
