@@ -38,10 +38,10 @@
     <div class="controls-row">
       <button id="playPauseBtn" type="button" class="conv-action-btn" aria-label="Play animation">Play</button>
       <select id="speedSelect" aria-label="Animation speed">
-        <option value="0.5">0.5×</option>
-        <option value="1" selected>1×</option>
-        <option value="2">2×</option>
-        <option value="4">4×</option>
+        <option value="1">0.5×</option>
+        <option value="2" selected>1×</option>
+        <option value="4">2×</option>
+        <option value="8">4×</option>
       </select>
       <button id="resetBtn" type="button" class="conv-secondary-btn" aria-label="Reset slider">Reset</button>
       <div id="currentValueCard" class="value-card">\(t=0.0,\;y(t)=0\)</div>
@@ -66,7 +66,7 @@
     <h2>Convolution: definition &amp; properties</h2>
 
     <div class="learning-card">
-      <h3>Definition</h3>
+      <h3>Definition of Convolutiuon</h3>
       <p class="math-line">\(y(t)=\int_{-\infty}^{\infty} x(\tau)h(t-\tau)\,d\tau\)</p>
       <p>Graphically: reverse/shift \(h\), multiply with \(x\), then integrate the overlap to get one output sample \(y(t)\).</p>
       <p>Moving the slider changes overlap, so the output curve is traced point by point.</p>
@@ -78,7 +78,6 @@
         <li><strong>Commutative:</strong> \(x*h=h*x\) — swapping inputs gives the same output.</li>
         <li><strong>Shift (delta):</strong> \(x*\delta(t-T)=x(t-T)\) — a shifted impulse shifts the signal.</li>
         <li><strong>Identity:</strong> \(x*\delta=x\) — the impulse acts like a neutral element.</li>
-        <li><strong>Support hint:</strong> \(\operatorname{supp}(y)\approx\operatorname{supp}(x)+\operatorname{supp}(h)\).</li>
       </ul>
     </div>
 
@@ -308,7 +307,7 @@
     document.getElementById('playPauseBtn').onclick = toggleAnimation;
     document.getElementById('resetBtn').onclick = () => { stopAnimation(); syncTau(sliderMin, null); };
     document.getElementById('tryIdentityBtn').onclick = () => applyExample({ func2: 'delta(t)', tau: 0 });
-    document.getElementById('tryShiftBtn').onclick = () => applyExample({ func2: 'delta(t)', tau: 1 });
+    document.getElementById('tryShiftBtn').onclick = () => applyExample({ func1: 'rect(t)', func2: 'delta(t-2)', tau: 0 });
     document.getElementById('trySwapBtn').onclick = () => {
       const func1 = document.getElementById('func1').value;
       const func2 = document.getElementById('func2').value;

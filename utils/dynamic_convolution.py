@@ -13,6 +13,7 @@ functions = [
     ("sin(\u03c0t)\u22c5step(t)", "sin(t)*step(t)"),
     ("cos(\u03c0t)\u22c5step(t)", "cos(t)*step(t)"),
     ("delta(t)", "delta(t)"),
+    ("delta(t-2)", "delta(t-2)"),
     ("delta_train(t)\u22c5step(t)", "delta_train(t)*step(t+0.1)"), # shift +0.1 to avoid half delta at t=0
     ("exp(t)\u22c5step(-t)", "exp(t)*step(-t)"),
     ("exp(-t)\u22c5step(t)", "exp(-t)*step(t)"),

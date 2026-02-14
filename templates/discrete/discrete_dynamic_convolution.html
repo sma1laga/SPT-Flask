@@ -2,7 +2,7 @@
 {% block content %}
 <script>document.title = "Convolution Step-by-Step Visualization – Dynamic Explorer";</script>
 <div class="page-header" style="margin-bottom: 24px; text-align: center;">
-  <h1 style="font-size: 2.2em; margin-bottom: 8px;">Convolution Step-by-Step Visualization</h1>
+  <h1 style="font-size: 2.2em; margin-bottom: 8px;">Discrete Convolution Visualization & Animation</h1>
   <p class="conv-steps">Reverse/shift \(h[k-n]\) → Multiply \(x[n]h[k-n]\) → Sum \(y[k]\)</p>
   <p style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
     Slide \(k\) to see how the overlap between \(x[n]\) and \(h[k-n]\) produces the convolved output
@@ -38,10 +38,10 @@
   <div class="controls-row">
     <button id="playPauseBtn" type="button" class="conv-action-btn" aria-label="Play animation">Play</button>
     <select id="speedSelect" aria-label="Animation speed">
-      <option value="0.5">0.5×</option>
-      <option value="1" selected>1×</option>
-      <option value="2">2×</option>
-      <option value="4">4×</option>
+      <option value="1">0.5×</option>
+      <option value="2" selected>1×</option>
+      <option value="4">2×</option>
+      <option value="8">4×</option>
     </select>
     <button id="resetBtn" type="button" class="conv-secondary-btn" aria-label="Reset slider">Reset</button>
     <div id="currentValueCard" class="value-card">\(k=0,\;y[k]=0\)</div>
@@ -287,7 +287,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('playPauseBtn').onclick = togglePlay;
   document.getElementById('resetBtn').onclick = () => { stopPlay(); syncTau(sliderMin, null); };
   document.getElementById('tryIdentityBtn').onclick = () => applyExample({ func2: 'delta(k)', tau: 0 });
-  document.getElementById('tryShiftBtn').onclick = () => applyExample({ func2: 'delta(k)', tau: 2 });
+  document.getElementById('tryShiftBtn').onclick = () => applyExample({ func1: 'rect_4(k)', func2: 'delta(k-2)', tau: 0 });
   document.getElementById('trySwapBtn').onclick = () => {
     const func1 = document.getElementById('func1').value;
     const func2 = document.getElementById('func2').value;
