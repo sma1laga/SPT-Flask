@@ -8,8 +8,11 @@ autocorrelation_bp = Blueprint("autocorrelation", __name__)
 
 @autocorrelation_bp.route("/", methods=["GET"])
 def autocorrelation():
-    return render_template("autocorrelation.html")
-
+    return render_template(
+        "autocorrelation.html",
+        page_title="Autocorrelation Calculator Online",
+        meta_description="Compute and visualize continuous-time autocorrelation for user-defined signals, including real and imaginary components of \u03d5\u2093\u2093(\u03c4).",
+    )
 
 
 def _replace_exp(expr: str, func: str) -> str:

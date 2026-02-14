@@ -12,7 +12,11 @@ discrete_autocorrelation_bp = Blueprint(
 
 @discrete_autocorrelation_bp.route("/", methods=["GET"])
 def discrete_autocorrelation():
-    return render_template("discrete/discrete_autocorrelation.html")
+    return render_template(
+        "discrete/discrete_autocorrelation.html",
+        page_title="Discrete Autocorrelation Calculator | Signal Processing Toolkit",
+        meta_description="Compute and plot discrete-time autocorrelation sequences online from user-defined x[k] with interactive stem plots.",
+    )
 
 
 def _reverse_n(expr: str) -> str:

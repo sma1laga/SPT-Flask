@@ -11,8 +11,8 @@
   </script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Signal Processing Toolkit</title>
-  <meta name="description" content="Browser-based DSP tools: signal plotting, online convolution and autocorrelation, Bode & Nyquist Plot, DFT, inverse Laplace and inverse z-transform — fast, interactive, and free to use.">
+  <title>{{ page_title | default("Signal Processing Toolkit") }}</title>
+  <meta name="description" content="{{ meta_description | default("Browser-based DSP tools: signal plotting, online convolution and autocorrelation, Bode & Nyquist Plot, DFT, inverse Laplace and inverse z-transform — fast, interactive, and free to use.") }}">
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" sizes="any">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon-16x16.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
