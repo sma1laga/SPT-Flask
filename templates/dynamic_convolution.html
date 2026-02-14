@@ -92,6 +92,25 @@
   </section>
 
   <section class="next-steps-card" aria-label="Next steps">
+    <div class="share-row">
+      <button id="copyStateBtn" type="button" class="conv-secondary-btn">Copy link to this example</button>
+      <span id="copyStateStatus" class="copy-status" role="status" aria-live="polite"></span>
+    </div>
+    <section class="mini-faq" aria-label="Mini FAQ">
+      <h3>Mini FAQ</h3>
+      <details>
+        <summary>Why do we flip/reverse h?</summary>
+        <p>In convolution we evaluate \(h(t-\tau)\), so \(h\) is first time-reversed to \(h(-\tau)\) and then shifted by \(t\). This is why the overlap with \(x(\tau)\) changes as you move the slider.</p>
+      </details>
+      <details>
+        <summary>What does the slider t/k represent?</summary>
+        <p>The slider controls \(t\), the output time where we compute one sample \(y(t)=\int x(\tau)h(t-\tau)\,d\tau\). Moving it slides the overlap window and traces \(y(t)\) point-by-point.</p>
+      </details>
+      <details>
+        <summary>Linear vs circular convolution (discrete)</summary>
+        <p>Linear convolution is the full non-wrapping overlap. Circular convolution wraps indices modulo \(N\); FFT-based multiplication gives circular convolution unless you zero-pad enough to recover the linear result.</p>
+      </details>
+    </section>
     <h2>Next steps</h2>
     <p>This demo visualizes graphical convolution. Use the Calculator for arbitrary signals or Training for guided exercises.</p>
     <div class="next-step-links">
@@ -111,6 +130,76 @@
     let lastTs = 0;
     let animatedTau = 0;
     let hasData = false;
+    let copyStatusTimer = null;
+
+
+    function parseStateFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      if (![...params.keys()].length) return null;
+      const decode = (key) => {
+        const value = params.get(key);
+        return value === null ? null : decodeURIComponent(value);
+      };
+      return {
+        mode: params.get('mode') || 'continuous',
+        x: decode('x'),
+        h: decode('h'),
+        shift: params.get('shift'),
+        speed: params.get('speed'),
+        showX: params.get('showX'),
+        showShiftedH: params.get('showShiftedH'),
+        showProduct: params.get('showProduct')
+      };
+    }
+
+    function applyStateFromQuery() {
+      const state = parseStateFromQuery();
+      if (!state || state.mode !== 'continuous') return;
+      const func1 = document.getElementById('func1');
+      const func2 = document.getElementById('func2');
+      const speed = document.getElementById('speedSelect');
+      const showX = document.getElementById('showX');
+      const showShifted = document.getElementById('showShifted');
+      const showProduct = document.getElementById('showProduct');
+
+      if (state.x && [...func1.options].some((opt) => opt.value === state.x)) func1.value = state.x;
+      if (state.h && [...func2.options].some((opt) => opt.value === state.h)) func2.value = state.h;
+      if (state.speed && [...speed.options].some((opt) => opt.value === state.speed)) speed.value = state.speed;
+      if (state.showX === '0' || state.showX === '1') showX.checked = state.showX === '1';
+      if (state.showShiftedH === '0' || state.showShiftedH === '1') showShifted.checked = state.showShiftedH === '1';
+      if (state.showProduct === '0' || state.showProduct === '1') showProduct.checked = state.showProduct === '1';
+
+      const parsedShift = Number(state.shift);
+      const safeShift = Number.isFinite(parsedShift) ? Math.min(sliderMax, Math.max(sliderMin, parsedShift)) : 0;
+      tauSlider.value = safeShift;
+      tauSliderInline.value = safeShift;
+    }
+
+    function buildStateUrl() {
+      const params = new URLSearchParams();
+      params.set('mode', 'continuous');
+      params.set('x', encodeURIComponent(document.getElementById('func1').value));
+      params.set('h', encodeURIComponent(document.getElementById('func2').value));
+      params.set('shift', tauSlider.value);
+      params.set('speed', document.getElementById('speedSelect').value);
+      params.set('showX', document.getElementById('showX').checked ? '1' : '0');
+      params.set('showShiftedH', document.getElementById('showShifted').checked ? '1' : '0');
+      params.set('showProduct', document.getElementById('showProduct').checked ? '1' : '0');
+      return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    }
+
+    async function copyStateLink() {
+      const status = document.getElementById('copyStateStatus');
+      try {
+        const url = buildStateUrl();
+        await navigator.clipboard.writeText(url);
+        status.textContent = 'Copied!';
+      } catch (error) {
+        status.textContent = 'Copy failed';
+      }
+      if (copyStatusTimer) clearTimeout(copyStatusTimer);
+      copyStatusTimer = setTimeout(() => { status.textContent = ''; }, 1500);
+    }
 
     const tauSlider = document.getElementById('tauSlider');
     const tauSliderInline = document.getElementById('tauSliderInline');
@@ -316,6 +405,7 @@
     document.getElementById('showX').onchange = updatePlots;
     document.getElementById('showShifted').onchange = updatePlots;
     document.getElementById('showProduct').onchange = updatePlots;
+    document.getElementById('copyStateBtn').onclick = copyStateLink;
 
     [tauSlider, tauSliderInline].forEach(slider => slider.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') stopAnimation();
@@ -325,6 +415,7 @@
     document.getElementById('func2').value = 'rect(t)';
     tauSlider.value = 0;
     tauSliderInline.value = 0;
+    applyStateFromQuery();
     fetchData();
   </script>
 
@@ -443,6 +534,14 @@
     .next-steps-card { text-align: center; margin-top: 14px; }
     .next-steps-card p { margin: 0 0 10px; color: var(--subtext-color); }
     .next-step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .share-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .copy-status { min-width: 52px; font-size: 0.9em; color: var(--subtext-color); }
+    .mini-faq { text-align: left; border: 1px solid #e1e6ef; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; background: #fff; }
+    .mini-faq h3 { margin: 0 0 8px; text-align: center; }
+    .mini-faq details { border-top: 1px solid #e5e7eb; padding: 7px 0; }
+    .mini-faq details:first-of-type { border-top: 0; }
+    .mini-faq summary { cursor: pointer; font-weight: 600; }
+    .mini-faq p { margin: 6px 0 0; color: var(--subtext-color); }
 
     @media (max-width: 720px) {
       .controls-row { flex-direction: column; }
@@ -476,9 +575,16 @@
       background: #111827;
       border-color: #334155;
     }
+    body.dark-mode .mini-faq {
+      background: #111827;
+      border-color: #334155;
+    }
+
+    body.dark-mode .mini-faq details { border-top-color: #334155; }
 
     body.dark-mode .learning-card p,
     body.dark-mode .learning-card li,
+    body.dark-mode .mini-faq p,
     body.dark-mode .next-steps-card p,
     body.dark-mode .plot-caption,
     body.dark-mode .conv-steps {
