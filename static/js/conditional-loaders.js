@@ -14,9 +14,18 @@
     .some((link) => (link.href || '').includes('/static/css/tooltips.css'));
   if (!cssAlreadyLoaded) {
     const css = document.createElement('link');
-    css.rel = 'stylesheet';
+    css.rel = 'preload';
+    css.as = 'style';
     css.href = tooltipCssHref;
+    css.onload = function () {
+      this.onload = null;
+      this.rel = 'stylesheet';
+    };
     document.head.appendChild(css);
+
+    const noscript = document.createElement('noscript');
+    noscript.innerHTML = `<link rel="stylesheet" href="${tooltipCssHref}">`;
+    document.head.appendChild(noscript);
   }
 
   const jsAlreadyLoaded = Array.from(document.querySelectorAll('script[src]'))

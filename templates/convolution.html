@@ -6,7 +6,7 @@
   <p style="font-size:1.05em; color:var(--subtext-color); max-width:760px; margin:0 auto 12px auto; line-height:1.5;">
     Enter continuous-time signals \(x(t)\) and \(h(t)\) using the notation below.
   </p>
-    <p style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
+    <p class="convolution-formula" style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
       $$ y(t)=\int_{-\infty}^{\infty}x(\tau)h(t-\tau)\,\mathrm d\tau $$
     </p>
   <p style="font-size:1.05em; color:var(--subtext-color); max-width:760px; margin:0 auto; line-height:1.5;">
@@ -76,13 +76,13 @@
 
 <!-- Plotly-Container -->
 <div id="plotly-container" style="max-width:1200px; margin:0 auto;">
-  <div id="plot1"      style="height:250px;"></div>
-  <div id="plot2"      style="height:250px; margin-top:-20px;"></div>
-  <div id="plotConv"   style="height:250px; margin-top:-20px;"></div>
+  <div class="plot-shell"><div id="plot1" style="height:250px;"></div></div>
+  <div class="plot-shell"><div id="plot2" style="height:250px; margin-top:-20px;"></div></div>
+  <div class="plot-shell"><div id="plotConv" style="height:250px; margin-top:-20px;"></div></div>
 </div>
 
-<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/convolution_compute.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/plotly_loader.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/convolution_compute.js') }}"></script>
 <script>
   let activeField = document.getElementById("func1");
   function setActiveField(f) { activeField = f; }
@@ -113,7 +113,7 @@
     };
   }
 
-  function updatePlots() {
+  async function updatePlots() {
     clearErrors();
     const vals = getValues();
     const data = compute_convolution(vals.func1, vals.func2);
@@ -124,6 +124,14 @@
       console.error(data.error);
       return;
     }
+      try {
+        await ensurePlotlyLoaded();
+      } catch (error) {
+        const message = error && error.message ? error.message : "Failed to load plotting library.";
+        if (errorMsg) errorMsg.textContent = message;
+        console.error(error);
+        return;
+      }
       const lc = { margin: { t: 30 } };
 
       Plotly.newPlot("plot1", [{
@@ -160,9 +168,11 @@
     func1.value = "";
     func2.value = "";
     clearErrors();
-    Plotly.purge("plot1");
-    Plotly.purge("plot2");
-    Plotly.purge("plotConv");
+    if (window.Plotly) {
+      Plotly.purge("plot1");
+      Plotly.purge("plot2");
+      Plotly.purge("plotConv");
+    }
   });
 </script>
 
@@ -229,6 +239,15 @@
 
   .notation-box {
     color: #1f2937;
+  }
+
+  .convolution-formula {
+    min-height: 3.5em;
+  }
+
+  .plot-shell {
+    min-height: 260px;
+    width: 100%;
   }
 </style>
 {% endblock %}
