@@ -510,12 +510,66 @@ window.addEventListener('DOMContentLoaded', ()=>{
   .next-step-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
   .share-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px; }
   .copy-status { min-width: 52px; font-size: 0.9em; color: var(--subtext-color); }
-  .mini-faq { text-align: left; border: 1px solid #e1e6ef; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; background: #fff; }
-  .mini-faq h3 { margin: 0 0 8px; text-align: center; }
-  .mini-faq details { border-top: 1px solid #e5e7eb; padding: 7px 0; }
-  .mini-faq details:first-of-type { border-top: 0; }
-  .mini-faq summary { cursor: pointer; font-weight: 600; }
-  .mini-faq p { margin: 6px 0 0; color: var(--subtext-color); }
+  .mini-faq {
+    text-align: left;
+    border: 1px solid #d8e2f2;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+  .mini-faq h3 {
+    margin: 0 0 10px;
+    text-align: center;
+    font-size: 1.22rem;
+    letter-spacing: 0.01em;
+  }
+  .mini-faq details {
+    border: 1px solid #dbe5f2;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    margin: 8px 0;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .mini-faq details:hover {
+    border-color: #b8c8df;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+    transform: translateY(-1px);
+  }
+  .mini-faq details[open] {
+    border-color: #8ea6c9;
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.12);
+  }
+  .mini-faq summary {
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+    padding: 11px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f3f7ff;
+  }
+  .mini-faq summary::-webkit-details-marker { display: none; }
+  .mini-faq summary::before {
+    content: '▸';
+    color: #1d4ed8;
+    font-size: 0.92rem;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  .mini-faq details[open] summary::before { transform: rotate(90deg); }
+  .mini-faq p {
+    margin: 0;
+    padding: 10px 14px 12px;
+    color: var(--subtext-color);
+    line-height: 1.55;
+    background: #ffffff;
+  }
+
 
   @media (max-width: 720px) {
     .controls-row { flex-direction: column; }
@@ -551,11 +605,38 @@ window.addEventListener('DOMContentLoaded', ()=>{
     border-color: #334155;
   }
   body.dark-mode .mini-faq {
-    background: #111827;
+    background: linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
     border-color: #334155;
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.5);
   }
 
-  body.dark-mode .mini-faq details { border-top-color: #334155; }
+  body.dark-mode .mini-faq details {
+    background: #111827;
+    border-color: #334155;
+    box-shadow: 0 3px 10px rgba(2, 6, 23, 0.4);
+  }
+
+  body.dark-mode .mini-faq details:hover {
+    border-color: #4f6b91;
+    box-shadow: 0 8px 18px rgba(96, 165, 250, 0.18);
+  }
+
+  body.dark-mode .mini-faq details[open] {
+    border-color: #64748b;
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+  }
+
+  body.dark-mode .mini-faq summary {
+    background: #172033;
+  }
+
+  body.dark-mode .mini-faq summary::before {
+    color: #93c5fd;
+  }
+
+  body.dark-mode .mini-faq p {
+    background: #111827;
+  }
 
   body.dark-mode .learning-card p,
   body.dark-mode .mini-faq p,
