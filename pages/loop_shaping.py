@@ -400,7 +400,8 @@ def _exam_recipe_controller(
             else:
                 warnings.append("Ramp steady-state error is infinite for ν=0.")
 
-    k0 = float(k_ss) if (k_ss is not None and np.isfinite(k_ss) and k_ss > 0) else float(k_cross)
+    k_source = "steady_state" if (k_ss is not None and np.isfinite(k_ss) and k_ss > 0) else "crossover"
+    k0 = float(k_ss) if k_source == "steady_state" else float(k_cross)
 
     # ----- 4) Phase deficit at ω_D and required lead -----
     phase0 = _phase_deg_negative(l_wd)
@@ -445,8 +446,18 @@ def _exam_recipe_controller(
         lag = (s / wz_lag + 1) / (s / wp_lag + 1)
         lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
 
-    # Final controller
-    controller = k0 * c_int * lead * lag
+    # Final controller: recompute K after all dynamic blocks unless K is fixed by e∞.
+    c_no_k = c_int * lead * lag
+    l_no_k_final = c_no_k * plant
+    l_no_k_wd = _frequency_response(l_no_k_final, np.array([w_d]))[0]
+    mag_no_k_wd = abs(l_no_k_wd)
+    k_final = k0
+    if k_source == "crossover":
+        if mag_no_k_wd <= 0 or not np.isfinite(mag_no_k_wd):
+            raise ValueError("Could not evaluate final loop at ω_D for gain adjustment.")
+        k_final = 1.0 / mag_no_k_wd
+
+    controller = k_final * c_no_k
 
     # ----- 6) Build a recipe report (step-by-step, Klausur-style) -----
     report_steps: List[Dict[str, str]] = []
@@ -492,7 +503,7 @@ def _exam_recipe_controller(
         {
             "title": "3) Durchtritt und Verstärkung",
             "text": f"|L(jω_D)| (ohne K) = {20*np.log10(mag0):.2f} dB ⇒ K_cross = {k_cross:.4g}. "
-                    f"Gewählt K = {k0:.4g}{' (aus e∞)' if k_ss is not None else ''}."
+                    f"Gewählt K = {k0:.4g}{' (aus e∞)' if k_source == 'steady_state' else ''}."
         }
     )
 
@@ -526,9 +537,21 @@ def _exam_recipe_controller(
                 "text": f"β={lag_params['beta']:.3g} → Lag: (1+s/ω_z)/(1+s/ω_p) mit ω_p={lag_params['wp']:.3g}, ω_z={lag_params['wz']:.3g} (≈1/β bei ω_D)."
             }
         )
+    l_final_wd = _frequency_response(controller * plant, np.array([w_d]))[0]
+    l_final_db = 20 * np.log10(max(abs(l_final_wd), 1e-12))
+    if k_source == "crossover":
+        recomputed_note = " K wurde nach Lead/Lag neu berechnet." if (lead_params or lag_params) else ""
+        report_steps.append(
+            {
+                "title": "7) Finale Verstärkungsanpassung",
+                "text": f"Final gain adjustment: choose K so that |L(jω_D)| = 1 (0 dB). "
+                        f"|L_noK(jω_D)|={mag_no_k_wd:.4g} ⇒ K={k_final:.4g}.{recomputed_note} "
+                        f"Check: |L(jω_D)|={l_final_db:.2f} dB (Ziel: 0±0.2 dB)."
+            }
+        )
 
     # Build a string expression that can be pasted into the Custom controller field.
-    parts: List[str] = [f"{k0:.12g}"]
+    parts: List[str] = [f"{k_final:.12g}"]
     if n_add > 0:
         parts.append(f"(1/(s^{n_add}))")
     if lead_params:
@@ -539,7 +562,7 @@ def _exam_recipe_controller(
 
     # Human-readable block list (useful for Exam-style answers)
     blocks: List[Dict[str, Any]] = []
-    blocks.append({"type": "Gain", "label": "K", "k": float(k0)})
+    blocks.append({"type": "Gain", "label": "K", "k": float(k_final)})
     if n_add > 0:
         blocks.append({"type": "Integrator", "label": f"1/s^{n_add}", "n": int(n_add)})
     if lead_params:
@@ -547,7 +570,6 @@ def _exam_recipe_controller(
     if lag_params:
         blocks.append({"type": "Lag", **lag_params})
 
-    k_source = "steady_state" if (k_ss is not None and np.isfinite(k_ss)) else "crossover"
     report = {
         "w_d": float(w_d),
         "phi_req": float(phi_req),
@@ -563,7 +585,9 @@ def _exam_recipe_controller(
         "k_cross": float(k_cross),
         "k_cross_after_lead": float(k_cross_after_lead) if np.isfinite(k_cross_after_lead) else None,
         "k_ss": float(k_ss) if k_ss is not None and np.isfinite(k_ss) else None,
-        "k": float(k0),
+        "k": float(k_final),
+        "l_no_k_mag_wd": float(mag_no_k_wd) if np.isfinite(mag_no_k_wd) else None,
+        "l_final_db_wd": float(l_final_db) if np.isfinite(l_final_db) else None,
         "phase_at_wd": float(phase0),
         "phase_target": float(phase_target),
         "delta_phi": float(delta_phi),
@@ -1147,7 +1171,7 @@ def loop_shaping_api():
             if gm_min and margins.get("gm_db") is not None and margins["gm_db"] < gm_min:
                 warnings.append("Auto-tuning: GM target not met → reduce gain.")
 
-        has_integrator = controller_type in {"PI", "PID"}
+        has_integrator = _count_integrators(controller) >= 1
         step_metrics = _compute_step_metrics(time, step_response)
 
         interpretation = _build_interpretation(
