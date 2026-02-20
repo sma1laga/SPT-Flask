@@ -73,6 +73,90 @@ def _phase_deg_negative(value: complex) -> float:
         phase -= 360.0
     return phase
 
+def _bode_straightline_mag_phase(
+    sys: control.TransferFunction,
+    w: float,
+    tol: float = 1e-8,
+) -> Tuple[float, float]:
+    if w <= 0:
+        raise ValueError("Frequency for straight-line Bode approximation must be > 0.")
+
+    zeros = np.asarray(control.zeros(sys), dtype=complex)
+    poles = np.asarray(control.poles(sys), dtype=complex)
+
+    n_z0 = int(np.sum(np.abs(zeros) < tol))
+    n_p0 = int(np.sum(np.abs(poles) < tol))
+
+    non_origin_zeros = [z for z in zeros if abs(z) >= tol]
+    non_origin_poles = [p for p in poles if abs(p) >= tol]
+
+    mag_db = 0.0
+    phase_deg = 0.0
+
+    for pole in non_origin_poles:
+        wp = abs(pole)
+        if wp <= tol:
+            continue
+        if w > wp:
+            mag_db += -20.0 * np.log10(w / wp)
+        x = np.log10(w / wp)
+        if x <= -1:
+            phase_part = 0.0
+        elif x >= 1:
+            phase_part = -90.0
+        else:
+            phase_part = -45.0 * (x + 1.0)
+        phase_deg += phase_part
+
+    for zero in non_origin_zeros:
+        wz = abs(zero)
+        if wz <= tol:
+            continue
+        if w > wz:
+            mag_db += 20.0 * np.log10(w / wz)
+        x = np.log10(w / wz)
+        if x <= -1:
+            phase_part = 0.0
+        elif x >= 1:
+            phase_part = 90.0
+        else:
+            phase_part = 45.0 * (x + 1.0)
+        phase_deg += phase_part
+
+    net_origin = n_z0 - n_p0
+    mag_db += net_origin * 20.0 * np.log10(w)
+    phase_deg += net_origin * 90.0
+
+    s = control.TransferFunction([1, 0], [1])
+    sys_flat = sys * (s ** n_p0) / (s ** n_z0)
+    k0: Optional[float] = None
+    try:
+        dc = control.dcgain(sys_flat)
+        dc_abs = abs(complex(dc))
+        if np.isfinite(dc_abs) and dc_abs > 0:
+            k0 = float(dc_abs)
+    except Exception:
+        k0 = None
+
+    if k0 is None:
+        corner_candidates = [abs(v) for v in np.concatenate([non_origin_zeros, non_origin_poles]) if np.isfinite(abs(v)) and abs(v) > tol]
+        w_ref = (min(corner_candidates) / 100.0) if corner_candidates else 1e-3
+        resp = _frequency_response(sys_flat, np.array([max(w_ref, 1e-6)]))[0]
+        k0 = max(abs(resp), 1e-12)
+
+    mag_db += 20.0 * np.log10(max(k0, 1e-12))
+    mag_abs = 10 ** (mag_db / 20.0)
+    phase_neg = _phase_deg_negative(np.exp(1j * np.deg2rad(phase_deg)))
+    return float(mag_abs), float(phase_neg)
+
+
+def _eval_mag_phase(sys: control.TransferFunction, w: float, mode: str) -> Tuple[float, float]:
+    eval_mode = (mode or "approx").lower()
+    if eval_mode == "approx":
+        return _bode_straightline_mag_phase(sys, w)
+    exact = _frequency_response(sys, np.array([w]))[0]
+    return float(abs(exact)), float(_phase_deg_negative(exact))
+
 
 @dataclass
 class ParsedPlant:
@@ -337,6 +421,9 @@ def _exam_recipe_controller(
 
     w_d = 1.5 / t_an if t_an > 0 else None
     phi_req = 70.0 - mp if mp > 0 else None
+    eval_mode = str(targets.get("exam_eval_mode") or "approx").lower()
+    if eval_mode not in {"approx", "exact"}:
+        eval_mode = "approx"
     if w_d is None or phi_req is None:
         raise ValueError("Exam recipe requires T_an > 0 and M_p > 0.")
 
@@ -379,13 +466,12 @@ def _exam_recipe_controller(
     lag = control.TransferFunction([1], [1])
     std_zero_params: Optional[Dict[str, float]] = None
     std_pole_params: Optional[Dict[str, float]] = None
-    lead_params: Optional[Dict[str, float]] = None
+    lead_params: Optional[Dict[str, Any]] = None
     lag_params: Optional[Dict[str, float]] = None
 
     if strategy_eff == "standard":
         l_phase = c_int * plant
-        l_phase_wd = _frequency_response(l_phase, np.array([w_d]))[0]
-        phase_now = _phase_deg_negative(l_phase_wd)
+        _, phase_now = _eval_mag_phase(l_phase, w_d, eval_mode)
         delta_phi_eff = phase_target - phase_now
         while delta_phi_eff > 180:
             delta_phi_eff -= 360
@@ -409,8 +495,7 @@ def _exam_recipe_controller(
 
         c_no_k = c_int * std_zero / std_pole
         l_no_k = c_no_k * plant
-        l_no_k_wd = _frequency_response(l_no_k, np.array([w_d]))[0]
-        mag_no_k_wd = abs(l_no_k_wd)
+        mag_no_k_wd, _ = _eval_mag_phase(l_no_k, w_d, eval_mode)
         if mag_no_k_wd <= 0 or not np.isfinite(mag_no_k_wd):
             raise ValueError("Could not evaluate open loop at ω_D in standard branch.")
         k_final = 1.0 / mag_no_k_wd
@@ -423,8 +508,7 @@ def _exam_recipe_controller(
         c_no_k = c_int
 
         l_phase = (k_final * c_no_k) * plant
-        l_phase_wd = _frequency_response(l_phase, np.array([w_d]))[0]
-        phase_now = _phase_deg_negative(l_phase_wd)
+        _, phase_now = _eval_mag_phase(l_phase, w_d, eval_mode)
         delta_phi_eff = phase_target - phase_now
         while delta_phi_eff > 180:
             delta_phi_eff -= 360
@@ -443,34 +527,44 @@ def _exam_recipe_controller(
             lead_params = {"wz": float(wz), "wp": float(wp), "alpha": float(alpha), "phi_add": float(phi_use)}
             c_no_k = c_no_k * lead
 
-        l_amp = (k_final * c_no_k) * plant
-        mag_amp = abs(_frequency_response(l_amp, np.array([w_d]))[0])
-        if mag_amp > 1.001:
-            beta = mag_amp
-            wz_lag = w_d / 10.0
-            wp_lag = wz_lag / max(beta, 1.0001)
-            lag = (s / wz_lag + 1) / (s / wp_lag + 1)
-            lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
-            c_no_k = c_no_k * lag
-        elif mag_amp < 0.999:
-            alpha_amp = max((1.0 / max(mag_amp, 1e-6)) ** 2, 1.05)
-            wz2 = w_d / np.sqrt(alpha_amp)
-            wp2 = w_d * np.sqrt(alpha_amp)
-            lead2 = (s / wz2 + 1) / (s / wp2 + 1)
-            c_no_k = c_no_k * lead2
-            if lead_params is None:
-                lead_params = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp), "phi_add": 0.0}
+        mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
+        for _ in range(2):
+            mag_db = 20 * np.log10(max(mag_amp, 1e-12))
+            if abs(mag_db) <= 0.2:
+                break
+            if mag_amp > 1.0:
+                beta_target = max(mag_amp, 1.0001)
+                wp_lag = w_d / 10.0
+                wz_lag = beta_target * wp_lag
+                lag_stage = (1 + s / wz_lag) / (1 + s / wp_lag)
+                lag = lag * lag_stage
+                lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta_target)}
+                c_no_k = c_no_k * lag_stage
             else:
-                lead_params["extra_lead"] = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp)}
+                alpha_target = float(np.clip((1.0 / max(mag_amp, 1e-6)) ** 2, 1.05, 20.0))
+                phi_from_alpha = float(np.rad2deg(np.arcsin((alpha_target - 1.0) / (alpha_target + 1.0))))
+                wz2 = w_d / np.sqrt(alpha_target)
+                wp2 = w_d * np.sqrt(alpha_target)
+                lead2 = (1 + s / wz2) / (1 + s / wp2)
+                c_no_k = c_no_k * lead2
+                if lead_params is None:
+                    lead_params = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_target), "phi_add": float(phi_from_alpha)}
+                else:
+                    lead_params["extra_lead"] = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_target), "phi_add": float(phi_from_alpha)}
+            mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
 
-        mag_no_k_wd = abs(_frequency_response((c_no_k * plant), np.array([w_d]))[0])
+        final_mag_db = 20 * np.log10(max(mag_amp, 1e-12))
+        if abs(final_mag_db) > 0.5:
+            warnings.append("Lead/Lag branch: |L(jωD)| not within 0.5 dB after shaping; check assumptions or use exact eval mode.")
+
+        mag_no_k_wd, _ = _eval_mag_phase((c_no_k * plant), w_d, eval_mode)
         k_cross = 1.0 / max(mag_no_k_wd, 1e-12)
         k_cross_after_lead = k_cross
 
     controller = k_final * c_no_k
     l_final = controller * plant
-    l_final_wd = _frequency_response(l_final, np.array([w_d]))[0]
-    l_final_db = 20 * np.log10(max(abs(l_final_wd), 1e-12))
+    mag_final_abs, phase_final_deg = _eval_mag_phase(l_final, w_d, eval_mode)
+    l_final_db = 20 * np.log10(max(mag_final_abs, 1e-12))
 
     branch_text = "Branch: Standard structures (K not fixed)" if strategy_eff == "standard" else "Branch: Lead/Lag (K fixed by e∞)"
 
@@ -534,6 +628,7 @@ def _exam_recipe_controller(
         "ramp_slope": float(ramp_slope),
         "einf_mode": einf_mode,
         "einf_value": einf_value,
+        "exam_eval_mode": eval_mode,
         "plant_type": int(plant_type),
         "nu_req": int(nu_req),
         "nu_total": int(nu_total),
@@ -553,6 +648,9 @@ def _exam_recipe_controller(
         "phase_target": float(phase_target),
         "delta_phi": float(delta_phi_eff),
         "delta_phi_eff": float(max(delta_phi_eff, 0.0)),
+        "phase_at_wd_final_deg": float(phase_final_deg),
+        "mag_at_wd_final_db": float(l_final_db),
+        "mag_at_wd_final_abs": float(mag_final_abs),
         "alpha": float(lead_params["alpha"]) if lead_params and "alpha" in lead_params else 1.0,
         "beta": float(lag_params["beta"]) if lag_params and "beta" in lag_params else None,
         "lead": lead_params,
@@ -797,7 +895,7 @@ def _stationary_requirements(
     if nu_total == 1:
         return {"nu_req": 1, "k_fixed": True, "k0": ramp_slope / e_inf, "explanation": "Numeric K0 from Table 3.2: K0=a/e∞ for ramp with ν=1."}
     if nu_total >= 2:
-        return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "ν≥2 gives e∞=0 automatically for ramp; numeric e∞ does not constrain K."}
+        return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "ν≥2 ⇒ e∞=0 automatically; numeric e∞ does not constrain K."}
     return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "Ramp with ν=0 cannot meet finite e∞ (Table 3.2); K not fixed here."}
 
 
@@ -1305,6 +1403,46 @@ def loop_shaping_api():
     except Exception as exc:
         return (str(exc), 400)
 
+
+def _self_test_exam_eval_and_branches() -> None:
+    pt2 = control.TransferFunction([1], [1, 2, 1])
+    w_d = 1.5
+    mag_a, ph_a = _eval_mag_phase(pt2, w_d, "approx")
+    mag_e, ph_e = _eval_mag_phase(pt2, w_d, "exact")
+    assert np.isfinite(mag_a) and np.isfinite(mag_e)
+    assert abs(ph_a - ph_e) > 0.1
+
+    targets_fixed = {
+        "reference": "step",
+        "ramp_slope": 1.0,
+        "t_an": 1.0,
+        "mp": 20.0,
+        "einf_mode": "numeric",
+        "einf_value": 0.1,
+        "recipe_strategy": "leadlag",
+        "exam_eval_mode": "approx",
+    }
+    _, report_fixed, _ = _exam_recipe_controller(pt2, targets_fixed)
+    assert report_fixed["k_fixed"] is True
+    assert abs(report_fixed["k"] - report_fixed["k0"]) < 1e-9
+
+    targets_std = {
+        "reference": "step",
+        "ramp_slope": 1.0,
+        "t_an": 1.0,
+        "mp": 20.0,
+        "einf_mode": "none",
+        "recipe_strategy": "standard",
+        "exam_eval_mode": "approx",
+    }
+    _, report_std, _ = _exam_recipe_controller(pt2, targets_std)
+    assert report_std["k_fixed"] is False
+    assert abs(report_std["k"] - report_std["k_cross"]) < 1e-9
+
+    assert "phase_at_wd_final_deg" in report_std
+    assert "mag_at_wd_final_db" in report_std
+    assert "mag_at_wd_final_abs" in report_std
+
 def _self_test_exam_stationary_logic() -> None:
     cases = [
         ("step", 0.0, 1.0, 0, {"nu_req": 1, "k_fixed": False, "branch": "standard"}),
@@ -1328,4 +1466,5 @@ def _self_test_exam_stationary_logic() -> None:
 
 if __name__ == "__main__":
     _self_test_exam_stationary_logic()
-    print("loop_shaping stationary logic self-test passed")
+    _self_test_exam_eval_and_branches()
+    print("loop_shaping self-tests passed")
