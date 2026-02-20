@@ -459,12 +459,12 @@ def _exam_recipe_controller(
 
     controller = k_final * c_no_k
 
-    # ----- 6) Build a recipe report (step-by-step, Klausur-style) -----
+    # ----- 6) Build a recipe report (step-by-step, exam style) -----
     report_steps: List[Dict[str, str]] = []
     report_steps.append(
         {
-            "title": "1) Vorgaben → ω_D und Φ",
-            "text": f"ω_D = 1.5/T_an = 1.5/{t_an:g} = {w_d:.3g} rad/s;  Φ_req = 70° - M_p = 70° - {mp:g}% = {phi_req:.3g}°."
+            "title": "1) Specifications \u2192 \(\omega_D\) and \(\Phi\)",
+            "text": f"\(\omega_D = 1.5/T_{an} = 1.5/{t_an:g} = {w_d:.3g}\,\mathrm{rad/s}\); \ \(\Phi_{req} = 70^\circ - M_p = 70^\circ - {mp:g}\% = {phi_req:.3g}^\circ\)."
         }
     )
 
@@ -472,81 +472,81 @@ def _exam_recipe_controller(
         if reference == "step":
             report_steps.append(
                 {
-                    "title": "2) Stationäre Genauigkeit (Sprung)",
-                    "text": f"e∞=0 → offener Kreis braucht ν≥1. Strecke hat ν={plant_type}, daher Integrator-Zusatz: {n_add}."
+                    "title": "2) Steady-state accuracy (step)",
+                    "text": f"\(e_\infty=0\) \u2192 open loop needs \(\nu\ge 1\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
                 }
             )
         else:
             report_steps.append(
                 {
-                    "title": "2) Stationäre Genauigkeit (Rampe)",
-                    "text": f"e∞=0 → offener Kreis braucht ν≥2. Strecke hat ν={plant_type}, daher Integrator-Zusatz: {n_add}."
+                    "title": "2) Steady-state accuracy (ramp)",
+                    "text": f"\(e_\infty=0\) \u2192 open loop needs \(\nu\ge 2\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
                 }
             )
     elif einf_mode == "numeric" and einf_value is not None:
         if reference == "step":
             report_steps.append(
                 {
-                    "title": "2) Stationäre Abweichung (Sprung)",
-                    "text": f"Vorgegeben e∞={einf_value:g}. Für ν=0 gilt e∞=1/(1+Kp). Daraus Kp_req=(1/e∞)-1. (Falls ν≥1 → e∞=0 automatisch.)"
+                    "title": "2) Steady-state error constraint (step)",
+                    "text": f"Given \(e_\infty={einf_value:g}\). For \(\nu=0\): \(e_\infty=1/(1+K_p)\), hence \(K_{p,req}=(1/e_\infty)-1\). (If \(\nu\ge 1\), then \(e_\infty=0\) automatically.)"
                 }
             )
         else:
             report_steps.append(
                 {
-                    "title": "2) Stationäre Abweichung (Rampe)",
-                    "text": f"Vorgegeben e∞={einf_value:g} bei Rampe a={ramp_slope:g}. Für ν=1 gilt e∞=a/Kv → Kv_req=a/e∞. (Falls ν≥2 → e∞=0 automatisch.)"
+                    "title": "2) Steady-state error constraint (ramp)",
+                    "text": f"Given \(e_\infty={einf_value:g}\) for ramp slope \(a={ramp_slope:g}\). For \(\nu=1\): \(e_\infty=a/K_v\) \u2192 \(K_{v,req}=a/e_\infty\). (If \(\nu\ge 2\), then \(e_\infty=0\) automatically.)"
                 }
             )
 
     report_steps.append(
         {
-            "title": "3) Durchtritt und Verstärkung",
-            "text": f"|L(jω_D)| (ohne K) = {20*np.log10(mag0):.2f} dB ⇒ K_cross = {k_cross:.4g}. "
-                    f"Gewählt K = {k0:.4g}{' (aus e∞)' if k_source == 'steady_state' else ''}."
+            "title": "3) Crossover and gain",
+            "text": f"\(|L(j\omega_D)|\) (without \(K\)) = {20*np.log10(mag0):.2f} dB \u21d2 \(K_{cross}={k_cross:.4g}\). "
+                    f"Chosen \(K={k0:.4g}\){' (from e∞)' if k_source == 'steady_state' else ''}."
         }
     )
 
     report_steps.append(
         {
-            "title": "4) Phasenbedarf",
-            "text": f"φ(L(jω_D)) ≈ {phase0:.2f}°. Ziel: φ_target = -180°+Φ_req = {phase_target:.2f}°. "
-                    f"Δφ ≈ {delta_phi:.2f}° → Lead-Auslegung mit Δφ_eff ≈ {delta_phi_eff:.2f}°."
+            "title": "4) Phase requirement",
+            "text": f"\(\varphi(L(j\omega_D)) \approx {phase0:.2f}^\circ\). Target: \(\varphi_{target} = -180^\circ + \Phi_{req} = {phase_target:.2f}^\circ\). "
+                    f"\(\Delta\varphi \approx {delta_phi:.2f}^\circ\) \u2192 lead design with \(\Delta\varphi_{eff} \approx {delta_phi_eff:.2f}^\circ\)."
         }
     )
 
     if lead_params:
         report_steps.append(
             {
-                "title": "5) Lead-Glied",
-                "text": f"Lead: (1+s/ω_z)/(1+s/ω_p) mit ω_z={lead_params['wz']:.3g}, ω_p={lead_params['wp']:.3g} (α={lead_params['alpha']:.3g})."
+                "title": "5) Lead block",
+                "text": f"Lead: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_z={lead_params['wz']:.3g}\), \(\omega_p={lead_params['wp']:.3g}\) (\(\alpha={lead_params['alpha']:.3g}\))."
             }
         )
     else:
         report_steps.append(
             {
-                "title": "5) Lead-Glied",
-                "text": "Kein Lead notwendig (Δφ ≤ 0 und kein Gain-Boost am ω_D erforderlich)."
+                "title": "5) Lead block",
+                "text": "No lead needed (\(\Delta\varphi \le 0\) and no gain boost required at \(\omega_D\))."
             }
         )
 
     if lag_params:
         report_steps.append(
             {
-                "title": "6) Lag-Glied (falls K durch e∞ fest ist)",
-                "text": f"β={lag_params['beta']:.3g} → Lag: (1+s/ω_z)/(1+s/ω_p) mit ω_p={lag_params['wp']:.3g}, ω_z={lag_params['wz']:.3g} (≈1/β bei ω_D)."
+                "title": "6) Lag block (if \(K\) is fixed by \(e_\infty\))",
+                "text": f"\(\beta={lag_params['beta']:.3g}\) \u2192 Lag: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_p={lag_params['wp']:.3g}\), \(\omega_z={lag_params['wz']:.3g}\) (\(\approx 1/\beta\) at \(\omega_D\))."
             }
         )
     l_final_wd = _frequency_response(controller * plant, np.array([w_d]))[0]
     l_final_db = 20 * np.log10(max(abs(l_final_wd), 1e-12))
     if k_source == "crossover":
-        recomputed_note = " K wurde nach Lead/Lag neu berechnet." if (lead_params or lag_params) else ""
+        recomputed_note = " K recomputed after lead/lag." if (lead_params or lag_params) else ""
         report_steps.append(
             {
-                "title": "7) Finale Verstärkungsanpassung",
+                "title": "7) Final gain adjustment",
                 "text": f"Final gain adjustment: choose K so that |L(jω_D)| = 1 (0 dB). "
                         f"|L_noK(jω_D)|={mag_no_k_wd:.4g} ⇒ K={k_final:.4g}.{recomputed_note} "
-                        f"Check: |L(jω_D)|={l_final_db:.2f} dB (Ziel: 0±0.2 dB)."
+                        f"Check: \(|L(j\omega_D)|\)={l_final_db:.2f} dB (target: 0\(\pm\)0.2 dB)."
             }
         )
 

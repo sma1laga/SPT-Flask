@@ -38,6 +38,10 @@
   .loop-kv {display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; margin-bottom: 0.6rem;}
   .loop-panel {border: 1px solid #e5e7eb; border-radius: 12px; padding: 0.75rem; background: #f8fafc; margin-bottom: 0.8rem;}
   .loop-panel h4 {margin: 0 0 0.5rem; font-size: 0.95rem; color: #111827;}
+  .loop-panel.compact {padding: 0.6rem 0.75rem;}
+  .loop-panel.compact h4 {margin-bottom: 0.35rem;}
+  .loop-panel.compact .loop-kv {gap: 0.4rem; margin-bottom: 0.3rem;}
+  .loop-panel.compact .loop-note {margin-bottom: 0.25rem;}
   .loop-readonly {background: #f3f4f6; color: #374151;}
   .loop-badge.small {font-size: 0.75rem; padding: 0.2rem 0.55rem;}
   .loop-kv span strong {display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280;}
@@ -73,8 +77,7 @@
   <section class="loop-hero">
     <h1>Frequency-Response / Loop-Shaping Design</h1>
     <p>This module shows how to select and tune controllers using Bode or Nyquist plots.
-      It is designed to be didactic: fast, interactive, and transparent about limitations (e.g. non‑minimum‑phase).
-      Auto‑tuning is clearly marked as a heuristic.</p>
+      It is designed to be didactic: fast, interactive, and transparent about limitations (e.g. non‑minimum‑phase).</p>
     <div class="loop-row">
       <span class="loop-pill">Goal: ω<sub>c</sub>, Phase Margin, Gain Margin</span>
       <span class="loop-pill">Loop‑shaping in 4 steps: pick ω<sub>c</sub> → phase need → controller → verify</span>
@@ -145,7 +148,7 @@
           <div class="loop-field">
             <label for="targetEinfValue">e∞ target (optional, enter 0 for exact)</label>
             <input id="targetEinfValue" type="number" step="0.001" placeholder="e.g. 0.05">
-            <div class="loop-note">If set, this overrides the “e∞ = 0” checkbox. Use <strong>0</strong> for “stationär genau”. For ramps, e∞ refers to the ramp tracking error for the chosen slope a.</div>
+            <div class="loop-note">If set, this overrides the “e∞ = 0” checkbox. Use <strong>0</strong> for exact steady-state tracking. For ramps, e∞ refers to the ramp tracking error for the chosen slope a.</div>
           </div>
         </div>
         <div id="examInputs">
@@ -217,7 +220,7 @@
         </div>
       </div>
 
-      <div class="loop-panel">
+      <div class="loop-panel compact">
         <h4>Measured values</h4>
         <div class="loop-kv">
           <span><strong>ωc</strong><span id="measWc">—</span></span>
@@ -229,7 +232,7 @@
         </div>
         <div class="loop-row" id="targetStatusRow"></div>
       </div>
-      <div class="loop-panel">
+      <div class="loop-panel compact">
         <h4>Steady-state accuracy</h4>
         <div class="loop-kv">
           <span><strong>System type ν</strong><span id="steadyType">—</span></span>
@@ -342,20 +345,7 @@
       </div>
       <div class="loop-note">Tooltips: ω<sub>c</sub> = 0 dB crossover, PM = phase margin, GM = gain margin.</div>
 
-      <h3>6) Auto‑tuning (heuristic)</h3>
-      <div class="loop-field">
-        <label class="loop-toggle" for="autoToggle">
-          <input id="autoToggle" type="checkbox"> Enable auto‑tuning
-        </label>
-      </div>
-      <div id="autoBox" class="loop-hidden">
-        <div class="loop-actions">
-          <button class="loop-btn primary" id="autoBtn">Apply auto‑tune</button>
-        </div>
-        <div class="loop-note">Note: heuristic only! Uses the targets defined above.</div>
-      </div>
-
-      <h3>7) Klausur‑Rezept (Frequenzkennlinienverfahren)</h3>
+      <h3>6) Exam recipe (frequency-response method)</h3>
       <div class="loop-note">Applies the common course recipe: ωD=1.5/T_an and Φ_req≈70°−Mp, then enforces system type (ν) for step/ramp accuracy and adds lead/lag blocks as needed. This is designed to match typical exam solutions.</div>
       <div class="loop-actions">
         <button class="loop-btn primary" id="recipeBtn">Apply exam recipe</button>
@@ -774,24 +764,24 @@ const renderRecipe = (recipe) => {
   }).filter(Boolean);
 
   const einfText = (() => {
-    if (recipe.einf_mode === 'zero') return 'e∞=0 (stationär genau)';
+    if (recipe.einf_mode === 'zero') return '\\(e_\\infty = 0\\) (exact steady-state tracking)';
     if (recipe.einf_mode === 'numeric') return `e∞=${recipe.einf_value}`;
     return '—';
   })();
 
   const rows = [
     ['Reference', recipe.reference || '—'],
-    ['ωD', fmt(recipe.w_d, 'rad/s')],
-    ['Φreq', fmt(recipe.phi_req, '°')],
-    ['ν (plant)', fmtInt(recipe.plant_type)],
-    ['ν required', fmtInt(recipe.nu_req)],
+    ['\\(\\omega_D\\)', `\\(${fmt(recipe.w_d)}\\,\\mathrm{rad/s}\\)`],
+    ['\\(\\Phi_{\\mathrm{req}}\\)', `\\(${fmt(recipe.phi_req)}^\\circ\\)`],
+    ['\\(\\nu\\) (plant)', `\\(${fmtInt(recipe.plant_type)}\\)`],
+    ['\\(\\nu\\) required', `\\(${fmtInt(recipe.nu_req)}\\)`],
     ['Added integrators', fmtInt(recipe.n_add)],
     ['Steady-state spec', einfText],
     ['K source', recipe.k_source || '—'],
-    ['K (chosen)', fmt(recipe.k)],
-    ['Kcross @ ωD', fmt(recipe.k_cross)],
-    ['Lead', recipe.lead ? `yes (α=${fmt(recipe.alpha)})` : 'no'],
-    ['Lag', recipe.lag ? (recipe.beta ? `yes (β=${fmt(recipe.beta)})` : 'yes') : 'no'],
+    ['\\(K\\) (chosen)', `\\(${fmt(recipe.k)}\\)`],
+    ['\\(K_{\\mathrm{cross}}\\) @ \\(\\omega_D\\)', `\\(${fmt(recipe.k_cross)}\\)`],
+    ['Lead', recipe.lead ? `yes \\(\\alpha=${fmt(recipe.alpha)}\\)` : 'no'],
+    ['Lag', recipe.lag ? (recipe.beta ? `yes \\(\\beta=${fmt(recipe.beta)}\\)` : 'yes') : 'no'],
     ['Blocks', blocksHtml.length ? blocksHtml.join(' · ') : '—'],
   ];
 
@@ -801,9 +791,9 @@ const renderRecipe = (recipe) => {
   rows.forEach(([k, v]) => {
     const tr = document.createElement('tr');
     const th = document.createElement('th');
-    th.textContent = k;
+    th.innerHTML = k;
     const td = document.createElement('td');
-    td.textContent = String(v);
+    td.innerHTML = String(v);
     tr.appendChild(th);
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -818,9 +808,9 @@ const renderRecipe = (recipe) => {
       const div = document.createElement('div');
       div.className = 'loop-recipe-step';
       const title = document.createElement('strong');
-      title.textContent = step.title || '';
+      title.innerHTML = step.title || '';
       const text = document.createElement('div');
-      text.textContent = step.text || '';
+      text.innerHTML = step.text || '';
       div.appendChild(title);
       div.appendChild(text);
       stepsBox.appendChild(div);
@@ -828,7 +818,11 @@ const renderRecipe = (recipe) => {
   }
 
   if (recipe.controller_expression) {
-    expr.textContent = `GR(s) = ${recipe.controller_expression}`;
+    expr.innerHTML = `\\(G_R(s) = ${recipe.controller_expression}\\)`;
+  }
+
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    window.MathJax.typesetPromise([summary, stepsBox, expr]).catch(() => {});
   }
 };
 
@@ -943,14 +937,12 @@ $('designMode').addEventListener('change', () => {
   });
 });
 
-$('autoToggle').addEventListener('change', () => toggleBox('autoToggle', 'autoBox'));
 ['targetEinfReqExam', 'targetEinfReq', 'targetEinfReqRamp'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('change', debouncedUpdateIfAllowed);
 });
 
 $('updateBtn').addEventListener('click', () => updatePlots('manual'));
-$('autoBtn').addEventListener('click', () => updatePlots('auto'));
 $('recipeBtn').addEventListener('click', () => updatePlots('recipe'));
 $('resetBtn').addEventListener('click', () => {
   $('tfExpression').value = exampleData[0].expression;
