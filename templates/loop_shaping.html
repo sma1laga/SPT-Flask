@@ -137,23 +137,11 @@
             <option value="ramp">Ramp (a·t·ε(t))</option>
           </select>
         </div>
-        <div class="loop-row" id="rampSlopeRow">
-          <div class="loop-field">
-            <label for="rampSlope">Slope a</label>
-            <input id="rampSlope" type="number" step="0.1" value="1">
-          </div>
-          <div class="loop-field">
-            <label class="loop-toggle" for="targetEinfReqRamp">
-              <input id="targetEinfReqRamp" type="checkbox"> e∞ = 0 required (ramp)
-            </label>
-          </div>
-        </div>
-
         <div class="loop-row">
           <div class="loop-field">
             <label for="targetEinfValue">e∞ target (optional, enter 0 for exact)</label>
             <input id="targetEinfValue" type="number" step="0.001" placeholder="e.g. 0.05">
-            <div class="loop-note">If set, this overrides the “e∞ = 0” checkbox. Use <strong>0</strong> for exact steady-state tracking. For ramps, e∞ refers to the ramp tracking error for the chosen slope a.</div>
+            <div class="loop-note">Use <strong>0</strong> for exact steady-state tracking. Leave empty if you do not want an e∞ constraint.</div>
           </div>
         </div>
         <div id="examInputs">
@@ -167,11 +155,6 @@
               <input id="targetMp" type="number" step="1" value="20">
               <div class="loop-note">Note: some notes use e<sub>max</sub>.</div>
             </div>
-          </div>
-          <div class="loop-field">
-            <label class="loop-toggle" for="targetEinfReqExam">
-              <input id="targetEinfReqExam" type="checkbox"> e∞ = 0 required (step)
-            </label>
           </div>
           <div class="loop-row">
             <div class="loop-field">
@@ -199,11 +182,6 @@
               <label for="targetGmMin">GM min [dB]</label>
               <input id="targetGmMin" type="number" step="1" placeholder="6">
             </div>
-          </div>
-          <div class="loop-field">
-            <label class="loop-toggle" for="targetEinfReq">
-              <input id="targetEinfReq" type="checkbox"> e∞ = 0 required (step)
-            </label>
           </div>
           <div class="loop-row">
             <div class="loop-field">
@@ -504,14 +482,6 @@ const buildPayload = (mode = 'manual') => {
   if (hasNumericEinf) {
     einfMode = (einfNum === 0) ? 'zero' : 'numeric';
     einfValue = einfNum;
-  } else {
-    if (reference === 'ramp' && $('targetEinfReqRamp').checked) {
-      einfMode = 'zero';
-    }
-    if (reference === 'step') {
-      const stepZero = designMode === 'general' ? $('targetEinfReq').checked : $('targetEinfReqExam').checked;
-      if (stepZero) einfMode = 'zero';
-    }
   }
   return {
     mode,
@@ -530,10 +500,10 @@ const buildPayload = (mode = 'manual') => {
     targets: {
       t_an: $('targetTan').value,
       mp: designMode === 'general' ? $('targetMpGeneral').value : $('targetMp').value,
-      einf_required: designMode === 'general' ? $('targetEinfReq').checked : $('targetEinfReqExam').checked,
-      ramp_einf_required: $('targetEinfReqRamp').checked,
+      einf_required: false,
+      ramp_einf_required: false,
       reference,
-      ramp_slope: $('rampSlope').value,
+      ramp_slope: 1,
       einf_mode: einfMode,
       einf_value: einfValue,
       wc: $('targetWc').value,
@@ -913,7 +883,7 @@ const debouncedUpdateIfAllowed = () => {
 
 ['tfExpression', 'controllerType', 'controllerExpression', 'paramK', 'paramTi', 'paramTd', 'paramN',
  'paramWz', 'paramWp', 'paramLeadWz', 'paramLeadWp', 'paramLagWz', 'paramLagWp', 'paramW0', 'paramZetaZ',
- 'paramZetaP', 'designMode', 'referenceType', 'rampSlope', 'targetEinfValue', 'targetTan', 'targetMp',
+ 'paramZetaP', 'designMode', 'referenceType', 'targetEinfValue', 'targetTan', 'targetMp',
  'targetWc', 'targetPmMin', 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('input', debouncedUpdateIfAllowed);
@@ -934,25 +904,18 @@ const updateDesignModeUI = () => {
   const isExam = $('designMode').value === 'exam';
   $('examInputs').classList.toggle('loop-hidden', !isExam);
   $('generalInputs').classList.toggle('loop-hidden', isExam);
-  const isRamp = $('referenceType').value === 'ramp';
-  $('rampSlopeRow').classList.toggle('loop-hidden', !isRamp);
 };
 
 $('designMode').addEventListener('change', () => {
   updateDesignModeUI();
   debouncedUpdateIfAllowed();
 });
-['referenceType', 'rampSlope'].forEach((id) => {
+['referenceType'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('input', () => {
     updateDesignModeUI();
     debouncedUpdateIfAllowed();
   });
-});
-
-['targetEinfReqExam', 'targetEinfReq', 'targetEinfReqRamp'].forEach((id) => {
-  const el = $(id);
-  if (el) el.addEventListener('change', debouncedUpdateIfAllowed);
 });
 
 $('updateBtn').addEventListener('click', () => updatePlots('manual'));

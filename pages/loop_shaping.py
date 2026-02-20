@@ -463,7 +463,7 @@ def _exam_recipe_controller(
     report_steps: List[Dict[str, str]] = []
     report_steps.append(
         {
-            "title": "1) Specifications \u2192 \(\omega_D\) and \(\Phi\)",
+            "title": r"1) Specifications $\to$ \(\omega_D\) and \(\Phi\)",
             "text": rf"\(\omega_D = 1.5/T_{{an}} = 1.5/{t_an:g} = {w_d:.3g}\,\mathrm{{rad/s}}\); \ \(\Phi_{{req}} = 70^\circ - M_p = 70^\circ - {mp:g}\% = {phi_req:.3g}^\circ\)."
         }
     )
@@ -473,14 +473,14 @@ def _exam_recipe_controller(
             report_steps.append(
                 {
                     "title": "2) Steady-state accuracy (step)",
-                    "text": rf"\(e_\infty=0\) \u2192 open loop needs \(\nu\ge 1\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
+                    "text": rf"\(e_\infty=0\) \(\to\) open loop needs \(\nu\ge 1\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
                 }
             )
         else:
             report_steps.append(
                 {
                     "title": "2) Steady-state accuracy (ramp)",
-                    "text": rf"\(e_\infty=0\) \u2192 open loop needs \(\nu\ge 2\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
+                    "text": rf"\(e_\infty=0\) \(\to\) open loop needs \(\nu\ge 2\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
                 }
             )
     elif einf_mode == "numeric" and einf_value is not None:
@@ -495,14 +495,14 @@ def _exam_recipe_controller(
             report_steps.append(
                 {
                     "title": "2) Steady-state error constraint (ramp)",
-                    "text": rf"Given \(e_\infty={einf_value:g}\) for ramp slope \(a={ramp_slope:g}\). For \(\nu=1\): \(e_\infty=a/K_v\) \u2192 \(K_{{v,req}}=a/e_\infty\). (If \(\nu\ge 2\), then \(e_\infty=0\) automatically.)"
+                    "text": rf"Given \(e_\infty={einf_value:g}\) for ramp input. For \(\nu=1\): \(e_\infty=a/K_v\) \(\to\) \(K_{{v,req}}=a/e_\infty\). (If \(\nu\ge 2\), then \(e_\infty=0\) automatically.)"
                 }
             )
 
     report_steps.append(
         {
             "title": "3) Crossover and gain",
-            "text": rf"\(|L(j\omega_D)|\) (without \(K\)) = {20*np.log10(mag0):.2f} dB \u21d2 \(K_{{cross}}={k_cross:.4g}\). "
+            "text": rf"\(|L(j\omega_D)|\) (without \(K\)) = {20*np.log10(mag0):.2f}\,\mathrm{{dB}} \(\Rightarrow\) \(K_{{cross}}={k_cross:.4g}\). "
                     f"Chosen \(K={k0:.4g}\){' (from e∞)' if k_source == 'steady_state' else ''}."
         }
     )
@@ -511,7 +511,7 @@ def _exam_recipe_controller(
         {
             "title": "4) Phase requirement",
             "text": rf"\(\varphi(L(j\omega_D)) \approx {phase0:.2f}^\circ\). Target: \(\varphi_{{target}} = -180^\circ + \Phi_{{req}} = {phase_target:.2f}^\circ\). "
-                    rf"\(\Delta\varphi \approx {delta_phi:.2f}^\circ\) \u2192 lead design with \(\Delta\varphi_{{eff}} \approx {delta_phi_eff:.2f}^\circ\)."
+                    rf"\(\Delta\varphi \approx {delta_phi:.2f}^\circ\) \(\to\) lead design with \(\Delta\varphi_{{eff}} \approx {delta_phi_eff:.2f}^\circ\)."
         }
     )
 
@@ -534,7 +534,7 @@ def _exam_recipe_controller(
         report_steps.append(
             {
                 "title": "6) Lag block (if \(K\) is fixed by \(e_\infty\))",
-                "text": rf"\(\beta={lag_params['beta']:.3g}\) \u2192 Lag: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_p={lag_params['wp']:.3g}\), \(\omega_z={lag_params['wz']:.3g}\) (\(\approx 1/\beta\) at \(\omega_D\))."
+                "text": rf"\(\beta={lag_params['beta']:.3g}\) \(\to\) Lag: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_p={lag_params['wp']:.3g}\), \(\omega_z={lag_params['wz']:.3g}\) (\(\approx 1/\beta\) at \(\omega_D\))."
             }
         )
     l_final_wd = _frequency_response(controller * plant, np.array([w_d]))[0]
@@ -544,9 +544,9 @@ def _exam_recipe_controller(
         report_steps.append(
             {
                 "title": "7) Final gain adjustment",
-                "text": rf"Final gain adjustment: choose K so that |L(jω_D)| = 1 (0 dB). "
-                        f"|L_noK(jω_D)|={mag_no_k_wd:.4g} ⇒ K={k_final:.4g}.{recomputed_note} "
-                        f"Check: \(|L(j\omega_D)|\)={l_final_db:.2f} dB (target: 0\(\pm\)0.2 dB)."
+                "text": rf"Final gain adjustment: choose \(K\) so that \(|L(j\omega_D)| = 1\) (0\,\mathrm{dB}). "
+                        f"\(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\) \(\Rightarrow\) \(K={k_final:.4g}\).{recomputed_note} "
+                        f"Check: \(|L(j\omega_D)|\)={l_final_db:.2f}\,\mathrm{{dB}} (target: \(0\pm0.2\,\mathrm{{dB}}\))."
             }
         )
 
