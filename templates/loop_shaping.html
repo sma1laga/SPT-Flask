@@ -21,7 +21,9 @@
   .loop-btn.secondary {background: #10b981; color: #fff;}
   .loop-btn.ghost {background: #f3f4f6; color: #1f2937;}
   .loop-btn.warning {background: #f59e0b; color: #fff;}
-  .loop-btn.example {background: #2563eb; color: #fff; border: 1px solid #1d4ed8;}
+  .loop-btn.example {background: #2563eb; color: #fff; border: 1px solid #1d4ed8; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; text-align: left; min-height: 68px;}
+  .loop-btn.example .example-title {font-size: 0.9rem; font-weight: 700; line-height: 1.15;}
+  .loop-btn.example .example-latex {font-size: 0.78rem; line-height: 1.1; opacity: 0.95;}
   .loop-badge {display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; border: 1px solid transparent;}
   .loop-badge.ok {background: #ecfdf5; color: #065f46; border-color: #a7f3d0;}
   .loop-badge.warn {background: #fff7ed; color: #9a3412; border-color: #fed7aa;}
@@ -106,7 +108,10 @@
       </div>
       <div class="loop-example-grid" id="exampleButtons">
         {% for ex in examples %}
-          <button type="button" class="loop-btn example" data-example-id="{{ ex.id }}">{{ ex.name }}</button>
+          <button type="button" class="loop-btn example" data-example-id="{{ ex.id }}" data-example-latex="{{ (ex.latex or '') | e }}">
+            <span class="example-title">{{ ex.name }}</span>
+            <span class="example-latex">\({{ ex.latex or 'G(s)=\text{—}' }}\)</span>
+          </button>
         {% endfor %}
       </div>
       <div class="loop-note">Tap a blue example button for instant loading.</div>
@@ -672,6 +677,14 @@ const setInterpretation = (notes) => {
     list.appendChild(li);
   });
 };
+
+const renderExampleButtonLatex = () => {
+  const buttons = document.querySelectorAll('#exampleButtons .example-latex');
+  if (window.MathJax && window.MathJax.typesetPromise && buttons.length) {
+    window.MathJax.typesetPromise(Array.from(buttons)).catch(() => {});
+  }
+};
+
 const renderTransferLatex = (data) => {
   const box = $('transferLatexBlock');
   if (!box) return;
@@ -996,6 +1009,7 @@ tabButtons.forEach((btn) => {
 
 fieldsByController();
 updateDesignModeUI();
+renderExampleButtonLatex();
 applyExample();
 updatePlots('manual');
 </script>

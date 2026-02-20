@@ -1009,7 +1009,17 @@ def _auto_tune_controller(
 @loop_shaping_bp.route("/", methods=["GET"])
 @loop_shaping_bp.route("", methods=["GET"])
 def loop_shaping():
-    return render_template("loop_shaping.html", examples=EXAMPLES)
+    examples_with_latex: List[Dict[str, Any]] = []
+    for example in EXAMPLES:
+        example_payload = dict(example)
+        try:
+            tf = _parse_transfer_expression(example.get("expression", ""))
+            example_payload["latex"] = _tf_to_latex(tf)
+        except Exception:
+            example_payload["latex"] = None
+        examples_with_latex.append(example_payload)
+
+    return render_template("loop_shaping.html", examples=examples_with_latex)
 
 
 @loop_shaping_bp.route("/api", methods=["POST"])
