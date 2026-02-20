@@ -544,9 +544,8 @@ def _exam_recipe_controller(
         report_steps.append(
             {
                 "title": "7) Final gain adjustment",
-                "text": rf"Final gain adjustment: choose \(K\) so that \(|L(j\omega_D)| = 1\) (0\,\mathrm{dB}). "
-                        f"\(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\) \(\Rightarrow\) \(K={k_final:.4g}\).{recomputed_note} "
-                        f"Check: \(|L(j\omega_D)|\)={l_final_db:.2f}\,\mathrm{{dB}} (target: \(0\pm0.2\,\mathrm{{dB}}\))."
+                "text": rf"Final gain adjustment: choose \(K\) so that \(|L(j\omega_D)| = 1\) (0\,\mathrm{{dB}}). "                        f"\(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\) \(\Rightarrow\) \(K={k_final:.4g}\).{recomputed_note} "
+                        rf"Check: \(|L(j\omega_D)|\)={l_final_db:.2f}\,\mathrm{{dB}} (target: \(0\pm0.2\,\mathrm{{dB}}\))."
             }
         )
 
