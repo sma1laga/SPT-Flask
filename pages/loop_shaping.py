@@ -302,14 +302,7 @@ def _exam_recipe_controller(
     plant: control.TransferFunction,
     targets: Dict[str, Any],
 ) -> Tuple[control.TransferFunction, Dict[str, Any], List[str]]:
-    """Frequenzkennlinienverfahren
-
-    This is not a universal method; it implements common handout heuristics:
-      ω_D = 1.5 / T_an
-      Φ_req = 70° - M_p
-
-    Additionally it can enforce/meet a steady-state error spec for step or ramp.
-    """
+    """Frequenzkennlinienverfahren with flowchart strategy selection."""
     warnings: List[str] = []
     s = control.TransferFunction([1, 0], [1])
 
@@ -343,12 +336,13 @@ def _exam_recipe_controller(
         raise ValueError("Exam recipe requires T_an > 0 and M_p > 0.")
 
     phi_req = float(np.clip(phi_req, 15.0, 85.0))
+    phase_target = -180.0 + phi_req
 
-    # ----- 1) Enforce required system type (ν) -----
+    # ----- Stage 1: Stationary accuracy and K determination -----
     plant_type = _count_integrators(plant)
     if reference == "step":
         nu_req = 1 if einf_mode == "zero" else 0
-    else:  # ramp
+    else:
         if einf_mode == "zero":
             nu_req = 2
         elif einf_mode == "numeric":
@@ -361,37 +355,34 @@ def _exam_recipe_controller(
         warnings.append(f"Added {n_add} integrator(s) to meet ν ≥ {nu_req}.")
 
     c_int = 1 / (s ** n_add) if n_add > 0 else control.TransferFunction([1], [1])
-    l_base = c_int * plant  # K=1, no lead/lag yet
-
-    # ----- 2) Compute crossover gain K_cross at ω_D -----
-    l_wd = _frequency_response(l_base, np.array([w_d]))[0]
-    mag0 = abs(l_wd)
-    if mag0 <= 0 or not np.isfinite(mag0):
+    l_base_no_k = c_int * plant
+    l_base_wd_no_k = _frequency_response(l_base_no_k, np.array([w_d]))[0]
+    mag_base_no_k = abs(l_base_wd_no_k)
+    if mag_base_no_k <= 0 or not np.isfinite(mag_base_no_k):
         raise ValueError("Could not evaluate plant at ω_D.")
-    k_cross = 1.0 / mag0
+    k_cross = 1.0 / mag_base_no_k
 
-    # ----- 3) Compute steady-state gain K_ss (if numeric spec) -----
-    k_ss: Optional[float] = None
     nu_total = plant_type + n_add
-    if einf_mode == "numeric" and einf_value is not None:
+    k_ss: Optional[float] = None
+    ss_constraint_present = einf_mode in {"zero", "numeric"}
+    if einf_mode == "numeric" and einf_value is not None and einf_value > 0:
         e = float(einf_value)
         if reference == "step":
             if nu_total >= 1:
-                k_ss = None
+
                 warnings.append("System type ν≥1 → step e∞ = 0 automatically.")
             else:
-                kp_base = _safe_dcgain(l_base)
+                kp_base = _safe_dcgain(l_base_no_k)
                 if kp_base is None or kp_base <= 0:
                     warnings.append("Could not compute Kp for e∞ spec.")
                 else:
                     kp_req = (1.0 / e) - 1.0
                     k_ss = kp_req / kp_base
-        else:  # ramp
+        else:
             if nu_total >= 2:
-                k_ss = None
                 warnings.append("System type ν≥2 → ramp e∞ = 0 automatically.")
             elif nu_total == 1:
-                kv_base = _safe_dcgain(s * l_base)
+                kv_base = _safe_dcgain(s * l_base_no_k)
                 if kv_base is None or kv_base <= 0:
                     warnings.append("Could not compute Kv for ramp e∞ spec.")
                 else:
@@ -401,170 +392,198 @@ def _exam_recipe_controller(
                 warnings.append("Ramp steady-state error is infinite for ν=0.")
 
     k_source = "steady_state" if (k_ss is not None and np.isfinite(k_ss) and k_ss > 0) else "crossover"
-    k0 = float(k_ss) if k_source == "steady_state" else float(k_cross)
+    k_fixed = k_source == "steady_state"
+    k0 = float(k_ss) if k_fixed else 1.0
 
-    # ----- 4) Phase deficit at ω_D and required lead -----
-    phase0 = _phase_deg_negative(l_wd)
-    phase_target = -180.0 + phi_req
-    delta_phi = phase_target - phase0
-    delta_phi_eff = float(max(delta_phi, 0.0))
+    # ----- Stage 2: Strategy selection (AUTO / forced) -----
+    strategy = str(targets.get("recipe_strategy") or "auto").lower()
+    if strategy == "auto":
+        strategy_eff = "leadlag" if k_fixed else "standard"
+    elif strategy in {"standard", "leadlag"}:
+        strategy_eff = strategy
+    else:
+        strategy_eff = "standard"
 
-    ratio_needed = k_cross / max(k0, 1e-12)
-    alpha_mag = ratio_needed ** 2 if ratio_needed > 1.0 else 1.0
-
-    alpha_phase = 1.0
-    if delta_phi_eff > 1e-6:
-        phi = np.deg2rad(delta_phi_eff)
-        alpha_phase = (1 + np.sin(phi)) / (1 - np.sin(phi))
-
-    alpha = float(max(alpha_mag, alpha_phase, 1.0))
-    alpha = float(np.clip(alpha, 1.0, 200.0))
-
+    if strategy_eff == "leadlag" and not k_fixed and strategy != "auto":
+        warnings.append("K not fixed; leadlag chosen by override.")
+    if strategy_eff == "standard" and k_fixed and strategy != "auto":
+        warnings.append("K fixed; standard chosen by override; may fail amplitude constraint.")
+    # ----- Stage 3: Phase/Amplitude correction -----
     lead = control.TransferFunction([1], [1])
-    lead_params: Optional[Dict[str, float]] = None
-    if alpha > 1.0001:
-        wz = w_d / np.sqrt(alpha)
-        wp = w_d * np.sqrt(alpha)
-        lead = (s / wz + 1) / (s / wp + 1)
-        lead_params = {"wz": float(wz), "wp": float(wp), "alpha": float(alpha), "phi_add": float(delta_phi_eff)}
-
-    # After lead, recompute crossover gain requirement (exact)
-    l_after_lead = lead * l_base
-    l_wd_after_lead = _frequency_response(l_after_lead, np.array([w_d]))[0]
-    mag_after_lead = abs(l_wd_after_lead)
-    k_cross_after_lead = 1.0 / mag_after_lead if mag_after_lead > 0 else k_cross
-
-    # ----- 5) If K is fixed too high (from e∞), add lag to attenuate around ω_D -----
     lag = control.TransferFunction([1], [1])
+    std_zero = control.TransferFunction([1], [1])
+    std_pole = control.TransferFunction([1], [1])
+    lead_params: Optional[Dict[str, float]] = None
     lag_params: Optional[Dict[str, float]] = None
-    beta: Optional[float] = None
-    if k_source == "steady_state":
-        beta = k0 / max(k_cross_after_lead, 1e-12)
-        if beta > 1.05:
-            wp_lag = w_d / 10.0
-            wz_lag = wp_lag * beta
-            lag = (s / wz_lag + 1) / (s / wp_lag + 1)
-            lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
+    std_zero_params: Optional[Dict[str, float]] = None
+    std_pole_params: Optional[Dict[str, float]] = None
 
-    # Final controller: recompute K after all dynamic blocks unless K is fixed by e∞.
-    c_no_k = c_int * lead * lag
-    l_no_k_final = c_no_k * plant
-    l_no_k_wd = _frequency_response(l_no_k_final, np.array([w_d]))[0]
-    mag_no_k_wd = abs(l_no_k_wd)
-    k_final = k0
-    if k_source == "crossover":
+    l_stage = (k0 * l_base_no_k) if k_fixed else l_base_no_k
+    l_stage_wd = _frequency_response(l_stage, np.array([w_d]))[0]
+    phase_now = _phase_deg_negative(l_stage_wd)
+    delta_phi = phase_target - phase_now
+    while delta_phi > 180:
+        delta_phi -= 360
+    while delta_phi <= -180:
+        delta_phi += 360
+
+    delta_phi_eff = float(delta_phi)
+    mag_no_k_wd = mag_base_no_k
+    k_cross_after_lead = k_cross
+
+    if strategy_eff == "standard":
+        if delta_phi_eff > 1e-6:
+            phi_use = min(delta_phi_eff, 85.0)
+            if delta_phi_eff > 85.0:
+                warnings.append("Standard path: required Δφ > 85°; PI/PID-style structure may be insufficient.")
+            tan_phi = np.tan(np.deg2rad(phi_use))
+            wz = w_d / max(tan_phi, 1e-6)
+            std_zero = (s / wz + 1)
+            std_zero_params = {"wz": float(wz), "phi": float(delta_phi_eff)}
+        elif delta_phi_eff < -1e-6:
+            phi_use = min(abs(delta_phi_eff), 85.0)
+            tan_phi = np.tan(np.deg2rad(phi_use))
+            wp = w_d / max(tan_phi, 1e-6)
+            std_pole = 1 / (s / wp + 1)
+            std_pole_params = {"wp": float(wp), "phi": float(delta_phi_eff)}
+
+        c_no_k = c_int * std_zero * std_pole
+        l_no_k_final = c_no_k * plant
+        l_no_k_wd = _frequency_response(l_no_k_final, np.array([w_d]))[0]
+        mag_no_k_wd = abs(l_no_k_wd)
         if mag_no_k_wd <= 0 or not np.isfinite(mag_no_k_wd):
             raise ValueError("Could not evaluate final loop at ω_D for gain adjustment.")
         k_final = 1.0 / mag_no_k_wd
+    else:
+        # Lead/Lag path with fixed (or overridden) K basis
+        l_after_phase = l_stage
+        if delta_phi_eff > 1.0:
+            phi_use = min(delta_phi_eff, 85.0)
+            sin_phi = np.sin(np.deg2rad(phi_use))
+            alpha = (1 + sin_phi) / max(1 - sin_phi, 1e-6)
+            alpha = float(np.clip(alpha, 1.0, 200.0))
+            wz = w_d / np.sqrt(alpha)
+            wp = w_d * np.sqrt(alpha)
+            lead = (s / wz + 1) / (s / wp + 1)
+            lead_params = {"wz": float(wz), "wp": float(wp), "alpha": float(alpha), "phi_add": float(phi_use)}
+            l_after_phase = l_after_phase * lead
+        elif delta_phi_eff < -5.0:
+            phi_use = min(abs(delta_phi_eff), 45.0)
+            sin_phi = np.sin(np.deg2rad(phi_use))
+            alpha = (1 + sin_phi) / max(1 - sin_phi, 1e-6)
+            alpha = float(np.clip(alpha, 1.0, 50.0))
+            wp = w_d / np.sqrt(alpha)
+            wz = w_d * np.sqrt(alpha)
+            lag = (s / wz + 1) / (s / wp + 1)
+            lag_params = {"wz": float(wz), "wp": float(wp), "beta": float(alpha), "purpose": "phase_reduce"}
+            l_after_phase = l_after_phase * lag
+
+        l_after_phase_wd = _frequency_response(l_after_phase, np.array([w_d]))[0]
+        a_mag = abs(l_after_phase_wd)
+
+        if a_mag > 1.05:
+            beta = float(min(max(a_mag, 1.01), 200.0))
+            wp_lag = w_d / 10.0
+            wz_lag = wp_lag * beta
+            lag_amp = (s / wz_lag + 1) / (s / wp_lag + 1)
+            lag = lag * lag_amp
+            lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta), "purpose": "amplitude_down"}
+            l_after_phase = l_after_phase * lag_amp
+        elif a_mag < 0.95:
+            ratio = max(1.0 / max(a_mag, 1e-12), 1.0)
+            alpha_amp = float(min(ratio ** 2, 200.0))
+            wz2 = w_d / np.sqrt(alpha_amp)
+            wp2 = w_d * np.sqrt(alpha_amp)
+            lead_amp = (s / wz2 + 1) / (s / wp2 + 1)
+            lead = lead * lead_amp
+            if lead_params:
+                lead_params = {
+                    "wz": lead_params["wz"],
+                    "wp": lead_params["wp"],
+                    "alpha": lead_params["alpha"],
+                    "phi_add": lead_params.get("phi_add", 0.0),
+                    "extra_lead": {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp)},
+                }
+            else:
+                lead_params = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp), "phi_add": 0.0, "purpose": "amplitude_up"}
+            l_after_phase = l_after_phase * lead_amp
+
+        c_no_k = c_int * lead * lag
+        k_final = k0 if k_fixed else 1.0
+        if not k_fixed:
+            warnings.append("Lead/Lag branch used without fixed K: using K=1 baseline (override case).")
 
     controller = k_final * c_no_k
-
-    # ----- 6) Build a recipe report (step-by-step, exam style) -----
-    report_steps: List[Dict[str, str]] = []
-    report_steps.append(
-        {
-            "title": r"1) Specifications $\to$ \(\omega_D\) and \(\Phi\)",
-            "text": rf"\(\omega_D = 1.5/T_{{an}} = 1.5/{t_an:g} = {w_d:.3g}\,\mathrm{{rad/s}}\); \ \(\Phi_{{req}} = 70^\circ - M_p = 70^\circ - {mp:g}\% = {phi_req:.3g}^\circ\)."
-        }
-    )
-
-    if einf_mode == "zero":
-        if reference == "step":
-            report_steps.append(
-                {
-                    "title": "2) Steady-state accuracy (step)",
-                    "text": rf"\(e_\infty=0\) \(\to\) open loop needs \(\nu\ge 1\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
-                }
-            )
-        else:
-            report_steps.append(
-                {
-                    "title": "2) Steady-state accuracy (ramp)",
-                    "text": rf"\(e_\infty=0\) \(\to\) open loop needs \(\nu\ge 2\). Plant has \(\nu={plant_type}\), so added integrators: {n_add}."
-                }
-            )
-    elif einf_mode == "numeric" and einf_value is not None:
-        if reference == "step":
-            report_steps.append(
-                {
-                    "title": "2) Steady-state error constraint (step)",
-                    "text": rf"Given \(e_\infty={einf_value:g}\). For \(\nu=0\): \(e_\infty=1/(1+K_p)\), hence \(K_{{p,req}}=(1/e_\infty)-1\). (If \(\nu\ge 1\), then \(e_\infty=0\) automatically.)"
-                }
-            )
-        else:
-            report_steps.append(
-                {
-                    "title": "2) Steady-state error constraint (ramp)",
-                    "text": rf"Given \(e_\infty={einf_value:g}\) for ramp input with slope \(a={ramp_slope:g}\). For \(\nu=1\): \(e_\infty=a/K_v\) \(\to\) \(K_{{v,req}}=a/e_\infty\). (If \(\nu\ge 2\), then \(e_\infty=0\) automatically.)"
-                }
-            )
-
-    report_steps.append(
-        {
-            "title": "3) Crossover and gain",
-            "text": rf"\(|L(j\omega_D)|\) (without \(K\)) = {20*np.log10(mag0):.2f}\,\mathrm{{dB}} \(\Rightarrow\) \(K_{{cross}}={k_cross:.4g}\). "
-                    rf"Chosen \(K={k0:.4g}\){' (from e∞)' if k_source == 'steady_state' else ''}."
-        }
-    )
-
-    report_steps.append(
-        {
-            "title": "4) Phase requirement",
-            "text": rf"\(\varphi(L(j\omega_D)) \approx {phase0:.2f}^\circ\). Target: \(\varphi_{{target}} = -180^\circ + \Phi_{{req}} = {phase_target:.2f}^\circ\). "
-                    rf"\(\Delta\varphi \approx {delta_phi:.2f}^\circ\), so \(\Delta\varphi_{{eff}}=\max(\Delta\varphi,0)\approx {delta_phi_eff:.2f}^\circ\)."
-        }
-    )
-
-    if lead_params:
-        report_steps.append(
-            {
-                "title": "5) Lead block",
-                "text": rf"Lead: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_z={lead_params['wz']:.3g}\), \(\omega_p={lead_params['wp']:.3g}\) (\(\alpha={lead_params['alpha']:.3g}\))."
-            }
-        )
-    else:
-        report_steps.append(
-            {
-                "title": "5) Lead block",
-                "text": r"No lead needed (\(\Delta\varphi \le 0\) and no gain boost required at \(\omega_D\))."
-            }
-        )
-
-    if lag_params:
-        report_steps.append(
-            {
-                "title": r"6) Lag block (if \(K\) is fixed by \(e_\infty\))",
-                "text": rf"\(\beta={lag_params['beta']:.3g}\) \(\to\) Lag: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_p={lag_params['wp']:.3g}\), \(\omega_z={lag_params['wz']:.3g}\) (\(\approx 1/\beta\) at \(\omega_D\))."
-            }
-        )
     l_final_wd = _frequency_response(controller * plant, np.array([w_d]))[0]
     l_final_db = 20 * np.log10(max(abs(l_final_wd), 1e-12))
-    if k_source == "crossover":
-        recomputed_note = " K recomputed after lead/lag." if (lead_params or lag_params) else ""
-        report_steps.append(
-            {
-                "title": "7) Final gain adjustment",
-                "text": rf"Final gain adjustment: choose \(K\) so that \(|L(j\omega_D)| = 1\) (0\,\mathrm{{dB}}). "
-                        rf"\(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\) \(\Rightarrow\) \(K={k_final:.4g}\).{recomputed_note} "
-                        rf"Check: \(|L(j\omega_D)|\)={l_final_db:.2f}\,\mathrm{{dB}} (target: \(0\pm0.2\,\mathrm{{dB}}\))."
-            }
-        )
+    if strategy_eff == "leadlag" and abs(l_final_db) > 1.5:
+        warnings.append(f"Lead/Lag path: |L(jωD)| mismatch is {l_final_db:+.2f} dB (K kept fixed).")
 
-    # Build a string expression that can be pasted into the Custom controller field.
+    branch_text = "Branch: Standard structures (K not fixed)" if strategy_eff == "standard" else "Branch: Lead/Lag (K fixed by e∞)"
+
+    # ----- Report -----
+    report_steps: List[Dict[str, str]] = [
+        {
+            "title": r"1) Specifications $\to$ \(\omega_D\) and \(\Phi\)",
+            "text": rf"\(\omega_D = 1.5/T_{{an}} = 1.5/{t_an:g} = {w_d:.3g}\,\mathrm{{rad/s}}\); \ \(\Phi_{{req}} = 70^\circ - M_p = 70^\circ - {mp:g}\% = {phi_req:.3g}^\circ\).",
+        },
+        {
+            "title": "2) Stationary accuracy and type ν",
+            "text": rf"Plant ν={plant_type}, required ν={nu_req}, added integrators={n_add}. K source: {k_source}.",
+        },
+        {
+            "title": "3) Strategy branch",
+            "text": f"{branch_text}.",
+        },
+        {
+            "title": "4) Phase at ωD",
+            "text": rf"\(\varphi(L(j\omega_D))\approx {phase_now:.2f}^\circ\), target \({phase_target:.2f}^\circ\), Δφ≈{delta_phi_eff:.2f}°.",
+        },
+    ]
+
+    if strategy_eff == "standard":
+        if std_zero_params:
+            report_steps.append({"title": "5) Standard numerator term", "text": rf"Added zero-only term \(1+s/\omega_z\), \(\omega_z={std_zero_params['wz']:.3g}\)."})
+        if std_pole_params:
+            report_steps.append({"title": "6) Standard denominator term", "text": rf"Added pole-only term \(1/(1+s/\omega_p)\), \(\omega_p={std_pole_params['wp']:.3g}\)."})
+        report_steps.append({
+            "title": "7) Final gain adjustment",
+            "text": rf"Set \(K\) from crossover: \(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\Rightarrow K={k_final:.4g}\). Check \(|L(j\omega_D)|={l_final_db:.2f}\,\mathrm{{dB}}\).",
+        })
+    else:
+        report_steps.append({
+            "title": "5) Lead/Lag shaping",
+            "text": "Designed lead/lag network(s) at ωD while keeping K fixed by steady-state requirement." if k_fixed else "Lead/Lag network(s) designed (override mode).",
+        })
+        report_steps.append({
+            "title": "6) Verification",
+            "text": rf"K kept at {k_final:.4g}. Check \(|L(j\omega_D)|={l_final_db:.2f}\,\mathrm{{dB}}\).",
+        })
+
+
     parts: List[str] = [f"{k_final:.12g}"]
     if n_add > 0:
         parts.append(f"(1/(s^{n_add}))")
+    if std_zero_params:
+        parts.append(f"(1+s/{std_zero_params['wz']:.12g})")
+    if std_pole_params:
+        parts.append(f"(1/(1+s/{std_pole_params['wp']:.12g}))")
     if lead_params:
         parts.append(f"((1+s/{lead_params['wz']:.12g})/(1+s/{lead_params['wp']:.12g}))")
+        if isinstance(lead_params.get("extra_lead"), dict):
+            el = lead_params["extra_lead"]
+            parts.append(f"((1+s/{el['wz']:.12g})/(1+s/{el['wp']:.12g}))")
     if lag_params:
         parts.append(f"((1+s/{lag_params['wz']:.12g})/(1+s/{lag_params['wp']:.12g}))")
     controller_expr = "*".join(parts)
 
-    # Human-readable block list (useful for Exam-style answers)
-    blocks: List[Dict[str, Any]] = []
-    blocks.append({"type": "Gain", "label": "K", "k": float(k_final)})
+    blocks: List[Dict[str, Any]] = [{"type": "Gain", "label": "K", "k": float(k_final), "fixed": bool(strategy_eff == "leadlag" and k_fixed)}]
     if n_add > 0:
         blocks.append({"type": "Integrator", "label": f"1/s^{n_add}", "n": int(n_add)})
+    if std_zero_params:
+        blocks.append({"type": "ZeroOnly", **std_zero_params})
+    if std_pole_params:
+        blocks.append({"type": "PoleOnly", **std_pole_params})
     if lead_params:
         blocks.append({"type": "Lead", **lead_params})
     if lag_params:
@@ -582,24 +601,29 @@ def _exam_recipe_controller(
         "nu_total": int(nu_total),
         "n_add": int(n_add),
         "k_source": k_source,
+        "k_fixed": bool(k_fixed),
+        "strategy": strategy_eff,
         "k_cross": float(k_cross),
         "k_cross_after_lead": float(k_cross_after_lead) if np.isfinite(k_cross_after_lead) else None,
         "k_ss": float(k_ss) if k_ss is not None and np.isfinite(k_ss) else None,
         "k": float(k_final),
         "l_no_k_mag_wd": float(mag_no_k_wd) if np.isfinite(mag_no_k_wd) else None,
         "l_final_db_wd": float(l_final_db) if np.isfinite(l_final_db) else None,
-        "phase_at_wd": float(phase0),
+        "phase_at_wd": float(phase_now),
         "phase_target": float(phase_target),
-        "delta_phi": float(delta_phi),
-        "delta_phi_eff": float(delta_phi_eff),
-        "ratio_needed": float(ratio_needed),
-        "alpha": float(alpha),
-        "beta": float(beta) if (lag_params is not None and beta is not None and np.isfinite(beta)) else None,
+        "delta_phi": float(delta_phi_eff),
+        "delta_phi_eff": float(max(delta_phi_eff, 0.0)),
+        "alpha": float(lead_params["alpha"]) if lead_params and "alpha" in lead_params else 1.0,
+        "beta": float(lag_params["beta"]) if lag_params and "beta" in lag_params else None,
         "lead": lead_params,
         "lag": lag_params,
+        "standard_zero": std_zero_params,
+        "standard_pole": std_pole_params,
         "blocks": blocks,
+        "branch_text": branch_text,
         "controller_expression": controller_expr,
         "steps": report_steps,
+        "ss_constraint_present": bool(ss_constraint_present),
     }
 
     return controller, report, warnings
