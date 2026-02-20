@@ -503,7 +503,7 @@ def _exam_recipe_controller(
         {
             "title": "3) Crossover and gain",
             "text": rf"\(|L(j\omega_D)|\) (without \(K\)) = {20*np.log10(mag0):.2f}\,\mathrm{{dB}} \(\Rightarrow\) \(K_{{cross}}={k_cross:.4g}\). "
-                    f"Chosen \(K={k0:.4g}\){' (from e∞)' if k_source == 'steady_state' else ''}."
+                    rf"Chosen \(K={k0:.4g}\){' (from e∞)' if k_source == 'steady_state' else ''}."
         }
     )
 
@@ -533,7 +533,7 @@ def _exam_recipe_controller(
     if lag_params:
         report_steps.append(
             {
-                "title": "6) Lag block (if \(K\) is fixed by \(e_\infty\))",
+                "title": r"6) Lag block (if \(K\) is fixed by \(e_\infty\))",
                 "text": rf"\(\beta={lag_params['beta']:.3g}\) \(\to\) Lag: \( (1+s/\omega_z)/(1+s/\omega_p) \) with \(\omega_p={lag_params['wp']:.3g}\), \(\omega_z={lag_params['wz']:.3g}\) (\(\approx 1/\beta\) at \(\omega_D\))."
             }
         )
@@ -544,7 +544,8 @@ def _exam_recipe_controller(
         report_steps.append(
             {
                 "title": "7) Final gain adjustment",
-                "text": rf"Final gain adjustment: choose \(K\) so that \(|L(j\omega_D)| = 1\) (0\,\mathrm{{dB}}). "                        f"\(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\) \(\Rightarrow\) \(K={k_final:.4g}\).{recomputed_note} "
+                "text": rf"Final gain adjustment: choose \(K\) so that \(|L(j\omega_D)| = 1\) (0\,\mathrm{{dB}}). "
+                        rf"\(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\) \(\Rightarrow\) \(K={k_final:.4g}\).{recomputed_note} "
                         rf"Check: \(|L(j\omega_D)|\)={l_final_db:.2f}\,\mathrm{{dB}} (target: \(0\pm0.2\,\mathrm{{dB}}\))."
             }
         )
