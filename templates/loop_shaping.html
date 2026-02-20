@@ -153,11 +153,11 @@
           <div class="loop-field">
             <label for="recipeStrategy">Recipe strategy</label>
             <select id="recipeStrategy">
-              <option value="auto" selected>Auto (flowchart)</option>
+              <option value="auto" selected>Auto (Skript)</option>
               <option value="standard">Standard structures (PI/PID-style)</option>
               <option value="leadlag">Lead/Lag networks</option>
             </select>
-            <div class="loop-note">Auto chooses Standard if K is not fixed; chooses Lead/Lag if K is fixed by e∞.</div>
+            <div class="loop-note">Auto (Skript) follows Table 3.2 + flowchart: Standard when K is free, Lead/Lag when K is fixed numerically.</div>
           </div>
         </div>
         <div id="examInputs">
@@ -785,6 +785,7 @@ const renderRecipe = (recipe) => {
     ['Strategy', recipe.strategy || '—'],
     ['K fixed', recipe.k_fixed ? 'yes' : 'no'],
     ['K source', recipe.k_source || '—'],
+    ['K decision', recipe.k_explanation || '—'],
     ['\\(K\\) (chosen)', `\\(${fmt(recipe.k)}\\)`],
     ['\\(K_{\\mathrm{cross}}\\) @ \\(\\omega_D\\)', `\\(${fmt(recipe.k_cross)}\\)`],
     ['Lead', recipe.lead ? `yes \\(\\alpha=${fmt(recipe.alpha)}\\)` : 'no'],

@@ -329,6 +329,11 @@ def _exam_recipe_controller(
         einf_value = None
     if einf_mode == "numeric" and einf_value == 0:
         einf_mode = "zero"
+    e_inf_req = None
+    if einf_mode == "zero":
+        e_inf_req = 0.0
+    elif einf_mode == "numeric" and einf_value is not None:
+        e_inf_req = float(einf_value)
 
     w_d = 1.5 / t_an if t_an > 0 else None
     phi_req = 70.0 - mp if mp > 0 else None
@@ -338,64 +343,24 @@ def _exam_recipe_controller(
     phi_req = float(np.clip(phi_req, 15.0, 85.0))
     phase_target = -180.0 + phi_req
 
-    # ----- Stage 1: Stationary accuracy and K determination -----
-    plant_type = _count_integrators(plant)
-    if reference == "step":
-        nu_req = 1 if einf_mode == "zero" else 0
-    else:
-        if einf_mode == "zero":
-            nu_req = 2
-        elif einf_mode == "numeric":
-            nu_req = 1
-        else:
-            nu_req = 0
-
+    plant_type = _count_integrators_at_origin(plant)
+    req_pre = _stationary_requirements(reference, e_inf_req, ramp_slope, plant_type)
+    nu_req = int(req_pre["nu_req"])
     n_add = max(0, nu_req - plant_type)
+
+
+    c_int = 1 / (s ** n_add) if n_add > 0 else control.TransferFunction([1], [1])
+    nu_total = plant_type + n_add
+    req = _stationary_requirements(reference, e_inf_req, ramp_slope, nu_total)
+    k_fixed = bool(req["k_fixed"])
+    k0 = float(req["k0"]) if req["k0"] is not None else None
+    k_source = "steady_state" if k_fixed else "crossover"
+    k_explanation = str(req["explanation"])
+
     if n_add > 0:
         warnings.append(f"Added {n_add} integrator(s) to meet ν ≥ {nu_req}.")
 
-    c_int = 1 / (s ** n_add) if n_add > 0 else control.TransferFunction([1], [1])
-    l_base_no_k = c_int * plant
-    l_base_wd_no_k = _frequency_response(l_base_no_k, np.array([w_d]))[0]
-    mag_base_no_k = abs(l_base_wd_no_k)
-    if mag_base_no_k <= 0 or not np.isfinite(mag_base_no_k):
-        raise ValueError("Could not evaluate plant at ω_D.")
-    k_cross = 1.0 / mag_base_no_k
 
-    nu_total = plant_type + n_add
-    k_ss: Optional[float] = None
-    ss_constraint_present = einf_mode in {"zero", "numeric"}
-    if einf_mode == "numeric" and einf_value is not None and einf_value > 0:
-        e = float(einf_value)
-        if reference == "step":
-            if nu_total >= 1:
-
-                warnings.append("System type ν≥1 → step e∞ = 0 automatically.")
-            else:
-                kp_base = _safe_dcgain(l_base_no_k)
-                if kp_base is None or kp_base <= 0:
-                    warnings.append("Could not compute Kp for e∞ spec.")
-                else:
-                    kp_req = (1.0 / e) - 1.0
-                    k_ss = kp_req / kp_base
-        else:
-            if nu_total >= 2:
-                warnings.append("System type ν≥2 → ramp e∞ = 0 automatically.")
-            elif nu_total == 1:
-                kv_base = _safe_dcgain(s * l_base_no_k)
-                if kv_base is None or kv_base <= 0:
-                    warnings.append("Could not compute Kv for ramp e∞ spec.")
-                else:
-                    kv_req = ramp_slope / e
-                    k_ss = kv_req / kv_base
-            else:
-                warnings.append("Ramp steady-state error is infinite for ν=0.")
-
-    k_source = "steady_state" if (k_ss is not None and np.isfinite(k_ss) and k_ss > 0) else "crossover"
-    k_fixed = k_source == "steady_state"
-    k0 = float(k_ss) if k_fixed else 1.0
-
-    # ----- Stage 2: Strategy selection (AUTO / forced) -----
     strategy = str(targets.get("recipe_strategy") or "auto").lower()
     if strategy == "auto":
         strategy_eff = "leadlag" if k_fixed else "standard"
@@ -405,119 +370,107 @@ def _exam_recipe_controller(
         strategy_eff = "standard"
 
     if strategy_eff == "leadlag" and not k_fixed and strategy != "auto":
-        warnings.append("K not fixed; leadlag chosen by override.")
+        warnings.append("K not fixed by Table 3.2; lead/lag chosen by override.")
     if strategy_eff == "standard" and k_fixed and strategy != "auto":
-        warnings.append("K fixed; standard chosen by override; may fail amplitude constraint.")
-    # ----- Stage 3: Phase/Amplitude correction -----
-    lead = control.TransferFunction([1], [1])
-    lag = control.TransferFunction([1], [1])
+        warnings.append("K fixed by Table 3.2; standard branch chosen by override.")
     std_zero = control.TransferFunction([1], [1])
     std_pole = control.TransferFunction([1], [1])
-    lead_params: Optional[Dict[str, float]] = None
-    lag_params: Optional[Dict[str, float]] = None
+    lead = control.TransferFunction([1], [1])
+    lag = control.TransferFunction([1], [1])
     std_zero_params: Optional[Dict[str, float]] = None
     std_pole_params: Optional[Dict[str, float]] = None
-
-    l_stage = (k0 * l_base_no_k) if k_fixed else l_base_no_k
-    l_stage_wd = _frequency_response(l_stage, np.array([w_d]))[0]
-    phase_now = _phase_deg_negative(l_stage_wd)
-    delta_phi = phase_target - phase_now
-    while delta_phi > 180:
-        delta_phi -= 360
-    while delta_phi <= -180:
-        delta_phi += 360
-
-    delta_phi_eff = float(delta_phi)
-    mag_no_k_wd = mag_base_no_k
-    k_cross_after_lead = k_cross
+    lead_params: Optional[Dict[str, float]] = None
+    lag_params: Optional[Dict[str, float]] = None
 
     if strategy_eff == "standard":
+        l_phase = c_int * plant
+        l_phase_wd = _frequency_response(l_phase, np.array([w_d]))[0]
+        phase_now = _phase_deg_negative(l_phase_wd)
+        delta_phi_eff = phase_target - phase_now
+        while delta_phi_eff > 180:
+            delta_phi_eff -= 360
+        while delta_phi_eff <= -180:
+            delta_phi_eff += 360
+
         if delta_phi_eff > 1e-6:
             phi_use = min(delta_phi_eff, 85.0)
             if delta_phi_eff > 85.0:
-                warnings.append("Standard path: required Δφ > 85°; PI/PID-style structure may be insufficient.")
-            tan_phi = np.tan(np.deg2rad(phi_use))
-            wz = w_d / max(tan_phi, 1e-6)
-            std_zero = (s / wz + 1)
-            std_zero_params = {"wz": float(wz), "phi": float(delta_phi_eff)}
+                warnings.append("Δφ capped to 85° for standard numerator term.")
+            t_term = np.tan(np.deg2rad(phi_use)) / w_d
+            std_zero = (t_term * s + 1)
+            std_zero_params = {"wz": float(1 / t_term), "T": float(t_term), "phi": float(delta_phi_eff)}
         elif delta_phi_eff < -1e-6:
             phi_use = min(abs(delta_phi_eff), 85.0)
-            tan_phi = np.tan(np.deg2rad(phi_use))
-            wp = w_d / max(tan_phi, 1e-6)
-            std_pole = 1 / (s / wp + 1)
-            std_pole_params = {"wp": float(wp), "phi": float(delta_phi_eff)}
+            if abs(delta_phi_eff) > 85.0:
+                warnings.append("|Δφ| capped to 85° for standard denominator term.")
+            t_term = np.tan(np.deg2rad(phi_use)) / w_d
+            std_pole = (t_term * s + 1)
+            std_pole_params = {"wp": float(1 / t_term), "T": float(t_term), "phi": float(delta_phi_eff)}
 
-        c_no_k = c_int * std_zero * std_pole
-        l_no_k_final = c_no_k * plant
-        l_no_k_wd = _frequency_response(l_no_k_final, np.array([w_d]))[0]
+        c_no_k = c_int * std_zero / std_pole
+        l_no_k = c_no_k * plant
+        l_no_k_wd = _frequency_response(l_no_k, np.array([w_d]))[0]
         mag_no_k_wd = abs(l_no_k_wd)
         if mag_no_k_wd <= 0 or not np.isfinite(mag_no_k_wd):
-            raise ValueError("Could not evaluate final loop at ω_D for gain adjustment.")
+            raise ValueError("Could not evaluate open loop at ω_D in standard branch.")
         k_final = 1.0 / mag_no_k_wd
+        k_cross = k_final
+        k_cross_after_lead = k_final
     else:
-        # Lead/Lag path with fixed (or overridden) K basis
-        l_after_phase = l_stage
-        if delta_phi_eff > 1.0:
+        k_final = float(k0) if (k_fixed and k0 is not None and k0 > 0) else 1.0
+        if not k_fixed:
+            warnings.append("Lead/Lag branch used with non-fixed K (override), using K=1.")
+        c_no_k = c_int
+
+        l_phase = (k_final * c_no_k) * plant
+        l_phase_wd = _frequency_response(l_phase, np.array([w_d]))[0]
+        phase_now = _phase_deg_negative(l_phase_wd)
+        delta_phi_eff = phase_target - phase_now
+        while delta_phi_eff > 180:
+            delta_phi_eff -= 360
+        while delta_phi_eff <= -180:
+            delta_phi_eff += 360
+
+        if delta_phi_eff > 1e-6:
             phi_use = min(delta_phi_eff, 85.0)
+            if delta_phi_eff > 85.0:
+                warnings.append("Lead phase boost capped to 85°.")
             sin_phi = np.sin(np.deg2rad(phi_use))
             alpha = (1 + sin_phi) / max(1 - sin_phi, 1e-6)
-            alpha = float(np.clip(alpha, 1.0, 200.0))
             wz = w_d / np.sqrt(alpha)
             wp = w_d * np.sqrt(alpha)
             lead = (s / wz + 1) / (s / wp + 1)
             lead_params = {"wz": float(wz), "wp": float(wp), "alpha": float(alpha), "phi_add": float(phi_use)}
-            l_after_phase = l_after_phase * lead
-        elif delta_phi_eff < -5.0:
-            phi_use = min(abs(delta_phi_eff), 45.0)
-            sin_phi = np.sin(np.deg2rad(phi_use))
-            alpha = (1 + sin_phi) / max(1 - sin_phi, 1e-6)
-            alpha = float(np.clip(alpha, 1.0, 50.0))
-            wp = w_d / np.sqrt(alpha)
-            wz = w_d * np.sqrt(alpha)
-            lag = (s / wz + 1) / (s / wp + 1)
-            lag_params = {"wz": float(wz), "wp": float(wp), "beta": float(alpha), "purpose": "phase_reduce"}
-            l_after_phase = l_after_phase * lag
+            c_no_k = c_no_k * lead
 
-        l_after_phase_wd = _frequency_response(l_after_phase, np.array([w_d]))[0]
-        a_mag = abs(l_after_phase_wd)
-
-        if a_mag > 1.05:
-            beta = float(min(max(a_mag, 1.01), 200.0))
-            wp_lag = w_d / 10.0
-            wz_lag = wp_lag * beta
-            lag_amp = (s / wz_lag + 1) / (s / wp_lag + 1)
-            lag = lag * lag_amp
-            lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta), "purpose": "amplitude_down"}
-            l_after_phase = l_after_phase * lag_amp
-        elif a_mag < 0.95:
-            ratio = max(1.0 / max(a_mag, 1e-12), 1.0)
-            alpha_amp = float(min(ratio ** 2, 200.0))
+        l_amp = (k_final * c_no_k) * plant
+        mag_amp = abs(_frequency_response(l_amp, np.array([w_d]))[0])
+        if mag_amp > 1.001:
+            beta = mag_amp
+            wz_lag = w_d / 10.0
+            wp_lag = wz_lag / max(beta, 1.0001)
+            lag = (s / wz_lag + 1) / (s / wp_lag + 1)
+            lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
+            c_no_k = c_no_k * lag
+        elif mag_amp < 0.999:
+            alpha_amp = max((1.0 / max(mag_amp, 1e-6)) ** 2, 1.05)
             wz2 = w_d / np.sqrt(alpha_amp)
             wp2 = w_d * np.sqrt(alpha_amp)
-            lead_amp = (s / wz2 + 1) / (s / wp2 + 1)
-            lead = lead * lead_amp
-            if lead_params:
-                lead_params = {
-                    "wz": lead_params["wz"],
-                    "wp": lead_params["wp"],
-                    "alpha": lead_params["alpha"],
-                    "phi_add": lead_params.get("phi_add", 0.0),
-                    "extra_lead": {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp)},
-                }
+            lead2 = (s / wz2 + 1) / (s / wp2 + 1)
+            c_no_k = c_no_k * lead2
+            if lead_params is None:
+                lead_params = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp), "phi_add": 0.0}
             else:
-                lead_params = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp), "phi_add": 0.0, "purpose": "amplitude_up"}
-            l_after_phase = l_after_phase * lead_amp
+                lead_params["extra_lead"] = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_amp)}
 
-        c_no_k = c_int * lead * lag
-        k_final = k0 if k_fixed else 1.0
-        if not k_fixed:
-            warnings.append("Lead/Lag branch used without fixed K: using K=1 baseline (override case).")
+        mag_no_k_wd = abs(_frequency_response((c_no_k * plant), np.array([w_d]))[0])
+        k_cross = 1.0 / max(mag_no_k_wd, 1e-12)
+        k_cross_after_lead = k_cross
 
     controller = k_final * c_no_k
-    l_final_wd = _frequency_response(controller * plant, np.array([w_d]))[0]
+    l_final = controller * plant
+    l_final_wd = _frequency_response(l_final, np.array([w_d]))[0]
     l_final_db = 20 * np.log10(max(abs(l_final_wd), 1e-12))
-    if strategy_eff == "leadlag" and abs(l_final_db) > 1.5:
-        warnings.append(f"Lead/Lag path: |L(jωD)| mismatch is {l_final_db:+.2f} dB (K kept fixed).")
 
     branch_text = "Branch: Standard structures (K not fixed)" if strategy_eff == "standard" else "Branch: Lead/Lag (K fixed by e∞)"
 
@@ -528,38 +481,23 @@ def _exam_recipe_controller(
             "text": rf"\(\omega_D = 1.5/T_{{an}} = 1.5/{t_an:g} = {w_d:.3g}\,\mathrm{{rad/s}}\); \ \(\Phi_{{req}} = 70^\circ - M_p = 70^\circ - {mp:g}\% = {phi_req:.3g}^\circ\).",
         },
         {
-            "title": "2) Stationary accuracy and type ν",
-            "text": rf"Plant ν={plant_type}, required ν={nu_req}, added integrators={n_add}. K source: {k_source}.",
+            "title": "2) Table 3.2 stationary logic",
+            "text": f"reference={reference}, e∞={e_inf_req if e_inf_req is not None else 'none'}, ν_plant={plant_type}, ν_req={nu_req}, added_integrators={n_add}, ν_total={nu_total}.",
         },
         {
-            "title": "3) Strategy branch",
+            "title": "3) Reglerverstärkung vergeben?",
+            "text": f"{'yes' if k_fixed else 'no'} — {k_explanation}",
+        },
+        {
+            "title": "4) Strategy branch",
             "text": f"{branch_text}.",
-        },
-        {
-            "title": "4) Phase at ωD",
-            "text": rf"\(\varphi(L(j\omega_D))\approx {phase_now:.2f}^\circ\), target \({phase_target:.2f}^\circ\), Δφ≈{delta_phi_eff:.2f}°.",
         },
     ]
 
     if strategy_eff == "standard":
-        if std_zero_params:
-            report_steps.append({"title": "5) Standard numerator term", "text": rf"Added zero-only term \(1+s/\omega_z\), \(\omega_z={std_zero_params['wz']:.3g}\)."})
-        if std_pole_params:
-            report_steps.append({"title": "6) Standard denominator term", "text": rf"Added pole-only term \(1/(1+s/\omega_p)\), \(\omega_p={std_pole_params['wp']:.3g}\)."})
-        report_steps.append({
-            "title": "7) Final gain adjustment",
-            "text": rf"Set \(K\) from crossover: \(|L_{{noK}}(j\omega_D)|={mag_no_k_wd:.4g}\Rightarrow K={k_final:.4g}\). Check \(|L(j\omega_D)|={l_final_db:.2f}\,\mathrm{{dB}}\).",
-        })
+        report_steps.append({"title": "5) Standard phase/amplitude correction", "text": "Used linear numerator/denominator term(s) and then computed K from |L(jωD)|=1."})
     else:
-        report_steps.append({
-            "title": "5) Lead/Lag shaping",
-            "text": "Designed lead/lag network(s) at ωD while keeping K fixed by steady-state requirement." if k_fixed else "Lead/Lag network(s) designed (override mode).",
-        })
-        report_steps.append({
-            "title": "6) Verification",
-            "text": rf"K kept at {k_final:.4g}. Check \(|L(j\omega_D)|={l_final_db:.2f}\,\mathrm{{dB}}\).",
-        })
-
+        report_steps.append({"title": "5) Lead/Lag correction", "text": "Kept K fixed and shaped phase/amplitude with lead/lag only."})
 
     parts: List[str] = [f"{k_final:.12g}"]
     if n_add > 0:
@@ -602,10 +540,12 @@ def _exam_recipe_controller(
         "n_add": int(n_add),
         "k_source": k_source,
         "k_fixed": bool(k_fixed),
+        "k_explanation": k_explanation,
         "strategy": strategy_eff,
         "k_cross": float(k_cross),
         "k_cross_after_lead": float(k_cross_after_lead) if np.isfinite(k_cross_after_lead) else None,
-        "k_ss": float(k_ss) if k_ss is not None and np.isfinite(k_ss) else None,
+        "k_ss": float(k0) if k_fixed and k0 is not None else None,
+        "k0": float(k0) if k0 is not None else None,
         "k": float(k_final),
         "l_no_k_mag_wd": float(mag_no_k_wd) if np.isfinite(mag_no_k_wd) else None,
         "l_final_db_wd": float(l_final_db) if np.isfinite(l_final_db) else None,
@@ -623,7 +563,7 @@ def _exam_recipe_controller(
         "branch_text": branch_text,
         "controller_expression": controller_expr,
         "steps": report_steps,
-        "ss_constraint_present": bool(ss_constraint_present),
+        "ss_constraint_present": bool(e_inf_req is not None),
     }
 
     return controller, report, warnings
@@ -819,9 +759,46 @@ def _compute_step_metrics(time: Optional[np.ndarray], response: Optional[np.ndar
 
     return {"mp": float(mp) if mp is not None else None, "t_r": t_r, "e_inf": float(e_inf)}
 
-def _count_integrators(sys: control.TransferFunction, tol: float = 1e-6) -> int:
+def _count_integrators_at_origin(sys: control.TransferFunction, tol: float = 1e-6) -> int:
     poles = control.poles(sys)
     return int(np.sum(np.abs(poles) < tol))
+
+def _count_integrators(sys: control.TransferFunction, tol: float = 1e-6) -> int:
+    return _count_integrators_at_origin(sys, tol=tol)
+
+
+def _stationary_requirements(
+    reference_type: str,
+    e_inf: Optional[float],
+    ramp_slope: float,
+    nu_total: int,
+) -> Dict[str, Any]:
+    reference = (reference_type or "step").lower()
+    if reference not in {"step", "ramp"}:
+        reference = "step"
+
+    if e_inf is None:
+        if reference == "step":
+            return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "No e∞ requirement; ν and K remain unconstrained by Table 3.2."}
+        return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "No e∞ requirement; ν and K remain unconstrained by Table 3.2."}
+
+    if e_inf <= 0:
+        if reference == "step":
+            return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "e∞=0 for step forces ν≥1 (I1); K is not fixed."}
+        return {"nu_req": 2, "k_fixed": False, "k0": None, "explanation": "e∞=0 for ramp forces ν≥2 (I2); K is not fixed."}
+
+    if reference == "step":
+        k0 = (1.0 / e_inf) - 1.0
+        if nu_total == 0:
+            return {"nu_req": 0, "k_fixed": True, "k0": k0, "explanation": "Numeric K0 from Table 3.2: K0=(1/e∞)-1 for step with ν=0."}
+        return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "ν≥1 gives e∞=0 automatically for step; numeric e∞ does not constrain K."}
+
+    # ramp + e_inf > 0
+    if nu_total == 1:
+        return {"nu_req": 1, "k_fixed": True, "k0": ramp_slope / e_inf, "explanation": "Numeric K0 from Table 3.2: K0=a/e∞ for ramp with ν=1."}
+    if nu_total >= 2:
+        return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "ν≥2 gives e∞=0 automatically for ramp; numeric e∞ does not constrain K."}
+    return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "Ramp with ν=0 cannot meet finite e∞ (Table 3.2); K not fixed here."}
 
 
 def _safe_dcgain(sys: control.TransferFunction) -> Optional[float]:
@@ -1327,3 +1304,28 @@ def loop_shaping_api():
         )
     except Exception as exc:
         return (str(exc), 400)
+
+def _self_test_exam_stationary_logic() -> None:
+    cases = [
+        ("step", 0.0, 1.0, 0, {"nu_req": 1, "k_fixed": False, "branch": "standard"}),
+        ("step", 0.05, 1.0, 0, {"nu_req": 0, "k_fixed": True, "k0": 19.0, "branch": "leadlag"}),
+        ("ramp", 0.05, 1.0, 1, {"nu_req": 1, "k_fixed": True, "k0": 20.0, "branch": "leadlag"}),
+        ("ramp", 0.0, 1.0, 1, {"nu_req": 2, "k_fixed": False, "branch": "standard"}),
+    ]
+    for reference, e_inf, ramp_slope, nu_plant, expected in cases:
+        req_pre = _stationary_requirements(reference, e_inf, ramp_slope, nu_plant)
+        n_add = max(0, req_pre["nu_req"] - nu_plant)
+        nu_total = nu_plant + n_add
+        req = _stationary_requirements(reference, e_inf, ramp_slope, nu_total)
+        branch = "leadlag" if req["k_fixed"] else "standard"
+
+        assert req_pre["nu_req"] == expected["nu_req"], (reference, e_inf, "nu_req", req_pre)
+        assert req["k_fixed"] == expected["k_fixed"], (reference, e_inf, "k_fixed", req)
+        assert branch == expected["branch"], (reference, e_inf, "branch", branch)
+        if "k0" in expected:
+            assert abs(float(req["k0"]) - expected["k0"]) < 1e-9, (reference, e_inf, "k0", req["k0"])
+
+
+if __name__ == "__main__":
+    _self_test_exam_stationary_logic()
+    print("loop_shaping stationary logic self-test passed")
