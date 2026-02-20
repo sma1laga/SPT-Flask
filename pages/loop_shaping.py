@@ -850,6 +850,16 @@ def _finite_or_none(value: Optional[float]) -> Optional[float]:
         return None
     return value if np.isfinite(value) else None
 
+def _is_finite_scalar(value: Any) -> bool:
+    """Return True only for scalar finite numeric values."""
+    try:
+        arr = np.asarray(value)
+        if arr.shape != ():
+            return False
+        return bool(np.isfinite(arr.item()))
+    except Exception:
+        return False
+
 def _normalize_targets(design_mode: str, targets: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     design_mode = design_mode or "general"
     targets_display: Dict[str, Any] = {
@@ -1117,13 +1127,13 @@ def loop_shaping_api():
             loop_tf = controller * parsed.transfer
             margins_values = control.margin(loop_tf)
             gm, pm, wg, wp = margins_values
-            gm_db = 20 * np.log10(gm) if np.isfinite(gm) and gm > 0 else None
+            gm_db = 20 * np.log10(gm) if _is_finite_scalar(gm) and gm > 0 else None
             margins = {
-                "pm": float(pm) if np.isfinite(pm) else None,
-                "gm": float(gm) if np.isfinite(gm) else None,
-                "gm_db": float(gm_db) if gm_db is not None and np.isfinite(gm_db) else None,
-                "wc": float(wp) if np.isfinite(wp) else None,
-                "wgc": float(wg) if np.isfinite(wg) else None,
+                "pm": float(pm) if _is_finite_scalar(pm) else None,
+                "gm": float(gm) if _is_finite_scalar(gm) else None,
+                "gm_db": float(gm_db) if gm_db is not None and _is_finite_scalar(gm_db) else None,
+                "wc": float(wp) if _is_finite_scalar(wp) else None,
+                "wgc": float(wg) if _is_finite_scalar(wg) else None,
             }
 
             closed_loop = control.feedback(loop_tf, 1)
