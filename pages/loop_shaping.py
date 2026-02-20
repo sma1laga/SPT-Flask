@@ -407,9 +407,7 @@ def _exam_recipe_controller(
     phase0 = _phase_deg_negative(l_wd)
     phase_target = -180.0 + phi_req
     delta_phi = phase_target - phase0
-
-    # Add a small safety buffer (common handout practice)
-    delta_phi_eff = float(np.clip(delta_phi + 5.0, 0.0, 60.0))
+    delta_phi_eff = float(max(delta_phi, 0.0))
 
     ratio_needed = k_cross / max(k0, 1e-12)
     alpha_mag = ratio_needed ** 2 if ratio_needed > 1.0 else 1.0
@@ -439,12 +437,14 @@ def _exam_recipe_controller(
     # ----- 5) If K is fixed too high (from e∞), add lag to attenuate around ω_D -----
     lag = control.TransferFunction([1], [1])
     lag_params: Optional[Dict[str, float]] = None
-    beta = k0 / max(k_cross_after_lead, 1e-12)
-    if beta > 1.05:
-        wp_lag = w_d / 10.0
-        wz_lag = wp_lag * beta
-        lag = (s / wz_lag + 1) / (s / wp_lag + 1)
-        lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
+    beta: Optional[float] = None
+    if k_source == "steady_state":
+        beta = k0 / max(k_cross_after_lead, 1e-12)
+        if beta > 1.05:
+            wp_lag = w_d / 10.0
+            wz_lag = wp_lag * beta
+            lag = (s / wz_lag + 1) / (s / wp_lag + 1)
+            lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta)}
 
     # Final controller: recompute K after all dynamic blocks unless K is fixed by e∞.
     c_no_k = c_int * lead * lag
@@ -495,7 +495,7 @@ def _exam_recipe_controller(
             report_steps.append(
                 {
                     "title": "2) Steady-state error constraint (ramp)",
-                    "text": rf"Given \(e_\infty={einf_value:g}\) for ramp input. For \(\nu=1\): \(e_\infty=a/K_v\) \(\to\) \(K_{{v,req}}=a/e_\infty\). (If \(\nu\ge 2\), then \(e_\infty=0\) automatically.)"
+                    "text": rf"Given \(e_\infty={einf_value:g}\) for ramp input with slope \(a={ramp_slope:g}\). For \(\nu=1\): \(e_\infty=a/K_v\) \(\to\) \(K_{{v,req}}=a/e_\infty\). (If \(\nu\ge 2\), then \(e_\infty=0\) automatically.)"
                 }
             )
 
@@ -511,7 +511,7 @@ def _exam_recipe_controller(
         {
             "title": "4) Phase requirement",
             "text": rf"\(\varphi(L(j\omega_D)) \approx {phase0:.2f}^\circ\). Target: \(\varphi_{{target}} = -180^\circ + \Phi_{{req}} = {phase_target:.2f}^\circ\). "
-                    rf"\(\Delta\varphi \approx {delta_phi:.2f}^\circ\) \(\to\) lead design with \(\Delta\varphi_{{eff}} \approx {delta_phi_eff:.2f}^\circ\)."
+                    rf"\(\Delta\varphi \approx {delta_phi:.2f}^\circ\), so \(\Delta\varphi_{{eff}}=\max(\Delta\varphi,0)\approx {delta_phi_eff:.2f}^\circ\)."
         }
     )
 
@@ -594,7 +594,7 @@ def _exam_recipe_controller(
         "delta_phi_eff": float(delta_phi_eff),
         "ratio_needed": float(ratio_needed),
         "alpha": float(alpha),
-        "beta": float(beta) if np.isfinite(beta) else None,
+        "beta": float(beta) if (lag_params is not None and beta is not None and np.isfinite(beta)) else None,
         "lead": lead_params,
         "lag": lag_params,
         "blocks": blocks,

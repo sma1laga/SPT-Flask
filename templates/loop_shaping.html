@@ -137,6 +137,13 @@
             <option value="ramp">Ramp (a·t·ε(t))</option>
           </select>
         </div>
+        <div class="loop-row" id="rampSlopeRow">
+          <div class="loop-field">
+            <label for="targetRampSlope">Ramp slope a</label>
+            <input id="targetRampSlope" type="number" step="0.1" value="1">
+            <div class="loop-note">Only used for ramp reference w(t)=a·t·ε(t).</div>
+          </div>
+        </div>
         <div class="loop-row">
           <div class="loop-field">
             <label for="targetEinfValue">e∞ target (optional, enter 0 for exact)</label>
@@ -474,6 +481,9 @@ const applyStableDefaults = () => {
 const buildPayload = (mode = 'manual') => {
   const designMode = $('designMode').value;
   const reference = $('referenceType').value;
+  const rampSlopeInput = $('targetRampSlope');
+  const rampSlopeRaw = parseFloat(rampSlopeInput ? rampSlopeInput.value : '1');
+  const rampSlope = isFinite(rampSlopeRaw) && rampSlopeRaw > 0 ? rampSlopeRaw : 1;
   const einfRaw = ($('targetEinfValue').value || '').trim();
   const einfNum = parseFloat(einfRaw);
   const hasNumericEinf = einfRaw.length > 0 && isFinite(einfNum) && einfNum >= 0;
@@ -503,7 +513,7 @@ const buildPayload = (mode = 'manual') => {
       einf_required: false,
       ramp_einf_required: false,
       reference,
-      ramp_slope: 1,
+      ramp_slope: rampSlope,
       einf_mode: einfMode,
       einf_value: einfValue,
       wc: $('targetWc').value,
@@ -883,7 +893,7 @@ const debouncedUpdateIfAllowed = () => {
 
 ['tfExpression', 'controllerType', 'controllerExpression', 'paramK', 'paramTi', 'paramTd', 'paramN',
  'paramWz', 'paramWp', 'paramLeadWz', 'paramLeadWp', 'paramLagWz', 'paramLagWp', 'paramW0', 'paramZetaZ',
- 'paramZetaP', 'designMode', 'referenceType', 'targetEinfValue', 'targetTan', 'targetMp',
+ 'paramZetaP', 'designMode', 'referenceType', 'targetRampSlope', 'targetEinfValue', 'targetTan', 'targetMp',
  'targetWc', 'targetPmMin', 'targetGmMin', 'targetMpGeneral', 'mpMapping'].forEach((id) => {
   const el = $(id);
   if (el) el.addEventListener('input', debouncedUpdateIfAllowed);
@@ -905,6 +915,11 @@ const updateDesignModeUI = () => {
   $('examInputs').classList.toggle('loop-hidden', !isExam);
   $('generalInputs').classList.toggle('loop-hidden', isExam);
 };
+const updateReferenceUI = () => {
+  const isRamp = $('referenceType').value === 'ramp';
+  const row = $('rampSlopeRow');
+  if (row) row.classList.toggle('loop-hidden', !isRamp);
+};
 
 $('designMode').addEventListener('change', () => {
   updateDesignModeUI();
@@ -914,6 +929,7 @@ $('designMode').addEventListener('change', () => {
   const el = $(id);
   if (el) el.addEventListener('input', () => {
     updateDesignModeUI();
+    updateReferenceUI();
     debouncedUpdateIfAllowed();
   });
 });
@@ -972,6 +988,7 @@ tabButtons.forEach((btn) => {
 
 fieldsByController();
 updateDesignModeUI();
+updateReferenceUI();
 renderExampleButtonLatex();
 applyExample();
 updatePlots('manual');
