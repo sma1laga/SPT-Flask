@@ -381,6 +381,32 @@ def _parse_float_or_none(value: Any) -> Optional[float]:
     except Exception:
         return None
 
+def _poly_degree(coeffs, tol=1e-12):
+    arr = np.asarray(coeffs, dtype=float).flatten()
+    i = 0
+    while i < len(arr) and abs(arr[i]) < tol:
+        i += 1
+    if i == len(arr):
+        return -1
+    return len(arr[i:]) - 1
+
+
+def _is_proper_tf(sys: control.TransferFunction) -> bool:
+    num = np.asarray(sys.num[0][0], dtype=float).flatten()
+    den = np.asarray(sys.den[0][0], dtype=float).flatten()
+    return _poly_degree(num) <= _poly_degree(den)
+
+
+def _realization_filter(w_d: float, count: int, factor: float = 100.0):
+    s = control.TransferFunction([1, 0], [1])
+    wr = max(factor * w_d, 1e-6)
+    filt = control.TransferFunction([1], [1])
+    poles = []
+    for _ in range(count):
+        filt *= 1 / (1 + s / wr)
+        poles.append(float(wr))
+    return filt, poles
+
 
 def _exam_recipe_controller(
     plant: control.TransferFunction,
@@ -562,6 +588,21 @@ def _exam_recipe_controller(
         k_cross_after_lead = k_cross
 
     controller = k_final * c_no_k
+    realization_poles: List[float] = []
+    if not _is_proper_tf(controller):
+        num = np.asarray(controller.num[0][0], dtype=float).flatten()
+        den = np.asarray(controller.den[0][0], dtype=float).flatten()
+        diff = _poly_degree(num) - _poly_degree(den)
+        if diff > 0:
+            filt, wr_list = _realization_filter(w_d, diff, factor=100.0)
+            c_no_k = c_no_k * filt
+            if k_source == "crossover":
+                l_no_k_final = c_no_k * plant
+                mag_no_k_wd = abs(_frequency_response(l_no_k_final, np.array([w_d]))[0])
+                k_final = 1.0 / mag_no_k_wd
+            controller = k_final * c_no_k
+            realization_poles = wr_list
+            warnings.append(f"Controller was non-proper → added {diff} realization pole(s) at ωR≈{wr_list[0]:.3g} rad/s.")
     l_final = controller * plant
     mag_final_abs, phase_final_deg = _eval_mag_phase(l_final, w_d, eval_mode)
     l_final_db = 20 * np.log10(max(mag_final_abs, 1e-12))
@@ -607,6 +648,8 @@ def _exam_recipe_controller(
             parts.append(f"((1+s/{el['wz']:.12g})/(1+s/{el['wp']:.12g}))")
     if lag_params:
         parts.append(f"((1+s/{lag_params['wz']:.12g})/(1+s/{lag_params['wp']:.12g}))")
+    for wr in realization_poles:
+        parts.append(f"(1/(1+s/{wr:.12g}))")
     controller_expr = "*".join(parts)
 
     blocks: List[Dict[str, Any]] = [{"type": "Gain", "label": "K", "k": float(k_final), "fixed": bool(strategy_eff == "leadlag" and k_fixed)}]
@@ -620,6 +663,8 @@ def _exam_recipe_controller(
         blocks.append({"type": "Lead", **lead_params})
     if lag_params:
         blocks.append({"type": "Lag", **lag_params})
+    if realization_poles:
+        blocks.append({"type": "PoleOnly", "wp": realization_poles[0], "label": "Realisierung"})
 
     report = {
         "w_d": float(w_d),
@@ -657,6 +702,7 @@ def _exam_recipe_controller(
         "lag": lag_params,
         "standard_zero": std_zero_params,
         "standard_pole": std_pole_params,
+        "realization_poles": realization_poles,
         "blocks": blocks,
         "branch_text": branch_text,
         "controller_expression": controller_expr,
@@ -1245,8 +1291,12 @@ def loop_shaping_api():
 
             t_vec = _estimate_time_vector(closed_loop)
             time, step_response = control.step_response(closed_loop, T=t_vec)
-            control_tf = control.feedback(controller, parsed.transfer)
-            _, control_response = control.step_response(control_tf, T=t_vec)
+            try:
+                control_tf = control.feedback(controller, parsed.transfer)
+                _, control_response = control.step_response(control_tf, T=t_vec)
+            except Exception:
+                control_response = None
+                warnings.append("Control-effort response skipped (non-proper controller without realization pole).")
             ramp_slope = float(target_inputs.get("ramp_slope") or 1.0)
             ramp_reference = ramp_slope * t_vec
             _, ramp_response = control.forced_response(closed_loop, T=t_vec, U=ramp_reference)
