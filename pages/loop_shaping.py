@@ -530,9 +530,7 @@ def _exam_recipe_controller(
         k_cross = k_final
         k_cross_after_lead = k_final
     else:
-        # ---- Lead/Lag branch (exam recipe, K fixed by e∞) ----
-        # Convert Table 3.2 error constant K0 to controller gain K.
-        # Example (ramp, ν_total=1): K0 = Kv = lim_{s→0} s·L(s) = K · lim_{s→0} s·(C_noK·G(s))
+
         k_final = 1.0
         if k_fixed and k0 is not None and k0 > 0:
             w_eps = min(1e-6, w_d * 1e-6) if w_d is not None else 1e-6
@@ -565,9 +563,7 @@ def _exam_recipe_controller(
 
         c_no_k = c_int
 
-        # Phase deficit at ωD.
-        # IMPORTANT (exam template behavior): use a more reliable phase estimate
-        # even when magnitude is evaluated via straight-line approximation.
+
         l_phase = (k_final * c_no_k) * plant
         _, phase_now = _eval_mag_phase(l_phase, w_d, "exact")
         delta_phi_eff = phase_target - phase_now
@@ -576,15 +572,12 @@ def _exam_recipe_controller(
         while delta_phi_eff <= -180:
             delta_phi_eff += 360
 
-        # Decide whether we will need a LAG attenuation stage (K fixed by e∞).
-        # If |L(jωD)| is already > 1, a lag stage is typically used to pull the
-        # magnitude down. That lag costs about -15° at ωD in the exam template.
-        # Pre-compensate that loss in the lead design.
+
         mag_base, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
         will_use_lag = bool(mag_base > 1.02)
         phi_lag_target = -15.0
 
-        # --- LEAD: place max phase at ωD ---
+
         if delta_phi_eff > 1e-6:
             phi_need = float(delta_phi_eff + (abs(phi_lag_target) if will_use_lag else 0.0))
             phi_use = min(phi_need, 85.0)
@@ -601,14 +594,13 @@ def _exam_recipe_controller(
         # Magnitude after lead at ωD
         mag_after_lead, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
 
-        # --- LAG: attenuate magnitude while keeping phase loss about -15° at ωD ---
+
 
         def _lag_phase_deg(k: float, beta: float) -> float:
-            # k = ωD/ωz, beta = ωz/ωp > 1
+
             return float(np.rad2deg(np.arctan(k) - np.arctan(k * beta)))
 
         def _solve_k_for_lag(beta: float, phi_target_deg: float) -> float:
-            # We prefer k >= 1 (ωz below ωD) like the exam template.
             ks = np.logspace(0, 4, 2000)  # 1 .. 1e4
             ph = np.array([_lag_phase_deg(float(k), float(beta)) for k in ks], dtype=float)
             idx = int(np.argmin(np.abs(ph - phi_target_deg)))
@@ -630,7 +622,6 @@ def _exam_recipe_controller(
             }
             c_no_k = c_no_k * lag_stage
 
-        # Final check (soft warnings only)
         mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
         final_mag_db = 20 * np.log10(max(mag_amp, 1e-12))
         if abs(final_mag_db) > 0.6:
