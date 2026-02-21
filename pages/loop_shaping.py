@@ -470,6 +470,8 @@ def _exam_recipe_controller(
     k_source = "steady_state" if k_fixed else "crossover"
     k_explanation = str(req["explanation"])
 
+    k_conv_note: Optional[str] = None
+
     if n_add > 0:
         warnings.append(f"Added {n_add} integrator(s) to meet ν ≥ {nu_req}.")
 
@@ -528,64 +530,116 @@ def _exam_recipe_controller(
         k_cross = k_final
         k_cross_after_lead = k_final
     else:
-        k_final = float(k0) if (k_fixed and k0 is not None and k0 > 0) else 1.0
-        if not k_fixed:
-            warnings.append("Lead/Lag branch used with non-fixed K (override), using K=1.")
+        # ---- Lead/Lag branch (exam recipe, K fixed by e∞) ----
+        # Convert Table 3.2 error constant K0 to controller gain K.
+        # Example (ramp, ν_total=1): K0 = Kv = lim_{s→0} s·L(s) = K · lim_{s→0} s·(C_noK·G(s))
+        k_final = 1.0
+        if k_fixed and k0 is not None and k0 > 0:
+            w_eps = min(1e-6, w_d * 1e-6) if w_d is not None else 1e-6
+            try:
+                if reference == "ramp" and nu_total == 1:
+                    base = abs((1j * w_eps) * _frequency_response(c_int * plant, np.array([w_eps]))[0])
+                    if np.isfinite(base) and base > 0:
+                        k_final = float(k0) / base
+                        k_conv_note = f"K0={k0:g} (Kv), base≈lim s·(C_int·G)≈{base:.4g} ⇒ K≈{k_final:.4g}"
+                    else:
+                        k_final = float(k0)
+                        warnings.append("Could not convert K0→K (ramp); using K0 directly.")
+                elif reference == "step" and nu_total == 0:
+                    base = abs(_frequency_response(c_int * plant, np.array([w_eps]))[0])
+                    if np.isfinite(base) and base > 0:
+                        k_final = float(k0) / base
+                        k_conv_note = f"K0={k0:g} (Kp), base≈lim (C_int·G)≈{base:.4g} ⇒ K≈{k_final:.4g}"
+                    else:
+                        k_final = float(k0)
+                        warnings.append("Could not convert K0→K (step); using K0 directly.")
+                else:
+                    # fallback: keep numeric as-is
+                    k_final = float(k0)
+            except Exception:
+                k_final = float(k0)
+                warnings.append("Could not convert K0→K; using K0 directly.")
+        else:
+            if not k_fixed:
+                warnings.append("Lead/Lag branch used with non-fixed K (override), using K=1.")
+
         c_no_k = c_int
 
+        # Phase deficit at ωD.
+        # IMPORTANT (exam template behavior): use a more reliable phase estimate
+        # even when magnitude is evaluated via straight-line approximation.
         l_phase = (k_final * c_no_k) * plant
-        _, phase_now = _eval_mag_phase(l_phase, w_d, eval_mode)
+        _, phase_now = _eval_mag_phase(l_phase, w_d, "exact")
         delta_phi_eff = phase_target - phase_now
         while delta_phi_eff > 180:
             delta_phi_eff -= 360
         while delta_phi_eff <= -180:
             delta_phi_eff += 360
 
+        # Decide whether we will need a LAG attenuation stage (K fixed by e∞).
+        # If |L(jωD)| is already > 1, a lag stage is typically used to pull the
+        # magnitude down. That lag costs about -15° at ωD in the exam template.
+        # Pre-compensate that loss in the lead design.
+        mag_base, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
+        will_use_lag = bool(mag_base > 1.02)
+        phi_lag_target = -15.0
+
+        # --- LEAD: place max phase at ωD ---
         if delta_phi_eff > 1e-6:
-            phi_use = min(delta_phi_eff, 85.0)
-            if delta_phi_eff > 85.0:
+            phi_need = float(delta_phi_eff + (abs(phi_lag_target) if will_use_lag else 0.0))
+            phi_use = min(phi_need, 85.0)
+            if phi_need > 85.0:
                 warnings.append("Lead phase boost capped to 85°.")
             sin_phi = np.sin(np.deg2rad(phi_use))
-            alpha = (1 + sin_phi) / max(1 - sin_phi, 1e-6)
-            wz = w_d / np.sqrt(alpha)
-            wp = w_d * np.sqrt(alpha)
+            alpha = (1 + sin_phi) / max(1 - sin_phi, 1e-6)   # alpha > 1 (Td/T)
+            wz = w_d / np.sqrt(alpha)                        # wz = 1/Td
+            wp = w_d * np.sqrt(alpha)                        # wp = 1/T
             lead = (s / wz + 1) / (s / wp + 1)
             lead_params = {"wz": float(wz), "wp": float(wp), "alpha": float(alpha), "phi_add": float(phi_use)}
             c_no_k = c_no_k * lead
 
-        mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
-        for _ in range(2):
-            mag_db = 20 * np.log10(max(mag_amp, 1e-12))
-            if abs(mag_db) <= 0.2:
-                break
-            if mag_amp > 1.0:
-                beta_target = max(mag_amp, 1.0001)
-                wp_lag = w_d / 10.0
-                wz_lag = beta_target * wp_lag
-                lag_stage = (1 + s / wz_lag) / (1 + s / wp_lag)
-                lag = lag * lag_stage
-                lag_params = {"wz": float(wz_lag), "wp": float(wp_lag), "beta": float(beta_target)}
-                c_no_k = c_no_k * lag_stage
-            else:
-                alpha_target = float(np.clip((1.0 / max(mag_amp, 1e-6)) ** 2, 1.05, 20.0))
-                phi_from_alpha = float(np.rad2deg(np.arcsin((alpha_target - 1.0) / (alpha_target + 1.0))))
-                wz2 = w_d / np.sqrt(alpha_target)
-                wp2 = w_d * np.sqrt(alpha_target)
-                lead2 = (1 + s / wz2) / (1 + s / wp2)
-                c_no_k = c_no_k * lead2
-                if lead_params is None:
-                    lead_params = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_target), "phi_add": float(phi_from_alpha)}
-                else:
-                    lead_params["extra_lead"] = {"wz": float(wz2), "wp": float(wp2), "alpha": float(alpha_target), "phi_add": float(phi_from_alpha)}
-            mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
+        # Magnitude after lead at ωD
+        mag_after_lead, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
 
+        # --- LAG: attenuate magnitude while keeping phase loss about -15° at ωD ---
+
+        def _lag_phase_deg(k: float, beta: float) -> float:
+            # k = ωD/ωz, beta = ωz/ωp > 1
+            return float(np.rad2deg(np.arctan(k) - np.arctan(k * beta)))
+
+        def _solve_k_for_lag(beta: float, phi_target_deg: float) -> float:
+            # We prefer k >= 1 (ωz below ωD) like the exam template.
+            ks = np.logspace(0, 4, 2000)  # 1 .. 1e4
+            ph = np.array([_lag_phase_deg(float(k), float(beta)) for k in ks], dtype=float)
+            idx = int(np.argmin(np.abs(ph - phi_target_deg)))
+            return float(ks[idx])
+
+        if mag_after_lead > 1.02:
+            beta_target = float(max(mag_after_lead, 1.0001))
+            k_lag = _solve_k_for_lag(beta_target, phi_lag_target)
+            wz_lag = float(w_d / k_lag)           # ωz
+            wp_lag = float(wz_lag / beta_target)  # ωp
+            lag_stage = (1 + s / wz_lag) / (1 + s / wp_lag)
+            lag = lag * lag_stage
+            lag_params = {
+                "wz": float(wz_lag),
+                "wp": float(wp_lag),
+                "beta": float(beta_target),
+                "phi_target_deg": float(phi_lag_target),
+                "k": float(k_lag),
+            }
+            c_no_k = c_no_k * lag_stage
+
+        # Final check (soft warnings only)
+        mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
         final_mag_db = 20 * np.log10(max(mag_amp, 1e-12))
-        if abs(final_mag_db) > 0.5:
-            warnings.append("Lead/Lag branch: |L(jωD)| not within 0.5 dB after shaping; check assumptions or use exact eval mode.")
+        if abs(final_mag_db) > 0.6:
+            warnings.append("Lead/Lag branch: |L(jωD)| not within ±0.6 dB after shaping; check eval mode / asymptotes.")
 
         mag_no_k_wd, _ = _eval_mag_phase((c_no_k * plant), w_d, eval_mode)
         k_cross = 1.0 / max(mag_no_k_wd, 1e-12)
         k_cross_after_lead = k_cross
+
 
     controller = k_final * c_no_k
     realization_poles: List[float] = []
@@ -621,7 +675,7 @@ def _exam_recipe_controller(
         },
         {
             "title": "3) Reglerverstärkung vergeben?",
-            "text": f"{'yes' if k_fixed else 'no'} — {k_explanation}",
+            "text": (f"{'yes' if k_fixed else 'no'} — {k_explanation}" + (f" ({k_conv_note})" if k_conv_note else "")),
         },
         {
             "title": "4) Strategy branch",
