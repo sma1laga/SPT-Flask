@@ -467,6 +467,7 @@ def _exam_recipe_controller(
     req = _stationary_requirements(reference, e_inf_req, ramp_slope, nu_total)
     k_fixed = bool(req["k_fixed"])
     k0 = float(req["k0"]) if req["k0"] is not None else None
+    k_is_min = bool(req.get("k_is_min", False))
     k_source = "steady_state" if k_fixed else "crossover"
     k_explanation = str(req["explanation"])
 
@@ -623,6 +624,11 @@ def _exam_recipe_controller(
             c_no_k = c_no_k * lag_stage
 
         mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
+        if k_is_min and np.isfinite(mag_amp) and mag_amp < 0.98:
+            scale = 1.0 / max(mag_amp, 1e-12)
+            k_final *= scale
+            warnings.append(f"|L(jωD)|<1 with Kmin → increased K by factor {scale:.4g}. This still satisfies e∞ ≤ target.")
+            mag_amp, _ = _eval_mag_phase((k_final * c_no_k) * plant, w_d, eval_mode)
         final_mag_db = 20 * np.log10(max(mag_amp, 1e-12))
         if abs(final_mag_db) > 0.6:
             warnings.append("Lead/Lag branch: |L(jωD)| not within ±0.6 dB after shaping; check eval mode / asymptotes.")
@@ -725,6 +731,7 @@ def _exam_recipe_controller(
         "n_add": int(n_add),
         "k_source": k_source,
         "k_fixed": bool(k_fixed),
+        "k_is_min": bool(k_is_min),
         "k_explanation": k_explanation,
         "strategy": strategy_eff,
         "k_cross": float(k_cross),
@@ -968,26 +975,26 @@ def _stationary_requirements(
 
     if e_inf is None:
         if reference == "step":
-            return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "No e∞ requirement; ν and K remain unconstrained by Table 3.2."}
-        return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "No e∞ requirement; ν and K remain unconstrained by Table 3.2."}
+            return {"nu_req": 0, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "No e∞ requirement; ν and K remain unconstrained by Table 3.2."}
+        return {"nu_req": 0, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "No e∞ requirement; ν and K remain unconstrained by Table 3.2."}
 
     if e_inf <= 0:
         if reference == "step":
-            return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "e∞=0 for step forces ν≥1 (I1); K is not fixed."}
-        return {"nu_req": 2, "k_fixed": False, "k0": None, "explanation": "e∞=0 for ramp forces ν≥2 (I2); K is not fixed."}
+            return {"nu_req": 1, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "e∞=0 for step forces ν≥1 (I1); K is not fixed."}
+        return {"nu_req": 2, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "e∞=0 for ramp forces ν≥2 (I2); K is not fixed."}
 
     if reference == "step":
         k0 = (1.0 / e_inf) - 1.0
         if nu_total == 0:
-            return {"nu_req": 0, "k_fixed": True, "k0": k0, "explanation": "Numeric K0 from Table 3.2: K0=(1/e∞)-1 for step with ν=0."}
-        return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "ν≥1 gives e∞=0 automatically for step; numeric e∞ does not constrain K."}
+            return {"nu_req": 0, "k_fixed": True, "k0": k0, "k_is_min": True, "explanation": "Numeric K0 from Table 3.2 interpreted as minimum: K0=(1/e∞)-1 for step with ν=0."}
+        return {"nu_req": 0, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "ν≥1 gives e∞=0 automatically for step; numeric e∞ does not constrain K."}
 
     # ramp + e_inf > 0
     if nu_total == 1:
-        return {"nu_req": 1, "k_fixed": True, "k0": ramp_slope / e_inf, "explanation": "Numeric K0 from Table 3.2: K0=a/e∞ for ramp with ν=1."}
+        return {"nu_req": 1, "k_fixed": True, "k0": ramp_slope / e_inf, "k_is_min": True, "explanation": "Numeric K0 from Table 3.2 interpreted as minimum: K0=a/e∞ for ramp with ν=1."}
     if nu_total >= 2:
-        return {"nu_req": 0, "k_fixed": False, "k0": None, "explanation": "ν≥2 ⇒ e∞=0 automatically; numeric e∞ does not constrain K."}
-    return {"nu_req": 1, "k_fixed": False, "k0": None, "explanation": "Ramp with ν=0 cannot meet finite e∞ (Table 3.2); K not fixed here."}
+        return {"nu_req": 0, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "ν≥2 ⇒ e∞=0 automatically; numeric e∞ does not constrain K."}
+    return {"nu_req": 1, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "Ramp with ν=0 cannot meet finite e∞ (Table 3.2); K not fixed here."}
 
 
 def _safe_dcgain(sys: control.TransferFunction) -> Optional[float]:
@@ -1519,7 +1526,8 @@ def _self_test_exam_eval_and_branches() -> None:
     }
     _, report_fixed, _ = _exam_recipe_controller(pt2, targets_fixed)
     assert report_fixed["k_fixed"] is True
-    assert abs(report_fixed["k"] - report_fixed["k0"]) < 1e-9
+    assert report_fixed["k_is_min"] is True
+    assert report_fixed["k"] >= report_fixed["k0"]
 
     targets_std = {
         "reference": "step",
@@ -1557,6 +1565,8 @@ def _self_test_exam_stationary_logic() -> None:
         assert branch == expected["branch"], (reference, e_inf, "branch", branch)
         if "k0" in expected:
             assert abs(float(req["k0"]) - expected["k0"]) < 1e-9, (reference, e_inf, "k0", req["k0"])
+        if reference == "step" and e_inf == 0.05 and nu_total == 0:
+            assert req["k_is_min"] is True
 
 
 if __name__ == "__main__":
