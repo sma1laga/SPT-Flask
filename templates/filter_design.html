@@ -181,9 +181,64 @@ function params(){
     gstop: parseFloat(gstopEl.value||60)
   };
 }
+function layout(title,x,y='Amplitude', axisOverrides={}){
+  return {
+    title,
+    margin:{l:50,r:10,t:28,b:40},
+    xaxis:{title:x, ...(axisOverrides.xaxis||{})},
+    yaxis:{title:y, ...(axisOverrides.yaxis||{})},
+    height:340,
+    hovermode:false
+  };
+}
 
-function layout(title,x,y='Amplitude'){
-  return {title,margin:{l:50,r:10,t:28,b:40},xaxis:{title:x},yaxis:{title:y},height:340,hovermode:false};
+function signalWindow(t, y, mode='impulse'){
+  const n = Math.min(t.length, y.length);
+  if (n < 4) return {xaxis:{}, yaxis:{}};
+
+  let start = 0, end = n - 1;
+  if (mode === 'impulse') {
+    const absMax = Math.max(...y.map(v => Math.abs(v)), 0);
+    const thr = Math.max(absMax * 0.03, 1e-12);
+    const idx = y.map((v,i)=>Math.abs(v)>=thr?i:-1).filter(i=>i>=0);
+    if (idx.length) { start = idx[0]; end = idx[idx.length-1]; }
+  } else {
+    const dy = [];
+    for (let i = 0; i < n - 1; i++) dy.push(y[i+1] - y[i]);
+    const absDyMax = Math.max(...dy.map(v=>Math.abs(v)), 0);
+    const thr = Math.max(absDyMax * 0.03, 1e-12);
+    const idx = dy.map((v,i)=>Math.abs(v)>=thr?i:-1).filter(i=>i>=0);
+    if (idx.length) {
+      start = idx[0];
+      end = Math.min(n - 1, idx[idx.length - 1] + 1);
+    }
+  }
+
+  const core = Math.max(8, end - start + 1);
+  const pad = Math.max(20, Math.floor(core * 0.8));
+  start = Math.max(0, start - pad);
+  end = Math.min(n - 1, end + pad);
+
+  if (end - start < 80) {
+    const mid = Math.floor((start + end) / 2);
+    start = Math.max(0, mid - 40);
+    end = Math.min(n - 1, mid + 40);
+  }
+
+  const ys = y.slice(start, end + 1);
+  let yMin = Math.min(...ys), yMax = Math.max(...ys);
+  const span = yMax - yMin;
+  const absY = Math.max(Math.abs(yMin), Math.abs(yMax), 1e-9);
+  const yPad = Math.max(span * 0.18, absY * 0.08);
+  if (span < 1e-12) {
+    yMin -= absY * 0.2;
+    yMax += absY * 0.2;
+  }
+
+  return {
+    xaxis: {range: [t[start], t[end]]},
+    yaxis: {range: [yMin - yPad, yMax + yPad]}
+  };
 }
 
 function pzLayout(){
@@ -205,8 +260,10 @@ async function design(){
   Plotly.react('magPlot', [{x:d.f, y:d.H_db, mode:'lines', name:'|H| dB', hoverinfo:'skip'}], layout('Magnitude', 'Frequency (Hz)', 'Magnitude (dB)'), plotConfig);
   Plotly.react('phasePlot', [{x:d.f, y:d.phase_deg, mode:'lines', name:'Phase (°)', hoverinfo:'skip'}], layout('Phase', 'Frequency (Hz)', 'deg'), plotConfig);
   Plotly.react('gdPlot', [{x:d.f_gd, y:d.gd, mode:'lines', name:'τ (s)', hoverinfo:'skip'}], layout('Group delay', 'Frequency (Hz)', 's'), plotConfig);
-  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]', hoverinfo:'skip'}], layout('Impulse response', 'Time (s)'), plotConfig);
-  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]', hoverinfo:'skip'}], layout('Step response', 'Time (s)'), plotConfig);
+  const impAxes = signalWindow(d.t, d.h, 'impulse');
+  const stepAxes = signalWindow(d.t, d.s, 'step');
+  Plotly.react('impPlot', [{x:d.t, y:d.h, mode:'lines', name:'h[n]', hoverinfo:'skip'}], layout('Impulse response', 'Time (s)', 'Amplitude', impAxes), plotConfig);
+  Plotly.react('stepPlot', [{x:d.t, y:d.s, mode:'lines', name:'s[n]', hoverinfo:'skip'}], layout('Step response', 'Time (s)', 'Amplitude', stepAxes), plotConfig);
   Plotly.react('pzPlot', [
     {x:d.z_re, y:d.z_im, mode:'markers', name:'zeros', marker:{symbol:'circle-open'}, hoverinfo:'skip'},
     {x:d.p_re, y:d.p_im, mode:'markers', name:'poles', marker:{symbol:'x', size:10}, hoverinfo:'skip'}

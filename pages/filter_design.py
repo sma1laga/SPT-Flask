@@ -191,9 +191,14 @@ def api():
             gd_sec = gd_samples / fs               # seconds
 
         # Impulse / step response (N samples)
-        imp = np.zeros(N); imp[0] = 1.0
+        # For readability we place the excitation in the middle of the window so
+        # users can see pre/post behavior without everything being glued to the edge.
+        n0 = N // 2
+        imp = np.zeros(N)
+        imp[n0] = 1.0
         h = lfilter(b, a, imp)
-        step = np.ones(N)
+        step = np.zeros(N)
+        step[n0:] = 1.0
         s = lfilter(b, a, step)
         t = np.arange(N)/fs
 
