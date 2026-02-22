@@ -1193,12 +1193,12 @@ def _stationary_requirements(
     if reference == "step":
         k0 = (1.0 / e_inf) - 1.0
         if nu_total == 0:
-            return {"nu_req": 0, "k_fixed": True, "k0": k0, "k_is_min": True, "explanation": "Numeric K0 from Table 3.2 interpreted as minimum: K0=(1/e∞)-1 for step with ν=0."}
+            return {"nu_req": 0, "k_fixed": True, "k0": k0, "k_is_min": False, "explanation": "Numeric K0 from Table 3.2 interpreted as fixed value: K0=(1/e∞)-1 for step with ν=0."}
         return {"nu_req": 0, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "ν≥1 gives e∞=0 automatically for step; numeric e∞ does not constrain K."}
 
     # ramp + e_inf > 0
     if nu_total == 1:
-        return {"nu_req": 1, "k_fixed": True, "k0": ramp_slope / e_inf, "k_is_min": True, "explanation": "Numeric K0 from Table 3.2 interpreted as minimum: K0=a/e∞ for ramp with ν=1."}
+        return {"nu_req": 1, "k_fixed": True, "k0": ramp_slope / e_inf, "k_is_min": False, "explanation": "Numeric K0 from Table 3.2 interpreted as fixed value: K0=a/e∞ for ramp with ν=1."}
     if nu_total >= 2:
         return {"nu_req": 0, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "ν≥2 ⇒ e∞=0 automatically; numeric e∞ does not constrain K."}
     return {"nu_req": 1, "k_fixed": False, "k0": None, "k_is_min": False, "explanation": "Ramp with ν=0 cannot meet finite e∞ (Table 3.2); K not fixed here."}
