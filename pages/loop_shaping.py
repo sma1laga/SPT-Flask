@@ -261,15 +261,53 @@ def _tf_to_latex(tf: control.TransferFunction) -> str:
         return sp.latex(num_expr)
     return sp.latex(num_expr / den_expr)
 
+
+def _tf_to_expression(tf: control.TransferFunction) -> str:
+    """Convert a transfer function to a parser-safe SymPy expression string."""
+    s = sp.symbols("s")
+    num = [float(np.real_if_close(v)) for v in np.array(tf.num[0][0]).flatten()]
+    den = [float(np.real_if_close(v)) for v in np.array(tf.den[0][0]).flatten()]
+
+    def _poly_expr(coeffs: List[float]) -> sp.Expr:
+        degree = len(coeffs) - 1
+        expr = sp.Integer(0)
+        for idx, coeff in enumerate(coeffs):
+            if abs(coeff) < 1e-12:
+                continue
+            power = degree - idx
+            expr += sp.Float(coeff, 12) * (s ** power)
+        return sp.simplify(expr if expr != 0 else sp.Integer(0))
+
+    num_expr = _poly_expr(num)
+    den_expr = _poly_expr(den)
+    return str(sp.simplify(num_expr / den_expr))
+
+
+def _parseable_controller_expression(expr: str, tf: control.TransferFunction) -> str:
+    """Return `expr` when parseable, otherwise a robust expression from `tf`."""
+    try:
+        _parse_transfer_expression(expr)
+        return expr
+    except Exception:
+        return _tf_to_expression(tf)
+
 def _factor_to_latex(symbolic: str, numeric: str) -> Tuple[str, str]:
     """Render symbolic and numeric factor snippets as LaTeX."""
     s = sp.symbols("s")
 
-    def _render(expr: str) -> str:
-        parsed = sp.sympify(expr, locals={"s": s})
-        return sp.latex(sp.simplify(parsed))
+    def _normalize_symbolic(expr: str) -> str:
+        # Course placeholders such as T_{D2} are useful for display but not parser-safe.
+        return re.sub(r"T_\{([A-Za-z0-9]+)\}", r"T_\1", expr)
 
-    return _render(symbolic), _render(numeric)
+    def _render(expr: str, *, symbolic_expr: bool = False) -> str:
+        expr_to_render = _normalize_symbolic(expr) if symbolic_expr else expr
+        try:
+            parsed = sp.sympify(expr_to_render, locals={"s": s})
+            return sp.latex(sp.simplify(parsed))
+        except Exception:
+            return expr_to_render
+
+    return _render(symbolic, symbolic_expr=True), _render(numeric, symbolic_expr=False)
 
 
 def _parse_frequency_data(text: str, data_format: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -841,7 +879,7 @@ def _exam_recipe_controller(
             "symbolic": "1/(1+s/omega_R)",
             "numeric": f"1/(1+s/{wr:.12g})",
         })
-    controller_expr = "*".join(parts)
+    controller_expr_raw = "*".join(parts)
     stage_items: List[Dict[str, str]] = []
     cumulative_num = "1"
     cumulative_sym = "1"
@@ -865,7 +903,8 @@ def _exam_recipe_controller(
         "numeric": gain_num_ltx,
     })
 
-    symbolic_expr_ltx, numeric_expr_ltx = _factor_to_latex("*".join(symbolic_parts), controller_expr)
+    symbolic_expr_ltx, numeric_expr_ltx = _factor_to_latex("*".join(symbolic_parts), controller_expr_raw)
+    controller_expr = _parseable_controller_expression(controller_expr_raw, controller)
 
     blocks: List[Dict[str, Any]] = [{"type": "Gain", "label": "K", "k": float(k_final), "fixed": bool(strategy_eff == "leadlag" and k_fixed)}]
     if n_add > 0:
@@ -1438,10 +1477,15 @@ def loop_shaping_api():
             if parsed.transfer is None:
                 return ("Recipe mode requires a transfer function (not measured data).", 400)
             controller_tf, report, recipe_warnings = _exam_recipe_controller(parsed.transfer, target_inputs)
-            recipe_report = report
             warnings.extend(recipe_warnings)
+
+            recipe_expr = str(report.get("controller_expression", "")).strip()
+            recipe_expr_safe = _parseable_controller_expression(recipe_expr, controller_tf)
+            report["controller_expression"] = recipe_expr_safe
+            recipe_report = report
+
             controller_type = "Custom"
-            controller_params = {"expression": report.get("controller_expression", "")}
+            controller_params = {"expression": recipe_expr_safe}
             controller = controller_tf
 
         if mode != "recipe":
@@ -1712,6 +1756,9 @@ def _self_test_exam_eval_and_branches() -> None:
     assert "phase_at_wd_final_deg" in report_std
     assert "mag_at_wd_final_db" in report_std
     assert "mag_at_wd_final_abs" in report_std
+    _parse_transfer_expression(report_std["controller_expression"])
+    sym_ltx, _ = _factor_to_latex("((1+T_{D2}*s)/(1+T_2*s))", "(1+s/2)/(1+s/5)")
+    assert isinstance(sym_ltx, str) and len(sym_ltx) > 0
 
 def _self_test_exam_kmin_crossover_recovery() -> None:
     plant = control.TransferFunction([1], [1, 6, 8, 0])
