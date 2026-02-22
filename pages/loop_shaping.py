@@ -261,6 +261,16 @@ def _tf_to_latex(tf: control.TransferFunction) -> str:
         return sp.latex(num_expr)
     return sp.latex(num_expr / den_expr)
 
+def _factor_to_latex(symbolic: str, numeric: str) -> Tuple[str, str]:
+    """Render symbolic and numeric factor snippets as LaTeX."""
+    s = sp.symbols("s")
+
+    def _render(expr: str) -> str:
+        parsed = sp.sympify(expr, locals={"s": s})
+        return sp.latex(sp.simplify(parsed))
+
+    return _render(symbolic), _render(numeric)
+
 
 def _parse_frequency_data(text: str, data_format: str) -> Tuple[np.ndarray, np.ndarray]:
     lines = [line.strip() for line in text.splitlines() if line.strip() and not line.strip().startswith("#")]
@@ -771,22 +781,91 @@ def _exam_recipe_controller(
         report_steps.append({"title": "5) Lead/Lag correction", "text": extra})
 
     parts: List[str] = [f"{k_final:.12g}"]
+    symbolic_parts: List[str] = ["K"]
+    stage_factors: List[Dict[str, str]] = []
+
     if n_add > 0:
         parts.append(f"(1/(s^{n_add}))")
+        symbolic_parts.append(f"(1/(s^{n_add}))")
+        stage_factors.append({
+            "label": "Integrator",
+            "symbolic": f"1/(s^{n_add})",
+            "numeric": f"1/(s^{n_add})",
+        })
     if std_zero_params:
         parts.append(f"(1+s/{std_zero_params['wz']:.12g})")
+        symbolic_parts.append("(1+T_{D1}*s)")
+        stage_factors.append({
+            "label": "Zero term",
+            "symbolic": "1+T_{D1}*s",
+            "numeric": f"1+s/{std_zero_params['wz']:.12g}",
+        })
     if std_pole_params:
         parts.append(f"(1/(1+s/{std_pole_params['wp']:.12g}))")
+        symbolic_parts.append("(1/(1+T_1*s))")
+        stage_factors.append({
+            "label": "Pole term",
+            "symbolic": "1/(1+T_1*s)",
+            "numeric": f"1/(1+s/{std_pole_params['wp']:.12g})",
+        })
     if lead_params:
         parts.append(f"((1+s/{lead_params['wz']:.12g})/(1+s/{lead_params['wp']:.12g}))")
+        symbolic_parts.append("((1+T_{D2}*s)/(1+T_2*s))")
+        stage_factors.append({
+            "label": "Lead",
+            "symbolic": "(1+T_{D2}*s)/(1+T_2*s)",
+            "numeric": f"(1+s/{lead_params['wz']:.12g})/(1+s/{lead_params['wp']:.12g})",
+        })
         if isinstance(lead_params.get("extra_lead"), dict):
             el = lead_params["extra_lead"]
             parts.append(f"((1+s/{el['wz']:.12g})/(1+s/{el['wp']:.12g}))")
+            symbolic_parts.append("((1+T_{D3}*s)/(1+T_3*s))")
+            stage_factors.append({
+                "label": "Lead (extra)",
+                "symbolic": "(1+T_{D3}*s)/(1+T_3*s)",
+                "numeric": f"(1+s/{el['wz']:.12g})/(1+s/{el['wp']:.12g})",
+            })
     if lag_params:
         parts.append(f"((1+s/{lag_params['wz']:.12g})/(1+s/{lag_params['wp']:.12g}))")
+        symbolic_parts.append("((1+T_{D4}*s)/(1+T_4*s))")
+        stage_factors.append({
+            "label": "Lag",
+            "symbolic": "(1+T_{D4}*s)/(1+T_4*s)",
+            "numeric": f"(1+s/{lag_params['wz']:.12g})/(1+s/{lag_params['wp']:.12g})",
+        })
     for wr in realization_poles:
         parts.append(f"(1/(1+s/{wr:.12g}))")
+        symbolic_parts.append("(1/(1+s/omega_R))")
+        stage_factors.append({
+            "label": "Realization pole",
+            "symbolic": "1/(1+s/omega_R)",
+            "numeric": f"1/(1+s/{wr:.12g})",
+        })
     controller_expr = "*".join(parts)
+    stage_items: List[Dict[str, str]] = []
+    cumulative_num = "1"
+    cumulative_sym = "1"
+    for idx, factor in enumerate(stage_factors, start=1):
+        cumulative_num = f"({cumulative_num})*({factor['numeric']})"
+        cumulative_sym = f"({cumulative_sym})*({factor['symbolic']})"
+        sym_ltx, num_ltx = _factor_to_latex(cumulative_sym, cumulative_num)
+        stage_items.append({
+            "name": f"G_{{R,{idx}}}(s)",
+            "label": factor["label"],
+            "symbolic": sym_ltx,
+            "numeric": num_ltx,
+        })
+
+    gain_stage_idx = len(stage_items) + 1
+    gain_sym_ltx, gain_num_ltx = _factor_to_latex(f"K*({cumulative_sym})", f"{k_final:.12g}*({cumulative_num})")
+    stage_items.append({
+        "name": f"G_{{R,{gain_stage_idx}}}(s)",
+        "label": "Gain",
+        "symbolic": gain_sym_ltx,
+        "numeric": gain_num_ltx,
+    })
+
+    symbolic_expr_ltx, numeric_expr_ltx = _factor_to_latex("*".join(symbolic_parts), controller_expr)
 
     blocks: List[Dict[str, Any]] = [{"type": "Gain", "label": "K", "k": float(k_final), "fixed": bool(strategy_eff == "leadlag" and k_fixed)}]
     if n_add > 0:
@@ -843,6 +922,9 @@ def _exam_recipe_controller(
         "blocks": blocks,
         "branch_text": branch_text,
         "controller_expression": controller_expr,
+        "controller_symbolic_expression": symbolic_expr_ltx,
+        "controller_numeric_expression": numeric_expr_ltx,
+        "stage_items": stage_items,
         "steps": report_steps,
         "ss_constraint_present": bool(e_inf_req is not None),
         "n_lead": int(n_lead),

@@ -832,14 +832,35 @@ const renderRecipe = (recipe) => {
       title.innerHTML = step.title || '';
       const text = document.createElement('div');
       text.innerHTML = step.text || '';
+
+      if (/2\)/.test(step.title || '') && Array.isArray(recipe.stage_items) && recipe.stage_items.length) {
+        const block = document.createElement('div');
+        block.style.marginTop = '0.5rem';
+        recipe.stage_items.forEach((item) => {
+          const line = document.createElement('div');
+          line.innerHTML = `\\(${item.name}=${item.symbolic}\\)`;
+          block.appendChild(line);
+        });
+        div.appendChild(block);
+      }
+
       div.appendChild(title);
       div.appendChild(text);
       stepsBox.appendChild(div);
     });
   }
 
-  if (recipe.controller_expression) {
-    expr.innerHTML = `\\(G_R(s) = ${recipe.controller_expression}\\)`;
+  if (recipe.controller_symbolic_expression || recipe.controller_numeric_expression || recipe.controller_expression) {
+    const sym = recipe.controller_symbolic_expression;
+    const num = recipe.controller_numeric_expression;
+    if (sym && num) {
+      expr.innerHTML = `
+        <div>\\(G_R(s)=${sym}\\)</div>
+        <div>\\(= ${num}\\)</div>
+      `;
+    } else if (recipe.controller_expression) {
+      expr.innerHTML = `\\(G_R(s) = ${recipe.controller_expression}\\)`;
+    }
   }
 
   if (window.MathJax && window.MathJax.typesetPromise) {
