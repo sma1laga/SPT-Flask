@@ -9,6 +9,7 @@ from .chain_transforms import (
     apply_generic, no_op, rect, tri, 
     apply_conj, apply_integrator, apply_power
 )
+from utils.eval_helpers import safe_eval
 
 
 def interpret_chain(chain_data, until_block=None):
@@ -24,8 +25,8 @@ def interpret_chain(chain_data, until_block=None):
     # (2) Evaluate input X(jω)
     input_expr = chain_data.get("input", "0")
     try:
-        safe_dict = {"np": np, "rect": rect, "tri": tri, "w": w}
-        signal = eval(input_expr, {"__builtins__": {}}, safe_dict)
+        safe_dict = {"rect": rect, "tri": tri, "w": w}
+        signal = safe_eval(input_expr, safe_dict)
     except Exception as e:
         raise Exception(f"Error evaluating input expression '{input_expr}': {e}")
 

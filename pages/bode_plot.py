@@ -430,8 +430,8 @@ def _make_freq_vector(num, den, override=None):
 def bode_plot():
     error = ""
     warning = ""
-    page_title = "Bode Plot Tool (Online) | Signal Processing Toolkit"
-    meta_description = "Use the bode plot tool online to compute magnitude, phase, poles, zeros, and stability margins for transfer functions, with optional Nyquist view."
+    page_title = "Bode Plot Calculator Online – Phase Margin & Gain Margin"
+    meta_description = "Compute Bode magnitude/phase and stability margins from a transfer function. Includes pole-zero map, bandwidth, exports, and optional Nyquist plot view."
     # Default inputs; here we use a coefficient list for H(s) = (s+1)/(s^2+2)
     default_num = "(s+2)"
     default_den = "(s+10)(s+0.1)"

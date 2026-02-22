@@ -6,6 +6,7 @@ from functools import partial
 from utils.math_utils import (
     rect_N, tri_N, step, cos, sin, sign, delta_n, si
 )
+from utils.eval_helpers import safe_eval
 
 
 discrete_plot_functions_bp = Blueprint(
@@ -78,7 +79,7 @@ def discrete_plot_functions_update():
     k = np.arange(k_start, k_end + 1)
 
     ctx = dict(
-        k=_adjust_k1(k), np=np,
+        k=_adjust_k1(k),
         pi=np.pi, e=np.e,
         rect=rect_N, tri=tri_N,
         step=step, delta=delta_n,
@@ -88,7 +89,7 @@ def discrete_plot_functions_update():
     )
 
     try:
-        y1 = a1 * eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(k)
+        y1 = a1 * safe_eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(k)
     except Exception as e:
         return jsonify({"error": f"f₁ error: {e}"}), 400
 
@@ -96,7 +97,7 @@ def discrete_plot_functions_update():
     if func2_str.strip():
         try:
             ctx["k"] = _adjust_k2(k)
-            y2 = a2 * eval(func2_str, ctx)
+            y2 = a2 * safe_eval(func2_str, ctx)
         except Exception as e:
             return jsonify({"error": f"f₂ error: {e}"}), 400
 

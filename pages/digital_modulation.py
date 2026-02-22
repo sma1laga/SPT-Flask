@@ -60,6 +60,26 @@ def _to_bool(s, default=True):
     if v in ("1", "true", "on", "yes"):
         return True
     return default
+def _moving_average(x: np.ndarray, taps: int):
+    taps = int(max(1, taps))
+    if taps <= 1:
+        return x.copy()
+    kernel = np.ones(taps, dtype=float) / taps
+    return np.convolve(x, kernel, mode='same')
+
+
+def _piecewise_from_period_values(values: np.ndarray, period_N: int, total_N: int):
+    out = np.zeros(total_N, dtype=float)
+    period_N = int(max(1, period_N))
+    if values.size == 0 or total_N <= 0:
+        return out
+
+    usable = min(total_N, values.size * period_N)
+    out[:usable] = np.repeat(values, period_N)[:usable]
+    if usable < total_N:
+        out[usable:] = values[-1]
+    return out
+
 
 
 _erfc_vec = np.vectorize(math.erfc)
@@ -675,29 +695,58 @@ def demodulate_api():
 
     if kind in ['PAM', 'PWM', 'PPM', 'PCM']:
         prf = float(params.get('prf', 50))
+        if prf <= 0:
+            return jsonify(error="prf must be positive"), 400
         fm = float(params.get('fm', 5))
         msg = np.sin(2 * np.pi * fm * t)
+        period_N = int(max(1, round(fs / prf)))
+        n_periods = max(1, t.size // period_N)
+        usable = n_periods * period_N
+        tx_frames = None
 
         if kind == 'PAM':
             tx = (np.mod(t, 1 / prf) < 1 / (2 * prf)).astype(float) * msg
-            demod = msg
+            tx_frames = tx[:usable].reshape(n_periods, period_N)
+            gate_N = max(1, period_N // 2)
+            amp_hat = np.mean(tx_frames[:, :gate_N], axis=1) * 2.0
+            demod = _piecewise_from_period_values(amp_hat, period_N, t.size)
+            demod = _moving_average(demod, min(21, max(5, period_N // 4)))
         elif kind == 'PWM':
             duty = (msg + 1) / 2
             tau = np.mod(t, 1 / prf)
             tx = (tau < (duty / prf)).astype(float)
-            demod = msg
+            tx_frames = tx[:usable].reshape(n_periods, period_N)
+            duty_hat = np.mean(tx_frames, axis=1)
+            msg_hat = np.clip(2.0 * duty_hat - 1.0, -1.0, 1.0)
+            demod = _piecewise_from_period_values(msg_hat, period_N, t.size)
+            demod = _moving_average(demod, min(21, max(5, period_N // 4)))
         elif kind == 'PPM':
             shift = (msg + 1) / 2 * (1 / (2 * prf))
             tau = np.mod(t, 1 / prf)
             width = 1 / (20 * prf)
             tx = (np.abs(tau - shift) < width).astype(float)
-            demod = msg
+            tx_frames = tx[:usable].reshape(n_periods, period_N)
+            half_width_samples = max(1, int(round(width * fs)))
+            shift_hat = np.zeros(n_periods, dtype=float)
+            for i in range(n_periods):
+                frame = tx_frames[i]
+                pulse_idx = np.flatnonzero(frame > 0.5)
+                if pulse_idx.size > 0:
+                    center_idx = float(np.mean(pulse_idx))
+                else:
+                    center_idx = float(np.argmax(frame))
+                center_idx = np.clip(center_idx, half_width_samples, period_N - half_width_samples - 1)
+                shift_hat[i] = (center_idx / fs) - width
+            msg_hat = np.clip(4.0 * prf * shift_hat - 1.0, -1.0, 1.0)
+            demod = _piecewise_from_period_values(msg_hat, period_N, t.size)
+            demod = _moving_average(demod, min(21, max(5, period_N // 4)))
         elif kind == 'PCM':
             levels = int(params.get('levels', 8))
             q = np.round((msg + 1) / 2 * (levels - 1))
-            demod = q / (levels - 1) * 2 - 1
+            qnorm = q / (levels - 1) * 2 - 1
             sidx = np.floor(t * prf).astype(int)
-            tx = demod[np.clip(sidx, 0, len(demod) - 1)]
+            tx = qnorm[np.clip(sidx, 0, len(qnorm) - 1)]
+            demod = _moving_average(tx, min(9, max(3, period_N // 8)))
     else:
         return jsonify(error="Unknown demodulation type"), 400
 

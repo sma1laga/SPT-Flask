@@ -65,6 +65,8 @@ def inverse_z():
         except Exception as exc:
             error_msg = f"{type(exc).__name__}: {exc}"
             print(error_msg)
+    page_title = "Inverse Z-Transform Calculator Online | Signal Processing Toolkit"
+    meta_description = "Compute inverse z-transforms of rational H(z) with selectable ROC and visualize resulting discrete-time impulse response samples."
 
     try:
         return render_template(
@@ -79,6 +81,8 @@ def inverse_z():
         roc_type=roc_type,
         roc_latex=roc_ltx,
         error=error_msg.split(': ')[0] if error_msg else None,
+        page_title=page_title,
+        meta_description=meta_description,
     )
     except Exception as exc:
         print(f"Rendering error: {exc}")
@@ -86,5 +90,7 @@ def inverse_z():
             'inverse_z.html',
             default_num=num_txt,
             default_den=den_txt,
-            error=f"Rendering error: {exc}"
+            error=f"Rendering error: {exc}",
+            page_title=page_title,
+            meta_description=meta_description,
         )

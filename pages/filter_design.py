@@ -2,10 +2,11 @@
 from flask import Blueprint, render_template, request, send_file, abort, jsonify
 import io
 import numpy as np
+import warnings
 from scipy.signal import butter, cheby1, cheby2, ellip, iirdesign, freqz, group_delay, lfilter, filtfilt
 from datetime import datetime
 from io import BytesIO
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 filter_design_bp = Blueprint(
     "filter_design",
@@ -13,6 +14,60 @@ filter_design_bp = Blueprint(
     template_folder="../templates",
 )
 MAX_FILTER_SAMPLES = 16384
+
+def _parse_pair(s):
+    return [float(x.strip()) for x in s.split(",") if x.strip()]
+
+
+def design_iir(params):
+    mode = params["mode"]
+    family = params["family"]
+    ftype = params["ftype"]
+    fs = float(params["fs"])
+    order = int(params["order"])
+    rp = float(params["rp"])
+    rs = float(params["rs"])
+    fc = params["fc"]
+    fp = params["fp"]
+    fsb = params["fsb"]
+    gpass = float(params["gpass"])
+    gstop = float(params["gstop"])
+
+    nyq = fs / 2.0
+    if mode == "order":
+        c = _parse_pair(fc)
+        if ftype in ("bandpass", "bandstop"):
+            if len(c) != 2:
+                raise ValueError("Band filters need two cutoffs (Hz)")
+            c = [v / nyq for v in sorted(c)]
+        else:
+            if len(c) != 1:
+                raise ValueError("Single cutoff (Hz) for low/high pass")
+            c = c[0] / nyq
+        if family == "butter":
+            b, a = butter(order, c, btype=ftype)
+        elif family == "cheby1":
+            b, a = cheby1(order, rp, c, btype=ftype)
+        elif family == "cheby2":
+            b, a = cheby2(order, rs, c, btype=ftype)
+        elif family == "ellip":
+            b, a = ellip(order, rp, rs, c, btype=ftype)
+        else:
+            raise ValueError("Unsupported family")
+        return b, a, order
+
+    wp = _parse_pair(fp)
+    ws = _parse_pair(fsb)
+    if ftype in ("lowpass", "highpass"):
+        if len(wp) != 1 or len(ws) != 1:
+            raise ValueError("Use single fp and fs for low/high pass (Hz)")
+        wp, ws = wp[0] / nyq, ws[0] / nyq
+    else:
+        if len(wp) != 2 or len(ws) != 2:
+            raise ValueError("Use two fp & fs values for band filters (Hz)")
+        wp, ws = [v / nyq for v in sorted(wp)], [v / nyq for v in sorted(ws)]
+    b, a = iirdesign(wp=wp, ws=ws, gpass=gpass, gstop=gstop, ftype=family, output='ba')
+    return b, a, max(len(a), len(b)) - 1
 
 # --------------------------- Helpers: inline exporters ---------------------------
 
@@ -74,14 +129,13 @@ def filter_design():
 @filter_design_bp.route("/api", methods=["GET"])
 def api():
     try:
-        mode   = request.args.get("mode", "order")            # 'order' | 'specs'
-        family = request.args.get("family", "butter")          # butter|cheby1|cheb2|ellip
-        ftype  = request.args.get("ftype",  "lowpass")         # lowpass|highpass|bandpass|bandstp
+        mode   = request.args.get("mode", "order")
+        family = request.args.get("family", "butter")
+        ftype  = request.args.get("ftype",  "lowpass")
         fs     = float(request.args.get("fs", 48000))
         N      = int(request.args.get("N", 4096))
         if N > MAX_FILTER_SAMPLES:
             return (f"N exceeds limit ({MAX_FILTER_SAMPLES}).", 400)
-        order  = int(request.args.get("order", 6))
         rp     = float(request.args.get("rp", 1))
         rs     = float(request.args.get("rs", 60))
         fc     = request.args.get("fc", "4000")
@@ -90,42 +144,21 @@ def api():
         gpass  = float(request.args.get("gpass", 1))
         gstop  = float(request.args.get("gstop", 60))
 
-        def parse_pair(s):
-            vals = [float(x.strip()) for x in s.split(",") if x.strip()]
-            return vals
-
-        nyq = fs/2.0
-        if mode == "order":
-            c = parse_pair(fc)
-            if ftype in ("bandpass","bandstop"):
-                if len(c) != 2: raise ValueError("Band filters need two cutoffs (Hz)")
-                c = [v/nyq for v in sorted(c)]
-            else:
-                if len(c) != 1: raise ValueError("Single cutoff (Hz) for low/high pass")
-                c = c[0]/nyq
-            if family == "butter":
-                b,a = butter(order, c, btype=ftype)
-            elif family == "cheby1":
-                b,a = cheby1(order, rp, c, btype=ftype)
-            elif family == "cheby2":
-                b,a = cheby2(order, rs, c, btype=ftype)
-            elif family == "ellip":
-                b,a = ellip(order, rp, rs, c, btype=ftype)
-            else:
-                raise ValueError("Unsupported family")
-        else:  
-            wp = parse_pair(fp)
-            ws = parse_pair(fsb)
-            if ftype in ("lowpass","highpass"):
-                if len(wp)!=1 or len(ws)!=1:
-                    raise ValueError("Use single fp and fs for low/high pass (Hz)")
-                wp, ws = wp[0]/nyq, ws[0]/nyq
-            else:
-                if len(wp)!=2 or len(ws)!=2:
-                    raise ValueError("Use two fp & fs values for band filters (Hz)")
-                wp, ws = [v/nyq for v in sorted(wp)], [v/nyq for v in sorted(ws)]
-            b,a = iirdesign(wp=wp, ws=ws, gpass=gpass, gstop=gstop, ftype=family, output='ba')
-            order = max(len(a), len(b)) - 1
+        design_params = {
+            "mode": mode,
+            "family": family,
+            "ftype": ftype,
+            "fs": fs,
+            "order": int(request.args.get("order", 6)),
+            "rp": rp,
+            "rs": rs,
+            "fc": fc,
+            "fp": fp,
+            "fsb": fsb,
+            "gpass": gpass,
+            "gstop": gstop,
+        }
+        b, a, order = design_iir(design_params)
 
         # Frequency response
         worN = 4096
@@ -137,18 +170,35 @@ def api():
         phase = np.unwrap(np.angle(H))
         phase_deg = np.rad2deg(phase)
         try:
-            wg, gd = group_delay((b, a), fs=fs)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="The filter's denominator is extremely small at frequencies.*",
+                    category=UserWarning,
+                )
+                wg, gd_samples = group_delay((b, a), w=4096, fs=fs)
             f_gd = wg
-            gd_sec = gd  
+            gd_sec = gd_samples / fs
         except TypeError:
-            wg, gd = group_delay((b, a))            # rad/sample,
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="The filter's denominator is extremely small at frequencies.*",
+                    category=UserWarning,
+                )
+                wg, gd_samples = group_delay((b, a), w=4096)
             f_gd = (wg * fs) / (2*np.pi)           # Hz
-            gd_sec = gd / fs                        # seconds
+            gd_sec = gd_samples / fs               # seconds
 
         # Impulse / step response (N samples)
-        imp = np.zeros(N); imp[0] = 1.0
+        # For readability we place the excitation in the middle of the window so
+        # users can see pre/post behavior without everything being glued to the edge.
+        n0 = N // 2
+        imp = np.zeros(N)
+        imp[n0] = 1.0
         h = lfilter(b, a, imp)
-        step = np.ones(N)
+        step = np.zeros(N)
+        step[n0:] = 1.0
         s = lfilter(b, a, step)
         t = np.arange(N)/fs
 
@@ -160,18 +210,22 @@ def api():
         spec_ok = True
         if mode == 'specs':
             if ftype in ("lowpass","highpass"):
-                fp_hz = parse_pair(fp)[0]; fs_hz = parse_pair(fsb)[0]
+                fp_hz = _parse_pair(fp)[0]; fs_hz = _parse_pair(fsb)[0]
                 if ftype=='lowpass':
                     passband = f <= fp_hz; stopband = f >= fs_hz
                 else:
                     passband = f >= fp_hz; stopband = f <= fs_hz
             else:
-                fp1,fp2 = sorted(parse_pair(fp)); fs1,fs2 = sorted(parse_pair(fsb))
-                passband = (f>=fp1) & (f<=fp2)
-                stopband = (f<=fs1) | (f>=fs2)
+                fp1,fp2 = sorted(_parse_pair(fp)); fs1,fs2 = sorted(_parse_pair(fsb))
+                if ftype == "bandpass":
+                    passband = (f>=fp1) & (f<=fp2)
+                    stopband = (f<=fs1) | (f>=fs2)
+                else:
+                    passband = (f<=fp1) | (f>=fp2)
+                    stopband = (f>=fs1) & (f<=fs2)
             if np.any(passband):
-                pb_ripple = np.max(H_db[passband]) - np.min(H_db[passband])
-                spec_ok &= (pb_ripple <= gpass + 1e-6)
+                pb_loss = max(0.0, -np.min(H_db[passband]))
+                spec_ok &= (pb_loss <= gpass + 1e-6)
             if np.any(stopband):
                 sb_level = np.max(H_db[stopband])
                 spec_ok &= (sb_level <= -gstop + 1e-6)
@@ -203,28 +257,40 @@ def api():
 def export():
     fmt = request.args.get("fmt", "matlab")
     name = request.args.get("name") or f"myFilter_{datetime.utcnow().strftime('%Y%m%d')}"
-    filter_type = request.args.get("filter_type", "lowpass")
+    mode = request.args.get("mode", "order")
+    family = request.args.get("family", "butter")
+    ftype = request.args.get("ftype", "lowpass")
+    fs = float(request.args.get("fs", 48000))
     order = int(request.args.get("order", 4))
-    cutoff_str = request.args.get("cutoff", "1000")
-    sample_rate = float(request.args.get("sample_rate", 48000))
+    rp = float(request.args.get("rp", 1))
+    rs = float(request.args.get("rs", 60))
+    fc = request.args.get("fc", "1000")
+    fp = request.args.get("fp", "4000")
+    fsb = request.args.get("fsb", "6000")
+    gpass = float(request.args.get("gpass", 1))
+    gstop = float(request.args.get("gstop", 60))
     try:
-        def parse_pair(s):
-            vals=[float(x.strip()) for x in s.split(',') if x.strip()]
-            return vals
-        nyq = sample_rate/2
-        c = parse_pair(cutoff_str)
-        if filter_type in ("bandpass","bandstop"):
-            if len(c)!=2: raise ValueError("Need two cutoff frequencies for band filters (Hz)")
-            c = [v/nyq for v in sorted(c)]
-        else:
-            if len(c)!=1: raise ValueError("Single cutoff required for low/high pass (Hz)")
-            c = c[0]/nyq
-        b,a = butter(order, c, btype=filter_type)
+        design_params = {
+            "mode": mode,
+            "family": family,
+            "ftype": ftype,
+            "fs": fs,
+            "order": order,
+            "rp": rp,
+            "rs": rs,
+            "fc": fc,
+            "fp": fp,
+            "fsb": fsb,
+            "gpass": gpass,
+            "gstop": gstop,
+        }
+        b, a, order = design_iir(design_params)
     except Exception as e:
         abort(400, str(e))
 
     if fmt == "matlab":
-        payload = _matlab_script(name, b, a, order=order, filter_type=filter_type, cutoff=cutoff_str, sample_rate=sample_rate)
+        cutoff_label = fc if mode == "order" else fp
+        payload = _matlab_script(name, b, a, order=order, filter_type=ftype, cutoff=cutoff_label, sample_rate=fs)
         mimetype = "text/x-matlab"; ext="m"
     elif fmt == "python":
         payload = _python_script(name, b, a)

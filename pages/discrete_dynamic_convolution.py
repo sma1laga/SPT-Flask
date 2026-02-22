@@ -4,6 +4,8 @@ import numpy as np
 from utils.math_utils import (
     rect_N, tri_N, step, cos, sin, sign, delta_n, exp_iwt, inv_t, si, delta_train_n
 )
+from utils.eval_helpers import safe_eval
+
 # Blueprint for Discrete Dynamic Convolution
 # Implements extended-domain convolution to avoid edge truncation
 
@@ -22,6 +24,7 @@ def index():
         ("sin[\u03c0/4\u22c5k]\u22c5step[k]", "sin(np.pi/4*k)*step(k)"),
         ("cos[\u03c0/4\u22c5k]\u22c5step[k]", "cos(np.pi/4*k)*step(k)"),
         ("delta[k]", "delta(k)"),
+        ("delta[k-2]", "delta(k-2)"),
         ("delta_train_6[k]\u22c5step[k]", "delta_train(k)*step(k)"),
         ("step[k]", "step(k)"),
         ("sign[k]", "sign(k)"),
@@ -48,7 +51,7 @@ def data():
     k = np.arange(-10, 11)
     # Safe evaluation context
     ctx = {
-        "k": k, "n": k, "np": np,
+        "k": k, "n": k,
         "rect_4": partial(rect_N, N=4), "tri_3": partial(tri_N, N=3), "step": step,
         "cos": cos, "sin": sin,
         "sign": sign, "delta": delta_n, "delta_train": delta_train_n, "exp": np.exp,
@@ -57,11 +60,11 @@ def data():
 
     # Evaluate f1 & f2 on original domain
     try:
-        y1 = eval(f1_str, ctx) if f1_str else np.zeros_like(k, dtype=float)
+        y1 = safe_eval(f1_str, ctx) if f1_str else np.zeros_like(k, dtype=float)
     except Exception as e:
         return jsonify(error=f"Error evaluating Sequence 1: {e}"), 400
     try:
-        y2 = eval(f2_str, ctx) if f2_str else np.zeros_like(k, dtype=float)
+        y2 = safe_eval(f2_str, ctx) if f2_str else np.zeros_like(k, dtype=float)
     except Exception as e:
         return jsonify(error=f"Error evaluating Sequence 2: {e}"), 400
 
@@ -74,8 +77,8 @@ def data():
 
     # Evaluate f1 & f2 on extended domain
     try:
-        y1_ext = eval(f1_str, ctx_ext) if f1_str else np.zeros_like(k_ext, dtype=float)
-        y2_ext = eval(f2_str, ctx_ext) if f2_str else np.zeros_like(k_ext, dtype=float)
+        y1_ext = safe_eval(f1_str, ctx_ext) if f1_str else np.zeros_like(k_ext, dtype=float)
+        y2_ext = safe_eval(f2_str, ctx_ext) if f2_str else np.zeros_like(k_ext, dtype=float)
     except Exception as e:
         return jsonify(error=f"Extended-domain eval error: {e}"), 400
 

@@ -1,10 +1,19 @@
 {% extends "base.html" %}
+{% block title %}Convolution Calculator (Continuous-Time) – Compute y(t)=x(t)*h(t) Online{% endblock %}
 {% block content %}
 <div class="page-header" style="margin-bottom:30px; text-align:center;">
   <h1 style="font-size:2.5em;">Convolution Calculator</h1>
-  <p style="font-size:1.1em; color:var(--subtext-color); max-width:600px; margin:0 auto;">
-    Enter \(x(t)\) and \(h(t)\) to online compute their convolution
-    $$ y(t)=\int_{-\infty}^{\infty} x(\tau)h(t-\tau)\mathrm d\tau $$
+  <p style="font-size:1.05em; color:var(--subtext-color); max-width:760px; margin:0 auto 12px auto; line-height:1.5;">
+    Enter continuous-time signals \(x(t)\) and \(h(t)\) using the notation below.
+  </p>
+    <p class="convolution-formula" style="font-size: 1.06em; color: var(--subtext-color); max-width: 620px; margin: 0 auto;">
+      $$ y(t)=\int_{-\infty}^{\infty}x(\tau)h(t-\tau)\,\mathrm d\tau $$
+    </p>
+  <p style="font-size:1.05em; color:var(--subtext-color); max-width:760px; margin:0 auto; line-height:1.5;">
+    You get plots of \(x(t)\), \(h(t)\), and their output \(y(t)=x(t)*h(t)\) instantly.
+    Example: \(\mathrm{rect}(t) * \mathrm{tri}(t)\).
+    <a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}">See step-by-step overlap (Dynamic Explorer)</a>.
+    Use the Dynamic Explorer to slide \(t\) and visualize the overlap \(x(\tau)\cdot h(t-\tau)\).
   </p>
 </div>
 
@@ -21,6 +30,12 @@
     <input type="text" id="func2" placeholder="h(t)"
            onfocus="setActiveField(this)"
            style="width:45%; padding:8px; border:1px solid #ccd0d5; border-radius:4px; font-size:1em;" />
+  </div>
+  <div class="notation-box" style="max-width:760px; margin:0 auto 16px auto; text-align:left; background:#f8f9fb; border:1px solid #d9dee7; border-radius:6px; padding:10px 12px; font-size:0.92em; line-height:1.4;">
+    <strong>Supported notation &amp; limits</strong><br>
+    Primitives/synonyms: \(\mathrm{rect}\), \(\mathrm{tri}\), \(\sin\), \(\cos\), \(\exp\), \(\mathrm{step}\) / \(u(t)\) / \(\mathrm{heaviside}\), \(\delta\) / \(\delta\), \(\mathrm{sign}\), \(\mathrm{si}\).<br>
+    Syntax: use \( * \) for multiplication and parentheses, e.g. \(\sin(\pi t) * u(t)\).<br>
+    Limits: complex piecewise expressions may fail, finite plotting range is used, and numeric resolution affects sharp transitions in \(y(t)\).
   </div>
 
   <!-- Funktions-Buttons in einer Zeile -->
@@ -51,6 +66,9 @@
 
   <!-- Compute / Clear -->
   <div style="margin-bottom:30px;">
+    <div style="margin-bottom:8px;">
+      <a href="{{ url_for('dynamic_convolution.dynamic_convolution') }}" class="explorer-cta">See step-by-step overlap (Demo)</a>
+    </div>
     <button type="button" id="computeBtn" class="action-btn">Compute</button>
     <button type="button" id="clearBtn"   class="action-btn">Clear</button>
   </div>
@@ -58,13 +76,13 @@
 
 <!-- Plotly-Container -->
 <div id="plotly-container" style="max-width:1200px; margin:0 auto;">
-  <div id="plot1"      style="height:250px;"></div>
-  <div id="plot2"      style="height:250px; margin-top:-20px;"></div>
-  <div id="plotConv"   style="height:250px; margin-top:-20px;"></div>
+  <div class="plot-shell"><div id="plot1" style="height:250px;"></div></div>
+  <div class="plot-shell"><div id="plot2" style="height:250px; margin-top:-20px;"></div></div>
+  <div class="plot-shell"><div id="plotConv" style="height:250px; margin-top:-20px;"></div></div>
 </div>
 
-<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/convolution_compute.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/plotly_loader.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/convolution_compute.js') }}"></script>
 <script>
   let activeField = document.getElementById("func1");
   function setActiveField(f) { activeField = f; }
@@ -95,7 +113,7 @@
     };
   }
 
-  function updatePlots() {
+  async function updatePlots() {
     clearErrors();
     const vals = getValues();
     const data = compute_convolution(vals.func1, vals.func2);
@@ -106,6 +124,14 @@
       console.error(data.error);
       return;
     }
+      try {
+        await ensurePlotlyLoaded();
+      } catch (error) {
+        const message = error && error.message ? error.message : "Failed to load plotting library.";
+        if (errorMsg) errorMsg.textContent = message;
+        console.error(error);
+        return;
+      }
       const lc = { margin: { t: 30 } };
 
       Plotly.newPlot("plot1", [{
@@ -142,9 +168,11 @@
     func1.value = "";
     func2.value = "";
     clearErrors();
-    Plotly.purge("plot1");
-    Plotly.purge("plot2");
-    Plotly.purge("plotConv");
+    if (window.Plotly) {
+      Plotly.purge("plot1");
+      Plotly.purge("plot2");
+      Plotly.purge("plotConv");
+    }
   });
 </script>
 
@@ -194,6 +222,32 @@
 
   input.input-error {
     border-color: var(--lms-red);
+  }
+
+  .explorer-cta {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 0.76em;
+    border-radius: 4px;
+    text-decoration: none;
+    background: #4b6cb7;
+    color: #fff;
+  }
+  .explorer-cta:hover {
+    background: #3f5ea1;
+  }
+
+  .notation-box {
+    color: #1f2937;
+  }
+
+  .convolution-formula {
+    min-height: 3.5em;
+  }
+
+  .plot-shell {
+    min-height: 260px;
+    width: 100%;
   }
 </style>
 {% endblock %}
