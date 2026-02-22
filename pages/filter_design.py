@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, request, send_file, abort, jsonify
 import io
 import numpy as np
+import warnings
 from scipy.signal import butter, cheby1, cheby2, ellip, iirdesign, freqz, group_delay, lfilter, filtfilt
 from datetime import datetime
 from io import BytesIO
@@ -137,11 +138,23 @@ def api():
         phase = np.unwrap(np.angle(H))
         phase_deg = np.rad2deg(phase)
         try:
-            wg, gd = group_delay((b, a), fs=fs)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="The filter's denominator is extremely small at frequencies.*",
+                    category=UserWarning,
+                )
+                wg, gd = group_delay((b, a), fs=fs)
             f_gd = wg
             gd_sec = gd  
         except TypeError:
-            wg, gd = group_delay((b, a))            # rad/sample,
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    message="The filter's denominator is extremely small at frequencies.*",
+                    category=UserWarning,
+                )
+                wg, gd = group_delay((b, a))            # rad/sample,
             f_gd = (wg * fs) / (2*np.pi)           # Hz
             gd_sec = gd / fs                        # seconds
 
