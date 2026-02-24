@@ -264,7 +264,17 @@
           func2: document.getElementById('func2').value
         })
       })
-      .then(r => r.json().then(d => r.ok ? d : Promise.reject(d.error)))
+      .then(async (r) => {
+        const text = await r.text();          // read raw response first
+        let d;
+        try {
+          d = JSON.parse(text);               // try JSON
+        } catch (err) {
+          throw new Error(text.slice(0, 200)); // fallback: show first chars of HTML/text
+        }
+        if (!r.ok) throw new Error(d.error || 'Request failed');
+        return d;
+      })
       .then(d => {
         tData = d.t || [];
         y1Data = d.y1 || [];
@@ -279,7 +289,7 @@
         updatePlots();
         setPlayButtonState(false, false);
       })
-      .catch(e => alert('Error: ' + e));
+      .catch(e => alert('Error: ' + e.message));
     }
 
     function updatePlots() {
