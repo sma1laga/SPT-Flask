@@ -1,5 +1,5 @@
 (() => {
-  const plotlyAvailable = typeof window !== 'undefined' && typeof window.Plotly !== 'undefined';
+
   const bodeData = window.bodeData || null;
   const pzData = window.pzData || null;
   const nyquistData = window.nyquistData || null;
@@ -173,7 +173,7 @@
   }
 
   function renderBodeMagnitude(data) {
-    if (!plotlyAvailable) return;
+    if (typeof window.Plotly === 'undefined') return;
     const el = document.getElementById('bodeMagnitudePlot');
     if (!el) return;
 
@@ -217,7 +217,7 @@
   }
 
   function renderBodePhase(data) {
-    if (!plotlyAvailable) return;
+    if (typeof window.Plotly === 'undefined') return;
     const el = document.getElementById('bodePhasePlot');
     if (!el) return;
 
@@ -286,7 +286,7 @@
 
 
   function renderPoleZeroPlot(data) {
-    if (!plotlyAvailable) return;
+    if (typeof window.Plotly === 'undefined') return;
     const el = document.getElementById('pzPlot');
     if (!el) return;
 
@@ -363,7 +363,7 @@
   }
 
   function renderNyquistPlot(data) {
-    if (!plotlyAvailable || !data) return;
+    if (typeof window.Plotly === 'undefined' || !data) return;
     const el = document.getElementById('nyquistPlot');
     if (!el) return;
 
@@ -518,16 +518,28 @@
 
 
   document.addEventListener('DOMContentLoaded', () => {
-    if (bodeData) {
-      setupCornerFrequencyToggle(bodeData);
-      renderBodePlot(bodeData);
-      renderMetrics(bodeData);
+    const bootstrap = () => {
+      if (bodeData) {
+        setupCornerFrequencyToggle(bodeData);
+        renderBodePlot(bodeData);
+        renderMetrics(bodeData);
+      }
+      if (pzData) {
+        renderPoleZeroPlot(pzData);
+      }
+      if (nyquistData) {
+        renderNyquistPlot(nyquistData);
+      }
+    };
+
+    if (typeof window.ensurePlotlyLoaded === 'function') {
+      window.ensurePlotlyLoaded()
+        .then(bootstrap)
+        .catch((error) => {
+          console.error('Unable to load Plotly for Bode page:', error);
+        });
+      return;
     }
-    if (pzData) {
-      renderPoleZeroPlot(pzData);
-    }
-    if (nyquistData) {
-      renderNyquistPlot(nyquistData);
-    }
+    bootstrap();
   });
 })();

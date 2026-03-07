@@ -46,27 +46,49 @@
   <!-- MathJax for LaTeX rendering -->
   <script>
     (function () {
-      const needsPolyfill = !(
-        'Promise' in window &&
-        'Map' in window &&
-        'Set' in window &&
-        'Symbol' in window &&
-        Array.from
-      );
-      if (needsPolyfill) {
-        const poly = document.createElement('script');
-        poly.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
-        poly.defer = true;
-        document.head.appendChild(poly);
-      }
+      const needsMath = () => {
+        if (document.querySelector('[data-requires-mathjax="true"]')) {
+          return true;
+        }
+        const text = document.body ? (document.body.textContent || '') : '';
+        return /\$\$|\\\(|\\\)|\\\[|\\\]|\$[^\$]+\$/m.test(text);
+      };
+
+      const loadMathJax = () => {
+        const needsPolyfill = !(
+          'Promise' in window &&
+          'Map' in window &&
+          'Set' in window &&
+          'Symbol' in window &&
+          Array.from
+        );
+        if (needsPolyfill) {
+          const poly = document.createElement('script');
+          poly.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
+          poly.defer = true;
+          document.head.appendChild(poly);
+        }
+
+        window.MathJax = {
+          loader: {load: ['input/tex', 'output/chtml']},
+          tex: {inlineMath: [['\\(', '\\)'], ['$', '$']]}
+        };
+
+        const script = document.createElement('script');
+        script.id = 'MathJax-script';
+        script.async = true;
+        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+        document.head.appendChild(script);
+      };
+
+      window.addEventListener('DOMContentLoaded', () => {
+        if (needsMath()) {
+          loadMathJax();
+        }
+      });
     })();
-    window.MathJax = {
-      loader: {load: ['input/tex', 'output/chtml']},
-      tex: {inlineMath: [['\\(', '\\)'], ['$', '$']]}
-    };
+
   </script>
-  <script id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
   <!-- Header Script (navigation & dark‐mode) -->
   <script defer src="{{ url_for('static', filename='js/header.js') }}"></script>

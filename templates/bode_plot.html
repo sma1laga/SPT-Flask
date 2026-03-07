@@ -530,12 +530,14 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  {% if bode_data or pz_plot or nyquist_data %}
+  <script defer src="{{ url_for('static', filename='js/plotly_loader.js') }}"></script>
   <script>
     window.bodeData = {{ bode_data|tojson|safe }};
     window.pzData = {{ pz_plot|tojson|safe }};
     window.nyquistData = {{ nyquist_data|tojson|safe }};
     window.nyquistAnalysis = {{ nyquist_analysis|tojson|safe }};
   </script>
-  <script src="{{ url_for('static', filename='js/bode_plot.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/bode_plot.js') }}"></script>
+  {% endif %}
 {% endblock %}
