@@ -138,6 +138,9 @@ def create_app():
     def apply_response_headers(response):
         if response.mimetype == "text/html":
             response.headers.setdefault("Cache-Control", "no-store")
+        elif request.path.startswith("/static/"):
+            max_age = 31536000 if "/images/" in request.path else 604800
+            response.headers.setdefault("Cache-Control", f"public, max-age={max_age}")
 
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.pop("X-XSS-Protection", None)

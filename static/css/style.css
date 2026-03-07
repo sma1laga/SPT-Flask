@@ -39,7 +39,7 @@
     --card-radius: 10px;
     --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
 
-    --header-bg: rgba(34, 82, 156, 0.88);
+    --header-bg: rgba(30, 76, 148, 0.9);
     --header-highlight: linear-gradient(120deg, rgba(96, 165, 250, 0.36), rgba(129, 199, 255, 0.14));
     --header-border: rgba(191, 219, 254, 0.38);
     --header-text: #e8f1ff;
