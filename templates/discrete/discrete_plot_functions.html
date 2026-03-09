@@ -112,7 +112,7 @@
 <div id="plot" style="max-width:1200px;height:460px;margin:0 auto;"></div>
 
 <!-- SCRIPTS ------------------------------------------------------ -->
-<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script defer src="{{ url_for('static', filename='js/plotly_loader.js') }}"></script>
 <script>
   /* ----------------------------------------------------------------
      active-field + quick buttons
@@ -132,6 +132,22 @@
      slider wiring (6 shifters)
   ---------------------------------------------------------------- */
   const sliderIds = ["shift1","amp1","width1","shift2","amp2","width2"];
+  let plotlyReadyPromise;
+  function ensurePlotlyReady(){
+    if (window.Plotly) return Promise.resolve(window.Plotly);
+    if (typeof window.ensurePlotlyLoaded === "function") return window.ensurePlotlyLoaded();
+    if (!plotlyReadyPromise) {
+      plotlyReadyPromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "{{ url_for('static', filename='js/plotly.min.js') }}";
+        script.defer = true;
+        script.onload = () => window.Plotly ? resolve(window.Plotly) : reject(new Error("Plotly unavailable after load"));
+        script.onerror = () => reject(new Error("Failed to load Plotly"));
+        document.head.appendChild(script);
+      });
+    }
+    return plotlyReadyPromise;
+  }
   sliderIds.forEach(id=>{
     const s = document.getElementById(id);
     const span = s.nextElementSibling;
@@ -169,6 +185,7 @@
   }
   /* update only data */
   function updateData(){
+    ensurePlotlyReady().then(() => {
     fetch("{{ url_for('discrete_plot_functions.plot_functions_update') }}", {
        method: "POST",
        headers: { "Content-Type": "application/json" },
@@ -199,11 +216,13 @@
       updateTrace(data.x2, data.y2);
     })
     .catch(console.error);
+    }).catch(console.error);
   }
   /* ----------------------------------------------------------------
      fetch + plot
   ---------------------------------------------------------------- */
   function updatePlots(){
+    ensurePlotlyReady().then(() => {
     fetch("{{ url_for('discrete_plot_functions.plot_functions_update') }}", {
        method: "POST",
        headers: { "Content-Type": "application/json" },
@@ -240,6 +259,7 @@
         yaxis:{title:{text:"Amplitude"}}}
       );
     }).catch(console.error);
+    }).catch(console.error);
   }
 
   /* buttons */
@@ -260,7 +280,9 @@
       s.value = id.includes("amp")||id.includes("width")?1:0;
       s.nextElementSibling && (s.nextElementSibling.textContent=parseFloat(s.value).toFixed(1));
     });
-    Plotly.purge("plot");
+    if (window.Plotly) {
+      Plotly.purge("plot");
+    }
   };
 </script>
 
