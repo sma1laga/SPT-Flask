@@ -100,8 +100,7 @@ def plot_function_update():
         y1 = a1 * safe_eval(func1_str, ns) if func1_str else np.zeros_like(t)
     except Exception as e:
         return jsonify(error_data("Error in f₁(t): ", e)), 400
-    if np.any(np.isinf(y1)):
-        return jsonify({"error": "f₁(t) produced non-finite values"}), 400
+    y1[~np.isfinite(y1)] = 0.0
 
     y2 = None
     if func2_str:
@@ -111,8 +110,7 @@ def plot_function_update():
             y2 = a2 * safe_eval(func2_str, ns)
         except Exception as e:
             return jsonify(error_data("Error in f₂(t): ", e)), 400
-        if np.any(np.isinf(y2)):
-            return jsonify({"error": "f₂(t) produced non-finite values"}), 400
+        y2[~np.isfinite(y2)] = 0.0
 
     def to_json_list(arr):
         if np.iscomplexobj(arr):
@@ -128,7 +126,8 @@ def plot_function_update():
             else:
                 cleaned.append(v)
         return cleaned
-    
+
+
     return jsonify({
         "t1": t.tolist(),
         "y1": to_json_list(y1),

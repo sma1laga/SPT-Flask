@@ -4,7 +4,7 @@ import numpy as np
 import re
 from functools import partial
 from utils.math_utils import (
-    rect_N, tri_N, step, cos, sin, sign, delta_n, si
+    rect_N, tri_N, step, cos, sin, sign, delta_n, si, inv_t
 )
 from utils.eval_helpers import safe_eval
 
@@ -85,7 +85,7 @@ def discrete_plot_functions_update():
         step=step, delta=delta_n,
         sin=sin, cos=cos,
         sign=sign, si=si,
-        exp=np.exp,
+        exp=np.exp, inv_k=inv_t,
     )
 
     try:
@@ -101,6 +101,10 @@ def discrete_plot_functions_update():
         except Exception as e:
             return jsonify({"error": f"f₂ error: {e}"}), 400
 
+    y1[~np.isfinite(y1)] = 0.0
+    if y2 is not None:
+        y2[~np.isfinite(y2)] = 0.0
+    
     return jsonify({
         "x1": k.tolist(),
         "y1": y1.tolist(),
