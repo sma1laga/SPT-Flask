@@ -5,12 +5,17 @@ from io import BytesIO, StringIO
 from ast import literal_eval
 import re
 import sympy as sp
+from sympy.parsing.sympy_parser import (
+    implicit_multiplication_application,
+    parse_expr,
+    standard_transformations,
+)
 import csv
 import io
 import control
 from itertools import zip_longest
 from typing import Optional
-
+_COMPLEX_COEFF_TOL = 1e-9
 
 def _evaluate_transfer(num, den, s_values):
     """Safely evaluate the transfer function ``num/den`` at the complex points ``s_values``."""
@@ -45,6 +50,116 @@ def _corner_frequencies(poles, zeros):
         if not deduped or not np.isclose(value, deduped[-1], rtol=1e-9, atol=1e-12):
             deduped.append(value)
     return deduped
+def _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=None, poles=None):
+    """Return the classical straight-line Bode magnitude approximation in dB."""
+    if len(w) == 0 or len(magnitude_db) == 0:
+        return []
+
+    zeros = np.asarray(np.roots(num) if zeros is None else zeros, dtype=complex)
+    poles = np.asarray(np.roots(den) if poles is None else poles, dtype=complex)
+
+    def _split_roots(roots):
+        origin_count = 0
+        finite_corner_freqs = []
+        for root in roots:
+            if not np.isfinite(root):
+                continue
+            if np.isclose(root, 0.0, atol=1e-9):
+                origin_count += 1
+                continue
+            magnitude = abs(root)
+            if magnitude > 0:
+                finite_corner_freqs.append(float(magnitude))
+        finite_corner_freqs.sort()
+        return origin_count, finite_corner_freqs
+
+    zero_origin_count, zero_corner_freqs = _split_roots(zeros)
+    pole_origin_count, pole_corner_freqs = _split_roots(poles)
+
+    w_values = np.asarray(w, dtype=float)
+    mag_values = np.asarray(magnitude_db, dtype=float)
+    if w_values.size == 0 or mag_values.size == 0:
+        return []
+
+    w_ref = w_values[0]
+    ref_mag = mag_values[0]
+    initial_slope = 20.0 * (zero_origin_count - pole_origin_count)
+
+    approx = ref_mag + initial_slope * np.log10(np.maximum(w_values / w_ref, np.finfo(float).tiny))
+
+    for freq in zero_corner_freqs:
+        approx += 20.0 * np.maximum(0.0, np.log10(np.maximum(w_values / freq, np.finfo(float).tiny)))
+
+    for freq in pole_corner_freqs:
+        approx -= 20.0 * np.maximum(0.0, np.log10(np.maximum(w_values / freq, np.finfo(float).tiny)))
+
+    return approx.tolist()
+
+
+def _make_straight_phase_approximation(num, den, w, zeros=None, poles=None):
+    """Return the classical straight-line Bode phase approximation in degrees."""
+    w_values = np.asarray(w, dtype=float)
+    if w_values.size == 0:
+        return []
+
+    zeros = np.asarray(np.roots(num) if zeros is None else zeros, dtype=complex)
+    poles = np.asarray(np.roots(den) if poles is None else poles, dtype=complex)
+
+    def _phase_contribution(root, sign):
+        if not np.isfinite(root):
+            return np.zeros_like(w_values, dtype=float)
+
+        if np.isclose(root, 0.0, atol=1e-9):
+            return np.full_like(w_values, 90.0 * sign, dtype=float)
+
+        corner = abs(root)
+        if corner <= 0:
+            return np.zeros_like(w_values, dtype=float)
+
+        lower = corner / 10.0
+        upper = corner * 10.0
+        contribution = np.zeros_like(w_values, dtype=float)
+
+        above = w_values >= upper
+        transition = (w_values > lower) & (w_values < upper)
+
+        contribution[above] = 90.0 * sign
+        contribution[transition] = sign * 45.0 * (np.log10(w_values[transition] / lower))
+
+        return contribution
+
+    phase = np.zeros_like(w_values, dtype=float)
+    for zero in zeros:
+        phase += _phase_contribution(zero, sign=1.0)
+    for pole in poles:
+        phase += _phase_contribution(pole, sign=-1.0)
+
+    return phase.tolist()
+
+
+def _normalize_coefficients(coeffs, tol=_COMPLEX_COEFF_TOL):
+    """Normalize coefficient types and strip negligible imaginary parts."""
+    normalized = []
+    has_complex_part = False
+
+    for coeff in coeffs:
+        coeff_complex = complex(coeff)
+        if abs(coeff_complex.imag) <= tol:
+            normalized.append(float(coeff_complex.real))
+        else:
+            normalized.append(coeff_complex)
+            has_complex_part = True
+
+    return normalized, has_complex_part
+
+
+def _make_control_transfer_function(num, den):
+    """Build a python-control transfer function only for effectively real polynomials."""
+    real_num, num_has_complex = _normalize_coefficients(num)
+    real_den, den_has_complex = _normalize_coefficients(den)
+    if num_has_complex or den_has_complex:
+        return None
+    return control.TransferFunction(real_num, real_den)
 
 def parse_poly_input(expr_str):
     """
@@ -65,7 +180,8 @@ def parse_poly_input(expr_str):
                 raise ValueError
         except Exception:
             raise ValueError("Coefficients must be entered as a list of numbers, e.g. [1, 1+10j, 1-10j].")
-        return coeffs, None
+        normalized_coeffs, _ = _normalize_coefficients(coeffs)
+        return normalized_coeffs, None
     else:
         # Factorized mode.
         # Insert multiplication operator between adjacent parentheses if missing.
@@ -74,13 +190,18 @@ def parse_poly_input(expr_str):
         expr_fixed = expr_fixed.replace("j", "I")
         s = sp.symbols('s', complex=True)
         try:
-            expr_sympy = sp.sympify(expr_fixed, locals={'s': s})
+            expr_sympy = parse_expr(
+                expr_fixed,
+                local_dict={'s': s},
+                transformations=standard_transformations + (implicit_multiplication_application,),
+            )
         except Exception as e:
             raise ValueError("Could not parse the factorized expression: " + str(e))
         # Expand the expression to get a standard polynomial.
         expr_expanded = sp.expand(expr_sympy)
         poly = sp.Poly(expr_expanded, s)
         coeffs = [complex(coeff.evalf()) for coeff in poly.all_coeffs()]
+        coeffs, _ = _normalize_coefficients(coeffs)
         return coeffs, expr_str  # use the user's original factorized expression for display
 
 def format_polynomial(coeffs, var="s"):
@@ -390,10 +511,8 @@ def _make_freq_vector(num, den, override=None):
         except Exception:
             pass  # fall back to auto-scaling if invalid
 
-    sys = control.TransferFunction(num, den)
-    # use control library helpers to extract poles and zeros
-    poles = control.poles(sys)
-    zeros = control.zeros(sys)
+    poles = np.roots(den)
+    zeros = np.roots(num)
     w_list = np.abs(np.concatenate([poles, zeros]))
     w_list = w_list[np.isfinite(w_list) & (w_list > 0)]
 
@@ -566,7 +685,7 @@ def bode_plot():
         warning += "Non-minimum-phase zero(s) detected (RHP zero).\n"
 
     # Gain and phase margins
-    sys = control.TransferFunction(num, den)
+    sys = _make_control_transfer_function(num, den)
     def finite_or_none(value):
         if value is None:
             return None
@@ -575,27 +694,40 @@ def bode_plot():
         if np.isnan(value) or np.isinf(value):
             return None
         return float(value)
-    try:
-        gm, pm, wg, wp = control.margin(sys)
-    except Exception:
+    if sys is None:
         gm = pm = wg = wp = None
+        bandwidth = None
+        warning += (
+            "Gain margin, phase margin, and bandwidth are only available for transfer "
+            "functions with effectively real coefficients.\n"
+        )
+    else:
+        try:
+            gm, pm, wg, wp = control.margin(sys)
+        except Exception:
+            gm = pm = wg = wp = None
+
+        try:
+            bandwidth = control.bandwidth(sys)
+            if np.isnan(bandwidth) or np.isinf(bandwidth):
+                bandwidth = None
+        except Exception:
+            bandwidth = None
+
     gm_db = None
     if gm is not None and gm > 0 and np.isfinite(gm):
         gm_db = 20 * np.log10(gm)
 
-    try:
-        bandwidth = control.bandwidth(sys)
-        if np.isnan(bandwidth) or np.isinf(bandwidth):
-            bandwidth = None
-    except Exception:
-        bandwidth = None
         
     corner_freqs = _corner_frequencies(poles, zeros)
-
+    straight_magnitude_db = _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=zeros, poles=poles)
+    straight_phase_deg = _make_straight_phase_approximation(num, den, w, zeros=zeros, poles=poles)
     bode_data = {
         "omega": w.tolist(),
         "magnitude_db": magnitude_db.tolist(),
         "phase_deg": phase_deg.tolist(),
+        "magnitude_straight_db": straight_magnitude_db,
+        "phase_straight_deg": straight_phase_deg,
         "gain_margin_db": finite_or_none(gm_db),
         "phase_margin_deg": finite_or_none(pm),
         "gain_cross_freq": finite_or_none(wg),
