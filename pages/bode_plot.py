@@ -5,12 +5,17 @@ from io import BytesIO, StringIO
 from ast import literal_eval
 import re
 import sympy as sp
+from sympy.parsing.sympy_parser import (
+    implicit_multiplication_application,
+    parse_expr,
+    standard_transformations,
+)
 import csv
 import io
 import control
 from itertools import zip_longest
 from typing import Optional
-
+_COMPLEX_COEFF_TOL = 1e-9
 
 def _evaluate_transfer(num, den, s_values):
     """Safely evaluate the transfer function ``num/den`` at the complex points ``s_values``."""
@@ -131,6 +136,31 @@ def _make_straight_phase_approximation(num, den, w, zeros=None, poles=None):
 
     return phase.tolist()
 
+
+def _normalize_coefficients(coeffs, tol=_COMPLEX_COEFF_TOL):
+    """Normalize coefficient types and strip negligible imaginary parts."""
+    normalized = []
+    has_complex_part = False
+
+    for coeff in coeffs:
+        coeff_complex = complex(coeff)
+        if abs(coeff_complex.imag) <= tol:
+            normalized.append(float(coeff_complex.real))
+        else:
+            normalized.append(coeff_complex)
+            has_complex_part = True
+
+    return normalized, has_complex_part
+
+
+def _make_control_transfer_function(num, den):
+    """Build a python-control transfer function only for effectively real polynomials."""
+    real_num, num_has_complex = _normalize_coefficients(num)
+    real_den, den_has_complex = _normalize_coefficients(den)
+    if num_has_complex or den_has_complex:
+        return None
+    return control.TransferFunction(real_num, real_den)
+
 def parse_poly_input(expr_str):
     """
     Parse the user input for a polynomial.
@@ -150,7 +180,8 @@ def parse_poly_input(expr_str):
                 raise ValueError
         except Exception:
             raise ValueError("Coefficients must be entered as a list of numbers, e.g. [1, 1+10j, 1-10j].")
-        return coeffs, None
+        normalized_coeffs, _ = _normalize_coefficients(coeffs)
+        return normalized_coeffs, None
     else:
         # Factorized mode.
         # Insert multiplication operator between adjacent parentheses if missing.
@@ -159,13 +190,18 @@ def parse_poly_input(expr_str):
         expr_fixed = expr_fixed.replace("j", "I")
         s = sp.symbols('s', complex=True)
         try:
-            expr_sympy = sp.sympify(expr_fixed, locals={'s': s})
+            expr_sympy = parse_expr(
+                expr_fixed,
+                local_dict={'s': s},
+                transformations=standard_transformations + (implicit_multiplication_application,),
+            )
         except Exception as e:
             raise ValueError("Could not parse the factorized expression: " + str(e))
         # Expand the expression to get a standard polynomial.
         expr_expanded = sp.expand(expr_sympy)
         poly = sp.Poly(expr_expanded, s)
         coeffs = [complex(coeff.evalf()) for coeff in poly.all_coeffs()]
+        coeffs, _ = _normalize_coefficients(coeffs)
         return coeffs, expr_str  # use the user's original factorized expression for display
 
 def format_polynomial(coeffs, var="s"):
@@ -475,10 +511,8 @@ def _make_freq_vector(num, den, override=None):
         except Exception:
             pass  # fall back to auto-scaling if invalid
 
-    sys = control.TransferFunction(num, den)
-    # use control library helpers to extract poles and zeros
-    poles = control.poles(sys)
-    zeros = control.zeros(sys)
+    poles = np.roots(den)
+    zeros = np.roots(num)
     w_list = np.abs(np.concatenate([poles, zeros]))
     w_list = w_list[np.isfinite(w_list) & (w_list > 0)]
 
@@ -651,7 +685,7 @@ def bode_plot():
         warning += "Non-minimum-phase zero(s) detected (RHP zero).\n"
 
     # Gain and phase margins
-    sys = control.TransferFunction(num, den)
+    sys = _make_control_transfer_function(num, den)
     def finite_or_none(value):
         if value is None:
             return None
@@ -660,20 +694,30 @@ def bode_plot():
         if np.isnan(value) or np.isinf(value):
             return None
         return float(value)
-    try:
-        gm, pm, wg, wp = control.margin(sys)
-    except Exception:
+    if sys is None:
         gm = pm = wg = wp = None
+        bandwidth = None
+        warning += (
+            "Gain margin, phase margin, and bandwidth are only available for transfer "
+            "functions with effectively real coefficients.\n"
+        )
+    else:
+        try:
+            gm, pm, wg, wp = control.margin(sys)
+        except Exception:
+            gm = pm = wg = wp = None
+
+        try:
+            bandwidth = control.bandwidth(sys)
+            if np.isnan(bandwidth) or np.isinf(bandwidth):
+                bandwidth = None
+        except Exception:
+            bandwidth = None
+
     gm_db = None
     if gm is not None and gm > 0 and np.isfinite(gm):
         gm_db = 20 * np.log10(gm)
 
-    try:
-        bandwidth = control.bandwidth(sys)
-        if np.isnan(bandwidth) or np.isinf(bandwidth):
-            bandwidth = None
-    except Exception:
-        bandwidth = None
         
     corner_freqs = _corner_frequencies(poles, zeros)
     straight_magnitude_db = _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=zeros, poles=poles)
