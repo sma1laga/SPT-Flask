@@ -90,6 +90,47 @@ def _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=None
 
     return approx.tolist()
 
+
+def _make_straight_phase_approximation(num, den, w, zeros=None, poles=None):
+    """Return the classical straight-line Bode phase approximation in degrees."""
+    w_values = np.asarray(w, dtype=float)
+    if w_values.size == 0:
+        return []
+
+    zeros = np.asarray(np.roots(num) if zeros is None else zeros, dtype=complex)
+    poles = np.asarray(np.roots(den) if poles is None else poles, dtype=complex)
+
+    def _phase_contribution(root, sign):
+        if not np.isfinite(root):
+            return np.zeros_like(w_values, dtype=float)
+
+        if np.isclose(root, 0.0, atol=1e-9):
+            return np.full_like(w_values, 90.0 * sign, dtype=float)
+
+        corner = abs(root)
+        if corner <= 0:
+            return np.zeros_like(w_values, dtype=float)
+
+        lower = corner / 10.0
+        upper = corner * 10.0
+        contribution = np.zeros_like(w_values, dtype=float)
+
+        above = w_values >= upper
+        transition = (w_values > lower) & (w_values < upper)
+
+        contribution[above] = 90.0 * sign
+        contribution[transition] = sign * 45.0 * (np.log10(w_values[transition] / lower))
+
+        return contribution
+
+    phase = np.zeros_like(w_values, dtype=float)
+    for zero in zeros:
+        phase += _phase_contribution(zero, sign=1.0)
+    for pole in poles:
+        phase += _phase_contribution(pole, sign=-1.0)
+
+    return phase.tolist()
+
 def parse_poly_input(expr_str):
     """
     Parse the user input for a polynomial.
@@ -636,12 +677,13 @@ def bode_plot():
         
     corner_freqs = _corner_frequencies(poles, zeros)
     straight_magnitude_db = _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=zeros, poles=poles)
-
+    straight_phase_deg = _make_straight_phase_approximation(num, den, w, zeros=zeros, poles=poles)
     bode_data = {
         "omega": w.tolist(),
         "magnitude_db": magnitude_db.tolist(),
         "phase_deg": phase_deg.tolist(),
         "magnitude_straight_db": straight_magnitude_db,
+        "phase_straight_deg": straight_phase_deg,
         "gain_margin_db": finite_or_none(gm_db),
         "phase_margin_deg": finite_or_none(pm),
         "gain_cross_freq": finite_or_none(wg),

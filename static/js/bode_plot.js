@@ -7,7 +7,7 @@
 
   const basePlotConfig = { responsive: true, displaylogo: false };
   let showCornerFrequencyMarkers = true;
-  let currentMagnitudeMode = 'exact';
+  let currentPlotMode = 'exact';
 
 
   const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
@@ -175,7 +175,7 @@
   function getMagnitudeSeries(data) {
     const exact = Array.isArray(data.magnitude_db) ? data.magnitude_db : [];
     const straight = Array.isArray(data.magnitude_straight_db) ? data.magnitude_straight_db : [];
-    if (currentMagnitudeMode === 'straight' && straight.length === exact.length && straight.length > 0) {
+    if (currentPlotMode === 'straight' && straight.length === exact.length && straight.length > 0) {
       return {
         values: straight,
         name: 'Straight-line magnitude approximation',
@@ -186,6 +186,22 @@
       values: exact,
       name: 'Exact magnitude (dB)',
       line: { color: '#2563eb', width: 3 }
+    };
+  }
+  function getPhaseSeries(data) {
+    const exact = Array.isArray(data.phase_deg) ? data.phase_deg : [];
+    const straight = Array.isArray(data.phase_straight_deg) ? data.phase_straight_deg : [];
+    if (currentPlotMode === 'straight' && straight.length === exact.length && straight.length > 0) {
+      return {
+        values: straight,
+        name: 'Straight-line phase approximation',
+        line: { color: '#16a34a', width: 3, dash: 'dash' }
+      };
+    }
+    return {
+      values: exact,
+      name: 'Exact phase (°)',
+      line: { color: '#16a34a', width: 3 }
     };
   }
 
@@ -240,7 +256,7 @@
     if (!el) return;
 
     const freq = Array.isArray(data.omega) ? data.omega : [];
-    const phase = Array.isArray(data.phase_deg) ? data.phase_deg : [];
+    const phaseSeries = getPhaseSeries(data);
 
     const layout = {
       margin: { l: 70, r: 20, t: 10, b: 40 },
@@ -267,10 +283,11 @@
       [
         {
           x: freq,
-          y: phase,
+          y: phaseSeries.values,
           type: 'scatter',
           mode: 'lines',
-          name: 'Phase (°)'
+          name: phaseSeries.name,
+          line: phaseSeries.line
         }
       ],
       layout,
@@ -305,10 +322,10 @@
   function setupMagnitudeModeToggle(data) {
     const select = document.getElementById('bodeMagnitudeMode');
     if (!select) return;
-    currentMagnitudeMode = select.value === 'straight' ? 'straight' : 'exact';
+    currentPlotMode = select.value === 'straight' ? 'straight' : 'exact';
     select.addEventListener('change', () => {
-      currentMagnitudeMode = select.value === 'straight' ? 'straight' : 'exact';
-      renderBodeMagnitude(data);
+      currentPlotMode = select.value === 'straight' ? 'straight' : 'exact';
+      renderBodePlot(data);
     });
   }
 
