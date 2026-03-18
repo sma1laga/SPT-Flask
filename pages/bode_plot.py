@@ -45,6 +45,50 @@ def _corner_frequencies(poles, zeros):
         if not deduped or not np.isclose(value, deduped[-1], rtol=1e-9, atol=1e-12):
             deduped.append(value)
     return deduped
+def _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=None, poles=None):
+    """Return the classical straight-line Bode magnitude approximation in dB."""
+    if len(w) == 0 or len(magnitude_db) == 0:
+        return []
+
+    zeros = np.asarray(np.roots(num) if zeros is None else zeros, dtype=complex)
+    poles = np.asarray(np.roots(den) if poles is None else poles, dtype=complex)
+
+    def _split_roots(roots):
+        origin_count = 0
+        finite_corner_freqs = []
+        for root in roots:
+            if not np.isfinite(root):
+                continue
+            if np.isclose(root, 0.0, atol=1e-9):
+                origin_count += 1
+                continue
+            magnitude = abs(root)
+            if magnitude > 0:
+                finite_corner_freqs.append(float(magnitude))
+        finite_corner_freqs.sort()
+        return origin_count, finite_corner_freqs
+
+    zero_origin_count, zero_corner_freqs = _split_roots(zeros)
+    pole_origin_count, pole_corner_freqs = _split_roots(poles)
+
+    w_values = np.asarray(w, dtype=float)
+    mag_values = np.asarray(magnitude_db, dtype=float)
+    if w_values.size == 0 or mag_values.size == 0:
+        return []
+
+    w_ref = w_values[0]
+    ref_mag = mag_values[0]
+    initial_slope = 20.0 * (zero_origin_count - pole_origin_count)
+
+    approx = ref_mag + initial_slope * np.log10(np.maximum(w_values / w_ref, np.finfo(float).tiny))
+
+    for freq in zero_corner_freqs:
+        approx += 20.0 * np.maximum(0.0, np.log10(np.maximum(w_values / freq, np.finfo(float).tiny)))
+
+    for freq in pole_corner_freqs:
+        approx -= 20.0 * np.maximum(0.0, np.log10(np.maximum(w_values / freq, np.finfo(float).tiny)))
+
+    return approx.tolist()
 
 def parse_poly_input(expr_str):
     """
@@ -591,11 +635,13 @@ def bode_plot():
         bandwidth = None
         
     corner_freqs = _corner_frequencies(poles, zeros)
+    straight_magnitude_db = _make_straight_magnitude_approximation(num, den, w, magnitude_db, zeros=zeros, poles=poles)
 
     bode_data = {
         "omega": w.tolist(),
         "magnitude_db": magnitude_db.tolist(),
         "phase_deg": phase_deg.tolist(),
+        "magnitude_straight_db": straight_magnitude_db,
         "gain_margin_db": finite_or_none(gm_db),
         "phase_margin_deg": finite_or_none(pm),
         "gain_cross_freq": finite_or_none(wg),

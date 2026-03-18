@@ -7,6 +7,7 @@
 
   const basePlotConfig = { responsive: true, displaylogo: false };
   let showCornerFrequencyMarkers = true;
+  let currentMagnitudeMode = 'exact';
 
 
   const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
@@ -171,6 +172,22 @@
     const shapes = buildCrossingLines(data);
     return shapes.concat(buildCornerFrequencyShapes(data));
   }
+  function getMagnitudeSeries(data) {
+    const exact = Array.isArray(data.magnitude_db) ? data.magnitude_db : [];
+    const straight = Array.isArray(data.magnitude_straight_db) ? data.magnitude_straight_db : [];
+    if (currentMagnitudeMode === 'straight' && straight.length === exact.length && straight.length > 0) {
+      return {
+        values: straight,
+        name: 'Straight-line magnitude approximation',
+        line: { color: '#2563eb', width: 3, dash: 'dash' }
+      };
+    }
+    return {
+      values: exact,
+      name: 'Exact magnitude (dB)',
+      line: { color: '#2563eb', width: 3 }
+    };
+  }
 
   function renderBodeMagnitude(data) {
     if (typeof window.Plotly === 'undefined') return;
@@ -178,7 +195,7 @@
     if (!el) return;
 
     const freq = Array.isArray(data.omega) ? data.omega : [];
-    const mag = Array.isArray(data.magnitude_db) ? data.magnitude_db : [];
+    const magnitudeSeries = getMagnitudeSeries(data);
 
     const layout = {
       margin: { l: 70, r: 20, t: 10, b: 40 },
@@ -205,10 +222,11 @@
       [
         {
           x: freq,
-          y: mag,
+          y: magnitudeSeries.values,
           type: 'scatter',
           mode: 'lines',
-          name: 'Magnitude (dB)'
+          name: magnitudeSeries.name,
+          line: magnitudeSeries.line
         }
       ],
       layout,
@@ -281,6 +299,16 @@
     toggle.addEventListener('change', () => {
       showCornerFrequencyMarkers = toggle.checked;
       renderBodePlot(data);
+    });
+  }
+
+  function setupMagnitudeModeToggle(data) {
+    const select = document.getElementById('bodeMagnitudeMode');
+    if (!select) return;
+    currentMagnitudeMode = select.value === 'straight' ? 'straight' : 'exact';
+    select.addEventListener('change', () => {
+      currentMagnitudeMode = select.value === 'straight' ? 'straight' : 'exact';
+      renderBodeMagnitude(data);
     });
   }
 
@@ -520,6 +548,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const bootstrap = () => {
       if (bodeData) {
+        setupMagnitudeModeToggle(bodeData);
         setupCornerFrequencyToggle(bodeData);
         renderBodePlot(bodeData);
         renderMetrics(bodeData);

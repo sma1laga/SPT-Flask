@@ -116,6 +116,25 @@
       align-items: center;
       justify-content: flex-end;
     }
+    .bode-select-group {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      min-width: 220px;
+    }
+    .bode-select-group label {
+      margin: 0;
+      font-size: 0.92rem;
+      color: #374151;
+    }
+    .bode-select-group select {
+      padding: 0.45rem 0.65rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #fff;
+      color: #111827;
+      font-size: 0.95rem;
+    }
     .bode-metrics {
       display: flex;
       flex-wrap: wrap;
@@ -417,6 +436,13 @@
       <div class="bode-toolbar">
         <div id="bodeMetrics" class="bode-metrics"></div>
         <div class="bode-controls">
+          <div class="bode-select-group">
+            <label for="bodeMagnitudeMode">Magnitude plot mode</label>
+            <select id="bodeMagnitudeMode" aria-label="Choose exact or straight-line magnitude plot mode">
+              <option value="exact" selected>Exact plot</option>
+              <option value="straight">Straight-line approximation</option>
+            </select>
+          </div>
           <label class="bode-toggle" for="cornerFrequencyToggle">
             <input type="checkbox" id="cornerFrequencyToggle" checked>
             <span>Show corner frequencies</span>
@@ -444,6 +470,7 @@
           <div class="bode-subplot">
             <h4>Phase (°)</h4>
             <div id="bodePhasePlot" class="plotly-chart"></div>
+            <p style="margin:0; color:#6b7280; font-size:0.92rem;">The straight-line mode affects the magnitude plot; the phase plot remains exact.</p>
           </div>
           {% set has_phase_cross = bode_data.phase_cross_freq is not none %}
           {% set has_gain_cross = bode_data.gain_cross_freq is not none %}
