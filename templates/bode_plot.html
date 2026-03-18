@@ -174,7 +174,8 @@
       display: flex;
       gap: 0.75rem;
     }
-    .bode-downloads a {
+    .bode-downloads a,
+    .bode-downloads button {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
@@ -184,9 +185,34 @@
       color: #1d4ed8;
       text-decoration: none;
       font-weight: 600;
+      background: #fff;
+      cursor: pointer;
+      font: inherit;
     }
-    .bode-downloads a:hover {
+    .bode-downloads a:hover,
+    .bode-downloads button:hover {
       background: rgba(37, 99, 235, 0.08);
+    }
+    .bode-function-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding: 0.9rem 1rem;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+      border: 1px solid #c7d2fe;
+    }
+    .bode-function-summary-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4338ca;
+    }
+    .bode-function-summary-expression {
+      font-size: 1.05rem;
+      color: #111827;
+      overflow-x: auto;
     }
     .bode-layout {
       margin-top: 1.6rem;
@@ -448,10 +474,11 @@
             <span>Show corner frequencies</span>
           </label>
           <div class="bode-downloads">
-            <a
-              href="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
-              download="bode_plot.png"
-            >Download PNG</a>
+            <button
+              type="button"
+              id="bodeDownloadButton"
+              data-fallback-url="{{ url_for('bode_plot.download_png') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
+            >Download PNG</button>
             <a
               href="{{ url_for('bode_plot.download_csv') }}?numerator={{ default_num|urlencode }}&denominator={{ default_den|urlencode }}"
               download="bode_data.csv"
@@ -463,6 +490,12 @@
       <div class="bode-layout">
         <div class="bode-card bode-card--bode">
           <h3>Bode Diagram</h3>
+          {% if function_str %}
+            <div class="bode-function-summary">
+              <span class="bode-function-summary-label">Transfer function</span>
+              <div class="bode-function-summary-expression">$$ {{ function_str }} $$</div>
+            </div>
+          {% endif %}
           <div class="bode-subplot">
             <h4>Magnitude (dB)</h4>
             <div id="bodeMagnitudePlot" class="plotly-chart"></div>
@@ -564,6 +597,11 @@
     window.pzData = {{ pz_plot|tojson|safe }};
     window.nyquistData = {{ nyquist_data|tojson|safe }};
     window.nyquistAnalysis = {{ nyquist_analysis|tojson|safe }};
+    window.bodeMeta = {
+      numerator: {{ default_num|tojson|safe }},
+      denominator: {{ default_den|tojson|safe }},
+      functionLatex: {{ function_str|tojson|safe }}
+    };
   </script>
   <script defer src="{{ url_for('static', filename='js/bode_plot.js') }}"></script>
   {% endif %}

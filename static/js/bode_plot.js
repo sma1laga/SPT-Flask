@@ -3,6 +3,7 @@
   const bodeData = window.bodeData || null;
   const pzData = window.pzData || null;
   const nyquistData = window.nyquistData || null;
+  const bodeMeta = window.bodeMeta || {};
 
 
   const basePlotConfig = { responsive: true, displaylogo: false };
@@ -300,6 +301,177 @@
     renderBodePhase(data);
   }
 
+  function getTransferFunctionExportText() {
+    const numerator = typeof bodeMeta.numerator === 'string' ? bodeMeta.numerator.trim() : '';
+    const denominator = typeof bodeMeta.denominator === 'string' ? bodeMeta.denominator.trim() : '';
+    if (numerator && denominator) {
+      return `H(s) = ${numerator} / ${denominator}`;
+    }
+    if (typeof bodeMeta.functionLatex === 'string' && bodeMeta.functionLatex.trim()) {
+      return bodeMeta.functionLatex.replace(/\\/g, '');
+    }
+    return 'H(s)';
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+  }
+
+  function cloneForExport(value) {
+    return JSON.parse(JSON.stringify(value || {}));
+  }
+
+  function createExportLayout(sourceLayout, titleText) {
+    const layout = cloneForExport(sourceLayout);
+    const xaxis = layout.xaxis || {};
+    const yaxis = layout.yaxis || {};
+    return {
+      ...layout,
+      title: {
+        text: titleText,
+        x: 0.02,
+        xanchor: 'left',
+        font: { size: 24, color: '#111827' }
+      },
+      paper_bgcolor: '#ffffff',
+      plot_bgcolor: '#ffffff',
+      margin: { l: 110, r: 40, t: 84, b: 80 },
+      font: { family: 'Arial, sans-serif', size: 18, color: '#111827' },
+      xaxis: {
+        ...xaxis,
+        title: { text: xaxis.title?.text || xaxis.title || 'Frequency (rad/s)', font: { size: 20 } },
+        tickfont: { size: 16 },
+        gridcolor: '#d1d5db',
+        zerolinecolor: '#9ca3af'
+      },
+      yaxis: {
+        ...yaxis,
+        title: { text: yaxis.title?.text || yaxis.title || '', font: { size: 20 } },
+        tickfont: { size: 16 },
+        gridcolor: '#d1d5db',
+        zerolinecolor: '#9ca3af'
+      }
+    };
+  }
+
+  async function createPlotImage(plotId, titleText) {
+    const plot = document.getElementById(plotId);
+    if (!plot || typeof Plotly === 'undefined') {
+      throw new Error(`Plot ${plotId} is not available for export.`);
+    }
+    const exportLayout = createExportLayout(plot.layout || {}, titleText);
+    const exportConfig = {
+      ...basePlotConfig,
+      responsive: false
+    };
+    const data = Array.isArray(plot.data) ? plot.data.map(trace => cloneForExport(trace)) : [];
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-99999px';
+    container.style.top = '0';
+    container.style.width = '1600px';
+    container.style.height = '520px';
+    document.body.appendChild(container);
+
+    try {
+      await Plotly.newPlot(container, data, exportLayout, exportConfig);
+      const dataUrl = await Plotly.toImage(container, {
+        format: 'png',
+        width: 1600,
+        height: 520,
+        scale: 2
+      });
+      return await loadImage(dataUrl);
+    } finally {
+      if (typeof Plotly.purge === 'function') {
+        Plotly.purge(container);
+      }
+      container.remove();
+    }
+  }
+
+  async function exportBodeComposite() {
+    const [magnitudeImage, phaseImage] = await Promise.all([
+      createPlotImage('bodeMagnitudePlot', 'Magnitude Plot'),
+      createPlotImage('bodePhasePlot', 'Phase Plot')
+    ]);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 1800;
+    canvas.height = 1500;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Unable to prepare PNG export canvas.');
+    }
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 42px Arial, sans-serif';
+    ctx.fillText('Bode Diagram', 90, 90);
+
+    ctx.font = '26px Arial, sans-serif';
+    ctx.fillStyle = '#374151';
+    ctx.fillText(getTransferFunctionExportText(), 90, 138);
+
+    const modeLabel = currentPlotMode === 'straight' ? 'Straight-line approximation' : 'Exact response';
+    const markersLabel = showCornerFrequencyMarkers ? 'Corner frequencies shown' : 'Corner frequencies hidden';
+    ctx.font = '22px Arial, sans-serif';
+    ctx.fillStyle = '#4b5563';
+    ctx.fillText(`${modeLabel} • ${markersLabel}`, 90, 182);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#dbeafe';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(70, 220, 1660, 560, 22);
+    ctx.fill();
+    ctx.stroke();
+    ctx.drawImage(magnitudeImage, 100, 242, 1600, 520);
+
+    ctx.beginPath();
+    ctx.roundRect(70, 830, 1660, 560, 22);
+    ctx.fill();
+    ctx.stroke();
+    ctx.drawImage(phaseImage, 100, 852, 1600, 520);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'bode_plot.png';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  function setupBodeDownload() {
+    const button = document.getElementById('bodeDownloadButton');
+    if (!button) return;
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      const originalLabel = button.textContent;
+      button.textContent = 'Preparing PNG...';
+      try {
+        await exportBodeComposite();
+      } catch (error) {
+        console.error('Falling back to server-side Bode PNG export:', error);
+        const fallbackUrl = button.dataset.fallbackUrl;
+        if (fallbackUrl) {
+          window.location.href = fallbackUrl;
+        }
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+    });
+  }
+
   function setupCornerFrequencyToggle(data) {
     const toggle = document.getElementById('cornerFrequencyToggle');
     if (!toggle) return;
@@ -569,6 +741,7 @@
         setupCornerFrequencyToggle(bodeData);
         renderBodePlot(bodeData);
         renderMetrics(bodeData);
+        setupBodeDownload();
       }
       if (pzData) {
         renderPoleZeroPlot(pzData);
