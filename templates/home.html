@@ -70,6 +70,17 @@
     backdrop-filter: blur(6px);
 
   }
+    .title-icon {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    display: block;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
   body.dark-mode .hero {
     background: linear-gradient(135deg, rgba(12, 32, 68, 0.88), rgba(17, 66, 112, 0.65));
     border-color: rgba(96, 165, 250, 0.45);
@@ -251,6 +262,56 @@
   }
 </style>
 
+<svg aria-hidden="true" width="0" height="0" style="position:absolute; width:0; height:0; overflow:hidden">
+  <symbol id="icon-wave" viewBox="0 0 24 24">
+    <path d="M3 12c2.2 0 2.8-6 5-6s2.8 12 5 12 2.8-8 5-8 2.8 2 3 2"/>
+  </symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24">
+    <rect x="4" y="4" width="6" height="6" rx="1"/>
+    <rect x="14" y="4" width="6" height="6" rx="1"/>
+    <rect x="4" y="14" width="6" height="6" rx="1"/>
+    <rect x="14" y="14" width="6" height="6" rx="1"/>
+  </symbol>
+  <symbol id="icon-cap" viewBox="0 0 24 24">
+    <path d="M3 9.5 12 5l9 4.5L12 14 3 9.5Z"/>
+    <path d="M7 11.5V16c0 1.7 2.7 3 5 3s5-1.3 5-3v-4.5"/>
+  </symbol>
+  <symbol id="icon-rotate" viewBox="0 0 24 24">
+    <path d="M20 8V4h-4"/>
+    <path d="M4 16v4h4"/>
+    <path d="M6.5 9A7 7 0 0 1 18 7l2 1"/>
+    <path d="M17.5 15A7 7 0 0 1 6 17l-2-1"/>
+  </symbol>
+  <symbol id="icon-flask" viewBox="0 0 24 24">
+    <path d="M10 3v5l-4.5 7.8A3 3 0 0 0 8.1 20h7.8a3 3 0 0 0 2.6-4.2L14 8V3"/>
+    <path d="M9 13h6"/>
+  </symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24">
+    <path d="M4 19V5"/>
+    <path d="M4 19h16"/>
+    <path d="m7 14 3-3 3 2 4-5"/>
+  </symbol>
+  <symbol id="icon-bulb" viewBox="0 0 24 24">
+    <path d="M9 18h6"/>
+    <path d="M10 21h4"/>
+    <path d="M12 3a6 6 0 0 0-3.8 10.6c.8.7 1.4 1.6 1.6 2.6h4.4c.2-1 .8-1.9 1.6-2.6A6 6 0 0 0 12 3Z"/>
+  </symbol>
+  <symbol id="icon-shuffle" viewBox="0 0 24 24">
+    <path d="M16 3h5v5"/>
+    <path d="M21 3l-6 6"/>
+    <path d="M4 7h5l10 10"/>
+    <path d="M16 16l5 5v-5"/>
+    <path d="M21 21l-6-6"/>
+    <path d="M4 17h5"/>
+  </symbol>
+  <symbol id="icon-spark" viewBox="0 0 24 24">
+    <path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z"/>
+    <path d="M18.5 16.5 19 18l1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5.5-1.5Z"/>
+    <path d="M5.5 15.5 6 17l1.5.5-1.5.5-.5 1.5-.5-1.5L3 17l1.5-.5.5-1.5Z"/>
+  </symbol>
+</svg>
+
+
 <section class="hero">
   <div class="hero-content">
     <span class="hero-eyebrow">Signal Processing Toolkit</span>
@@ -260,11 +321,11 @@
     </p>
 
     <div class="hero-highlights">
-      <span class="hero-chip"><i class="fa-solid fa-wave-square"></i> Continuous analysis</span>
-      <span class="hero-chip"><i class="fa-solid fa-border-all"></i> Discrete insights</span>
-      <span class="hero-chip"><i class="fa-solid fa-graduation-cap"></i> Learning modules</span>
-      <span class="hero-chip"><i class="fa-solid fa-arrows-rotate"></i> Transforms</span>
-      <span class="hero-chip"><i class="fa-solid fa-flask"></i> Demos</span>
+      <span class="hero-chip"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wave"/></svg> Continuous analysis</span>
+      <span class="hero-chip"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-grid"/></svg> Discrete insights</span>
+      <span class="hero-chip"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-cap"/></svg> Learning modules</span>
+      <span class="hero-chip"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-rotate"/></svg> Transforms</span>
+      <span class="hero-chip"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-flask"/></svg> Demos</span>
     </div>
   </div>
 </section>
@@ -277,7 +338,7 @@
 
   <div class="menu-container">
     <div class="card">
-      <span class="card-label"><i class="fa-solid fa-wave-square"></i> Plot &amp; Inspect</span>
+      <span class="card-label"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chart"/></svg> Plot &amp; Inspect</span>
       <h3>Visualise your signals</h3>
 
       <ul class="link-list">
@@ -288,7 +349,7 @@
     </div>
 
     <div class="card">
-      <span class="card-label"><i class="fa-solid fa-graduation-cap"></i> Learn &amp; Practice</span>
+      <span class="card-label"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-cap"/></svg> Learn &amp; Practice</span>
       <h3>Training lab</h3>
 
       <ul class="link-list">
@@ -297,7 +358,7 @@
     </div>
 
     <div class="card">
-      <span class="card-label"><i class="fa-solid fa-lightbulb"></i> Interactive Demos</span>
+      <span class="card-label"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-bulb"/></svg> Interactive Demos</span>
       <h3>Theory &amp; demos</h3>
 
       <ul class="link-list">
@@ -316,7 +377,7 @@
 
   <div class="module-grid">
     <div class="card discrete-card">
-      <span class="card-label"><i class="fa-solid fa-chart-line"></i> Plot and Transform</span>
+      <span class="card-label"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-chart"/></svg> Plot and Transform</span>
       <h3>Plots and Transforms</h3>
       <ul class="link-list">
         <li><a href="{{ url_for('discrete_plot_functions.plot_functions') }}">Discrete function plotter</a></li>
@@ -326,7 +387,7 @@
     </div>
 
     <div class="card discrete-card">
-      <span class="card-label"><i class="fa-solid fa-arrows-spin"></i> Sequence design</span>
+      <span class="card-label"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-shuffle"/></svg> Sequence design</span>
       <h3>Convolution</h3>
       <ul class="link-list">
         <li><a href="{{ url_for('discrete_convolution.discrete_convolution') }}">Discrete convolution</a></li>
@@ -335,7 +396,7 @@
     </div>
 
     <div class="card discrete-card">
-      <span class="card-label"><i class="fa-solid fa-burst"></i> Pattern insight</span>
+      <span class="card-label"><svg class="title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-spark"/></svg> Pattern insight</span>
       <h3>Autocorrelation Lab</h3>
 
       <ul class="link-list">
