@@ -14,6 +14,33 @@
   .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; cursor: pointer; }
   .satcom-btn.secondary { background: #fff; color: #111827; }
   .satcom-small { font-size: 14px; color: #374151; line-height: 1.45; }
+  .satcom-muted { color: #4b5563; }
+  .satcom-strong { color: #111827; }
+
+  .satcom-card-note { color: #374151; }
+
+  body.dark-mode .satcom-controls .label,
+  body.dark-mode .satcom-legend,
+  body.dark-mode .satcom-strong { color: #f3f4f6; }
+  body.dark-mode .satcom-small,
+  body.dark-mode .satcom-card-note,
+  body.dark-mode .satcom-muted { color: #cbd5e1; }
+  body.dark-mode .satcom-controls input[type="range"] { accent-color: #60a5fa; }
+  body.dark-mode .satcom-btn { background: #0b1220; border-color: #334155; color: #f8fafc; }
+  body.dark-mode .satcom-btn.secondary { background: #e5e7eb; color: #111827; border-color: #cbd5e1; }
+
+  body.dark-mode #satcom-orbit { stroke: #3b82f6; }
+  body.dark-mode #satcom-major { stroke: #94a3b8; }
+  body.dark-mode #satcom-center { fill: #94a3b8; }
+  body.dark-mode #satcom-center-text,
+  body.dark-mode #satcom-focus2-text,
+  body.dark-mode #satcom-hint,
+  body.dark-mode #satcom-footer { fill: #cbd5e1; }
+  body.dark-mode #satcom-earth { fill: #dbeafe; stroke: #0f172a; }
+  body.dark-mode #satcom-earth-text { fill: #e5e7eb; }
+  body.dark-mode #satcom-focus2 { fill: #94a3b8; }
+  body.dark-mode #satcom-rline { stroke: #22c55e; }
+  body.dark-mode #satcom-rtext { fill: #22c55e; }
   .satcom-svg { width: 100%; height: 520px; display: block; overflow: visible; }
   .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .satcom-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
@@ -34,7 +61,7 @@
 <div class="demo satcom-demo">
   <div class="card">
     <svg id="satcom-kepler-svg" class="satcom-svg" viewBox="-20 0 860 520" aria-label="Kepler first law ellipse demo">
-      <text x="28" y="22" font-size="14" fill="#4b5563">Increase eccentricity to see Earth move away from the ellipse center.</text>
+      <text id="satcom-hint" x="28" y="22" font-size="14" fill="#4b5563">Increase eccentricity to see Earth move away from the ellipse center.</text>
       <path id="satcom-orbit" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="7 5"></path>
       <line id="satcom-major" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4 5"></line>
       <circle id="satcom-center" r="4" fill="#6b7280"></circle>
@@ -46,7 +73,7 @@
       <circle id="satcom-sat" r="8" fill="#f97316" stroke="#fff" stroke-width="3"></circle>
       <line id="satcom-rline" stroke="#16a34a" stroke-width="2"></line>
       <text id="satcom-rtext" font-size="13" fill="#15803d">satellite distance changes</text>
-      <text x="28" y="510" font-size="15" fill="#111827">First law: the orbit is an ellipse and Earth is located at one focus.</text>
+      <text id="satcom-footer" x="28" y="510" font-size="15" fill="#111827">First law: the orbit is an ellipse and Earth is located at one focus.</text>
     </svg>
   </div>
 
@@ -66,7 +93,7 @@
       <input id="satcom-speed" type="range" min="0.3" max="2" step="0.1" value="1">
     </div>
 
-    <p class="satcom-small"><b>Concept:</b> For a circular orbit, both foci and the center coincide. As eccentricity increases, the ellipse becomes more stretched and Earth is clearly at a focus, not at the center.</p>
+    <p class="satcom-small satcom-card-note"><b class="satcom-strong">Concept:</b> For a circular orbit, both foci and the center coincide. As eccentricity increases, the ellipse becomes more stretched and Earth is clearly at a focus, not at the center.</p>
     <div class="satcom-legend"><span><span class="satcom-sw" style="border-color:#2563eb"></span>Orbit</span><span><span class="satcom-sw" style="border-color:#16a34a"></span>Distance to satellite</span></div>
   </div>
 </div>

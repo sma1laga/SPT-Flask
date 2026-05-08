@@ -17,6 +17,50 @@
     svg.appendChild(e);
     return e;
   }
+  function getPalette() {
+    const dark = document.body.classList.contains("dark-mode");
+    return dark ? {
+      intro: "#94a3b8",
+      orbit: "#94a3b8",
+      radiusText: "#94a3b8",
+      satLabel: "#93c5fd",
+      earthFill: "#e5e7eb",
+      earthStroke: "#0f172a",
+      earthCore: "#020617",
+      equator: "#64748b",
+      equatorText: "#94a3b8",
+      limit: "#22c55e",
+      limitText: "#4ade80",
+      horizon: "#e2e8f0",
+      horizonText: "#e2e8f0",
+      radial: "#94a3b8",
+      psi: "#cbd5e1",
+      panelBg: "#0f172a",
+      panelStroke: "#334155",
+      panelTitle: "#f8fafc",
+      panelText: "#cbd5e1"
+    } : {
+      intro: "#4b5563",
+      orbit: "#64748b",
+      radiusText: "#4b5563",
+      satLabel: "#1d4ed8",
+      earthFill: "#f8fafc",
+      earthStroke: "#111827",
+      earthCore: "#111827",
+      equator: "#cbd5e1",
+      equatorText: "#6b7280",
+      limit: "#16a34a",
+      limitText: "#15803d",
+      horizon: "#111827",
+      horizonText: "#374151",
+      radial: "#94a3b8",
+      psi: "#4b5563",
+      panelBg: "#ffffff",
+      panelStroke: "#94a3b8",
+      panelTitle: "#111827",
+      panelText: "#374151"
+    };
+  }
 
   function draw() {
     const latitude = Number.parseFloat(lat.value);
@@ -41,18 +85,18 @@
 
     const nlim = { x: cx + R * Math.cos(psiMax * Math.PI / 180), y: cy - R * Math.sin(psiMax * Math.PI / 180) };
     const slim = { x: cx + R * Math.cos(-psiMax * Math.PI / 180), y: cy - R * Math.sin(-psiMax * Math.PI / 180) };
-
+    const colors = getPalette();
     svg.innerHTML = "";
-    el("text", { x: 28, y: 35, "font-size": 14, fill: "#4b5563" }).textContent = "Cross-section through Earth and the GEO satellite. GEO is fixed above the equator.";
-    el("line", { x1: cx, y1: cy, x2: sat.x, y2: sat.y, stroke: "#64748b", "stroke-width": 1.7, "stroke-dasharray": "5 5" });
-    el("text", { x: (cx + sat.x) / 2 + 8, y: cy - 12, "font-size": 13, fill: "#4b5563" }).textContent = "r = 42,164 km";
+    el("text", { x: 28, y: 35, "font-size": 14, fill: colors.intro }).textContent = "Cross-section through Earth and the GEO satellite. GEO is fixed above the equator.";
+    el("line", { x1: cx, y1: cy, x2: sat.x, y2: sat.y, stroke: colors.orbit, "stroke-width": 1.7, "stroke-dasharray": "5 5" });
+    el("text", { x: (cx + sat.x) / 2 + 8, y: cy - 12, "font-size": 13, fill: colors.intro }).textContent = "r = 42,164 km";
     el("circle", { cx: sat.x, cy: sat.y, r: 8, fill: "#2563eb" });
-    el("text", { x: Math.min(sat.x + 14, 770), y: sat.y + 4, "font-size": 13, fill: "#1d4ed8", "font-weight": 700 }).textContent = "GEO satellite";
-    el("circle", { cx, cy, r: R, fill: "#f8fafc", stroke: "#111827", "stroke-width": 2 });
-    el("circle", { cx, cy, r: 4, fill: "#111827" });
+    el("text", { x: Math.min(sat.x + 14, 770), y: sat.y + 4, "font-size": 13, fill: colors.satLabel, "font-weight": 700 }).textContent = "GEO satellite";
+    el("circle", { cx, cy, r: R, fill: colors.earthFill, stroke: colors.earthStroke, "stroke-width": 2 });
+    el("circle", { cx, cy, r: 4, fill: colors.earthCore });
     el("text", { x: cx, y: cy + 6, "text-anchor": "middle", "font-size": 13, "font-weight": 700 }).textContent = "Earth";
-    el("line", { x1: cx - R - 18, y1: cy, x2: cx + R + 18, y2: cy, stroke: "#cbd5e1", "stroke-width": 1.5 });
-    el("text", { x: cx - R - 78, y: cy + 4, "font-size": 13, fill: "#6b7280" }).textContent = "equator";
+    el("line", { x1: cx - R - 18, y1: cy, x2: cx + R + 18, y2: cy, stroke: colors.equator, "stroke-width": 1.5 });
+    el("text", { x: cx - R - 78, y: cy + 4, "font-size": 13, fill: colors.equatorText }).textContent = "equator";
     el("circle", { cx: sub.x, cy: sub.y, r: 5, fill: "#2563eb" });
 
     const pts = [];
@@ -60,23 +104,23 @@
       const a = i * Math.PI / 180;
       pts.push(`${cx + R * Math.cos(a)},${cy - R * Math.sin(a)}`);
     }
-    el("polyline", { points: pts.join(" "), fill: "none", stroke: "#16a34a", "stroke-width": 5, opacity: 0.45 });
-    el("circle", { cx: nlim.x, cy: nlim.y, r: 5, fill: "#16a34a" });
-    el("circle", { cx: slim.x, cy: slim.y, r: 5, fill: "#16a34a" });
-    el("text", { x: nlim.x - 125, y: nlim.y - 12, "font-size": 13, fill: "#15803d" }).textContent = "visibility limit";
-    el("text", { x: slim.x - 132, y: slim.y + 24, "font-size": 13, fill: "#15803d" }).textContent = "visibility limit";
+    el("polyline", { points: pts.join(" "), fill: "none", stroke: colors.limit, "stroke-width": 5, opacity: 0.45 });
+    el("circle", { cx: nlim.x, cy: nlim.y, r: 5, fill: colors.limit });
+    el("circle", { cx: slim.x, cy: slim.y, r: 5, fill: colors.limit });
+    el("text", { x: nlim.x - 125, y: nlim.y - 12, "font-size": 13, fill: colors.limitText }).textContent = "visibility limit";
+    el("text", { x: slim.x - 132, y: slim.y + 24, "font-size": 13, fill: colors.limitText }).textContent = "visibility limit";
     el("circle", { cx: user.x, cy: user.y, r: 7, fill: visible ? "#16a34a" : "#dc2626" });
     el("text", { x: Math.min(user.x + 12, 690), y: user.y - 10, "font-size": 13, fill: visible ? "#15803d" : "#b91c1c", "font-weight": 700 }).textContent = `ground station φ = ${latitude.toFixed(1)}°`;
     el("line", { x1: user.x, y1: user.y, x2: sat.x, y2: sat.y, stroke: visible ? "#16a34a" : "#dc2626", "stroke-width": 2.3 });
     el("text", { x: Math.min((user.x + sat.x) / 2 + 12, 700), y: (user.y + sat.y) / 2 - 8, "font-size": 13, fill: visible ? "#15803d" : "#b91c1c" }).textContent = "line of sight";
-    el("line", { x1: user.x - 62 * tx, y1: user.y - 62 * ty, x2: user.x + 62 * tx, y2: user.y + 62 * ty, stroke: "#111827", "stroke-width": 1.8, "stroke-dasharray": "4 4" });
-    el("text", { x: user.x - 70 * tx + 5, y: user.y - 70 * ty - 8, "font-size": 13, fill: "#374151" }).textContent = "local horizon";
-    el("line", { x1: cx, y1: cy, x2: user.x, y2: user.y, stroke: "#94a3b8", "stroke-width": 1.5 });
-    el("text", { x: (cx + user.x) / 2 - 22, y: (cy + user.y) / 2 - 8, "font-size": 13, fill: "#4b5563" }).textContent = "ψ";
-    el("rect", { x: 55, y: 470, width: 350, height: 115, rx: 14, fill: "white", stroke: "#94a3b8" });
-    el("text", { x: 75, y: 498, "font-size": 13, fill: "#111827", "font-weight": 700 }).textContent = "Theoretical visibility limit";
-    el("text", { x: 75, y: 528, "font-size": 13, fill: "#374151" }).textContent = "cos ψmax = RE / rGEO";
-    el("text", { x: 75, y: 558, "font-size": 13, fill: "#374151" }).textContent = `ψmax = cos⁻¹(6371 / 42164) ≈ ${psiMax.toFixed(1)}°`;
+    el("line", { x1: user.x - 62 * tx, y1: user.y - 62 * ty, x2: user.x + 62 * tx, y2: user.y + 62 * ty, stroke: colors.horizon, "stroke-width": 1.8, "stroke-dasharray": "4 4" });
+    el("text", { x: user.x - 70 * tx + 5, y: user.y - 70 * ty - 8, "font-size": 13, fill: colors.horizonText }).textContent = "local horizon";
+    el("line", { x1: cx, y1: cy, x2: user.x, y2: user.y, stroke: colors.radial, "stroke-width": 1.5 });
+    el("text", { x: (cx + user.x) / 2 - 22, y: (cy + user.y) / 2 - 8, "font-size": 13, fill: colors.intro }).textContent = "ψ";
+    el("rect", { x: 55, y: 470, width: 350, height: 115, rx: 14, fill: colors.panelBg, stroke: colors.panelStroke });
+    el("text", { x: 75, y: 498, "font-size": 13, fill: colors.panelTitle, "font-weight": 700 }).textContent = "Theoretical visibility limit";
+    el("text", { x: 75, y: 528, "font-size": 13, fill: colors.panelText }).textContent = "cos ψmax = RE / rGEO";
+    el("text", { x: 75, y: 558, "font-size": 13, fill: colors.panelText }).textContent = `ψmax = cos⁻¹(6371 / 42164) ≈ ${psiMax.toFixed(1)}°`;
 
     document.getElementById("satcom-latval").textContent = `${latitude.toFixed(1)}°`;
     const visibleEl = document.getElementById("satcom-visible");
@@ -92,6 +136,9 @@
       draw();
     });
   });
+
+  const observer = new MutationObserver(draw);
+  observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
   draw();
 })();
