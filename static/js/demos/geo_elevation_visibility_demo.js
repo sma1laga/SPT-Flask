@@ -6,10 +6,10 @@
   const RE = 6371;
   const RG = 42164;
   const psiMax = Math.acos(RE / RG) * 180 / Math.PI;
-  const cx = 330;
-  const cy = 285;
-  const R = 125;
-  const satR = 345;
+  const cx = 390;
+  const cy = 300;
+  const R = 145;
+  const satR = 405;
 
   function el(n, a) {
     const e = document.createElementNS("http://www.w3.org/2000/svg", n);
@@ -73,10 +73,10 @@
     el("text", { x: user.x - 70 * tx + 5, y: user.y - 70 * ty - 8, "font-size": 13, fill: "#374151" }).textContent = "local horizon";
     el("line", { x1: cx, y1: cy, x2: user.x, y2: user.y, stroke: "#94a3b8", "stroke-width": 1.5 });
     el("text", { x: (cx + user.x) / 2 - 22, y: (cy + user.y) / 2 - 8, "font-size": 13, fill: "#4b5563" }).textContent = "ψ";
-    el("rect", { x: 35, y: 405, width: 350, height: 115, rx: 14, fill: "white", stroke: "#94a3b8" });
-    el("text", { x: 55, y: 433, "font-size": 13, fill: "#111827", "font-weight": 700 }).textContent = "Theoretical visibility limit";
-    el("text", { x: 55, y: 463, "font-size": 13, fill: "#374151" }).textContent = "cos ψmax = RE / rGEO";
-    el("text", { x: 55, y: 493, "font-size": 13, fill: "#374151" }).textContent = `ψmax = cos⁻¹(6371 / 42164) ≈ ${psiMax.toFixed(1)}°`;
+    el("rect", { x: 55, y: 470, width: 350, height: 115, rx: 14, fill: "white", stroke: "#94a3b8" });
+    el("text", { x: 75, y: 498, "font-size": 13, fill: "#111827", "font-weight": 700 }).textContent = "Theoretical visibility limit";
+    el("text", { x: 75, y: 528, "font-size": 13, fill: "#374151" }).textContent = "cos ψmax = RE / rGEO";
+    el("text", { x: 75, y: 558, "font-size": 13, fill: "#374151" }).textContent = `ψmax = cos⁻¹(6371 / 42164) ≈ ${psiMax.toFixed(1)}°`;
 
     document.getElementById("satcom-latval").textContent = `${latitude.toFixed(1)}°`;
     const visibleEl = document.getElementById("satcom-visible");
