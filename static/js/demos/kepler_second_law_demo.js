@@ -21,6 +21,45 @@
   const ticks = [];
   const lines = [];
 
+
+  const isDarkMode = () => document.body.classList.contains("dark-mode");
+  const getPalette = () => {
+    if (isDarkMode()) {
+      return {
+        sectorA: "#1e3a8a",
+        sectorB: "#334155",
+        sectorStroke: "#60a5fa",
+        orbit: "#93c5fd",
+        center: "#94a3b8",
+        centerText: "#cbd5e1",
+        earthFill: "#bfdbfe",
+        earthStroke: "#0f172a",
+        earthText: "#e2e8f0",
+        pointText: "#e5e7eb",
+        tick: "#93c5fd",
+        tickText: "#cbd5e1",
+        radial: "#94a3b8",
+        satStroke: "#f8fafc"
+      };
+    }
+    return {
+      sectorA: "#dbeafe",
+      sectorB: "#f8fafc",
+      sectorStroke: "#bfdbfe",
+      orbit: "#111827",
+      center: "#94a3b8",
+      centerText: "#6b7280",
+      earthFill: "#e0f2fe",
+      earthStroke: "#111827",
+      earthText: "#111827",
+      pointText: "#111827",
+      tick: "#475569",
+      tickText: "#6b7280",
+      radial: "#94a3b8",
+      satStroke: "white"
+    };
+  };
+
   const el = (name, attrs = {}) => {
     const node = document.createElementNS("http://www.w3.org/2000/svg", name);
     Object.entries(attrs).forEach(([k, v]) => node.setAttribute(k, v));
@@ -29,32 +68,32 @@
   };
 
   for (let i = 0; i < 12; i += 1) {
-    sectors.push(el("path", { fill: i % 2 ? "#f8fafc" : "#dbeafe", stroke: "#bfdbfe", "stroke-width": 1, opacity: 0.75 }));
+    sectors.push(el("path", { "stroke-width": 1, opacity: 0.75 }));
   }
 
-  const orbit = el("path", { fill: "none", stroke: "#111827", "stroke-width": 3 });
-  const center = el("circle", { r: 3, fill: "#94a3b8" });
-  const centerText = el("text", { "font-size": 12, fill: "#6b7280" });
+  const orbit = el("path", { fill: "none", "stroke-width": 3 });
+  const center = el("circle", { r: 3 });
+  const centerText = el("text", { "font-size": 12 });
   centerText.textContent = "ellipse center";
-  const earth = el("circle", { r: 22, fill: "#e0f2fe", stroke: "#111827", "stroke-width": 2 });
-  const earthText = el("text", { "font-size": 14, fill: "#111827", "font-weight": "700" });
+  const earth = el("circle", { r: 22, "stroke-width": 2 });
+  const earthText = el("text", { "font-size": 14, "font-weight": "700" });
   earthText.textContent = "Earth at focus";
   const per = el("circle", { r: 6, fill: "#16a34a" });
   const apo = el("circle", { r: 6, fill: "#7c3aed" });
-  const perText = el("text", { "font-size": 14, fill: "#111827", "font-weight": "700" });
-  const apoText = el("text", { "font-size": 14, fill: "#111827", "font-weight": "700" });
+  const perText = el("text", { "font-size": 14, "font-weight": "700" });
+  const apoText = el("text", { "font-size": 14, "font-weight": "700" });
   perText.textContent = "Perigee: fastest";
   apoText.textContent = "Apogee: slowest";
 
   for (let i = 0; i < 12; i += 1) {
-    lines.push(el("line", { stroke: "#94a3b8", "stroke-width": 1, opacity: 0.65 }));
-    ticks.push(el("circle", { r: 4, fill: "#475569" }));
-    const t = el("text", { "font-size": 11, fill: "#6b7280" });
+    lines.push(el("line", { "stroke-width": 1, opacity: 0.65 }));
+    ticks.push(el("circle", { r: 4 }));
+    const t = el("text", { "font-size": 11 });
     t.textContent = `t${i}`;
     ticks.push(t);
   }
 
-  const sat = el("circle", { r: 8, fill: "#f97316", stroke: "white", "stroke-width": 3 });
+  const sat = el("circle", { r: 8, fill: "#f97316", "stroke-width": 3 });
 
   const solveKepler = (M, e) => {
     let E = M;
@@ -74,6 +113,26 @@
     if (last === null) last = ts;
     const dt = (ts - last) / 1000;
     last = ts;
+
+    const palette = getPalette();
+
+    orbit.setAttribute("stroke", palette.orbit);
+    center.setAttribute("fill", palette.center);
+    centerText.setAttribute("fill", palette.centerText);
+    earth.setAttribute("fill", palette.earthFill);
+    earth.setAttribute("stroke", palette.earthStroke);
+    earthText.setAttribute("fill", palette.earthText);
+    perText.setAttribute("fill", palette.pointText);
+    apoText.setAttribute("fill", palette.pointText);
+    sat.setAttribute("stroke", palette.satStroke);
+
+    for (let i = 0; i < 12; i += 1) {
+      sectors[i].setAttribute("fill", i % 2 ? palette.sectorB : palette.sectorA);
+      sectors[i].setAttribute("stroke", palette.sectorStroke);
+      lines[i].setAttribute("stroke", palette.radial);
+      ticks[2 * i].setAttribute("fill", palette.tick);
+      ticks[2 * i + 1].setAttribute("fill", palette.tickText);
+    }
 
     const e = parseFloat(ecc.value);
     const b = a * Math.sqrt(1 - e * e);

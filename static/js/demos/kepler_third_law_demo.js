@@ -11,8 +11,8 @@
 
   const RE = 6371;
   const MU = 398600.4418;
-  const cx = 360;
-  const cy = 280;
+  const cx = 430;
+  const cy = 315;
 
   function periodMin(a) {
     return (2 * Math.PI * Math.sqrt((a * a * a) / MU)) / 60;
@@ -62,7 +62,7 @@
         "stroke-dasharray": s.dash ? "7 5" : "",
       });
       const txt = el("text", {
-        x: Math.min(cx + s.rad + 8, 760),
+        x: Math.min(cx + s.rad + 8, 840),
         y: cy + 4,
         "font-size": 13,
         fill: "#374151",
@@ -103,7 +103,7 @@
     });
 
     const customText = el("text", {
-      x: Math.min(cx + custom.rad + 8, 760),
+      x: Math.min(cx + custom.rad + 8, 840),
       y: cy - 12,
       "font-size": 13,
       fill: "#111827",
