@@ -13,6 +13,20 @@
   const MU = 398600.4418;
   const cx = 430;
   const cy = 335;
+  const isDarkMode = () => document.body.classList.contains("dark-mode");
+
+  function theme() {
+    const dark = isDarkMode();
+    return {
+      intro: dark ? "#94a3b8" : "#4b5563",
+      orbitLabel: dark ? "#dbeafe" : "#374151",
+      customLabel: dark ? "#f8fafc" : "#111827",
+      earthFill: dark ? "#bfdbfe" : "#dbeafe",
+      earthStroke: dark ? "#0f172a" : "#111827",
+      earthText: dark ? "#0f172a" : "#111827",
+      satStroke: dark ? "#0b1220" : "#ffffff",
+    };
+  }
 
   function periodMin(a) {
     return (2 * Math.PI * Math.sqrt((a * a * a) / MU)) / 60;
@@ -47,7 +61,8 @@
 
   function init() {
     svg.innerHTML = "";
-    el("text", { x: 28, y: 30, "font-size": 14, fill: "#4b5563" }).textContent =
+    const colors = theme();
+    el("text", { x: 28, y: 30, "font-size": 14, fill: colors.intro }).textContent =
       "Visual radii are compressed so the orbits fit on one screen.";
 
     for (const s of sats()) {
@@ -65,19 +80,19 @@
         x: Math.min(cx + s.rad + 8, 840),
         y: cy + 4,
         "font-size": 13,
-        fill: "#374151",
+        fill: colors.orbitLabel,
       });
       txt.textContent = s.name;
     }
 
-    el("circle", { cx, cy, r: 42, fill: "#dbeafe", stroke: "#111827", "stroke-width": 2 });
+    el("circle", { cx, cy, r: 42, fill: colors.earthFill, stroke: colors.earthStroke, "stroke-width": 2 });
     const earthTxt = el("text", {
       x: cx,
       y: cy + 5,
       "text-anchor": "middle",
       "font-size": 13,
       "font-weight": 700,
-      fill: "#111827",
+      fill: colors.earthText,
     });
     earthTxt.textContent = "Earth";
   }
@@ -90,6 +105,7 @@
 
     init();
     const data = sats();
+    const colors = theme();
     const custom = data.find((d) => d.name === "Custom");
 
     el("circle", {
@@ -106,7 +122,7 @@
       x: Math.min(cx + custom.rad + 8, 840),
       y: cy - 12,
       "font-size": 13,
-      fill: "#111827",
+      fill: colors.customLabel,
       "font-weight": 700,
     });
     customText.textContent = "Custom";
@@ -122,7 +138,7 @@
         cy: y,
         r: s.name === "Custom" ? 8 : 6,
         fill: s.color,
-        stroke: "white",
+        stroke: colors.satStroke,
         "stroke-width": 2,
       });
     }
