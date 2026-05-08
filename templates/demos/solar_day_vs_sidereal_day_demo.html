@@ -14,6 +14,14 @@
   .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .satcom-plot { min-height: clamp(520px, 64vh, 760px); }
 
+  body.dark-mode .satcom-controls .label,
+  body.dark-mode .satcom-small,
+  body.dark-mode .satcom-controls b { color: #dbe7ff; }
+  body.dark-mode .satcom-controls input[type="range"] { accent-color: #78aaff; }
+  body.dark-mode .satcom-btn { border-color: #9cc2ff; background: #0f1f3c; color: #f5f9ff; }
+  body.dark-mode .satcom-btn:hover { background: #15305d; }
+  body.dark-mode .satcom-btn.secondary { background: #dce8ff; color: #0f1f3c; border-color: #b4d0ff; }
+
   @media (max-width: 1200px) {
     .satcom-demo { grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.75fr); }
   }

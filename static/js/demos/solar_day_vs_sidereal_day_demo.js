@@ -24,6 +24,37 @@
   }
 
   function draw(ts) {
+    const isDark = document.body.classList.contains('dark-mode');
+    const palette = isDark
+      ? {
+          caption: '#9fb8df',
+          orbit: '#9fb0c8',
+          starLine: '#7fb0ff',
+          starText: '#8fbeff',
+          sunLine: '#ff7b7b',
+          sunText: '#ff9b9b',
+          earthText: '#0f172a',
+          marker: '#dbe7ff',
+          timeline: '#b7c4d8',
+          start: '#dbe7ff',
+          sidereal: '#6ea8ff',
+          solar: '#ff7b7b',
+        }
+      : {
+          caption: '#4b5563',
+          orbit: '#cbd5e1',
+          starLine: '#2563eb',
+          starText: '#1d4ed8',
+          sunLine: '#dc2626',
+          sunText: '#b91c1c',
+          earthText: '#111827',
+          marker: '#111827',
+          timeline: '#94a3b8',
+          start: '#111827',
+          sidereal: '#2563eb',
+          solar: '#dc2626',
+        };
+
     if (last === null) last = ts;
     const dt = (ts - last) / 1000;
     last = ts;
@@ -60,23 +91,23 @@
 
     svg.innerHTML = '';
 
-    el('text', { x: 28, y: 34, 'font-size': 14, fill: '#4b5563' }).textContent =
+    el('text', { x: 28, y: 34, 'font-size': 14, fill: palette.caption }).textContent =
       'Earth orbit motion is exaggerated so the difference is visible.';
 
     el('circle', { cx: sun.x, cy: sun.y, r: 42, fill: '#fef3c7', stroke: '#f59e0b', 'stroke-width': 2 });
-    el('text', { x: sun.x, y: sun.y + 6, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700 }).textContent = 'Sun';
+    el('text', { x: sun.x, y: sun.y + 6, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: '#111827' }).textContent = 'Sun';
 
-    el('circle', { cx: orbitCenter.x, cy: orbitCenter.y, r: orbitRadius, fill: 'none', stroke: '#cbd5e1', 'stroke-width': 2, 'stroke-dasharray': '6 6' });
+    el('circle', { cx: orbitCenter.x, cy: orbitCenter.y, r: orbitRadius, fill: 'none', stroke: palette.orbit, 'stroke-width': 2, 'stroke-dasharray': '6 6' });
 
-    el('line', { x1: earth.x, y1: earth.y, x2: earth.x, y2: earth.y - 115, stroke: '#2563eb', 'stroke-width': 2 });
-    el('text', { x: Math.min(earth.x + 10, 760), y: earth.y - 110, 'font-size': 13, fill: '#1d4ed8', 'font-weight': 600 }).textContent = 'fixed star direction';
+    el('line', { x1: earth.x, y1: earth.y, x2: earth.x, y2: earth.y - 115, stroke: palette.starLine, 'stroke-width': 2 });
+    el('text', { x: Math.min(earth.x + 10, 760), y: earth.y - 110, 'font-size': 13, fill: palette.starText, 'font-weight': 600 }).textContent = 'fixed star direction';
 
     el('line', {
       x1: earth.x,
       y1: earth.y,
       x2: earth.x + 100 * Math.cos(sunDirection),
       y2: earth.y + 100 * Math.sin(sunDirection),
-      stroke: '#dc2626',
+      stroke: palette.sunLine,
       'stroke-width': 2,
     });
 
@@ -84,33 +115,33 @@
       x: Math.max(40, Math.min(earth.x + 60 * Math.cos(sunDirection) - 55, 760)),
       y: earth.y + 60 * Math.sin(sunDirection) - 8,
       'font-size': 13,
-      fill: '#b91c1c',
+      fill: palette.sunText,
       'font-weight': 600,
     }).textContent = 'direction to Sun';
 
     el('circle', { cx: earth.x, cy: earth.y, r: earthRadius, fill: '#dbeafe', stroke: '#1d4ed8', 'stroke-width': 2 });
-    el('text', { x: earth.x, y: earth.y + 5, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700 }).textContent = 'Earth';
+    el('text', { x: earth.x, y: earth.y + 5, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700, fill: palette.earthText }).textContent = 'Earth';
 
-    el('line', { x1: earth.x, y1: earth.y, x2: marker.x, y2: marker.y, stroke: '#111827', 'stroke-width': 2 });
-    el('circle', { cx: marker.x, cy: marker.y, r: 6, fill: '#111827' });
+    el('line', { x1: earth.x, y1: earth.y, x2: marker.x, y2: marker.y, stroke: palette.marker, 'stroke-width': 2 });
+    el('circle', { cx: marker.x, cy: marker.y, r: 6, fill: palette.marker });
 
     if (p > 0.93) {
-      el('circle', { cx: siderealPoint.x, cy: siderealPoint.y, r: 6, fill: '#2563eb', opacity: 0.75 });
-      el('text', { x: siderealPoint.x + 12, y: siderealPoint.y + 22, 'font-size': 12, fill: '#1d4ed8' }).textContent = 'sidereal-day marker';
+      el('circle', { cx: siderealPoint.x, cy: siderealPoint.y, r: 6, fill: palette.sidereal, opacity: 0.75 });
+      el('text', { x: siderealPoint.x + 12, y: siderealPoint.y + 22, 'font-size': 12, fill: palette.starText }).textContent = 'sidereal-day marker';
     }
 
-    el('line', { x1: 120, y1: 505, x2: 790, y2: 505, stroke: '#94a3b8', 'stroke-width': 2 });
+    el('line', { x1: 120, y1: 505, x2: 790, y2: 505, stroke: palette.timeline, 'stroke-width': 2 });
 
     [
-      ['start', 120, '#111827', 530],
-      ['sidereal day', 680, '#2563eb', 530],
-      ['solar day', 770, '#dc2626', 550],
+      ['start', 120, palette.start, 530],
+      ['sidereal day', 680, palette.sidereal, 530],
+      ['solar day', 770, palette.solar, 550],
     ].forEach(([text, x, color, y]) => {
       el('circle', { cx: x, cy: 505, r: 5, fill: color });
       el('text', { x, y, 'text-anchor': 'middle', 'font-size': 13, fill: color }).textContent = text;
     });
 
-    el('text', { x: 720, y: 470, 'text-anchor': 'middle', 'font-size': 13, fill: '#dc2626' }).textContent = 'extra ≈ 3 min 56 s';
+    el('text', { x: 720, y: 470, 'text-anchor': 'middle', 'font-size': 13, fill: palette.solar }).textContent = 'extra ≈ 3 min 56 s';
 
     pval.textContent = `${(p * 24).toFixed(2)} h`;
     sval.textContent = `${parseFloat(speed.value).toFixed(2)} day/s`;
