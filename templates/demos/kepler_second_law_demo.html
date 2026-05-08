@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .satcom-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 24px;
+  }
+
+  .satcom-controls .control { margin: 14px 0; }
+  .satcom-controls .label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .satcom-controls input[type="range"] { width: 100%; }
+  .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; cursor: pointer; }
+  .satcom-btn.secondary { background: #fff; color: #111827; }
+  .satcom-small { font-size: 14px; color: #374151; line-height: 1.45; }
+  .satcom-svg { width: 100%; height: 520px; display: block; overflow: visible; }
+  .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  @media (max-width: 1100px) {
+    .satcom-demo { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Kepler's Second Law Demo</h1>
+<p>
+  Equal areas are swept in equal times. The satellite moves faster near perigee and slower near apogee.
+</p>
+
+<div class="demo satcom-demo">
+  <div class="card">
+    <svg id="satcom-kepler2-svg" class="satcom-svg" viewBox="-20 0 900 520" aria-label="Kepler second law area sweep demo"></svg>
+  </div>
+
+  <div class="card satcom-controls">
+    <div class="satcom-actions">
+      <button id="satcom2-play" class="satcom-btn" type="button">Pause</button>
+      <button id="satcom2-reset" class="satcom-btn secondary" type="button">Reset</button>
+    </div>
+
+    <div class="control">
+      <div class="label"><span>Eccentricity</span><span id="satcom2-eval">0.62</span></div>
+      <input id="satcom2-ecc" type="range" min="0.05" max="0.78" step="0.01" value="0.62">
+    </div>
+
+    <div class="control">
+      <div class="label"><span>Animation speed</span><span id="satcom2-sval">1.0x</span></div>
+      <input id="satcom2-speed" type="range" min="0.3" max="2" step="0.1" value="1">
+    </div>
+
+    <p class="satcom-small"><b>Concept:</b> Each shaded wedge is the same time interval. Near perigee the satellite travels a longer arc in the same time, so it moves faster. Near apogee it moves slower.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/demos/kepler_second_law_demo.js') }}"></script>
+{% endblock %}

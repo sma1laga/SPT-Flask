@@ -20,6 +20,13 @@ SATELLITE_COMMUNICATIONS_DEMOS = {
                 "title_desc": "Kepler's First Law Demo",
                 "desc": "Satellite motion on an ellipse with Earth at one focus and varying eccentricity.",
                 "endpoint": "satellite_communications.kepler_first_law_demo",
+            },
+            {
+                "slug": "kepler-second-law-demo",
+                "title": "Demo 3",
+                "title_desc": "Kepler's Second Law Demo",
+                "desc": "Equal areas are swept in equal times with faster motion near perigee and slower near apogee.",
+                "endpoint": "satellite_communications.kepler_second_law_demo",
             }
         ],
         "Tutorial": [],
@@ -39,3 +46,7 @@ def geo_elevation_visibility_demo():
 @satellite_communications_bp.route("/kepler-first-law-demo", methods=["GET"])
 def kepler_first_law_demo():
     return render_template("demos/kepler_first_law_demo.html")
+
+@satellite_communications_bp.route("/kepler-second-law-demo", methods=["GET"])
+def kepler_second_law_demo():
+    return render_template("demos/kepler_second_law_demo.html")
