@@ -35,6 +35,13 @@ SATELLITE_COMMUNICATIONS_DEMOS = {
                 "desc": "Compare orbital periods for LEO, MEO, GEO, and a custom altitude to see T ∝ a^(3/2).",
                 "endpoint": "satellite_communications.kepler_third_law_demo",
             },
+            {
+                "slug": "molniya-far-half-time-demo",
+                "title": "Demo 5",
+                "title_desc": "Molniya Far-Half Time Demo",
+                "desc": "Visualize why the satellite spends more than half of its period near apogee in the far half of an eccentric orbit.",
+                "endpoint": "satellite_communications.molniya_far_half_time_demo",
+            },
         ],
         "Tutorial": [],
     }
@@ -62,3 +69,7 @@ def kepler_second_law_demo():
 @satellite_communications_bp.route("/kepler-third-law-demo", methods=["GET"])
 def kepler_third_law_demo():
     return render_template("demos/kepler_third_law_demo.html")
+
+@satellite_communications_bp.route("/molniya-far-half-time-demo", methods=["GET"])
+def molniya_far_half_time_demo():
+    return render_template("demos/molniya_far_half_time_demo.html")
