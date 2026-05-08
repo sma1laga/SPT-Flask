@@ -101,6 +101,9 @@ from pages.demos.delay_estimation import demos_delay_estimation_bp
 from pages.demos.delay_estimation_frequency import demos_delay_estimation_freq_bp
 from pages.demos.finite_observation_intervals import demos_finite_observation_intervals_bp
 
+# VL SATCOM
+from pages.demos.satellite_communications import satellite_communications_bp
+
 def _build_demo_slug_map():
     """Create a lookup from demo slug to its parent section name - ist cooler"""
 
@@ -123,6 +126,8 @@ COLLAPSIBLE_DEMO_SECTIONS = {
 COLLAPSIBLE_ENDPOINTS = {
 #    "plot_function.plot_function",
 #    "bode_plot.bode_plot",
+    "satellite_communications.page",
+    "satellite_communications.geo_elevation_visibility_demo",
 }
 
 SITE_BASE_URL = os.getenv(
@@ -330,6 +335,8 @@ def create_app():
     app.register_blueprint(demos_delay_estimation_freq_bp, url_prefix="/demos/delay-estimation-frequency")
     app.register_blueprint(demos_finite_observation_intervals_bp, url_prefix="/demos/finite-observation-intervals")
 
+    # SATCOM
+    app.register_blueprint(satellite_communications_bp, url_prefix="/demos/satellite-communications")
     
     @app.route("/")
     def home():
