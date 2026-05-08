@@ -135,6 +135,8 @@ COLLAPSIBLE_ENDPOINTS = {
     "satellite_communications.kepler_first_law_demo",
     "satellite_communications.kepler_second_law_demo",
     "satellite_communications.kepler_third_law_demo",
+    "satellite_communications.molniya_far_half_time_demo",
+    "satellite_communications.solar_day_vs_sidereal_day_demo",
 }
 
 SITE_BASE_URL = os.getenv(
@@ -221,7 +223,7 @@ def create_app():
         slug = parts[1] if len(parts) > 1 else None
         section_name = DEMO_SLUG_TO_SECTION.get(slug)
         section_data = DEMOS.get(section_name)
-        if slug == "satellite_communications":
+        if slug in {"satellite_communications", "satellite-communications"}:
             section_name = "Satellite Communications"
             section_data = SATELLITE_COMMUNICATIONS_DEMOS.get(section_name)
 

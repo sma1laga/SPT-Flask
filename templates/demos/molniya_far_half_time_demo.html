@@ -2,16 +2,10 @@
 
 {% block extra_css %}
 <style>
-  .satcom-page {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
-    gap: 22px;
-    align-items: start;
-  }
 
   .satcom-demo {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 330px;
+    grid-template-columns: minmax(760px, 2fr) minmax(320px, 1fr);
     gap: 24px;
   }
 
@@ -22,20 +16,14 @@
   .satcom-btn.secondary { background: #fff; color: #111827; }
   .satcom-small { font-size: 14px; line-height: 1.45; color: #374151; }
   .satcom-result { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; margin-top: 8px; }
-  .satcom-svg { width: 100%; height: 540px; display: block; overflow: visible; }
+  .satcom-plot { min-height: 640px; }
+  .satcom-svg { width: 100%; height: 640px; display: block; overflow: visible; }
   .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
-  .satcom-sidebar h3 { margin: 0 0 8px; font-size: 17px; }
-  .satcom-sidebar ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .satcom-sidebar a { display: block; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; text-decoration: none; color: #111827; font-size: 14px; }
-  .satcom-sidebar a.active { border-color: #111827; background: #f8fafc; font-weight: 700; }
-
-  @media (max-width: 1220px) {
-    .satcom-page { grid-template-columns: 1fr; }
-  }
 
   @media (max-width: 1100px) {
     .satcom-demo { grid-template-columns: 1fr; }
+    .satcom-plot { min-height: 560px; }
+    .satcom-svg { height: 560px; }
   }
 </style>
 {% endblock %}
@@ -44,9 +32,8 @@
 <h1>Molniya Orbit: Far Half Time</h1>
 <p>The far half of the ellipse is centered around apogee. Because the satellite moves slowly there, it spends more than half of its period in that half.</p>
 
-<div class="satcom-page">
-  <div class="demo satcom-demo">
-    <div class="card">
+<div class="demo satcom-demo">
+    <div class="card satcom-plot">
       <svg id="satcom4-svg" class="satcom-svg" viewBox="-20 0 940 540" aria-label="Molniya far half time demo"></svg>
     </div>
 
@@ -71,17 +58,6 @@
     </div>
   </div>
 
-  <aside class="card satcom-sidebar" aria-label="Satellite communication demos">
-    <h3>Satellite demos</h3>
-    <ul>
-      <li><a href="{{ url_for('satellite_communications.geo_elevation_visibility_demo') }}">GEO Elevation Visibility</a></li>
-      <li><a href="{{ url_for('satellite_communications.kepler_first_law_demo') }}">Kepler's First Law</a></li>
-      <li><a href="{{ url_for('satellite_communications.kepler_second_law_demo') }}">Kepler's Second Law</a></li>
-      <li><a href="{{ url_for('satellite_communications.kepler_third_law_demo') }}">Kepler's Third Law</a></li>
-      <li><a class="active" href="{{ url_for('satellite_communications.molniya_far_half_time_demo') }}">Molniya: Far Half Time</a></li>
-    </ul>
-  </aside>
-</div>
 {% endblock %}
 
 {% block scripts %}
