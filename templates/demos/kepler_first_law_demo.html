@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .satcom-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 24px;
+  }
+
+  .satcom-controls .control { margin: 14px 0; }
+  .satcom-controls .label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .satcom-controls input[type="range"] { width: 100%; }
+  .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; cursor: pointer; }
+  .satcom-btn.secondary { background: #fff; color: #111827; }
+  .satcom-small { font-size: 14px; color: #374151; line-height: 1.45; }
+  .satcom-svg { width: 100%; height: 520px; display: block; overflow: visible; }
+  .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .satcom-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+  .satcom-sw { width: 24px; height: 0; border-top: 3px solid; display: inline-block; vertical-align: middle; margin-right: 6px; }
+
+  @media (max-width: 1100px) {
+    .satcom-demo { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Kepler's First Law Demo</h1>
+<p>
+  A satellite follows an ellipse with Earth at one focus, not at the center of the ellipse.
+</p>
+
+<div class="demo satcom-demo">
+  <div class="card">
+    <svg id="satcom-kepler-svg" class="satcom-svg" viewBox="-20 0 860 520" aria-label="Kepler first law ellipse demo">
+      <text x="28" y="34" font-size="14" fill="#4b5563">Increase eccentricity to see Earth move away from the ellipse center.</text>
+      <path id="satcom-orbit" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="7 5"></path>
+      <line id="satcom-major" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="4 5"></line>
+      <circle id="satcom-center" r="4" fill="#6b7280"></circle>
+      <text id="satcom-center-text" font-size="13" fill="#4b5563">ellipse center</text>
+      <circle id="satcom-earth" r="22" fill="#dbeafe" stroke="#111827" stroke-width="2"></circle>
+      <text id="satcom-earth-text" font-size="14" font-weight="700" fill="#111827">Earth at one focus</text>
+      <circle id="satcom-focus2" r="4" fill="#9ca3af"></circle>
+      <text id="satcom-focus2-text" font-size="13" fill="#6b7280">other focus</text>
+      <circle id="satcom-sat" r="8" fill="#f97316" stroke="#fff" stroke-width="3"></circle>
+      <line id="satcom-rline" stroke="#16a34a" stroke-width="2"></line>
+      <text id="satcom-rtext" font-size="13" fill="#15803d">satellite distance changes</text>
+      <text x="28" y="485" font-size="15" fill="#111827">First law: the orbit is an ellipse and Earth is located at one focus.</text>
+    </svg>
+  </div>
+
+  <div class="card satcom-controls">
+    <div class="satcom-actions">
+      <button id="satcom-play" class="satcom-btn" type="button">Pause</button>
+      <button id="satcom-reset" class="satcom-btn secondary" type="button">Reset</button>
+    </div>
+
+    <div class="control">
+      <div class="label"><span>Eccentricity</span><span id="satcom-eval">0.55</span></div>
+      <input id="satcom-ecc" type="range" min="0" max="0.78" step="0.01" value="0.55">
+    </div>
+
+    <div class="control">
+      <div class="label"><span>Animation speed</span><span id="satcom-sval">1.0x</span></div>
+      <input id="satcom-speed" type="range" min="0.3" max="2" step="0.1" value="1">
+    </div>
+
+    <p class="satcom-small"><b>Concept:</b> For a circular orbit, both foci and the center coincide. As eccentricity increases, the ellipse becomes more stretched and Earth is clearly at a focus, not at the center.</p>
+    <div class="satcom-legend"><span><span class="satcom-sw" style="border-color:#2563eb"></span>Orbit</span><span><span class="satcom-sw" style="border-color:#16a34a"></span>Distance to satellite</span></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/demos/kepler_first_law_demo.js') }}"></script>
+{% endblock %}
