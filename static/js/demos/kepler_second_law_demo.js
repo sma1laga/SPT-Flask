@@ -73,7 +73,7 @@
 
   const orbit = el("path", { fill: "none", "stroke-width": 3 });
   const center = el("circle", { r: 3 });
-  const centerText = el("text", { "font-size": 12 });
+  const centerText = el("text", { "font-size": 14, "font-weight": "700", "text-anchor": "middle", "paint-order": "stroke", "stroke-width": 3 });
   centerText.textContent = "ellipse center";
   const earth = el("circle", { r: 22, "stroke-width": 2 });
   const earthText = el("text", { "font-size": 14, "font-weight": "700" });
@@ -119,6 +119,7 @@
     orbit.setAttribute("stroke", palette.orbit);
     center.setAttribute("fill", palette.center);
     centerText.setAttribute("fill", palette.centerText);
+    centerText.setAttribute("stroke", isDarkMode() ? "#0f172a" : "#f8fafc");
     earth.setAttribute("fill", palette.earthFill);
     earth.setAttribute("stroke", palette.earthStroke);
     earthText.setAttribute("fill", palette.earthText);
@@ -171,8 +172,8 @@
 
     center.setAttribute("cx", ox - a * e);
     center.setAttribute("cy", oy);
-    centerText.setAttribute("x", ox - a * e - 42);
-    centerText.setAttribute("y", oy - 14);
+    centerText.setAttribute("x", ox - a * e);
+    centerText.setAttribute("y", oy - 20);
 
     earth.setAttribute("cx", ox);
     earth.setAttribute("cy", oy);

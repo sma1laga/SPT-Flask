@@ -12,7 +12,7 @@
   const RE = 6371;
   const MU = 398600.4418;
   const cx = 430;
-  const cy = 315;
+  const cy = 335;
 
   function periodMin(a) {
     return (2 * Math.PI * Math.sqrt((a * a * a) / MU)) / 60;
@@ -47,7 +47,7 @@
 
   function init() {
     svg.innerHTML = "";
-    el("text", { x: 28, y: 34, "font-size": 14, fill: "#4b5563" }).textContent =
+    el("text", { x: 28, y: 30, "font-size": 14, fill: "#4b5563" }).textContent =
       "Visual radii are compressed so the orbits fit on one screen.";
 
     for (const s of sats()) {
