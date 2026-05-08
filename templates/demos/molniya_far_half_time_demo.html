@@ -4,20 +4,45 @@
 <style>
 
   .satcom-demo {
+    --satcom-btn-bg: #111827;
+    --satcom-btn-border: #111827;
+    --satcom-btn-text: #ffffff;
+    --satcom-btn-secondary-bg: #ffffff;
+    --satcom-btn-secondary-border: #cbd5e1;
+    --satcom-btn-secondary-text: #111827;
+    --satcom-muted: #334155;
+    --satcom-result-border: #cbd5e1;
+    --satcom-result-bg: #ffffff;
+    --satcom-result-text: #0f172a;
+    --satcom-plot-bg: #f8fafc;
     display: grid;
     grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
     gap: 24px;
     align-items: stretch;
   }
+  body.dark-mode .satcom-demo {
+    --satcom-btn-bg: #0f172a;
+    --satcom-btn-border: #334155;
+    --satcom-btn-text: #f8fafc;
+    --satcom-btn-secondary-bg: #1e293b;
+    --satcom-btn-secondary-border: #475569;
+    --satcom-btn-secondary-text: #e2e8f0;
+    --satcom-muted: #cbd5e1;
+    --satcom-result-border: #94a3b8;
+    --satcom-result-bg: #1f2b3f;
+    --satcom-result-text: #f8fafc;
+    --satcom-plot-bg: #293447;
+  }
+
 
   .satcom-controls .control { margin: 14px 0; }
   .satcom-controls .label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
   .satcom-controls input[type="range"] { width: 100%; }
-  .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; cursor: pointer; }
-  .satcom-btn.secondary { background: #fff; color: #111827; }
-  .satcom-small { font-size: 14px; line-height: 1.45; color: #374151; }
-  .satcom-result { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; margin-top: 8px; }
-  .satcom-plot { min-height: clamp(420px, 62vh, 640px); }
+  .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--satcom-btn-border); background: var(--satcom-btn-bg); color: var(--satcom-btn-text); font-weight: 600; cursor: pointer; }
+  .satcom-btn.secondary { background: var(--satcom-btn-secondary-bg); border-color: var(--satcom-btn-secondary-border); color: var(--satcom-btn-secondary-text); }
+  .satcom-small { font-size: 14px; line-height: 1.45; color: var(--satcom-muted); }
+  .satcom-result { border: 1px solid var(--satcom-result-border); border-radius: 12px; padding: 10px; margin-top: 8px; background: var(--satcom-result-bg); color: var(--satcom-result-text); }
+  .satcom-plot { min-height: clamp(420px, 62vh, 640px); background: var(--satcom-plot-bg); }
   .satcom-svg { width: 100%; height: clamp(420px, 62vh, 640px); display: block; overflow: visible; }
   .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 

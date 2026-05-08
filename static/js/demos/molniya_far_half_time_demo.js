@@ -39,6 +39,28 @@
     const E = solveKepler(M, e);
     return [cx + a * (Math.cos(E) - e), cy + b * Math.sin(E)];
   };
+  const themeColors = () => {
+    const dark = document.body.classList.contains("dark-mode");
+    return dark
+      ? {
+          orbit: "#94a3b8",
+          axis: "#cbd5e1",
+          earthStroke: "#e2e8f0",
+          text: "#f8fafc",
+          farArc: "#22c55e",
+          farText: "#4ade80",
+          satStroke: "#f8fafc"
+        }
+      : {
+          orbit: "#111827",
+          axis: "#94a3b8",
+          earthStroke: "#111827",
+          text: "#0f172a",
+          farArc: "#16a34a",
+          farText: "#15803d",
+          satStroke: "#ffffff"
+        };
+  };
 
   const hms = (seconds) => {
     const h = Math.floor(seconds / 3600);
@@ -68,7 +90,8 @@
       const y = cy + b * Math.sin(E);
       path += `${i ? " L " : "M "}${x.toFixed(2)} ${y.toFixed(2)}`;
     }
-    el("path", { d: `${path} Z`, fill: "none", stroke: "#111827", "stroke-width": 3 });
+    const colors = themeColors();
+    el("path", { d: `${path} Z`, fill: "none", stroke: colors.orbit, "stroke-width": 3 });
 
     let far = "";
     for (let i = 90; i <= 270; i += 1) {
@@ -77,11 +100,11 @@
       const y = cy + b * Math.sin(E);
       far += `${i > 90 ? " L " : "M "}${x.toFixed(2)} ${y.toFixed(2)}`;
     }
-    el("path", { d: far, fill: "none", stroke: "#16a34a", "stroke-width": 8, opacity: 0.35 });
+    el("path", { d: far, fill: "none", stroke: colors.farArc, "stroke-width": 8, opacity: 0.35 });
 
-    el("line", { x1: cx, y1: cy - b, x2: cx, y2: cy + b, stroke: "#94a3b8", "stroke-width": 1.5, "stroke-dasharray": "5 5" });
-    el("circle", { cx, cy, r: 22, fill: "#dbeafe", stroke: "#111827", "stroke-width": 2 });
-    const earthText = el("text", { x: cx - 38, y: cy + 48, "font-size": 13, "font-weight": 700 });
+    el("line", { x1: cx, y1: cy - b, x2: cx, y2: cy + b, stroke: colors.axis, "stroke-width": 1.5, "stroke-dasharray": "5 5" });
+    el("circle", { cx, cy, r: 22, fill: "#dbeafe", stroke: colors.earthStroke, "stroke-width": 2 });
+    const earthText = el("text", { x: cx - 38, y: cy + 48, "font-size": 13, "font-weight": 700, fill: colors.text });
     earthText.textContent = "Earth at focus";
 
     const apo = pos(Math.PI, e);
@@ -89,15 +112,15 @@
     const sat = pos(meanAnomaly, e);
 
     el("circle", { cx: apo[0], cy: apo[1], r: 6, fill: "#7c3aed" });
-    const apoText = el("text", { x: Math.max(apo[0] - 92, 45), y: apo[1] - 12, "font-size": 13, "font-weight": 700 });
+    const apoText = el("text", { x: Math.max(apo[0] - 92, 45), y: apo[1] - 12, "font-size": 13, "font-weight": 700, fill: colors.text });
     apoText.textContent = "Apogee / slow";
 
     el("circle", { cx: per[0], cy: per[1], r: 6, fill: "#16a34a" });
-    const perText = el("text", { x: Math.min(per[0] + 12, 735), y: per[1] - 12, "font-size": 13, "font-weight": 700 });
+    const perText = el("text", { x: Math.min(per[0] + 12, 735), y: per[1] - 12, "font-size": 13, "font-weight": 700, fill: colors.text });
     perText.textContent = "Perigee / fast";
 
-    el("circle", { cx: sat[0], cy: sat[1], r: 8, fill: "#f97316", stroke: "white", "stroke-width": 3 });
-    const farText = el("text", { x: cx - 95, y: cy + b + 48, "font-size": 14, fill: "#15803d", "font-weight": 700 });
+    el("circle", { cx: sat[0], cy: sat[1], r: 8, fill: "#f97316", stroke: colors.satStroke, "stroke-width": 3 });
+    const farText = el("text", { x: cx - 95, y: cy + b + 48, "font-size": 14, fill: colors.farText, "font-weight": 700 });
     farText.textContent = "far half: reception assumed";
 
     const frac = 0.5 + e / Math.PI;
