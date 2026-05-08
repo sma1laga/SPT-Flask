@@ -117,6 +117,7 @@ def _build_demo_slug_map():
 
 DEMO_SLUG_TO_SECTION = _build_demo_slug_map()
 COLLAPSIBLE_DEMO_SECTIONS = {
+    "Satellite Communications",
     "Signals and Systems I",
     "Signals and Systems II",
     "Statistical Signal Processing",
@@ -128,6 +129,9 @@ COLLAPSIBLE_ENDPOINTS = {
 #    "bode_plot.bode_plot",
     "satellite_communications.page",
     "satellite_communications.geo_elevation_visibility_demo",
+    "satellite_communications.kepler_first_law_demo",
+    "satellite_communications.kepler_second_law_demo",
+    "satellite_communications.kepler_third_law_demo",
 }
 
 SITE_BASE_URL = os.getenv(

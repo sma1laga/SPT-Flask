@@ -27,7 +27,14 @@ SATELLITE_COMMUNICATIONS_DEMOS = {
                 "title_desc": "Kepler's Second Law Demo",
                 "desc": "Equal areas are swept in equal times with faster motion near perigee and slower near apogee.",
                 "endpoint": "satellite_communications.kepler_second_law_demo",
-            }
+            },
+            {
+                "slug": "kepler-third-law-demo",
+                "title": "Demo 4",
+                "title_desc": "Kepler's Third Law Demo",
+                "desc": "Compare orbital periods for LEO, MEO, GEO, and a custom altitude to see T ∝ a^(3/2).",
+                "endpoint": "satellite_communications.kepler_third_law_demo",
+            },
         ],
         "Tutorial": [],
     }
@@ -50,3 +57,8 @@ def kepler_first_law_demo():
 @satellite_communications_bp.route("/kepler-second-law-demo", methods=["GET"])
 def kepler_second_law_demo():
     return render_template("demos/kepler_second_law_demo.html")
+
+
+@satellite_communications_bp.route("/kepler-third-law-demo", methods=["GET"])
+def kepler_third_law_demo():
+    return render_template("demos/kepler_third_law_demo.html")

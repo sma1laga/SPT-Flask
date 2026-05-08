@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .satcom-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 24px;
+  }
+
+  .satcom-controls .control { margin: 14px 0; }
+  .satcom-controls .label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .satcom-controls input[type="range"] { width: 100%; }
+  .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; cursor: pointer; }
+  .satcom-btn.secondary { background: #fff; color: #111827; }
+  .satcom-small { font-size: 14px; color: #374151; line-height: 1.45; }
+  .satcom-svg { width: 100%; height: 540px; display: block; overflow: visible; }
+  .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .satcom-row { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; margin: 8px 0; font-size: 14px; }
+
+  @media (max-width: 1100px) {
+    .satcom-demo { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Kepler's Third Law Demo</h1>
+<p>Bigger orbits take longer. Compare orbital periods for LEO, MEO, GEO, and a custom orbit.</p>
+
+<div class="demo satcom-demo">
+  <div class="card">
+    <svg id="satcom3-svg" class="satcom-svg" viewBox="-20 0 900 540" aria-label="Kepler third law demo"></svg>
+  </div>
+
+  <div class="card satcom-controls">
+    <div class="satcom-actions">
+      <button id="satcom3-play" class="satcom-btn" type="button">Pause</button>
+      <button id="satcom3-reset" class="satcom-btn secondary" type="button">Reset</button>
+    </div>
+
+    <div class="control">
+      <div class="label"><span>Custom altitude</span><span id="satcom3-altval">550 km</span></div>
+      <input id="satcom3-alt" type="range" min="300" max="35786" step="100" value="550">
+    </div>
+
+    <div class="control">
+      <div class="label"><span>Animation speed</span><span id="satcom3-speedval">240 min/s</span></div>
+      <input id="satcom3-speed" type="range" min="30" max="720" step="30" value="240">
+    </div>
+
+    <div id="satcom3-periods"></div>
+    <p class="satcom-small"><b>Concept:</b> The period grows as T ∝ a<sup>3/2</sup>. Doubling orbit size increases the period by 2<sup>3/2</sup>, not by 2.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/demos/kepler_third_law_demo.js') }}"></script>
+{% endblock %}
