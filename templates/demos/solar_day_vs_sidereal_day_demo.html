@@ -3,19 +3,19 @@
 {% block extra_css %}
 
 <style>
-  .satcom-demo { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr); gap: 20px; align-items: stretch; }
+  .satcom-demo { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(240px, 0.72fr); gap: 20px; align-items: stretch; }
   .satcom-controls .control { margin: 14px 0; }
   .satcom-controls .label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
   .satcom-controls input[type="range"] { width: 100%; }
   .satcom-btn { padding: 10px 14px; border-radius: 12px; border: 1px solid #111827; background: #111827; color: #fff; font-weight: 600; cursor: pointer; }
   .satcom-btn.secondary { background: #fff; color: #111827; }
   .satcom-small { font-size: 14px; line-height: 1.45; color: #374151; }
-  .satcom-svg { width: 100%; height: clamp(420px, 52vw, 620px); display: block; overflow: visible; }
+  .satcom-svg { width: 100%; height: clamp(520px, 64vh, 760px); display: block; overflow: visible; }
   .satcom-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  .satcom-plot { min-height: clamp(420px, 52vw, 620px); }
+  .satcom-plot { min-height: clamp(520px, 64vh, 760px); }
 
   @media (max-width: 1200px) {
-    .satcom-demo { grid-template-columns: minmax(0, 1fr) minmax(240px, 0.9fr); }
+    .satcom-demo { grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.75fr); }
   }
 
   @media (max-width: 980px) {
