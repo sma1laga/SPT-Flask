@@ -6,7 +6,7 @@
   let meanAnomaly = 0;
   let last = null;
 
-  const ox = 410;
+  const baseOx = 410;
   const oy = 260;
   const a = 230;
 
@@ -64,7 +64,7 @@
     return E;
   };
 
-  const pos = (M, e) => {
+  const pos = (M, e, ox) => {
     const b = a * Math.sqrt(1 - e * e);
     const E = solveKepler(M, e);
     return [ox + a * (Math.cos(E) - e), oy + b * Math.sin(E)];
@@ -77,6 +77,7 @@
 
     const e = parseFloat(ecc.value);
     const b = a * Math.sqrt(1 - e * e);
+    const ox = baseOx + Math.max(0, (e - 0.62) / (0.78 - 0.62)) * 32;
 
     if (running) meanAnomaly = (meanAnomaly + dt * parseFloat(speed.value) * 0.52) % (2 * Math.PI);
 
@@ -92,12 +93,12 @@
     for (let k = 0; k < 12; k += 1) {
       const pts = [];
       for (let j = 0; j <= 18; j += 1) {
-        const q = pos((k + j / 18) * 2 * Math.PI / 12, e);
+        const q = pos((k + j / 18) * 2 * Math.PI / 12, e, ox);
         pts.push(`${q[0].toFixed(1)},${q[1].toFixed(1)}`);
       }
       sectors[k].setAttribute("d", `M ${ox},${oy} L ${pts.join(" L ")} Z`);
 
-      const q = pos(k * 2 * Math.PI / 12, e);
+      const q = pos(k * 2 * Math.PI / 12, e, ox);
       lines[k].setAttribute("x1", ox);
       lines[k].setAttribute("y1", oy);
       lines[k].setAttribute("x2", q[0]);
@@ -119,9 +120,9 @@
     earthText.setAttribute("x", ox - 42);
     earthText.setAttribute("y", oy + 48);
 
-    const pp = pos(0, e);
-    const aa = pos(Math.PI, e);
-    const s = pos(meanAnomaly, e);
+    const pp = pos(0, e, ox);
+    const aa = pos(Math.PI, e, ox);
+    const s = pos(meanAnomaly, e, ox);
 
     per.setAttribute("cx", pp[0]);
     per.setAttribute("cy", pp[1]);
