@@ -42,6 +42,13 @@ SATELLITE_COMMUNICATIONS_DEMOS = {
                 "desc": "Visualize why the satellite spends more than half of its period near apogee in the far half of an eccentric orbit.",
                 "endpoint": "satellite_communications.molniya_far_half_time_demo",
             },
+            {
+                "slug": "solar-day-vs-sidereal-day-demo",
+                "title": "Demo 6",
+                "title_desc": "Solar Day vs Sidereal Day Demo",
+                "desc": "Compare Earth's rotation relative to distant stars versus the Sun to understand the ~4 minute difference.",
+                "endpoint": "satellite_communications.solar_day_vs_sidereal_day_demo",
+            },
         ],
         "Tutorial": [],
     }
@@ -73,3 +80,7 @@ def kepler_third_law_demo():
 @satellite_communications_bp.route("/molniya-far-half-time-demo", methods=["GET"])
 def molniya_far_half_time_demo():
     return render_template("demos/molniya_far_half_time_demo.html")
+
+@satellite_communications_bp.route("/solar-day-vs-sidereal-day-demo", methods=["GET"])
+def solar_day_vs_sidereal_day_demo():
+    return render_template("demos/solar_day_vs_sidereal_day_demo.html")
