@@ -964,6 +964,9 @@ body.no-card-hover .card:hover {
   .sidebar-toggle {
     display: block;
   }
+  body.demo-sidebar-collapsible .sidebar-collapse-btn {
+    display: none;
+  }
   .menu-container {
     grid-template-columns: 1fr;
   }
