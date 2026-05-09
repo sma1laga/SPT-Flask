@@ -69,30 +69,48 @@ document.addEventListener("DOMContentLoaded", function() {
   // Sidebar toggle for mobile
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const sidebar = document.querySelector(".sidebar");
+  const demoSidebarToggle = document.getElementById("demo-sidebar-toggle");
+  const isDemoCollapsible = document.body.classList.contains("demo-sidebar-collapsible");
+  const isMobileSidebar = () => window.matchMedia("(max-width: 768px)").matches;
+
   if (sidebarToggle && sidebar) {
     sidebarToggle.addEventListener("click", function() {
+      if (isDemoCollapsible) {
+        document.body.classList.remove("demo-sidebar-collapsed");
+      }
       sidebar.classList.toggle("active");
     });
   }
-  // Demo sidebar collapse toggle (desktop)
-  const demoSidebarToggle = document.getElementById("demo-sidebar-toggle");
-  if (demoSidebarToggle && document.body.classList.contains("demo-sidebar-collapsible")) {
+
+  // Demo sidebar collapse toggle (desktop + mobile-safe behavior)
+  if (demoSidebarToggle && isDemoCollapsible) {
     const STORAGE_KEY = "demoSidebarCollapsed";
 
     const applySidebarState = (isCollapsed) => {
-      document.body.classList.toggle("demo-sidebar-collapsed", isCollapsed);
-      demoSidebarToggle.setAttribute("aria-expanded", (!isCollapsed).toString());
-      demoSidebarToggle.querySelector("i")?.classList.toggle("fa-angle-double-right", isCollapsed);
-      demoSidebarToggle.querySelector("i")?.classList.toggle("fa-angle-double-left", !isCollapsed);
+      const collapseOnDesktop = !isMobileSidebar() && isCollapsed;
+      document.body.classList.toggle("demo-sidebar-collapsed", collapseOnDesktop);
+      demoSidebarToggle.setAttribute("aria-expanded", (!collapseOnDesktop).toString());
+      demoSidebarToggle.querySelector("i")?.classList.toggle("fa-angle-double-right", collapseOnDesktop);
+      demoSidebarToggle.querySelector("i")?.classList.toggle("fa-angle-double-left", !collapseOnDesktop);
     };
 
     const initialCollapsed = localStorage.getItem(STORAGE_KEY) === "true";
     applySidebarState(initialCollapsed);
 
     demoSidebarToggle.addEventListener("click", () => {
+      if (isMobileSidebar()) {
+        sidebar?.classList.toggle("active");
+        demoSidebarToggle.setAttribute("aria-expanded", (sidebar?.classList.contains("active") ?? false).toString());
+        return;
+      }
+
       const next = !document.body.classList.contains("demo-sidebar-collapsed");
       applySidebarState(next);
       localStorage.setItem(STORAGE_KEY, next ? "true" : "false");
+    });
+
+    window.addEventListener("resize", () => {
+      applySidebarState(localStorage.getItem(STORAGE_KEY) === "true");
     });
   }
 
