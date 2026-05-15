@@ -62,7 +62,7 @@ def plot_function_update():
 
     func1_str, func2_str = data.get("func1", "").strip(), data.get("func2", "").strip()
 
-    if  func1_str == "heartcoded" or func2_str == "heartcoded" or func1_str == "tarik+lea" or func2_str == "tarik+lea" or func1_str == "lea+tarik":
+    if  func1_str == "heartcoded" or func2_str == "heartcoded" or func1_str == "tarik+zara" or func2_str == "tarik+zara" or func1_str == "zara+tarik":
         func1_str = "np.sqrt(1 - (np.abs(t) - 1)**2)"
         func2_str = "np.arccos(1 - np.abs(t)) - np.pi"
 

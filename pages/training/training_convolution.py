@@ -5,7 +5,7 @@ from functools import partial
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator
 import matplotlib.pyplot as plt
 from scipy.signal import convolve
 
@@ -267,12 +267,18 @@ def create_convolution_problem(difficulty):
                 ax.set_ylim(ydata_visible.min() - 0.05 * y_span, ydata_visible.max() + 0.05 * y_span)
             ax.xaxis.set_major_locator(MultipleLocator(1))
             ax.xaxis.set_minor_locator(MultipleLocator(0.5))
-            if y_span <= 8:
+            ymin, ymax = ax.get_ylim()
+            yrange = ymax - ymin
+
+            if yrange <= 8:
                 ax.yaxis.set_major_locator(MultipleLocator(1))
                 ax.yaxis.set_minor_locator(MultipleLocator(0.5))
-            else:
-                ax.yaxis.set_major_locator(MultipleLocator(5))
+            elif yrange <= 16:
+                ax.yaxis.set_major_locator(MultipleLocator(2))
                 ax.yaxis.set_minor_locator(MultipleLocator(1))
+            else:
+                ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+                ax.yaxis.set_minor_locator(AutoMinorLocator(2))
             ax.grid(which='both', zorder=0)
 
         # Convert to base64
