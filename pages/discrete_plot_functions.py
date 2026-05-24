@@ -36,6 +36,21 @@ def _adjust_k(k: np.ndarray, shift: float, width: float) -> np.ndarray:
     """Adjust k values based on shift and width (1/width * k - shift)."""
     return (k - shift) / width
 
+
+def _normalize_signal_shape(values, reference: np.ndarray) -> np.ndarray:
+    """Return aray aligned to reference for scalar/vector expressions"""
+    arr = np.asarray(values)
+    if arr.ndim == 0:
+        return np.full(reference.shape, arr.item(), dtype=arr.dtype)
+    if arr.shape != reference.shape:
+        try:
+            arr = np.broadcast_to(arr, reference.shape)
+        except ValueError as exc:
+            raise ValueError(
+                f"Expression result shape {arr.shape} cannot be aligned to {reference.shape}."
+            ) from exc
+    return np.asarray(arr)
+
 # -------------------------------------------------------------------- #
 # page
 # -------------------------------------------------------------------- #
@@ -90,6 +105,7 @@ def discrete_plot_functions_update():
 
     try:
         y1 = a1 * safe_eval(func1_str, ctx) if func1_str.strip() else np.zeros_like(k)
+        y1 = _normalize_signal_shape(y1, k)
     except Exception as e:
         return jsonify({"error": f"f₁ error: {e}"}), 400
 
@@ -98,6 +114,7 @@ def discrete_plot_functions_update():
         try:
             ctx["k"] = _adjust_k2(k)
             y2 = a2 * safe_eval(func2_str, ctx)
+            y2 = _normalize_signal_shape(y2, k)
         except Exception as e:
             return jsonify({"error": f"f₂ error: {e}"}), 400
 

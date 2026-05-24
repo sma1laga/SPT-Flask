@@ -43,6 +43,20 @@ def _adjust_t(t: np.ndarray, shift: float, width: float) -> np.ndarray:
     """Adjust time values based on shift and width (1/width * (t - shift))."""
     return (t - shift) / width
 
+def _normalize_signal_shape(values, reference: np.ndarray) -> np.ndarray:
+    """Return a 1-D array aligned to reference for scalar/vector expressions"""
+    arr = np.asarray(values)
+    if arr.ndim == 0:
+        return np.full(reference.shape, arr.item(), dtype=arr.dtype)
+    if arr.shape != reference.shape:
+        try:
+            arr = np.broadcast_to(arr, reference.shape)
+        except ValueError as exc:
+            raise ValueError(
+                f"Expression result shape {arr.shape} cannot be aligned to {reference.shape}."
+            ) from exc
+    return np.asarray(arr)
+
 plot_function_bp = Blueprint("plot_function", __name__,
                              template_folder="templates")
 
@@ -98,6 +112,7 @@ def plot_function_update():
 
     try:
         y1 = a1 * safe_eval(func1_str, ns) if func1_str else np.zeros_like(t)
+        y1 = _normalize_signal_shape(y1, t)
     except Exception as e:
         return jsonify(error_data("Error in f₁(t): ", e)), 400
     y1[~np.isfinite(y1)] = 0.0
@@ -108,11 +123,15 @@ def plot_function_update():
             ns["t"] = _adjust_t2(t)
             ns["delta"] = partial(delta_plotting, th=0.1*w2)
             y2 = a2 * safe_eval(func2_str, ns)
+            y2 = _normalize_signal_shape(y2, t)
         except Exception as e:
             return jsonify(error_data("Error in f₂(t): ", e)), 400
         y2[~np.isfinite(y2)] = 0.0
 
     def to_json_list(arr):
+        arr = np.asarray(arr)
+        if arr.ndim == 0:
+            arr = np.atleast_1d(arr)
         if np.iscomplexobj(arr):
             return {
                 "real": arr.real.tolist(),

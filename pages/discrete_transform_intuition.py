@@ -70,7 +70,16 @@ def transform_intuition():
 @transform_intuition_bp.route('/update', methods=['POST'])
 def update_transform_intuition():
     data = request.get_json(force=True) or {}
-    N = max(1, int(data.get('N', 8)))
-    r_min = float(data.get('r_min', 0.5))
-    r_max = float(data.get('r_max', 1.5))
+    try:
+        N = max(1, int(data.get('N', 8) or 8))
+    except (TypeError, ValueError):
+        N = 8
+    try:
+        r_min = float(data.get('r_min', 0.5) if data.get('r_min', 0.5) != '' else 0.5)
+    except (TypeError, ValueError):
+        r_min = 0.5
+    try:
+        r_max = float(data.get('r_max', 1.5) if data.get('r_max', 1.5) != '' else 1.5)
+    except (TypeError, ValueError):
+        r_max = 1.5
     return jsonify(_generate_data(N=N, r_min=r_min, r_max=r_max))
