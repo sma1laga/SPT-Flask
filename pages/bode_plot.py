@@ -6,6 +6,7 @@ from ast import literal_eval
 import re
 import sympy as sp
 from sympy.parsing.sympy_parser import (
+    convert_xor,
     implicit_multiplication_application,
     parse_expr,
     standard_transformations,
@@ -196,7 +197,7 @@ def parse_poly_input(expr_str):
             expr_sympy = parse_expr(
                 expr_fixed,
                 local_dict={'s': s},
-                transformations=standard_transformations + (implicit_multiplication_application,),
+                transformations=standard_transformations + (convert_xor, implicit_multiplication_application),
             )
         except Exception as e:
             raise ValueError("Could not parse the factorized expression: " + str(e))
@@ -206,6 +207,21 @@ def parse_poly_input(expr_str):
         coeffs = [complex(coeff.evalf()) for coeff in poly.all_coeffs()]
         coeffs, _ = _normalize_coefficients(coeffs)
         return coeffs, expr_str  # use the user's original factorized expression for display
+    
+
+def _render_factorized_input_as_latex(expr_str: str) -> str:
+    """Render a user-entered factorized polynomial string into clean LaTeX."""
+    expr_fixed = re.sub(r'\)\s*\(', ')*(', expr_str.strip())
+    validate_expression_safety(expr_fixed)
+    expr_fixed = expr_fixed.replace("j", "I")
+    s = sp.symbols('s', complex=True)
+    expr_sympy = parse_expr(
+        expr_fixed,
+        local_dict={'s': s},
+        transformations=standard_transformations + (convert_xor, implicit_multiplication_application),
+    )
+    return sp.latex(expr_sympy)
+
 
 def format_polynomial(coeffs, var="s"):
     """
@@ -620,11 +636,11 @@ def bode_plot():
             if num_raw is None:
                 num_disp = format_polynomial(num)
             else:
-                num_disp = num_raw  # display as typed
+                num_disp = _render_factorized_input_as_latex(num_raw)
             if den_raw is None:
                 den_disp = format_polynomial(den)
             else:
-                den_disp = den_raw
+                den_disp = _render_factorized_input_as_latex(den_raw)
             function_str = f"H(s) = \\frac{{{num_disp}}}{{{den_disp}}}"
         else:
             return render_template(
@@ -853,11 +869,11 @@ def download_png():
     if num_raw is None:
         num_disp = format_polynomial(num)
     else:
-        num_disp = num_raw
+        num_disp = _render_factorized_input_as_latex(num_raw)
     if den_raw is None:
         den_disp = format_polynomial(den)
     else:
-        den_disp = den_raw
+        den_disp = _render_factorized_input_as_latex(den_raw)
     function_str = rf"$H(s) = \frac{{{num_disp}}}{{{den_disp}}}$"
 
 
