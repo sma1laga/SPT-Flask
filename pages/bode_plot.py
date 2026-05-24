@@ -15,6 +15,7 @@ import io
 import control
 from itertools import zip_longest
 from typing import Optional
+from utils.eval_helpers import validate_expression_safety
 _COMPLEX_COEFF_TOL = 1e-9
 
 def _evaluate_transfer(num, den, s_values):
@@ -173,6 +174,7 @@ def parse_poly_input(expr_str):
       - If the user input is factorized, display_string is the raw input (as entered) used for display.
     """
     expr_str = expr_str.strip()
+    validate_expression_safety(expr_str)
     if expr_str.startswith('['):
         try:
             coeffs = literal_eval(expr_str)
@@ -186,6 +188,7 @@ def parse_poly_input(expr_str):
         # Factorized mode.
         # Insert multiplication operator between adjacent parentheses if missing.
         expr_fixed = re.sub(r'\)\s*\(', ')*(', expr_str)
+        validate_expression_safety(expr_fixed)
         # Replace "j" with sympy's "I"
         expr_fixed = expr_fixed.replace("j", "I")
         s = sp.symbols('s', complex=True)
