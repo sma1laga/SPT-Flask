@@ -43,6 +43,20 @@ SATELLITE_COMMUNICATIONS_DEMOS = {
                 "endpoint": "satellite_communications.molniya_far_half_time_demo",
             },
             {
+                "slug": "relative-motion-demo",
+                "title": "Relative Motion",
+                "title_desc": "Relative Motion Demo",
+                "desc": "Show how pass repeat times are governed by the satellite-ground-station relative angular rate.",
+                "endpoint": "satellite_communications.relative_motion_demo",
+            },
+            {
+                "slug": "satellite-orbit-ground-track-demo",
+                "title": "Satellite Orbit and Ground Track",
+                "title_desc": "Satellite Orbit and Ground Track Demo",
+                "desc": "Interactive sub-satellite latitude and longitude visualization with inertial orbit and Earth-fixed ground track views.",
+                "endpoint": "satellite_communications.satellite_orbit_ground_track_demo",
+            },
+            {
                 "slug": "solar-day-vs-sidereal-day-demo",
                 "title": "Solar Day vs Sidereal Day",
                 "title_desc": "Solar Day vs Sidereal Day Demo",
@@ -81,6 +95,17 @@ def kepler_third_law_demo():
 def molniya_far_half_time_demo():
     return render_template("demos/molniya_far_half_time_demo.html")
 
+@satellite_communications_bp.route("/relative-motion-demo", methods=["GET"])
+def relative_motion_demo():
+    return render_template("demos/relative_motion_demo.html")
+
+
+
 @satellite_communications_bp.route("/solar-day-vs-sidereal-day-demo", methods=["GET"])
 def solar_day_vs_sidereal_day_demo():
     return render_template("demos/solar_day_vs_sidereal_day_demo.html")
+
+
+@satellite_communications_bp.route("/satellite-orbit-ground-track-demo", methods=["GET"])
+def satellite_orbit_ground_track_demo():
+    return render_template("demos/satellite_orbit_ground_track_demo.html")

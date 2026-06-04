@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .satcom-rel-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .satcom-rel-main {
+    display: grid;
+    grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  .satcom-rel-panel {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .satcom-rel-plot {
+    padding: 12px;
+  }
+
+  .satcom-rel-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .satcom-rel-lede,
+  .satcom-rel-small {
+    color: #374151;
+    line-height: 1.55;
+  }
+
+  .satcom-rel-lede {
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  .satcom-rel-small {
+    font-size: 14px;
+  }
+
+  .satcom-rel-stack {
+    display: grid;
+    gap: 16px;
+  }
+
+  .satcom-rel-sidebar {
+    display: grid;
+    gap: 18px;
+    align-self: start;
+    height: fit-content;
+  }
+
+  .satcom-rel-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .satcom-rel-choice,
+  .satcom-rel-btn {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    border-radius: 14px;
+    cursor: pointer;
+    color: #111827;
+  }
+
+  .satcom-rel-choice {
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  .satcom-rel-choice.is-active {
+    border-color: #111827;
+    background: #f3f4f6;
+  }
+
+  .satcom-rel-choice-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .satcom-rel-muted {
+    color: #4b5563;
+    font-size: 14px;
+  }
+
+  .satcom-rel-note {
+    margin-top: 2px;
+  }
+
+  .satcom-rel-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .satcom-rel-btn {
+    padding: 10px 14px;
+    font-weight: 600;
+  }
+
+  .satcom-rel-btn.primary {
+    background: #111827;
+    border-color: #111827;
+    color: #ffffff;
+  }
+
+  .satcom-rel-control-label {
+    color: #374151;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .satcom-rel-range {
+    width: 100%;
+    accent-color: #2563eb;
+  }
+
+  .satcom-rel-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .satcom-rel-stat,
+  .satcom-rel-formula {
+    background: #f9fafb;
+    border-radius: 14px;
+  }
+
+  .satcom-rel-stat {
+    padding: 12px;
+  }
+
+  .satcom-rel-stat .label {
+    color: #6b7280;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .satcom-rel-stat .value {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .satcom-rel-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  .satcom-rel-subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .satcom-rel-formula {
+    font-size: 22px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .satcom-rel-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .satcom-rel-timeline {
+    position: relative;
+    height: 96px;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    background: #ffffff;
+    padding: 16px;
+  }
+
+  .satcom-rel-axis {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 50%;
+    height: 2px;
+    background: #d1d5db;
+    transform: translateY(-50%);
+  }
+
+  .satcom-rel-tick {
+    position: absolute;
+    top: 12px;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+
+  .satcom-rel-tickline {
+    width: 2px;
+    height: 16px;
+    background: #6b7280;
+    margin: 0 auto;
+  }
+
+  .satcom-rel-ticklabel {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #4b5563;
+  }
+
+  .satcom-rel-marker {
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #111827;
+    border: 2px solid #ffffff;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  body.dark-mode .satcom-rel-panel,
+  body.dark-mode .satcom-rel-timeline {
+    background: #0f172a;
+    border-color: #334155;
+    box-shadow: none;
+  }
+
+  body.dark-mode .satcom-rel-lede,
+  body.dark-mode .satcom-rel-small,
+  body.dark-mode .satcom-rel-control-label,
+  body.dark-mode .satcom-rel-muted {
+    color: #cbd5e1;
+  }
+
+  body.dark-mode .satcom-rel-choice,
+  body.dark-mode .satcom-rel-btn {
+    background: #111827;
+    border-color: #475569;
+    color: #f8fafc;
+  }
+
+  body.dark-mode .satcom-rel-choice.is-active {
+    background: #1e293b;
+    border-color: #93c5fd;
+  }
+
+  body.dark-mode .satcom-rel-btn.primary {
+    background: #2563eb;
+    border-color: #60a5fa;
+  }
+
+  body.dark-mode .satcom-rel-stat,
+  body.dark-mode .satcom-rel-formula {
+    background: #1e293b;
+  }
+
+  body.dark-mode .satcom-rel-stat .label,
+  body.dark-mode .satcom-rel-ticklabel {
+    color: #94a3b8;
+  }
+
+  body.dark-mode .satcom-rel-axis {
+    background: #475569;
+  }
+
+  body.dark-mode .satcom-rel-tickline {
+    background: #94a3b8;
+  }
+
+  body.dark-mode .satcom-rel-marker {
+    background: #60a5fa;
+    border-color: #0f172a;
+  }
+
+  @media (max-width: 1200px) {
+    .satcom-rel-demo,
+    .satcom-rel-main {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .satcom-rel-choices,
+    .satcom-rel-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Relative Motion Demo</h1>
+<p>
+  A pass happens when the satellite and the rotating ground station have the same longitude again.
+  The repeat interval is set by the relative angular rate.
+</p>
+
+<div class="demo satcom-rel-demo">
+  <div class="satcom-rel-panel">
+    <div class="satcom-rel-title">Relative-motion demo</div>
+    <div class="satcom-rel-lede">
+      A pass happens when the satellite and the rotating ground station have the same longitude again.
+      The key rate is <b>&omega;<sub>rel</sub> = &omega;<sub>sat</sub> - &omega;<sub>E</sub></b>.
+    </div>
+
+    <div class="satcom-rel-main">
+      <div class="satcom-rel-panel satcom-rel-plot">
+        <svg id="satcom-rel-svg" class="satcom-rel-svg" viewBox="0 0 420 420" aria-label="Ground-fixed relative motion visualization"></svg>
+      </div>
+
+      <div class="satcom-rel-stack">
+        <div class="satcom-rel-choices" id="satcom-rel-choices" aria-label="Orbit candidates"></div>
+
+        <div class="satcom-rel-panel">
+          <div class="satcom-rel-actions">
+            <button id="satcom-rel-play" class="satcom-rel-btn primary" type="button">Pause</button>
+            <button id="satcom-rel-reset" class="satcom-rel-btn" type="button">Reset</button>
+          </div>
+          <div class="satcom-rel-control-label">Animation speed</div>
+          <input id="satcom-rel-speed" class="satcom-rel-range" type="range" min="0.1" max="1.5" step="0.1" value="0.5">
+
+          <div class="satcom-rel-stats">
+            <div class="satcom-rel-stat"><div class="label">Earth rate</div><div class="value" id="satcom-rel-earth-rate"></div></div>
+            <div class="satcom-rel-stat"><div class="label">Satellite rate</div><div class="value" id="satcom-rel-sat-rate"></div></div>
+            <div class="satcom-rel-stat"><div class="label">Relative rate</div><div class="value" id="satcom-rel-rel-rate"></div></div>
+            <div class="satcom-rel-stat"><div class="label">Longitude gap</div><div class="value" id="satcom-rel-gap"></div></div>
+          </div>
+        </div>
+
+        <div class="satcom-rel-panel">
+          <div class="satcom-rel-subtitle">Why a pass repeats every 4 h</div>
+          <div class="satcom-rel-small" style="margin-bottom:10px">In 4 hours, the satellite must gain an integer number of full turns on the station:</div>
+          <div class="satcom-rel-formula">(&omega;<sub>sat</sub> - &omega;<sub>E</sub>) &middot; 4 h = 360&deg; m</div>
+          <div class="satcom-rel-small" style="margin-top:10px">For the selected case, the gain in 4 h is <b id="satcom-rel-gain4h"></b>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="satcom-rel-sidebar">
+    <div class="satcom-rel-panel">
+      <div class="satcom-rel-section-title">Pass timeline</div>
+      <div class="satcom-rel-timeline">
+        <div class="satcom-rel-axis"></div>
+        <div class="satcom-rel-tick" style="left:calc(16px + 0 * (100% - 32px))"><div class="satcom-rel-tickline"></div><div class="satcom-rel-ticklabel">0 h</div></div>
+        <div class="satcom-rel-tick" style="left:calc(16px + .5 * (100% - 32px))"><div class="satcom-rel-tickline"></div><div class="satcom-rel-ticklabel">4 h</div></div>
+        <div class="satcom-rel-tick" style="left:calc(16px + 1 * (100% - 32px))"><div class="satcom-rel-tickline"></div><div class="satcom-rel-ticklabel">8 h</div></div>
+        <div class="satcom-rel-marker" id="satcom-rel-timeline-marker"></div>
+      </div>
+      <div class="satcom-rel-small" style="margin-top:12px">A new alignment happens at 4 h and again at 8 h, even though the orbital period is not 4 h.</div>
+    </div>
+
+    <div class="satcom-rel-panel">
+      <div class="satcom-rel-section-title" style="margin-bottom:10px">Interpretation</div>
+      <div class="satcom-rel-small">
+        <div><b>m = 1:</b> the satellite gains 360&deg; on the station in 4 hours.</div>
+        <div><b>m = 2:</b> it gains 720&deg; in 4 hours, so it still lines up after 4 hours.</div>
+        <div>The repeat interval is set by the <b>relative motion</b>, not directly by the orbital period.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/demos/relative_motion_demo.js') }}"></script>
+{% endblock %}

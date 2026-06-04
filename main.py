@@ -137,6 +137,8 @@ COLLAPSIBLE_ENDPOINTS = {
     "satellite_communications.kepler_third_law_demo",
     "satellite_communications.molniya_far_half_time_demo",
     "satellite_communications.solar_day_vs_sidereal_day_demo",
+    "satellite_communications.relative_motion_demo",
+    "satellite_communications.satellite_orbit_ground_track_demo",
 }
 
 SITE_BASE_URL = os.getenv(

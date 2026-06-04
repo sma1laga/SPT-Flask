@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .satcom-groundtrack {
+    --satcom-bg: #f5f4ee;
+    --satcom-panel: #ffffff;
+    --satcom-border: #d8d6cd;
+    --satcom-text: #2c2c2a;
+    --satcom-text-secondary: #6b6a64;
+    --satcom-accent: #4a6cf7;
+    color: var(--satcom-text);
+  }
+
+  body.dark-mode .satcom-groundtrack {
+    --satcom-bg: #0f172a;
+    --satcom-panel: #111827;
+    --satcom-border: #334155;
+    --satcom-text: #f8fafc;
+    --satcom-text-secondary: #cbd5e1;
+    --satcom-accent: #60a5fa;
+  }
+
+  .satcom-groundtrack .subtitle {
+    color: var(--satcom-text-secondary);
+    font-size: 0.95rem;
+    margin: 0 0 20px;
+  }
+
+  .satcom-groundtrack .panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 12px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .satcom-groundtrack .visual-panel {
+    background: #0a1628;
+    border-radius: 10px;
+    padding: 8px;
+  }
+
+  .satcom-groundtrack .visual-panel.map { aspect-ratio: 1.8; }
+  .satcom-groundtrack .visual-panel.orbit { aspect-ratio: 1; }
+
+  .satcom-groundtrack .readouts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    max-width: 1400px;
+    margin: 12px auto 0;
+  }
+
+  .satcom-groundtrack .readout {
+    background: var(--satcom-panel);
+    border: 1px solid var(--satcom-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+
+  .satcom-groundtrack .readout .lbl {
+    color: var(--satcom-text-secondary);
+    font-size: 11px;
+  }
+
+  .satcom-groundtrack .readout .val {
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .satcom-groundtrack .controls,
+  .satcom-groundtrack .notes {
+    background: var(--satcom-panel);
+    border: 1px solid var(--satcom-border);
+    border-radius: 10px;
+    max-width: 1400px;
+  }
+
+  .satcom-groundtrack .controls {
+    margin: 12px auto 0;
+    padding: 12px 16px;
+  }
+
+  .satcom-groundtrack .ctrl-row {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .satcom-groundtrack .ctrl-row label {
+    color: var(--satcom-text-secondary);
+    font-size: 13px;
+    min-width: 110px;
+  }
+
+  .satcom-groundtrack .ctrl-row input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .satcom-groundtrack .ctrl-row .out {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  .satcom-groundtrack .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .satcom-groundtrack button {
+    background: var(--satcom-accent);
+    border: 0;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 7px 14px;
+    width: auto;
+  }
+
+  .satcom-groundtrack button:hover { filter: brightness(0.9); }
+  .satcom-groundtrack button.secondary { background: #888; }
+  .satcom-groundtrack button.preset { background: #2da563; }
+
+  .satcom-groundtrack .notes {
+    color: var(--satcom-text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 16px auto;
+    padding: 12px 16px;
+  }
+
+  .satcom-groundtrack .notes strong { color: var(--satcom-text); }
+
+  @media (max-width: 900px) {
+    .satcom-groundtrack .panels { grid-template-columns: 1fr; }
+    .satcom-groundtrack .readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 560px) {
+    .satcom-groundtrack .ctrl-row { align-items: stretch; flex-direction: column; gap: 6px; }
+    .satcom-groundtrack .ctrl-row label,
+    .satcom-groundtrack .ctrl-row .out { min-width: 0; text-align: left; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="satcom-groundtrack demo">
+  <h1>Satellite Orbit and Ground Track Demo</h1>
+  <p class="subtitle">
+    Sub-satellite latitude <em>β<sub>s</sub></em> and longitude <em>λ<sub>s</sub></em>.
+    Default preset matches the tutorial problem (i = 65°, T ≈ 6 h, MEO).
+  </p>
+
+  <div class="panels">
+    <div class="visual-panel orbit">
+      <svg id="satcom-groundtrack-orbit-svg" width="100%" height="100%" viewBox="-100 -100 200 200" style="display:block;" aria-label="Inertial orbit visualization">
+        <defs>
+          <radialGradient id="satcom-groundtrack-earth-glow" cx="0.35" cy="0.35" r="0.7">
+            <stop offset="0%" stop-color="#5DA8E8"/>
+            <stop offset="60%" stop-color="#1d5a9c"/>
+            <stop offset="100%" stop-color="#0a2a4a"/>
+          </radialGradient>
+          <clipPath id="satcom-groundtrack-earth-clip"><circle cx="0" cy="0" r="32"/></clipPath>
+        </defs>
+        <g fill="#c8d4e8" opacity="0.6">
+          <circle cx="-85" cy="-78" r="0.5"/><circle cx="-60" cy="-85" r="0.4"/>
+          <circle cx="70" cy="-72" r="0.5"/><circle cx="88" cy="-40" r="0.4"/>
+          <circle cx="-90" cy="50" r="0.4"/><circle cx="80" cy="65" r="0.5"/>
+        </g>
+        <line x1="0" y1="0" x2="92" y2="0" stroke="#F2A623" stroke-width="0.6" stroke-dasharray="3,2" opacity="0.85"/>
+        <text x="86" y="-4" fill="#F2A623" font-size="6">♈ vernal eq.</text>
+        <ellipse cx="0" cy="0" rx="55" ry="11" fill="none" stroke="#3a5a85" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.6"/>
+        <g id="satcom-groundtrack-orbit-group">
+          <ellipse id="satcom-groundtrack-orbit-curve" cx="0" cy="0" rx="55" ry="11" fill="none" stroke="#7F77DD" stroke-width="0.7"/>
+          <circle id="satcom-groundtrack-an-marker" cx="55" cy="0" r="1.4" fill="#EF9F27"/>
+        </g>
+        <circle cx="0" cy="0" r="32" fill="url(#satcom-groundtrack-earth-glow)"/>
+        <g clip-path="url(#satcom-groundtrack-earth-clip)">
+          <g id="satcom-groundtrack-globe-land"></g>
+          <line x1="0" y1="-32" x2="0" y2="32" stroke="#FCDE5A" stroke-width="0.4" opacity="0.7"/>
+        </g>
+        <circle cx="0" cy="0" r="32" fill="none" stroke="#5DA8E8" stroke-width="0.5" opacity="0.6"/>
+        <line x1="0" y1="-38" x2="0" y2="38" stroke="#c8d4e8" stroke-width="0.3" stroke-dasharray="1,2" opacity="0.5"/>
+        <circle id="satcom-groundtrack-sat-dot" cx="55" cy="0" r="2" fill="#F09595" stroke="#501313" stroke-width="0.4"/>
+        <circle id="satcom-groundtrack-sat-halo" cx="55" cy="0" r="3.5" fill="none" stroke="#F09595" stroke-width="0.4" opacity="0.5"/>
+        <circle id="satcom-groundtrack-subsat" cx="32" cy="0" r="1.2" fill="#FCDE5A"/>
+        <line id="satcom-groundtrack-proj-line" x1="0" y1="0" x2="55" y2="0" stroke="#FCDE5A" stroke-width="0.3" stroke-dasharray="1,1" opacity="0.5"/>
+        <text x="-95" y="-90" fill="#c8d4e8" font-size="6" font-weight="500">Inertial frame</text>
+      </svg>
+    </div>
+
+    <div class="visual-panel map">
+      <svg id="satcom-groundtrack-map-svg" width="100%" height="100%" viewBox="0 0 360 200" preserveAspectRatio="none" style="display:block;" aria-label="Earth-fixed ground track map">
+        <rect x="0" y="10" width="360" height="180" fill="#0a1f6b"/>
+        <line x1="0" y1="100" x2="360" y2="100" stroke="#3a5a85" stroke-width="0.4" stroke-dasharray="2,2"/>
+        <line x1="180" y1="10" x2="180" y2="190" stroke="#3a5a85" stroke-width="0.4" stroke-dasharray="2,2"/>
+        <g id="satcom-groundtrack-land-group"></g>
+        <path id="satcom-groundtrack-track" fill="none" stroke="#5DCAA5" stroke-width="0.7" d=""/>
+        <circle id="satcom-groundtrack-map-sat" cx="180" cy="100" r="2.5" fill="#FCDE5A" stroke="#412402" stroke-width="0.4"/>
+        <text x="2" y="8" fill="#c8d4e8" font-size="6" font-weight="500">Ground track (β_s, λ_s)</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="readouts" aria-label="Simulation readouts">
+    <div class="readout"><div class="lbl">Sim. time</div><div class="val" id="satcom-groundtrack-rd-time">00:00:00</div></div>
+    <div class="readout"><div class="lbl">β_s (sub-sat. latitude)</div><div class="val" id="satcom-groundtrack-rd-lat">0.0°</div></div>
+    <div class="readout"><div class="lbl">λ_s (sub-sat. longitude)</div><div class="val" id="satcom-groundtrack-rd-lon">0.0°</div></div>
+    <div class="readout"><div class="lbl">Orbits done</div><div class="val" id="satcom-groundtrack-rd-orb">0.00</div></div>
+  </div>
+
+  <div class="controls" aria-label="Simulation controls">
+    <div class="ctrl-row">
+      <label for="satcom-groundtrack-incl-slider">Inclination i</label>
+      <input type="range" id="satcom-groundtrack-incl-slider" min="0" max="90" value="65" step="1">
+      <span class="out" id="satcom-groundtrack-incl-out">65°</span>
+    </div>
+    <div class="ctrl-row">
+      <label for="satcom-groundtrack-period-slider">Period T</label>
+      <input type="range" id="satcom-groundtrack-period-slider" min="90" max="1436" value="358" step="1">
+      <span class="out" id="satcom-groundtrack-period-out">5h 58m</span>
+    </div>
+    <div class="ctrl-row">
+      <label for="satcom-groundtrack-speed-slider">Sim speed</label>
+      <input type="range" id="satcom-groundtrack-speed-slider" min="50" max="3000" value="800" step="10">
+      <span class="out" id="satcom-groundtrack-speed-out">800×</span>
+    </div>
+    <div class="btn-row">
+      <button id="satcom-groundtrack-play-btn" type="button">Pause</button>
+      <button class="secondary" id="satcom-groundtrack-reset-btn" type="button">Reset</button>
+      <button class="preset" id="satcom-groundtrack-preset-btn" type="button">Tutorial preset (i=65°, T≈6h)</button>
+    </div>
+  </div>
+
+  <div class="notes">
+    <p><strong>How to use:</strong> Press <em>Tutorial preset</em> to load the parameters from the tutorial problem
+       (i = 65°, T ≈ 6 h, MEO). The left panel shows the orbital plane in inertial space (the orange dot is
+       the ascending node, ♈ marks the vernal equinox direction). The right panel traces the ground track
+       in real time on the Earth-fixed map. Try varying the inclination to see the maximum latitude change,
+       or the period to see how the longitudinal shift between orbits responds.</p>
+    <p><strong>Notation:</strong> β<sub>s</sub>, λ<sub>s</sub> = sub-satellite latitude &amp; longitude;
+       β<sub>g</sub>, λ<sub>g</sub> = ground-station coordinates (not used here).</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/demos/satellite_orbit_ground_track_demo.js') }}"></script>
+{% endblock %}
