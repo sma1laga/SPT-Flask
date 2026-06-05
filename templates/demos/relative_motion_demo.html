@@ -4,7 +4,7 @@
 <style>
   .satcom-rel-demo {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
     gap: 24px;
     align-items: start;
   }
@@ -17,6 +17,8 @@
   }
 
   .satcom-rel-panel {
+    box-sizing: border-box;
+    min-width: 0;
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 18px;
@@ -52,6 +54,7 @@
   .satcom-rel-stack {
     display: grid;
     gap: 16px;
+    min-width: 0;
   }
 
   .satcom-rel-sidebar {
@@ -59,6 +62,7 @@
     gap: 18px;
     align-self: start;
     height: fit-content;
+    min-width: 0;
   }
 
   .satcom-rel-choices {
@@ -74,14 +78,32 @@
     border-radius: 14px;
     cursor: pointer;
     color: #111827;
+    margin: 0;
+    transform: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .satcom-rel-choice:hover,
+  .satcom-rel-choice:focus-visible,
+  .satcom-rel-btn:hover,
+  .satcom-rel-btn:focus-visible {
+    background: #ffffff;
+    color: #111827;
+    transform: none;
+    border-color: #9ca3af;
+    box-shadow: 0 2px 8px rgba(17, 24, 39, 0.08);
   }
 
   .satcom-rel-choice {
+    min-width: 0;
     padding: 12px 14px;
     text-align: left;
+    overflow-wrap: anywhere;
   }
 
-  .satcom-rel-choice.is-active {
+  .satcom-rel-choice.is-active,
+  .satcom-rel-choice.is-active:hover,
+  .satcom-rel-choice.is-active:focus-visible {
     border-color: #111827;
     background: #f3f4f6;
   }
@@ -113,7 +135,9 @@
     font-weight: 600;
   }
 
-  .satcom-rel-btn.primary {
+  .satcom-rel-btn.primary,
+  .satcom-rel-btn.primary:hover,
+  .satcom-rel-btn.primary:focus-visible {
     background: #111827;
     border-color: #111827;
     color: #ffffff;
@@ -250,20 +274,29 @@
   }
 
   body.dark-mode .satcom-rel-choice,
-  body.dark-mode .satcom-rel-btn {
+  body.dark-mode .satcom-rel-btn,
+  body.dark-mode .satcom-rel-choice:hover,
+  body.dark-mode .satcom-rel-choice:focus-visible,
+  body.dark-mode .satcom-rel-btn:hover,
+  body.dark-mode .satcom-rel-btn:focus-visible {
     background: #111827;
     border-color: #475569;
     color: #f8fafc;
   }
 
-  body.dark-mode .satcom-rel-choice.is-active {
+  body.dark-mode .satcom-rel-choice.is-active,
+  body.dark-mode .satcom-rel-choice.is-active:hover,
+  body.dark-mode .satcom-rel-choice.is-active:focus-visible {
     background: #1e293b;
     border-color: #93c5fd;
   }
 
-  body.dark-mode .satcom-rel-btn.primary {
+  body.dark-mode .satcom-rel-btn.primary,
+  body.dark-mode .satcom-rel-btn.primary:hover,
+  body.dark-mode .satcom-rel-btn.primary:focus-visible {
     background: #2563eb;
     border-color: #60a5fa;
+    color: #f8fafc;
   }
 
   body.dark-mode .satcom-rel-stat,
@@ -289,10 +322,23 @@
     border-color: #0f172a;
   }
 
-  @media (max-width: 1200px) {
-    .satcom-rel-demo,
+  @media (max-width: 1450px) {
     .satcom-rel-main {
       grid-template-columns: 1fr;
+    }
+
+    .satcom-rel-plot {
+      max-width: 430px;
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .satcom-rel-demo {
+      grid-template-columns: 1fr;
+    }
+
+    .satcom-rel-plot {
+      max-width: none;
     }
   }
 
