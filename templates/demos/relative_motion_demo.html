@@ -11,8 +11,8 @@
 
   .satcom-rel-main {
     display: grid;
-    grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
     align-items: start;
   }
 
@@ -27,7 +27,9 @@
   }
 
   .satcom-rel-plot {
-    padding: 12px;
+    justify-self: center;
+    width: min(100%, 520px);
+    padding: 14px;
   }
 
   .satcom-rel-title {
@@ -53,6 +55,7 @@
 
   .satcom-rel-stack {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     min-width: 0;
   }
@@ -67,8 +70,9 @@
 
   .satcom-rel-choices {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    align-content: start;
   }
 
   .satcom-rel-choice,
@@ -124,13 +128,14 @@
   }
 
   .satcom-rel-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    flex-wrap: wrap;
     margin-bottom: 12px;
   }
 
   .satcom-rel-btn {
+    width: 100%;
     padding: 10px 14px;
     font-weight: 600;
   }
@@ -156,7 +161,7 @@
 
   .satcom-rel-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     margin-top: 18px;
   }
@@ -179,9 +184,10 @@
   }
 
   .satcom-rel-stat .value {
-    font-size: 24px;
+    font-size: clamp(20px, 2vw, 24px);
     font-weight: 700;
     margin-top: 4px;
+    white-space: nowrap;
   }
 
   .satcom-rel-section-title {
@@ -197,7 +203,8 @@
   }
 
   .satcom-rel-formula {
-    font-size: 22px;
+    font-size: clamp(18px, 2vw, 22px);
+    line-height: 1.45;
     padding: 14px;
     text-align: center;
   }
@@ -322,29 +329,31 @@
     border-color: #0f172a;
   }
 
-  @media (max-width: 1450px) {
-    .satcom-rel-main {
-      grid-template-columns: 1fr;
-    }
-
-    .satcom-rel-plot {
-      max-width: 430px;
-    }
-  }
-
-  @media (max-width: 1200px) {
+  @media (max-width: 1380px) {
     .satcom-rel-demo {
       grid-template-columns: 1fr;
     }
 
-    .satcom-rel-plot {
-      max-width: none;
+    .satcom-rel-sidebar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 980px) {
+    .satcom-rel-stack,
+    .satcom-rel-sidebar {
+      grid-template-columns: 1fr;
     }
   }
 
   @media (max-width: 640px) {
+    .satcom-rel-panel {
+      padding: 14px;
+    }
+
     .satcom-rel-choices,
-    .satcom-rel-stats {
+    .satcom-rel-stats,
+    .satcom-rel-actions {
       grid-template-columns: 1fr;
     }
   }
