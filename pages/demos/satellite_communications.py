@@ -43,6 +43,13 @@ SATELLITE_COMMUNICATIONS_DEMOS = {
                 "endpoint": "satellite_communications.molniya_far_half_time_demo",
             },
             {
+                "slug": "visibility-window-demo",
+                "title": "Visibility Window",
+                "title_desc": "Visibility Window Demo",
+                "desc": "Animate the relative-longitude interval where a satellite remains visible above a minimum elevation angle.",
+                "endpoint": "satellite_communications.visibility_window_demo",
+            },
+            {
                 "slug": "relative-motion-demo",
                 "title": "Relative Motion",
                 "title_desc": "Relative Motion Demo",
@@ -94,6 +101,11 @@ def kepler_third_law_demo():
 @satellite_communications_bp.route("/molniya-far-half-time-demo", methods=["GET"])
 def molniya_far_half_time_demo():
     return render_template("demos/molniya_far_half_time_demo.html")
+
+@satellite_communications_bp.route("/visibility-window-demo", methods=["GET"])
+def visibility_window_demo():
+    return render_template("demos/visibility_window_demo.html")
+
 
 @satellite_communications_bp.route("/relative-motion-demo", methods=["GET"])
 def relative_motion_demo():

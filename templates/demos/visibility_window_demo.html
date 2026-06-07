@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  .satcom-vis-demo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+    gap: 24px;
+    align-items: start;
+  }
+
+  .satcom-vis-panel {
+    box-sizing: border-box;
+    min-width: 0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .satcom-vis-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .satcom-vis-lede,
+  .satcom-vis-small {
+    color: #374151;
+    line-height: 1.65;
+  }
+
+  .satcom-vis-lede {
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  .satcom-vis-small {
+    font-size: 14px;
+  }
+
+  .satcom-vis-grid {
+    display: grid;
+    grid-template-columns: minmax(320px, 470px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .satcom-vis-svg-panel {
+    padding: 12px;
+  }
+
+  .satcom-vis-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .satcom-vis-stack {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .satcom-vis-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .satcom-vis-choice,
+  .satcom-vis-btn {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #111827;
+    border-radius: 14px;
+    cursor: pointer;
+    margin: 0;
+    transform: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .satcom-vis-choice:hover,
+  .satcom-vis-choice:focus-visible,
+  .satcom-vis-btn:hover,
+  .satcom-vis-btn:focus-visible {
+    background: #ffffff;
+    color: #111827;
+    transform: none;
+    border-color: #9ca3af;
+    box-shadow: 0 2px 8px rgba(17, 24, 39, 0.08);
+  }
+
+  .satcom-vis-choice {
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  .satcom-vis-choice.is-active,
+  .satcom-vis-choice.is-active:hover,
+  .satcom-vis-choice.is-active:focus-visible {
+    border-color: #111827;
+    background: #f3f4f6;
+  }
+
+  .satcom-vis-choice-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .satcom-vis-muted {
+    color: #4b5563;
+    font-size: 14px;
+  }
+
+  .satcom-vis-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .satcom-vis-btn {
+    padding: 10px 14px;
+    font-weight: 600;
+  }
+
+  .satcom-vis-control-label {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+
+  .satcom-vis-range {
+    width: 100%;
+  }
+
+  .satcom-vis-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .satcom-vis-stat {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .satcom-vis-stat .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #6b7280;
+  }
+
+  .satcom-vis-stat .value {
+    margin-top: 4px;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .satcom-vis-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .satcom-vis-subtitle {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .dark-mode .satcom-vis-panel,
+  .dark-mode .satcom-vis-choice,
+  .dark-mode .satcom-vis-btn {
+    background: #111827;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+
+  .dark-mode .satcom-vis-choice:hover,
+  .dark-mode .satcom-vis-choice:focus-visible,
+  .dark-mode .satcom-vis-btn:hover,
+  .dark-mode .satcom-vis-btn:focus-visible,
+  .dark-mode .satcom-vis-choice.is-active {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #94a3b8;
+  }
+
+  .dark-mode .satcom-vis-lede,
+  .dark-mode .satcom-vis-small,
+  .dark-mode .satcom-vis-control-label,
+  .dark-mode .satcom-vis-muted {
+    color: #cbd5e1;
+  }
+
+  .dark-mode .satcom-vis-stat {
+    background: #1e293b;
+  }
+
+  .dark-mode .satcom-vis-stat .label {
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1180px) {
+    .satcom-vis-demo,
+    .satcom-vis-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .satcom-vis-choices,
+    .satcom-vis-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Visibility Window Demo</h1>
+<p>
+  Explore how the half-window &psi; limits the relative longitude interval where a satellite is visible
+  above a minimum elevation angle.
+</p>
+
+<div class="demo satcom-vis-demo">
+  <div class="satcom-vis-panel">
+    <div class="satcom-vis-title">Visibility window demo</div>
+    <div class="satcom-vis-lede">
+      The satellite is visible while the relative longitude stays between <b>-&psi;</b> and <b>+&psi;</b>.
+      The full visibility window is therefore <b>2&psi;</b>.
+    </div>
+
+    <div class="satcom-vis-grid">
+      <div class="satcom-vis-panel satcom-vis-svg-panel">
+        <svg id="satcom-vis-svg" class="satcom-vis-svg" viewBox="0 0 480 430" aria-label="Equatorial visibility geometry animation"></svg>
+      </div>
+
+      <div class="satcom-vis-stack">
+        <div class="satcom-vis-choices" id="satcom-vis-choices" aria-label="Orbit choices"></div>
+
+        <div class="satcom-vis-panel">
+          <div class="satcom-vis-actions">
+            <button id="satcom-vis-play" class="satcom-vis-btn" type="button">Play</button>
+            <button id="satcom-vis-pause" class="satcom-vis-btn" type="button">Pause</button>
+            <button id="satcom-vis-reset" class="satcom-vis-btn" type="button">Reset</button>
+          </div>
+          <div class="satcom-vis-control-label">Animation speed</div>
+          <input id="satcom-vis-speed" class="satcom-vis-range" type="range" min="0.1" max="1.0" step="0.05" value="0.35">
+
+          <div class="satcom-vis-stats">
+            <div class="satcom-vis-stat"><div class="label">Minimum elevation</div><div class="value" id="satcom-vis-min-elev"></div></div>
+            <div class="satcom-vis-stat"><div class="label">Half-window &psi;</div><div class="value" id="satcom-vis-psi"></div></div>
+            <div class="satcom-vis-stat"><div class="label">Window 2&psi;</div><div class="value" id="satcom-vis-window"></div></div>
+            <div class="satcom-vis-stat"><div class="label">Visible time</div><div class="value" id="satcom-vis-time"></div></div>
+          </div>
+        </div>
+
+        <div class="satcom-vis-panel">
+          <div class="satcom-vis-subtitle">What the animation shows</div>
+          <div class="satcom-vis-small">
+            <div>&bull; The satellite is <b>visible</b> when its relative longitude stays inside the shaded arc.</div>
+            <div>&bull; The boundary points are at <b>-&psi;</b> and <b>+&psi;</b>.</div>
+            <div>&bull; The full angular visibility window is <b>2&psi;</b>.</div>
+            <div>&bull; <b>&Delta;&lambda;</b> is the current longitude difference between the satellite and the ground station, measured along the equatorial plane.</div>
+            <div>&bull; <b>&epsilon;</b> is the elevation angle between the local tangent at <b>G</b> and the line of sight <b>GS</b>.</div>
+            <div>&bull; The visibility time is <b>t<sub>vis</sub> = 2&psi; / &omega;<sub>rel</sub></b>.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="satcom-vis-panel">
+    <div class="satcom-vis-section-title">Interpretation</div>
+    <div class="satcom-vis-small">
+      <div><b>&Delta;&lambda;</b> is the longitude difference between the satellite and the ground station, measured along the equatorial plane.</div>
+      <div>When <b>&Delta;&lambda; = 0</b>, both have the same longitude.</div>
+      <div>The satellite is visible while <b>|&Delta;&lambda;| &le; &psi;</b>.</div>
+      <div>Higher orbit radius &rarr; larger &psi; &rarr; wider visibility window.</div>
+      <div>Smaller relative angular speed &rarr; longer time spent inside that window.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/demos/visibility_window_demo.js') }}"></script>
+{% endblock %}
