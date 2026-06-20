@@ -53,11 +53,21 @@
     font-size: 14px;
   }
 
-  .satcom-rel-stack {
+  .satcom-rel-tools {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    gap: 14px;
+    align-items: stretch;
     min-width: 0;
+    margin-top: 16px;
+  }
+
+  .satcom-rel-tools > .satcom-rel-panel {
+    padding: 16px;
+  }
+
+  .satcom-rel-tools > .satcom-rel-choices {
+    grid-column: 1 / -1;
   }
 
   .satcom-rel-sidebar {
@@ -103,6 +113,7 @@
     padding: 12px 14px;
     text-align: left;
     overflow-wrap: anywhere;
+    word-break: normal;
   }
 
   .satcom-rel-choice.is-active,
@@ -173,6 +184,7 @@
   }
 
   .satcom-rel-stat {
+    min-width: 0;
     padding: 12px;
   }
 
@@ -184,9 +196,10 @@
   }
 
   .satcom-rel-stat .value {
-    font-size: clamp(20px, 2vw, 24px);
+    font-size: clamp(18px, 1.7vw, 23px);
     font-weight: 700;
     margin-top: 4px;
+    overflow-wrap: normal;
     white-space: nowrap;
   }
 
@@ -207,6 +220,7 @@
     line-height: 1.45;
     padding: 14px;
     text-align: center;
+    overflow-wrap: anywhere;
   }
 
   .satcom-rel-svg {
@@ -337,12 +351,20 @@
     .satcom-rel-sidebar {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .satcom-rel-sidebar > .satcom-rel-panel:last-child {
+      grid-column: 1 / -1;
+    }
   }
 
   @media (max-width: 980px) {
-    .satcom-rel-stack,
-    .satcom-rel-sidebar {
+    .satcom-rel-sidebar,
+    .satcom-rel-tools {
       grid-template-columns: 1fr;
+    }
+
+    .satcom-rel-sidebar > .satcom-rel-panel:last-child {
+      grid-column: auto;
     }
   }
 
@@ -380,32 +402,6 @@
         <svg id="satcom-rel-svg" class="satcom-rel-svg" viewBox="0 0 420 420" aria-label="Ground-fixed relative motion visualization"></svg>
       </div>
 
-      <div class="satcom-rel-stack">
-        <div class="satcom-rel-choices" id="satcom-rel-choices" aria-label="Orbit candidates"></div>
-
-        <div class="satcom-rel-panel">
-          <div class="satcom-rel-actions">
-            <button id="satcom-rel-play" class="satcom-rel-btn primary" type="button">Pause</button>
-            <button id="satcom-rel-reset" class="satcom-rel-btn" type="button">Reset</button>
-          </div>
-          <div class="satcom-rel-control-label">Animation speed</div>
-          <input id="satcom-rel-speed" class="satcom-rel-range" type="range" min="0.1" max="1.5" step="0.1" value="0.5">
-
-          <div class="satcom-rel-stats">
-            <div class="satcom-rel-stat"><div class="label">Earth rate</div><div class="value" id="satcom-rel-earth-rate"></div></div>
-            <div class="satcom-rel-stat"><div class="label">Satellite rate</div><div class="value" id="satcom-rel-sat-rate"></div></div>
-            <div class="satcom-rel-stat"><div class="label">Relative rate</div><div class="value" id="satcom-rel-rel-rate"></div></div>
-            <div class="satcom-rel-stat"><div class="label">Longitude gap</div><div class="value" id="satcom-rel-gap"></div></div>
-          </div>
-        </div>
-
-        <div class="satcom-rel-panel">
-          <div class="satcom-rel-subtitle">Why a pass repeats every 4 h</div>
-          <div class="satcom-rel-small" style="margin-bottom:10px">In 4 hours, the satellite must gain an integer number of full turns on the station:</div>
-          <div class="satcom-rel-formula">(&omega;<sub>sat</sub> - &omega;<sub>E</sub>) &middot; 4 h = 360&deg; m</div>
-          <div class="satcom-rel-small" style="margin-top:10px">For the selected case, the gain in 4 h is <b id="satcom-rel-gain4h"></b>.</div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -428,6 +424,32 @@
         <div><b>m = 1:</b> the satellite gains 360&deg; on the station in 4 hours.</div>
         <div><b>m = 2:</b> it gains 720&deg; in 4 hours, so it still lines up after 4 hours.</div>
         <div>The repeat interval is set by the <b>relative motion</b>, not directly by the orbital period.</div>
+      </div>
+      <div class="satcom-rel-tools">
+        <div class="satcom-rel-choices" id="satcom-rel-choices" aria-label="Orbit candidates"></div>
+
+        <div class="satcom-rel-panel">
+          <div class="satcom-rel-actions">
+            <button id="satcom-rel-play" class="satcom-rel-btn primary" type="button">Pause</button>
+            <button id="satcom-rel-reset" class="satcom-rel-btn" type="button">Reset</button>
+          </div>
+          <div class="satcom-rel-control-label">Animation speed</div>
+          <input id="satcom-rel-speed" class="satcom-rel-range" type="range" min="0.1" max="1.5" step="0.1" value="0.5">
+
+          <div class="satcom-rel-stats">
+            <div class="satcom-rel-stat"><div class="label">Earth rate</div><div class="value" id="satcom-rel-earth-rate"></div></div>
+            <div class="satcom-rel-stat"><div class="label">Satellite rate</div><div class="value" id="satcom-rel-sat-rate"></div></div>
+            <div class="satcom-rel-stat"><div class="label">Relative rate</div><div class="value" id="satcom-rel-rel-rate"></div></div>
+            <div class="satcom-rel-stat"><div class="label">Longitude gap</div><div class="value" id="satcom-rel-gap"></div></div>
+          </div>
+        </div>
+
+        <div class="satcom-rel-panel satcom-rel-explain">
+          <div class="satcom-rel-subtitle">Why a pass repeats every 4 h</div>
+          <div class="satcom-rel-small" style="margin-bottom:10px">In 4 hours, the satellite must gain an integer number of full turns on the station:</div>
+          <div class="satcom-rel-formula">(&omega;<sub>sat</sub> - &omega;<sub>E</sub>) &middot; 4 h = 360&deg; m</div>
+          <div class="satcom-rel-small" style="margin-top:10px">For the selected case, the gain in 4 h is <b id="satcom-rel-gain4h"></b>.</div>
+        </div>
       </div>
     </div>
   </div>

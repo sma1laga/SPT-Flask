@@ -4,8 +4,8 @@
 <style>
   .satcom-vis-demo {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
-    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    gap: 18px;
     align-items: start;
   }
 
@@ -15,7 +15,7 @@
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 18px;
-    padding: 18px;
+    padding: 16px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   }
 
@@ -42,8 +42,8 @@
 
   .satcom-vis-grid {
     display: grid;
-    grid-template-columns: minmax(320px, 470px) minmax(0, 1fr);
-    gap: 18px;
+    grid-template-columns: minmax(360px, 1fr) minmax(178px, 210px);
+    gap: 14px;
     align-items: start;
   }
 
@@ -59,14 +59,14 @@
 
   .satcom-vis-stack {
     display: grid;
-    gap: 16px;
+    gap: 14px;
     min-width: 0;
   }
 
   .satcom-vis-choices {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   .satcom-vis-choice,
@@ -93,7 +93,7 @@
   }
 
   .satcom-vis-choice {
-    padding: 12px 14px;
+    padding: 10px 12px;
     text-align: left;
   }
 
@@ -116,14 +116,14 @@
   }
 
   .satcom-vis-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 10px;
     margin-bottom: 12px;
   }
 
   .satcom-vis-btn {
-    padding: 10px 14px;
+    padding: 8px 12px;
     font-weight: 600;
   }
 
@@ -140,14 +140,14 @@
   .satcom-vis-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 16px;
+    gap: 10px;
+    margin-top: 14px;
   }
 
   .satcom-vis-stat {
     background: #f9fafb;
     border-radius: 14px;
-    padding: 12px;
+    padding: 10px;
   }
 
   .satcom-vis-stat .label {
@@ -159,7 +159,7 @@
 
   .satcom-vis-stat .value {
     margin-top: 4px;
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 700;
   }
 
@@ -208,7 +208,12 @@
     color: #94a3b8;
   }
 
-  @media (max-width: 1180px) {
+  .satcom-vis-info-stack {
+    display: grid;
+    gap: 18px;
+  }
+
+  @media (max-width: 980px) {
     .satcom-vis-demo,
     .satcom-vis-grid {
       grid-template-columns: 1fr;
@@ -264,29 +269,32 @@
           </div>
         </div>
 
-        <div class="satcom-vis-panel">
-          <div class="satcom-vis-subtitle">What the animation shows</div>
-          <div class="satcom-vis-small">
-            <div>&bull; The satellite is <b>visible</b> when its relative longitude stays inside the shaded arc.</div>
-            <div>&bull; The boundary points are at <b>-&psi;</b> and <b>+&psi;</b>.</div>
-            <div>&bull; The full angular visibility window is <b>2&psi;</b>.</div>
-            <div>&bull; <b>&Delta;&lambda;</b> is the current longitude difference between the satellite and the ground station, measured along the equatorial plane.</div>
-            <div>&bull; <b>&epsilon;</b> is the elevation angle between the local tangent at <b>G</b> and the line of sight <b>GS</b>.</div>
-            <div>&bull; The visibility time is <b>t<sub>vis</sub> = 2&psi; / &omega;<sub>rel</sub></b>.</div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 
-  <div class="satcom-vis-panel">
-    <div class="satcom-vis-section-title">Interpretation</div>
-    <div class="satcom-vis-small">
-      <div><b>&Delta;&lambda;</b> is the longitude difference between the satellite and the ground station, measured along the equatorial plane.</div>
-      <div>When <b>&Delta;&lambda; = 0</b>, both have the same longitude.</div>
-      <div>The satellite is visible while <b>|&Delta;&lambda;| &le; &psi;</b>.</div>
-      <div>Higher orbit radius &rarr; larger &psi; &rarr; wider visibility window.</div>
-      <div>Smaller relative angular speed &rarr; longer time spent inside that window.</div>
+  <div class="satcom-vis-info-stack">
+    <div class="satcom-vis-panel">
+      <div class="satcom-vis-section-title">Interpretation</div>
+      <div class="satcom-vis-small">
+        <div><b>&Delta;&lambda;</b> is the longitude difference between the satellite and the ground station, measured along the equatorial plane.</div>
+        <div>When <b>&Delta;&lambda; = 0</b>, both have the same longitude.</div>
+        <div>The satellite is visible while <b>|&Delta;&lambda;| &le; &psi;</b>.</div>
+        <div>Higher orbit radius &rarr; larger &psi; &rarr; wider visibility window.</div>
+        <div>Smaller relative angular speed &rarr; longer time spent inside that window.</div>
+      </div>
+    </div>
+
+    <div class="satcom-vis-panel">
+      <div class="satcom-vis-subtitle">What the animation shows</div>
+      <div class="satcom-vis-small">
+        <div>&bull; The satellite is <b>visible</b> when its relative longitude stays inside the shaded arc.</div>
+        <div>&bull; The boundary points are at <b>-&psi;</b> and <b>+&psi;</b>.</div>
+        <div>&bull; The full angular visibility window is <b>2&psi;</b>.</div>
+        <div>&bull; <b>&Delta;&lambda;</b> is the current longitude difference between the satellite and the ground station, measured along the equatorial plane.</div>
+        <div>&bull; <b>&epsilon;</b> is the elevation angle between the local tangent at <b>G</b> and the line of sight <b>GS</b>.</div>
+        <div>&bull; The visibility time is <b>t<sub>vis</sub> = 2&psi; / &omega;<sub>rel</sub></b>.</div>
+      </div>
     </div>
   </div>
 </div>
