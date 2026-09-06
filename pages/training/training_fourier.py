@@ -1,539 +1,651 @@
+"""Fourier training: match a signal to its spectrum, or the other way round.
+
+Conventions follow the rest of the toolkit: ``si(t) = sin(t)/t`` as in
+``utils/math_utils.py``, and the transform is
+
+    X(jw) = integral x(t) e^{-jwt} dt
+
+Line spectra are part of the exam material, so a waveform carries a continuous
+part *and* a list of weighted Dirac impulses. Both the algebra and the plotting
+treat the two together, which is what keeps cos/sin/e^{jw0t} drawable.
+"""
 
 from __future__ import annotations
-"""
-Fourier-Training
-- Exam-like layout: 3 columns (|Y|, phase, y(t)) and 4 rows of answer optionss.s
-- The given object (time signal or spectrum) is drawn in **black** in the top row.
-- Each option row shows the student answer in **green** (magnitude+phase or time).
-- Clickable areas now come from the server (hit_boxes) so the HTML overlay is robust WORK
-"""
 
+import base64
+import io
+import math
+import random
 from dataclasses import dataclass
-from typing import Callable, Dict, Any, List, Tuple
-from flask import Blueprint, render_template, request, jsonify
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import io, base64, random, traceback, inspect, math
+from typing import Any, Callable, Dict, List, Sequence, Tuple
+
 import numpy as np
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ---------- utilities ----------
+from flask import Blueprint, jsonify, render_template, request
 
-def _sinc_rad(x: np.ndarray) -> np.ndarray:
-    """np.sinc normalized so that sinc_rad(0)=1, argument in radians."""
-    return np.sinc(x / math.pi)
+# ---------------------------------------------------------------- constants --
 
-_STEM_HAS_LINE_COLLECTION = "use_line_collection" in inspect.signature(plt.stem).parameters
-def _stem(ax: matplotlib.axes.Axes, x, y, **kwargs):
-    if _STEM_HAS_LINE_COLLECTION:
-        kwargs.setdefault("use_line_collection", True)
-    return ax.stem(x, y, **kwargs)
+T_LIMIT = 6.0
+W_LIMIT = 2.0 * math.pi
+N_SAMPLES = 901           # odd, so w = 0 and t = 0 are sampled
+GIVEN_COLOUR = "#111111"
+ANSWER_COLOUR = "#2e8b57"
+IMAG_COLOUR = "#7f8c8d"
+PHASE_FLOOR = 0.02        # fraction of the peak below which the phase is noise
 
-def _delta(arr: np.ndarray, pos: float, amp: complex = 1.0) -> np.ndarray:
-    d = np.zeros_like(arr, dtype=complex)
-    idx = int(np.argmin(np.abs(arr - pos)))
-    d[idx] = amp
-    return d
+Complex = complex
 
-@dataclass
-class Signal:
-    """Simple time/frequency transform pair x(t) <-> X(w)."""
-    name: str
-    time_fn: Callable[[np.ndarray], np.ndarray]
-    freq_fn: Callable[[np.ndarray], np.ndarray]
+
+def _si(x: np.ndarray) -> np.ndarray:
+    """sin(x)/x with si(0) = 1 -- the toolkit's si, not the normalised sinc."""
+    return np.sinc(np.asarray(x, dtype=float) / np.pi)
+
+
+# ----------------------------------------------------------------- waveform --
+
+@dataclass(frozen=True)
+class Waveform:
+    """A signal as a sampled continuous part plus weighted Dirac impulses."""
+
+    values: np.ndarray
+    impulses: Tuple[Tuple[float, Complex], ...] = ()
+
+    @property
+    def has_impulses(self) -> bool:
+        return bool(self.impulses)
+
+    def peak(self) -> float:
+        """Largest magnitude that will be drawn, impulses included."""
+        continuous = float(np.max(np.abs(self.values))) if self.values.size else 0.0
+        impulse = max((abs(w) for _, w in self.impulses), default=0.0)
+        return max(continuous, impulse)
+
+    def scaled(self, factor: Complex) -> "Waveform":
+        return Waveform(self.values * factor,
+                        tuple((p, w * factor) for p, w in self.impulses))
+
+    def conjugated(self) -> "Waveform":
+        return Waveform(np.conj(self.values),
+                        tuple((p, np.conj(w)) for p, w in self.impulses))
+
+    def rasterised(self, grid: np.ndarray) -> np.ndarray:
+        """Impulses folded onto the grid, so two waveforms can be compared."""
+        out = self.values.copy()
+        for position, weight in self.impulses:
+            idx = int(np.argmin(np.abs(grid - position)))
+            out[idx] += weight
+        return out
+
+
+# ------------------------------------------------------------ transform pool --
+
+@dataclass(frozen=True)
+class Pair:
+    """One transform pair x(t) <-> X(jw), in its unshifted, unscaled form."""
+
+    key: str
     latex_time: str
     latex_freq: str
+    time: Callable[[np.ndarray], Waveform]
+    freq: Callable[[np.ndarray], Waveform]
+    real_even: bool = False   # phase is 0 or pi, so the magnitude decides
+    real_time: bool = True    # the time signal has no imaginary part
 
-def make_signal_pool(w0: float) -> Dict[str, Signal]:
-    """Pool of archetypes used in the exams."""
-    def rect(t: np.ndarray) -> np.ndarray:
+
+def _continuous(fn: Callable[[np.ndarray], np.ndarray]) -> Callable[[np.ndarray], Waveform]:
+    return lambda grid: Waveform(np.asarray(fn(grid), dtype=complex))
+
+
+def _impulses(*items: Tuple[float, Complex]) -> Callable[[np.ndarray], Waveform]:
+    return lambda grid: Waveform(np.zeros_like(grid, dtype=complex), tuple(items))
+
+
+def build_pairs(w0: float) -> Dict[str, Pair]:
+    """The transform pairs the training draws from, for one choice of w0."""
+    pi = math.pi
+
+    def rect(t):
         return np.where(np.abs(t) < 0.5, 1.0, 0.0)
 
-    def tri(t: np.ndarray) -> np.ndarray:
-        return np.maximum(1 - np.abs(t), 0.0)
+    def tri(t):
+        return np.maximum(1.0 - np.abs(t), 0.0)
 
-    def sinc(t: np.ndarray) -> np.ndarray:
-        return np.sinc(t)
+    def causal_exp(t):
+        # clipped so that e^{-t} does not overflow for the suppressed half
+        return np.where(t >= 0.0, np.exp(-np.clip(t, 0.0, None)), 0.0)
 
-    def sinc2(t: np.ndarray) -> np.ndarray:
-        return np.sinc(t) ** 2
+    def odd_rect(t):
+        return np.where((t > 0) & (t < 1), 1.0, 0.0) - np.where((t > -1) & (t < 0), 1.0, 0.0)
 
-    def inv_t(t: np.ndarray) -> np.ndarray:
-        return np.where(t != 0, 1.0 / t, 0.0)
+    w0_tex = _pi_multiple_tex(w0)
 
-    def sign(t: np.ndarray) -> np.ndarray:
-        return np.sign(t)
+    pairs = [
+        Pair("rect", r"\mathrm{rect}(t)", r"\mathrm{si}\!\left(\tfrac{\omega}{2}\right)",
+             _continuous(rect), _continuous(lambda w: _si(w / 2)), real_even=True),
+        Pair("tri", r"\mathrm{tri}(t)", r"\mathrm{si}^2\!\left(\tfrac{\omega}{2}\right)",
+             _continuous(tri), _continuous(lambda w: _si(w / 2) ** 2), real_even=True),
+        Pair("si", r"\mathrm{si}(\pi t)", r"\mathrm{rect}\!\left(\tfrac{\omega}{2\pi}\right)",
+             _continuous(lambda t: _si(pi * t)),
+             _continuous(lambda w: np.where(np.abs(w) < pi, 1.0, 0.0)), real_even=True),
+        Pair("si2", r"\mathrm{si}^2(\pi t)", r"\mathrm{tri}\!\left(\tfrac{\omega}{2\pi}\right)",
+             _continuous(lambda t: _si(pi * t) ** 2),
+             _continuous(lambda w: np.maximum(1.0 - np.abs(w) / (2 * pi), 0.0)), real_even=True),
+        Pair("exp_abs", r"e^{-|t|}", r"\frac{2}{1+\omega^{2}}",
+             _continuous(lambda t: np.exp(-np.abs(t))),
+             _continuous(lambda w: 2.0 / (1.0 + w ** 2)), real_even=True),
+        Pair("delta", r"\delta(t)", r"1",
+             lambda grid: Waveform(np.zeros_like(grid, dtype=complex), ((0.0, 1.0),)),
+             _continuous(lambda w: np.ones_like(w)), real_even=True),
+        Pair("exp_causal", r"e^{-t}\,\varepsilon(t)", r"\frac{1}{1+\mathrm{j}\omega}",
+             _continuous(causal_exp),
+             _continuous(lambda w: 1.0 / (1.0 + 1j * w))),
+        Pair("odd_rect", r"\mathrm{rect}(t-\tfrac{1}{2})-\mathrm{rect}(t+\tfrac{1}{2})",
+             r"-\mathrm{j}\,\omega\,\mathrm{si}^2\!\left(\tfrac{\omega}{2}\right)",
+             _continuous(odd_rect),
+             _continuous(lambda w: -1j * w * _si(w / 2) ** 2)),
+        Pair("cos", fr"\cos({w0_tex}t)",
+             fr"\pi\left[\delta(\omega-{w0_tex})+\delta(\omega+{w0_tex})\right]",
+             _continuous(lambda t: np.cos(w0 * t)),
+             _impulses((w0, pi), (-w0, pi))),
+        Pair("sin", fr"\sin({w0_tex}t)",
+             fr"-\mathrm{{j}}\pi\left[\delta(\omega-{w0_tex})-\delta(\omega+{w0_tex})\right]",
+             _continuous(lambda t: np.sin(w0 * t)),
+             _impulses((w0, -1j * pi), (-w0, 1j * pi))),
+        Pair("cexp", fr"e^{{\mathrm{{j}}{w0_tex}t}}", fr"2\pi\,\delta(\omega-{w0_tex})",
+             _continuous(lambda t: np.exp(1j * w0 * t)),
+             _impulses((w0, 2 * pi)), real_time=False),
+        Pair("rect_cos", fr"\mathrm{{rect}}(t)\cos({w0_tex}t)",
+             fr"\tfrac{{1}}{{2}}\left[\mathrm{{si}}\!\left(\tfrac{{\omega-{w0_tex}}}{{2}}\right)"
+             fr"+\mathrm{{si}}\!\left(\tfrac{{\omega+{w0_tex}}}{{2}}\right)\right]",
+             _continuous(lambda t: rect(t) * np.cos(w0 * t)),
+             _continuous(lambda w: 0.5 * (_si((w - w0) / 2) + _si((w + w0) / 2))),
+             real_even=True),
+    ]
+    return {p.key: p for p in pairs}
 
-    def cexp(t: np.ndarray) -> np.ndarray:
-        return np.exp(1j * w0 * t)
 
-    def cos_fn(t: np.ndarray) -> np.ndarray:
-        return np.cos(w0 * t)
+def _pi_multiple_tex(value: float) -> str:
+    """Render a multiple of pi as TeX; the old module printed raw floats."""
+    ratio = value / math.pi
+    for numerator, denominator, tex in [(1, 2, r"\tfrac{\pi}{2}"), (1, 1, r"\pi"),
+                                        (3, 2, r"\tfrac{3\pi}{2}"), (2, 1, r"2\pi"),
+                                        (3, 1, r"3\pi")]:
+        if abs(ratio - numerator / denominator) < 1e-9:
+            return tex
+    return f"{value:.2f}"
 
-    def sin_fn(t: np.ndarray) -> np.ndarray:
-        return np.sin(w0 * t)
 
-    def t_sinc(t: np.ndarray) -> np.ndarray:
-        return t * np.sinc(t)
+# ------------------------------------------------------- applying properties --
 
-    # Frequency responses
-    def F_rect(w: np.ndarray) -> np.ndarray:
-        return _sinc_rad(w / 2)
+def apply_properties(pair: Pair, t: np.ndarray, w: np.ndarray,
+                     *, scale: float, shift: float, width: float,
+                     width_factor: bool = True) -> Tuple[Waveform, Waveform]:
+    """Build y(t) = scale * x((t - shift)/width) and its spectrum.
 
-    def F_tri(w: np.ndarray) -> np.ndarray:
-        return _sinc_rad(w / 2) ** 2
-
-    def F_sinc(w: np.ndarray) -> np.ndarray:
-        return np.where(np.abs(w) <= np.pi, 1.0, 0.0)
-
-    def F_sinc2(w: np.ndarray) -> np.ndarray:
-        return np.where(np.abs(w) <= 2 * np.pi, 1 - np.abs(w) / (2 * np.pi), 0.0)
-
-    def F_inv_t(w: np.ndarray) -> np.ndarray:
-        return -1j * np.pi * np.sign(w)
-
-    def F_sign(w: np.ndarray) -> np.ndarray:
-        eps = 1e-12
-        return -2j / (w + eps)
-
-    def F_cexp(w: np.ndarray) -> np.ndarray:
-        return 2 * np.pi * _delta(w, w0)
-
-    def F_cos(w: np.ndarray) -> np.ndarray:
-        return np.pi * (_delta(w, w0) + _delta(w, -w0))
-
-    def F_sin(w: np.ndarray) -> np.ndarray:
-        return -1j * np.pi * (_delta(w, w0) - _delta(w, -w0))
-
-    def F_t_sinc(w: np.ndarray) -> np.ndarray:
-        return 1j * (_delta(w, np.pi) - _delta(w, -np.pi))
-
-    return {
-        "rect":  Signal("rect",  rect,  F_rect,  r"\mathrm{rect}(t)",         r"\mathrm{sinc}(\omega/2\pi)"),
-        "tri":   Signal("tri",   tri,   F_tri,   r"\mathrm{tri}(t)",          r"\mathrm{sinc}^2(\omega/2\pi)"),
-        "sinc":  Signal("sinc",  sinc,  F_sinc,  r"\mathrm{sinc}(t)",         r"\mathbf{1}_{|\omega|\le \pi}"),
-        "sinc2": Signal("sinc^2",sinc2, F_sinc2, r"\mathrm{sinc}^2(t)",       r"\max\{1-|{\omega}|/2\pi,0\}"),
-        "inv_t": Signal("1/t", inv_t, F_inv_t, r"\operatorname{pv}\{1/t\}", r"-j\pi\,\mathrm{sgn}(\omega)"),
-        "sign":  Signal("sign",  sign,  F_sign,  r"\mathrm{sgn}(t)",          r"-\frac{2j}{\omega}"),
-        "exp":   Signal("exp",   cexp,  F_cexp,  fr"e^{{j{w0}t}}",            fr"2\pi\delta(\omega-{w0})"),
-        "cos":   Signal("cos",   cos_fn,F_cos,   fr"\cos({w0}t)",             fr"\pi[\delta(\omega\!-\!{w0})+\delta(\omega\!+\!{w0})]"),
-        "sin":   Signal("sin",   sin_fn,F_sin,   fr"\sin({w0}t)",             fr"-j\pi[\delta(\omega\!-\!{w0})-\delta(\omega\!+\!{w0})]"),
-        "t_sinc":Signal("t*sinc",t_sinc,F_t_sinc,r"t\,\mathrm{sinc}(t)",      r"j[\delta(\omega+\pi)-\delta(\omega-\pi)]"),
-    }
-
-# ---------- difficulty parameterization ----------
-# Adaptable @Paul
-
-def _parameter_ranges(difficulty: str) -> Dict[str, Any]:
-    if difficulty == "EASY":
-        return {"pool": ["rect", "tri", "sinc", "cos"], "shift": [-1, 0, 1], "scale": [1.0], "width": [1.0]}
-    if difficulty == "MEDIUM":
-        return {"pool": ["rect", "tri", "sinc", "sinc2", "cos", "sin"], "shift": list(range(-3, 4)),
-                "scale": [0.5, 1.0, 2.0], "width": [0.5, 1.0, 2.0]}
-    return {"pool": ["rect","tri","sinc","sinc2","cos","sin","sign","inv_t","t_sinc"],
-            "shift": None, "scale": None, "width": None}
-
-def _sample_param(choices: List[float] | None, low: float, high: float) -> float:
-    return random.uniform(low, high) if choices is None else float(random.choice(choices))
-
-# ---------- plotting helpers ----------
-
-_GREEN = "#2e8b57"
-
-def _format_time_axis(ax: matplotlib.axes.Axes, t: np.ndarray):
-    ax.set_xlim(t[0], t[-1])
-
-    # Major ticks at whole seconds and minor ticks every half second
-    t_start, t_end = float(t[0]), float(t[-1])
-    major_start = math.floor(t_start)
-    major_end = math.ceil(t_end)
-    if major_end < major_start:
-        major_end = major_start
-    major_ticks = np.arange(major_start, major_end + 1, 1.0)
-    if major_ticks.size:
-        major_ticks = major_ticks[(major_ticks >= t_start - 1e-9) & (major_ticks <= t_end + 1e-9)]
-    if major_ticks.size:
-        ax.set_xticks(major_ticks)
-
-    minor_start = math.floor(t_start * 2.0) / 2.0
-    minor_end = math.ceil(t_end * 2.0) / 2.0
-    if minor_end < minor_start:
-        minor_end = minor_start
-    minor_ticks = np.arange(minor_start, minor_end + 0.25, 0.5)
-    if minor_ticks.size:
-        minor_ticks = minor_ticks[(minor_ticks >= t_start - 1e-9) & (minor_ticks <= t_end + 1e-9)]
-    if minor_ticks.size and major_ticks.size:
-        minor_ticks = np.setdiff1d(minor_ticks, major_ticks)
-    if minor_ticks.size:
-        ax.set_xticks(minor_ticks, minor=True)
-
-    ax.grid(True, which="major", alpha=0.45)
-    ax.grid(True, which="minor", alpha=0.25, ls="--")
-    ax.set_title(r"$y(t)$", fontsize=11)
-    ax.set_xlabel(r"$t \rightarrow$", fontsize=10)
-
-def _format_mag_axis(ax: matplotlib.axes.Axes, omega: np.ndarray):
-    ax.set_xlim(omega[0], omega[-1])
-    ax.grid(True, alpha=0.35)
-    ax.set_title(r"$|Y(\mathrm{j}\omega)|$", fontsize=11)
-    # show ticks as w/pi
-    xt = np.array([-2*math.pi, -math.pi, 0, math.pi, 2*math.pi])
-    ax.set_xticks(xt)
-    ax.set_xticklabels([r"$-2$", r"$-1$", r"$0$", r"$1$", r"$2$"])
-    ax.set_xlabel(r"$\omega/\pi \rightarrow$", fontsize=10)
-
-def _format_phase_axis(ax: matplotlib.axes.Axes, omega: np.ndarray):
-    ax.set_xlim(omega[0], omega[-1])
-    ax.grid(True, alpha=0.35)
-    ax.set_title(r"$\varphi(\mathrm{j}\omega)$", fontsize=11)
-    ax.set_ylim(-math.pi*1.1, math.pi*1.1)
-    # reference dashed lines at +-pi and 0
-    ax.axhline(math.pi, color="k", ls="--", lw=0.7, alpha=0.4)
-    ax.axhline(0, color="k", ls="--", lw=0.7, alpha=0.35)
-    ax.axhline(-math.pi, color="k", ls="--", lw=0.7, alpha=0.4)
-    # y-ticks like in the exam sheets
-    ax.set_yticks([-math.pi, 0, math.pi])
-    ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
-    xt = np.array([-2*math.pi, -math.pi, 0, math.pi, 2*math.pi])
-    ax.set_xticks(xt)
-    ax.set_xticklabels([r"$-2$", r"$-1$", r"$0$", r"$1$", r"$2$"])
-    ax.set_xlabel(r"$\omega/\pi \rightarrow$", fontsize=10)
-
-def _plot_time_pretty(ax: matplotlib.axes.Axes, t: np.ndarray, y: np.ndarray, *,
-                      color="k", lw=2.2, dashed: bool=False,
-                      singular: bool=False, draw_inset: bool=True) -> None:
+    Y(jw) = scale * width * X(width * w) * e^{-j w shift}. ``width_factor`` exists
+    so a distractor can drop the amplitude factor that time scaling introduces.
     """
-    Pretty-prints time signals, with a special branch for singular signals like 1/t:
-    - break the curve at t=0
-    - clip the visible range to a robust percentile
-    - draw a thin vertical line at t=0 to indicate an asymptote
-    - add a small inset zoom around t=0
-    - still has a problem?
+    base_time = pair.time((t - shift) / width)
+    time_wave = Waveform(
+        base_time.values * scale,
+        tuple((shift + position * width, weight * scale * width)
+              for position, weight in base_time.impulses),
+    )
+
+    amplitude = scale * width if width_factor else scale
+    base_freq = pair.freq(w * width)
+    freq_wave = Waveform(
+        base_freq.values * amplitude * np.exp(-1j * w * shift),
+        tuple((position / width,
+               weight * scale * np.exp(-1j * (position / width) * shift))
+              for position, weight in pair.freq(w).impulses),
+    )
+    return time_wave, freq_wave
+
+
+# ------------------------------------------------------------------ drawing --
+
+def _pi_ticks(ax: matplotlib.axes.Axes) -> None:
+    ticks = np.array([-2, -1, 0, 1, 2]) * math.pi
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([r"$-2$", r"$-1$", r"$0$", r"$1$", r"$2$"])
+    ax.set_xlim(-W_LIMIT, W_LIMIT)
+    ax.set_xlabel(r"$\omega/\pi\ \rightarrow$", fontsize=9)
+
+
+def _impulse_label(weight: Complex) -> str:
+    """Impulse weights are almost always multiples of pi -- say so."""
+    magnitude = abs(weight)
+    ratio = magnitude / math.pi
+    if abs(ratio - round(ratio)) < 1e-6 and round(ratio) >= 1:
+        factor = int(round(ratio))
+        return r"$\pi$" if factor == 1 else fr"${factor}\pi$"
+    if abs(ratio - 0.5) < 1e-6:
+        return r"$\pi/2$"
+    if abs(magnitude - round(magnitude)) < 1e-6:
+        return f"${int(round(magnitude))}$"
+    return f"${magnitude:.2f}$"
+
+
+def _draw_impulse(ax: matplotlib.axes.Axes, position: float, height: float,
+                  colour: str, label: str | None) -> None:
+    ax.annotate("", xy=(position, height), xytext=(position, 0.0),
+                arrowprops=dict(arrowstyle="-|>", color=colour, lw=2.0,
+                                shrinkA=0, shrinkB=0, mutation_scale=13))
+    if label:
+        ax.annotate(label, xy=(position, height), xytext=(3, 1),
+                    textcoords="offset points", fontsize=8, color=colour)
+
+
+def draw_spectrum(ax_mag: matplotlib.axes.Axes, ax_phase: matplotlib.axes.Axes,
+                  w: np.ndarray, wave: Waveform, *, colour: str,
+                  mag_limit: float, annotate: bool = True) -> None:
+    magnitude = np.abs(wave.values)
+    peak = float(magnitude.max()) if magnitude.size else 0.0
+    if peak > 1e-9:
+        ax_mag.plot(w, magnitude, color=colour, lw=1.9)
+        # Where the magnitude vanishes the phase is numerical noise, so leave a
+        # gap instead of a line the student would try to read.
+        phase = np.angle(wave.values)
+        phase[magnitude < PHASE_FLOOR * peak] = np.nan
+        ax_phase.plot(w, phase, color=colour, lw=1.9)
+
+    for position, weight in wave.impulses:
+        _draw_impulse(ax_mag, position, abs(weight), colour,
+                      _impulse_label(weight) if annotate else None)
+        ax_phase.plot([position], [np.angle(weight)], marker="o", ms=5, color=colour)
+
+    ax_mag.set_ylim(0.0, mag_limit)
+    ax_mag.grid(True, alpha=0.3)
+    _pi_ticks(ax_mag)
+
+    ax_phase.set_ylim(-1.25 * math.pi, 1.25 * math.pi)
+    ax_phase.set_yticks([-math.pi, 0, math.pi])
+    ax_phase.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+    ax_phase.axhline(0.0, color="0.6", lw=0.7)
+    ax_phase.grid(True, alpha=0.3)
+    _pi_ticks(ax_phase)
+
+
+def time_window(t: np.ndarray, waves: Sequence[Waveform]) -> Tuple[float, float]:
+    """Smallest symmetric window that still holds every waveform.
+
+    A fixed +-6 s axis turns a rect into a sliver in the middle of an empty plot,
+    which is most of what made the old figures hard to read.
     """
-    ls = "--" if dashed else "-"
-    if not singular:
-        ax.plot(t, y, color=color, lw=lw, ls=ls)
-        return
-
-    # leave a small gap around t=0
-    gap = 0.03
-    y_plot = y.copy().astype(float)
-    y_plot[np.abs(t) < gap] = np.nan
-
-    # robust main y-limits (95th percentile)
-    finite = np.isfinite(y_plot)
-    clip = float(max(1.0, np.percentile(np.abs(y_plot[finite]), 95))) if np.any(finite) else 5.0
-    y_plot = np.clip(y_plot, -clip, clip)
-
-    ax.plot(t, y_plot, color=color, lw=lw, ls=ls)
-    ax.axvline(0, color="k", lw=0.8, alpha=0.7)
-
-    # zoom near zero
-    if draw_inset:
-        try:
-            axins = inset_axes(ax, width="32%", height="45%", loc="upper right", borderpad=0.8)
-            w = 0.5
-            idx = (t >= -w) & (t <= w)
-            t_loc = t[idx]; y_loc = y[idx].astype(float)
-            y_loc[np.abs(t_loc) < gap] = np.nan
-            finite2 = np.isfinite(y_loc)
-            clip2 = float(max(clip, np.percentile(np.abs(y_loc[finite2]), 98))) if np.any(finite2) else clip*2
-            y_loc = np.clip(y_loc, -clip2, clip2)
-            axins.plot(t_loc, y_loc, color=color, lw=lw*0.9, ls=ls)
-            axins.axvline(0, color="k", lw=0.7, alpha=0.8)
-            axins.set_xlim(-w, w); axins.set_ylim(-clip2, clip2)
-            axins.set_xticks([]); axins.set_yticks([])
-            axins.set_title("zoom", fontsize=9)
-        except Exception:
-            pass
+    reach = 1.5
+    for wave in waves:
+        magnitude = np.abs(wave.values)
+        peak = float(magnitude.max()) if magnitude.size else 0.0
+        if peak > 1e-9:
+            inside = np.nonzero(magnitude > 0.02 * peak)[0]
+            if inside.size:
+                reach = max(reach, abs(float(t[inside[0]])), abs(float(t[inside[-1]])))
+        for position, _ in wave.impulses:
+            reach = max(reach, abs(position))
+    reach = float(min(T_LIMIT, math.ceil(reach + 0.8)))
+    return -reach, reach
 
 
-def _plot_spec(ax_mag, ax_ph, omega, X, color="k", heavy=False):
-    if np.count_nonzero(X) <= 10:  # deltas → stem
-        lc = _stem(ax_mag, omega, np.abs(X), basefmt=" ")
-        try:
-            lc.markerline.set_color(color)
-            for ln in (lc.stemlines if hasattr(lc, "stemlines") else [lc]): ln.set_color(color)
-        except Exception:
-            pass
-        lc2 = _stem(ax_ph, omega, np.angle(X), basefmt=" ")
-        try:
-            lc2.markerline.set_color(color)
-            for ln in (lc2.stemlines if hasattr(lc2, "stemlines") else [lc2]): ln.set_color(color)
-        except Exception:
-            pass
+def draw_time(ax: matplotlib.axes.Axes, t: np.ndarray, wave: Waveform, *,
+              colour: str, limit: float, window: Tuple[float, float]) -> None:
+    # Decided per waveform: a complex distractor next to real ones has to show
+    # its imaginary part, whatever the true answer looks like.
+    complex_signal = bool(np.any(np.abs(wave.values.imag) > 1e-9))
+    ax.plot(t, wave.values.real, color=colour, lw=1.9,
+            label=r"$\mathrm{Re}$" if complex_signal else None)
+    if complex_signal:
+        ax.plot(t, wave.values.imag, color=IMAG_COLOUR, lw=1.4, ls=":",
+                label=r"$\mathrm{Im}$")
+        ax.legend(fontsize=8, loc="upper right", framealpha=0.85, ncol=2)
+
+    for position, weight in wave.impulses:
+        _draw_impulse(ax, position, weight.real, colour, _impulse_label(weight))
+
+    low, high = window
+    step = 1.0 if high <= 4.0 else 2.0
+    ax.set_xlim(low, high)
+    ax.set_ylim(-limit, limit)
+    ax.axhline(0.0, color="0.6", lw=0.7)
+    ax.set_xticks(np.arange(low, high + step / 2, step))
+    ax.set_xticks(np.arange(low, high + step / 4, step / 2), minor=True)
+    ax.grid(True, which="major", alpha=0.35)
+    ax.grid(True, which="minor", alpha=0.18, ls="--")
+    ax.set_xlabel(r"$t\ \rightarrow$", fontsize=9)
+
+
+# ---------------------------------------------------------------- difficulty --
+
+@dataclass(frozen=True)
+class Level:
+    pool: Tuple[str, ...]
+    shifts: Tuple[float, ...]
+    scales: Tuple[float, ...]
+    widths: Tuple[float, ...]
+
+
+_REAL_EVEN = ("rect", "tri", "si", "si2", "exp_abs", "delta")
+_WITH_PHASE = _REAL_EVEN + ("exp_causal", "cos", "sin")
+
+LEVELS: Dict[str, Level] = {
+    # Easy: no shift, so the phase is flat and the magnitude alone decides.
+    "EASY": Level(_REAL_EVEN, (0.0,), (1.0, 2.0), (1.0, 2.0)),
+    # Medium: shifting adds linear phase, scaling couples width and amplitude.
+    "MEDIUM": Level(_WITH_PHASE, (-2.0, -1.0, 1.0, 2.0), (0.5, 1.0, 2.0), (1.0, 2.0)),
+    # Hard: odd and complex signals, modulation, and subtler distractors.
+    "HARD": Level(_WITH_PHASE + ("odd_rect", "cexp", "rect_cos"),
+                  (-2.0, -1.0, 1.0, 2.0), (0.5, 1.0, 2.0), (0.5, 1.0, 2.0)),
+}
+
+W0_CHOICES = (math.pi / 2, math.pi, 1.5 * math.pi)
+
+
+def _pick_other(options: Sequence[Any], current: Any) -> Any:
+    alternatives = [o for o in options if o != current]
+    return random.choice(alternatives) if alternatives else current
+
+
+# --------------------------------------------------------------- distractors --
+
+def _reversed_time(wave: Waveform) -> Waveform:
+    return Waveform(wave.values[::-1].copy(),
+                    tuple((-p, w) for p, w in wave.impulses))
+
+
+def _relative_distance(candidate: Waveform, truth: Waveform, grid: np.ndarray) -> float:
+    a = candidate.rasterised(grid)
+    b = truth.rasterised(grid)
+    return float(np.linalg.norm(a - b) / (np.linalg.norm(b) + 1e-9))
+
+
+def _build_candidates(pair: Pair, level: Level, pairs: Dict[str, Pair],
+                      t: np.ndarray, w: np.ndarray,
+                      *, scale: float, shift: float, width: float,
+                      direction: str) -> List[Tuple[Waveform, Waveform]]:
+    """Every plausible mistake, as a full (time, spectrum) pair.
+
+    Errors that change the magnitude come first so a problem never degenerates
+    into "count the phase wraps", which is what the previous version produced
+    whenever all four options shared one magnitude.
+    """
+    by_magnitude: List[Tuple[Waveform, Waveform]] = []
+    by_phase: List[Tuple[Waveform, Waveform]] = []
+
+    def variant(**overrides):
+        params = dict(scale=scale, shift=shift, width=width)
+        params.update(overrides)
+        return apply_properties(pair, t, w, **params)
+
+    # -- errors that change the magnitude ----------------------------------
+    by_magnitude.append(variant(width=_pick_other(level.widths, width)))
+    by_magnitude.append(variant(scale=_pick_other(level.scales, scale)))
+    other_key = _pick_other(level.pool, pair.key)
+    if other_key != pair.key:
+        by_magnitude.append(apply_properties(pairs[other_key], t, w,
+                                             scale=scale, shift=shift, width=width))
+    if abs(width - 1.0) > 1e-9:
+        # forgetting that time scaling also scales the amplitude
+        by_magnitude.append(variant(width_factor=False))
+
+    # -- errors that only move the phase -----------------------------------
+    true_time, true_freq = apply_properties(pair, t, w, scale=scale, shift=shift, width=width)
+    if abs(shift) > 1e-9:
+        by_phase.append(variant(shift=0.0))
+        by_phase.append(variant(shift=-shift))
+        by_phase.append(variant(shift=shift + random.choice([-1.0, 1.0])))
+    by_phase.append((true_time.scaled(-1.0), true_freq.scaled(-1.0)))
+    if not pair.real_even:
+        by_phase.append((true_time.conjugated(), true_freq.conjugated()))
+        if direction == "FREQ_TO_TIME":
+            by_phase.append((_reversed_time(true_time), true_freq.conjugated()))
+
+    random.shuffle(by_magnitude)
+    random.shuffle(by_phase)
+
+    # Interleaved starting with the magnitude group, so a problem never collapses
+    # into four identical magnitudes that differ only in phase slope.
+    made: List[Tuple[Waveform, Waveform]] = []
+    for first, second in zip(by_magnitude, by_phase):
+        made.extend((first, second))
+    made.extend(by_magnitude[len(by_phase):])
+    made.extend(by_phase[len(by_magnitude):])
+
+    # Guaranteed-distinct fallbacks, so three options always exist. The old
+    # module filtered candidates without a floor and then indexed four of them.
+    for factor in (2.0, 0.5, 3.0, -2.0):
+        made.append((true_time.scaled(factor), true_freq.scaled(factor)))
+    return made
+
+
+def _choose_distractors(candidates: Sequence[Tuple[Waveform, Waveform]],
+                        truth: Tuple[Waveform, Waveform], grid: np.ndarray,
+                        answer_index: int, count: int = 3) -> List[Tuple[Waveform, Waveform]]:
+    chosen: List[Tuple[Waveform, Waveform]] = []
+    for candidate in candidates:
+        if len(chosen) == count:
+            break
+        shown = candidate[answer_index]
+        if _relative_distance(shown, truth[answer_index], grid) < 0.08:
+            continue
+        if any(_relative_distance(shown, c[answer_index], grid) < 0.08 for c in chosen):
+            continue
+        chosen.append(candidate)
+    return chosen
+
+
+# ------------------------------------------------------------------- wording --
+
+def _num(value: float) -> str:
+    if abs(value - round(value)) < 1e-9:
+        return str(int(round(value)))
+    return f"{value:g}"
+
+
+def _argument_tex(shift: float, width: float) -> str:
+    inner = "t"
+    if abs(shift) > 1e-9:
+        inner = fr"t{'-' if shift > 0 else '+'}{_num(abs(shift))}"
+    if abs(width - 1.0) < 1e-9:
+        return inner
+    # x(t/0.5) reads badly; write the equivalent x(2t) whenever 1/width is whole.
+    inverse = 1.0 / width
+    if abs(inverse - round(inverse)) < 1e-9:
+        factor = int(round(inverse))
+        return fr"{factor}\,t" if inner == "t" else fr"{factor}\,({inner})"
+    return fr"\tfrac{{{inner}}}{{{_num(width)}}}"
+
+
+def _describe(pair: Pair, scale: float, shift: float, width: float) -> Dict[str, str]:
+    base = (fr"x(t)={pair.latex_time}\quad\circ\!\!-\!\!\bullet\quad "
+            fr"X(\mathrm{{j}}\omega)={pair.latex_freq}")
+
+    factor = "" if abs(scale - 1.0) < 1e-9 else fr"{_num(scale)}\,"
+    applied = fr"y(t)={factor}x\!\left({_argument_tex(shift, width)}\right)"
+
+    amplitude = scale * width
+    spectrum = fr"Y(\mathrm{{j}}\omega)="
+    spectrum += "" if abs(amplitude - 1.0) < 1e-9 else fr"{_num(amplitude)}\,"
+    spectrum += fr"X({'' if abs(width - 1.0) < 1e-9 else _num(width)}\omega)"
+    if abs(shift) > 1e-9:
+        sign = "-" if shift > 0 else "+"
+        spectrum += fr"\,e^{{{sign}\mathrm{{j}}\omega\cdot{_num(abs(shift))}}}"
+
+    notes: List[str] = []
+    if abs(shift) > 1e-9:
+        notes.append(f"Time shift by t0 = {_num(shift)} multiplies the spectrum by "
+                     f"e^(-jw*{_num(shift)}): the magnitude is unchanged, the phase gains a "
+                     f"slope of {_num(-shift)}.")
+    if abs(width - 1.0) > 1e-9:
+        notes.append(f"Time scaling by {_num(width)} compresses the spectrum by the same "
+                     f"factor and multiplies its amplitude by {_num(width)}.")
+    if pair.key in ("cos", "sin", "cexp"):
+        notes.append("A harmonic signal has a line spectrum: Dirac impulses, not a curve.")
+    if pair.key == "rect_cos":
+        notes.append("Multiplying by cos(w0*t) shifts the spectrum to +-w0 (modulation).")
+    if pair.key == "odd_rect":
+        notes.append("The signal is real and odd, so its spectrum is purely imaginary.")
+    if not notes:
+        notes.append("A basic transform pair, used without any further property.")
+
+    return {"latex_time": base, "latex_freq": f"{applied}\\qquad {spectrum}",
+            "property_msg": " ".join(notes)}
+
+
+# -------------------------------------------------------------------- figure --
+
+def _render(direction: str, t: np.ndarray, w: np.ndarray,
+            given: Tuple[Waveform, Waveform],
+            options: Sequence[Tuple[Waveform, Waveform]],
+            ) -> Tuple[str, List[Tuple[float, float, float, float]]]:
+    answer_index = 1 if direction == "TIME_TO_FREQ" else 0
+
+    # One set of limits for every option, so the axes cannot give the answer away.
+    shown = [opt[answer_index] for opt in options]
+    if direction == "TIME_TO_FREQ":
+        mag_limit = 1.15 * max([wave.peak() for wave in shown] + [1e-3])
+        time_limit = 1.2 * max(given[0].peak(), 1e-3)
     else:
-        lw = 2.5 if heavy else 1.8
-        ax_mag.plot(omega, np.abs(X), color=color, lw=lw)
-        ang = np.unwrap(np.angle(X))
-        # force to [-pi,pi] where apropriate for exam look
-        ang = np.mod(ang + math.pi, 2*math.pi) - math.pi
-        ax_ph.plot(omega, ang, color=color, lw=lw)
+        mag_limit = 1.15 * max(given[1].peak(), 1e-3)
+        time_limit = 1.2 * max([wave.peak() for wave in shown] + [1e-3])
 
-def _rect_union(a: Tuple[float,float,float,float],
-                b: Tuple[float,float,float,float]) -> Tuple[float,float,float,float]:
-    """Return union of two rects (x0,y0,w,h) in figure normalized cooords."""
-    x0 = min(a[0], b[0]); y0 = min(a[1], b[1])
-    x1 = max(a[0]+a[2], b[0]+b[2]); y1 = max(a[1]+a[3], b[1]+b[3])
-    return (x0, y0, x1-x0, y1-y0)
+    # A constrained layout plus the canvas.draw() needed to measure it rendered
+    # the whole figure twice and cost ~600 ms per problem; a fixed gridspec gives
+    # the same positions from get_position() without drawing at all.
+    fig = plt.figure(figsize=(10.0, 9.6))
+    gs = fig.add_gridspec(nrows=5, ncols=2, height_ratios=[1.25, 1, 1, 1, 1],
+                          hspace=0.62, wspace=0.20,
+                          left=0.075, right=0.985, top=0.945, bottom=0.05)
+    hit_axes: List[List[matplotlib.axes.Axes]] = []
 
-def _pad_hit_box(bounds: Tuple[float, float, float, float],
-                 *, grow_height: float = 0.035,
-                 shift_down: float = 0.012) -> Tuple[float, float, float, float]:
-    """Pad a figure-normalized rectangle, extending height and nudging downward."""
-    x0, y0, w, h = bounds
-    new_y0 = max(0.0, y0 - shift_down)
-    # Preserve the original top edge while growing height by ``grow_height``.
-    delta_y = y0 - new_y0
-    new_h = min(1.0 - new_y0, h + grow_height + delta_y)
-    return (x0, new_y0, w, new_h)
+    if direction == "TIME_TO_FREQ":
+        ax_given = fig.add_subplot(gs[0, :])
+        draw_time(ax_given, t, given[0], colour=GIVEN_COLOUR, limit=time_limit,
+                  window=time_window(t, [given[0]]))
+        ax_given.set_title(r"given signal $y(t)$ — which spectrum belongs to it?",
+                           fontsize=12, fontweight="bold")
+        for row, option in enumerate(options):
+            ax_mag = fig.add_subplot(gs[1 + row, 0])
+            ax_phase = fig.add_subplot(gs[1 + row, 1])
+            draw_spectrum(ax_mag, ax_phase, w, option[1], colour=ANSWER_COLOUR,
+                          mag_limit=mag_limit)
+            ax_mag.set_title(fr"$\mathcal{{O}}_{row + 1}$:  $|Y(\mathrm{{j}}\omega)|$", fontsize=10)
+            ax_phase.set_title(r"$\varphi(\omega)$", fontsize=10)
+            hit_axes.append([ax_mag, ax_phase])
+    else:
+        ax_mag_g = fig.add_subplot(gs[0, 0])
+        ax_phase_g = fig.add_subplot(gs[0, 1])
+        draw_spectrum(ax_mag_g, ax_phase_g, w, given[1], colour=GIVEN_COLOUR,
+                      mag_limit=mag_limit)
+        ax_mag_g.set_title(r"given $|Y(\mathrm{j}\omega)|$", fontsize=12, fontweight="bold")
+        ax_phase_g.set_title(r"given $\varphi(\omega)$ — which signal belongs to it?",
+                             fontsize=12, fontweight="bold")
+        # One window for all four, otherwise the axis alone would give away which
+        # option is shifted.
+        window = time_window(t, [opt[0] for opt in options])
+        for row, option in enumerate(options):
+            ax_time = fig.add_subplot(gs[1 + row, :])
+            draw_time(ax_time, t, option[0], colour=ANSWER_COLOUR, limit=time_limit,
+                      window=window)
+            ax_time.set_title(fr"$\mathcal{{O}}_{row + 1}$:  $y(t)$", fontsize=10)
+            hit_axes.append([ax_time])
 
-# ---------- Blueprint ----------
+    hit_boxes = []
+    for axes in hit_axes:
+        boxes = [ax.get_position().bounds for ax in axes]
+        x0 = min(b[0] for b in boxes)
+        y0 = min(b[1] for b in boxes)
+        x1 = max(b[0] + b[2] for b in boxes)
+        y1 = max(b[1] + b[3] for b in boxes)
+        pad_y = 0.012
+        hit_boxes.append((x0, max(0.0, y0 - pad_y), x1 - x0,
+                          min(1.0, y1 - y0 + 2 * pad_y)))
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format="png", dpi=120)
+    plt.close(fig)
+    return base64.b64encode(buffer.getvalue()).decode(), hit_boxes
+
+
+# ---------------------------------------------------------------- generation --
+
+def _impulses_visible(wave: Waveform, limit: float) -> bool:
+    return all(abs(position) <= 0.92 * limit for position, _ in wave.impulses)
+
+
+def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
+    level = LEVELS.get(difficulty.upper(), LEVELS["EASY"])
+    direction = direction.upper()
+    if direction not in ("TIME_TO_FREQ", "FREQ_TO_TIME"):
+        direction = "TIME_TO_FREQ"
+
+    t = np.linspace(-T_LIMIT, T_LIMIT, N_SAMPLES)
+    w = np.linspace(-W_LIMIT, W_LIMIT, N_SAMPLES)
+    answer_index = 1 if direction == "TIME_TO_FREQ" else 0
+
+    for _ in range(40):
+        w0 = random.choice(W0_CHOICES)
+        pairs = build_pairs(w0)
+        pair = pairs[random.choice(level.pool)]
+        scale = random.choice(level.scales)
+        shift = random.choice(level.shifts)
+        width = random.choice(level.widths)
+
+        truth = apply_properties(pair, t, w, scale=scale, shift=shift, width=width)
+        # Impulses pushed outside the axis by scaling would be invisible, and an
+        # answer nobody can see is not an answer.
+        if not (_impulses_visible(truth[1], W_LIMIT) and _impulses_visible(truth[0], T_LIMIT)):
+            continue
+
+        candidates = _build_candidates(pair, level, pairs, t, w,
+                                       scale=scale, shift=shift, width=width,
+                                       direction=direction)
+        candidates = [c for c in candidates
+                      if _impulses_visible(c[1], W_LIMIT) and _impulses_visible(c[0], T_LIMIT)]
+        distractors = _choose_distractors(candidates, truth, w if answer_index else t,
+                                          answer_index)
+        if len(distractors) < 3:
+            continue
+
+        options = [truth] + distractors
+        order = list(range(4))
+        random.shuffle(order)
+        shuffled = [options[i] for i in order]
+
+        plot_data, hit_boxes = _render(direction, t, w, truth, shuffled)
+        payload = {"plot_data": plot_data,
+                   "correctIndex": order.index(0),
+                   "hit_boxes": hit_boxes}
+        payload.update(_describe(pair, scale, shift, width))
+        return payload
+
+    return {"error": "Could not build a problem with four distinct options."}
+
+
+# ---------------------------------------------------------------- blueprint --
 
 training_fourier_bp = Blueprint("training_fourier", __name__)
+
 
 @training_fourier_bp.route("/")
 def training_fourier() -> str:
     return render_template("training_fourier.html")
 
+
 @training_fourier_bp.route("/generate", methods=["POST"])
 def generate_problem() -> Any:
     data = request.get_json(force=True)
-    difficulty = data.get("difficulty", "EASY").upper()
-    direction  = data.get("direction", "TIME_TO_FREQ").upper()
-    res = create_fourier_problem(difficulty, direction)
-    status = 400 if "error" in res else 200
-    return jsonify(res), status
+    difficulty = str(data.get("difficulty", "EASY")).upper()
+    direction = str(data.get("direction", "TIME_TO_FREQ")).upper()
+    result = create_fourier_problem(difficulty, direction)
+    return jsonify(result), (400 if "error" in result else 200)
+
 
 @training_fourier_bp.route("/check_answer", methods=["POST"])
-def check_answer() -> Dict[str, str]:
+def check_answer() -> Any:
     data = request.get_json(force=True)
-    feedback = "Correct!" if data.get("selectedIndex") == data.get("correctIndex") else "Incorrect. Try again!"
-    return jsonify({"feedback": feedback})
-
-# ---------- core generation ----------
-
-
-def _generate_distractors(direction: str, true_obj: np.ndarray, base_signal: Signal,
-                          t: np.ndarray, omega: np.ndarray,
-                          scale: float, width: float, shift: float) -> List[np.ndarray]:
-    """
-    Create 3 strong, exam-style distractors:
-    - integer time-shift errors (+-1, +-2)
-    - phase offsets (+-pi), wrong sign, or missed linear phase
-    - wrong width / amplitude scaling
-    - for impulses (cos/sin): wrong line positions or wrong imaginary sign
-    """
-    cand: List[np.ndarray] = []
-
-    def uniq_push(arr):
-        # Keep only distractors that differ visibly (L2) from those already in cand and from the truth
-        def far(a,b):
-            da = np.linalg.norm((a - b).reshape(-1)) / (np.linalg.norm(b.reshape(-1)) + 1e-9)
-            return da > 0.12  # like 12% relative difference..
-        if all(far(arr, c) for c in ([true_obj] + cand)):
-            cand.append(arr)
-
-    if direction == "TIME_TO_FREQ":
-        Xtrue = scale*width*base_signal.freq_fn(omega*width) * np.exp(-1j * omega * shift)
-
-        # 1) Miss linear phase (forget shift)
-        uniq_push(scale*width*base_signal.freq_fn(omega*width))
-
-        # 2) Wrong shift by +-1 or +-2
-        k = random.choice([1, 2]) * random.choice([-1, 1])
-        uniq_push(scale*width*base_signal.freq_fn(omega*width) * np.exp(-1j * omega * (shift + k)))
-
-        # 3) Phase offset by pi (flip sign)
-        uniq_push(-Xtrue)
-
-        # 4) Wrong width (+-1 step if possible)
-        width_alt = width
-        for delta in [1.0, -1.0, 2.0]:
-            if width + delta in [0.5, 1.0, 2.0, 3.0]:
-                width_alt = width + delta
-                break
-        uniq_push(scale*width_alt*base_signal.freq_fn(omega*width_alt) * np.exp(-1j*omega*shift))
-
-        # 5) Wrong amplitude (forget "·width")
-        uniq_push(scale*base_signal.freq_fn(omega*width) * np.exp(-1j*omega*shift))
-
-        # 6) Special cases: impulses and odd signals
-        name = base_signal.name
-        if name in ("cos", "sin"):
-            # move impulses to wrong freq: +-(w0 +- pi)
-            # estimate w0 from max of |X|
-            idx = np.argmax(np.abs(true_obj))
-            w0_est = abs(omega[idx])
-            wrong_w0 = w0_est + random.choice([-math.pi, math.pi])
-            # construct delta-like lines with small Gaussian blobs so difference shows in raster
-            amp = 1.0
-            if name == "cos":
-                # cos has real equal spikes
-                Xw = np.exp(-0.5*((omega-wrong_w0)/0.05)**2) + np.exp(-0.5*((omega+wrong_w0)/0.05)**2)
-                uniq_push(np.pi*Xw)
-            else:
-                # sin has imaginary opposite spikes -> flip sign to mimic wrong j sign
-                Xw = 1j*(np.exp(-0.5*((omega-wrong_w0)/0.05)**2) - np.exp(-0.5*((omega+wrong_w0)/0.05)**2))
-                uniq_push(-Xw)
-
-    else:
-        # FREQ_TO_TIME: make timedomain distractors
-        xtrue = scale * base_signal.time_fn((t - shift) / width)
-        # 1) Wrong integer shift
-        k = random.choice([1, 2]) * random.choice([-1, 1])
-        uniq_push(scale * base_signal.time_fn((t - (shift + k)) / width))
-        # 2) Wrong width
-        width_alt = width
-        for delta in [1.0, -1.0, 2.0]:
-            if width + delta in [0.5, 1.0, 2.0, 3.0]:
-                width_alt = width + delta
-                break
-        uniq_push(scale * base_signal.time_fn((t - shift) / width_alt))
-        # 3) Wrong amplitude
-        uniq_push(2.0 * xtrue if abs(scale) <= 1.5 else 0.5 * xtrue)
-        # 4) Negated
-        uniq_push(-xtrue)
-        # 5) Missed shift (t0 = 0)
-        uniq_push(scale * base_signal.time_fn(t / width))
-
-    random.shuffle(cand)
-    return cand[:3]
-
-def create_fourier_problem(difficulty: str, direction: str) -> Dict[str, Any]:
-    try:
-        ranges = _parameter_ranges(difficulty)
-        w0 = random.choice([0.5*math.pi, 1.0*math.pi, 1.5*math.pi, 2.0*math.pi])
-        pool = make_signal_pool(w0)
-
-        name = random.choice(ranges["pool"])
-        sig = pool[name]
-
-        shift = int(round(_sample_param(ranges["shift"], -3, 3)))
-        scale = _sample_param(ranges["scale"], 0.4, 2.5)
-        width = _sample_param(ranges["width"], 0.6, 2.2)
-
-        # axes domains: time roughly [-4,4], frequency roughly [-2pi,2pi]
-        t = np.linspace(-4, 4, 800)
-        omega = np.linspace(-2*math.pi, 2*math.pi, 900)
-
-        x = scale * sig.time_fn((t - shift) / width)
-        X = scale * width * sig.freq_fn(omega * width) * np.exp(-1j * omega * shift)
-
-        latex_time = fr"{scale:.2f}\,{sig.latex_time}\Big((t-{shift:.2f})/{width:.2f}\Big)"
-        phase_term = fr"-\mathrm{{j}}\omega {shift:.2f}"
-        latex_freq = (
-            fr"{scale*width:.2f}\,{sig.latex_freq}\big(\omega\,{width:.2f}\big)"
-            fr"e^{{{phase_term}}}"
-        )
-        # Build options (correct + 3 distractors)
-        true_spec = X
-        true_time = x
-        if direction == "TIME_TO_FREQ":
-            correct_obj = true_spec
-            distractors = _generate_distractors(direction, true_spec, sig, t, omega, scale, width, shift)
-            options = [correct_obj] + distractors
-        else:
-            correct_obj = true_time
-            distractors = _generate_distractors(direction, true_time, sig, t, omega, scale, width, shift)
-            options = [correct_obj] + distractors
-
-        indices = list(range(4))
-        random.shuffle(indices)
-        shuffled = [options[i] for i in indices]
-        correct_idx = indices.index(0)
-
-        # ------- Figure creation -------
-        fig = plt.figure(figsize=(10.2, 9.2), layout="constrained")
-        # grid: rows = 1(header given) + 4(option rows), cols = 3 (|Y|, phase, y)
-        gs = fig.add_gridspec(nrows=5, ncols=3, height_ratios=[1.1, 1, 1, 1, 1])
-
-        # row 0: GIVEN (black)
-        ax_mag_g = fig.add_subplot(gs[0, 0])
-        ax_ph_g  = fig.add_subplot(gs[0, 1])
-        ax_t_g   = fig.add_subplot(gs[0, 2])
-
-        if direction == "TIME_TO_FREQ":
-            # show given y(t) only
-            ax_mag_g.axis("off"); ax_ph_g.axis("off")
-            _plot_time_pretty(ax_t_g, t, true_time.real, color="k", lw=2.2, singular=(sig.name=="inv_t"))
-            _format_time_axis(ax_t_g, t)
-            ax_t_g.set_title(r"given $y(t)$", fontsize=11)
-        else:
-            _plot_spec(ax_mag_g, ax_ph_g, omega, true_spec, color="k", heavy=True)
-            _format_mag_axis(ax_mag_g, omega)
-            _format_phase_axis(ax_ph_g, omega)
-            ax_t_g.axis("off")
-            ax_mag_g.set_title(r"given $|Y(\mathrm{j}\omega)|$", fontsize=11)
-            ax_ph_g.set_title(r"given $\varphi(\mathrm{j}\omega)$", fontsize=11)
-
-        # rows 1..4: answer options in GREEN
-        hit_box_axes: List[Tuple[matplotlib.axes.Axes, ...]] = []
-        for i in range(4):
-            ax_mag = fig.add_subplot(gs[1 + i, 0])
-            ax_ph  = fig.add_subplot(gs[1 + i, 1])
-            ax_t   = fig.add_subplot(gs[1 + i, 2])
-
-            if direction == "TIME_TO_FREQ":
-                # draw the option spectrum in green, and faint gray reference of the given y(t) at right
-                _plot_spec(ax_mag, ax_ph, omega, shuffled[i], color=_GREEN, heavy=True)
-                _format_mag_axis(ax_mag, omega)
-                _format_phase_axis(ax_ph, omega)
-
-                _plot_time_pretty(ax_t, t, true_time.real, color="0.5", lw=1.2, dashed=True, singular=(sig.name=="inv_t"))
-                ax_t.lines[-1].set_alpha(0.8)  # keep your alpha                _format_time_axis(ax_t, t)
-                ax_t.set_title(fr"$\mathcal{{O}}_{i+1}$", fontsize=11)
-
-                # union of magnitude/phase axes is the clickable target
-                hit_box_axes.append((ax_mag, ax_ph))
-
-            else:  # FREQ_TO_TIME
-                # faint gray reference of given spectrum on left
-                _plot_spec(ax_mag, ax_ph, omega, true_spec, color="0.6", heavy=False)
-                _format_mag_axis(ax_mag, omega)
-                _format_phase_axis(ax_ph, omega)
-
-                _plot_time_pretty(ax_t, t, shuffled[i].real, color=_GREEN, lw=2.3, singular=(sig.name=="inv_t"))
-                _format_time_axis(ax_t, t)
-                ax_t.set_title(fr"$\mathcal{{O}}_{i+1}$", fontsize=11)
-
-                # time axis alone is the clickable area
-                hit_box_axes.append((ax_t,))
-
-        # ensure constrained layout updates before measuring axis bounds
-        fig.canvas.draw()
-
-        hit_boxes: List[Tuple[float, float, float, float]] = []
-        for axes_tuple in hit_box_axes:
-            if direction == "TIME_TO_FREQ":
-                r1 = axes_tuple[0].get_position().bounds
-                r2 = axes_tuple[1].get_position().bounds
-                hit_boxes.append(_pad_hit_box(_rect_union(r1, r2)))
-            else:
-                hit_boxes.append(axes_tuple[0].get_position().bounds)
-
-        # encode
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png", dpi=140)
-        plot_data = base64.b64encode(buf.getvalue()).decode()
-        plt.close(fig)
-
-        # property message (short)
-        props = []
-        if abs(shift) > 1e-9: props.append("Time shift ⇒ $e^{-j\\omega t_0}$ in $Y(j\\omega)$.")
-        if abs(width - 1) > 1e-9: props.append("Time scaling ⇒ amplitude·width and argument scaling.")
-        if name in ("cos", "sin"): props.append("Trigonometric ⇒ impulses at +-w₀.")
-        property_msg = " ".join(props) or "Basic transform pair."
-
-        return {
-            "plot_data": plot_data,
-            "correctIndex": correct_idx,
-            "latex_time": latex_time,
-            "latex_freq": latex_freq,
-            "property_msg": property_msg,
-            "hit_boxes": hit_boxes,  # figure-normalized rectangles for clickable overlay
-        }
-    except Exception:
-        return {"error": traceback.format_exc()}
+    correct = data.get("selectedIndex") == data.get("correctIndex")
+    return jsonify({"feedback": "Correct!" if correct else "Incorrect. Try again!"})

@@ -51,6 +51,10 @@
     <button id="streakReset" class="action-btn" style="padding:6px 10px;background:#555;">Reset</button>
   </div>
 
+  <p style="text-align: center; margin-top: 18px;">
+    Want a timed exam? <a href="{{ url_for('exam_fourier.start_exam') }}" class="link-btn">Take the Fourier Exam</a>
+  </p>
+
   <div id="explanationCard" class="explanation-card" style="display:none; max-width:900px; margin: 14px auto 0; padding: 16px 20px; border:1px solid #d8dce3; border-radius:8px; background: var(--surface-color, #f8f9fb); color: var(--text-color);">
     <h2 style="margin-top:0; font-size:1.25em;">Solution Insight</h2>
     <p id="latexSignal" style="margin-bottom:10px;"></p>
@@ -87,11 +91,13 @@
     const promise = new Promise((resolve) => {
       const finalize = () => resolve(preloadImg);
       preloadImg.onload = () => {
+        // decode() on a detached image can stay pending forever in some
+        // browsers, which used to leave the prefetch promise unsettled and the
+        // page stuck on "Preparing problem...". It is a warm-up, not a gate.
         if (typeof preloadImg.decode === 'function') {
-          preloadImg.decode().catch(()=>{}).finally(finalize);
-        } else {
-          finalize();
+          preloadImg.decode().catch(() => {});
         }
+        finalize();
       };
       preloadImg.onerror = finalize;
     });
@@ -150,6 +156,13 @@
     hideExplanation();
     resetOverlayUI();
     prefetchQueuedForCurrentRound = false;
+  }
+
+  // Was missing entirely: the first call inside renderProblemFromData threw a
+  // ReferenceError, so no problem was ever drawn on this page.
+  function showFeedback(msg){
+    const box = document.getElementById('feedback');
+    if (box) box.innerText = msg || '';
   }
 
   function hidePlot(){
