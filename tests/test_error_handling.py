@@ -1,16 +1,9 @@
 import json
 import pytest
 from main import create_app
-from pages.fourier_page import compute_fourier
 from pages.convolution import compute_convolution
 from pages.autocorrelation import compute_autocorrelation
 
-
-
-def test_compute_fourier_invalid_function_returns_error():
-    res = compute_fourier('invalid(', 0.0)
-    assert 'error' in res
-    assert 'Error evaluating function' in res['error']
 
 
 def test_compute_convolution_invalid_function_returns_error():

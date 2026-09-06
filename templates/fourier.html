@@ -1,65 +1,129 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="page-header" style="margin-bottom:30px; text-align:center;">
-  <h1 style="font-size:2.5em;">Fourier Transform Visualizer</h1>
-  <p style="font-size:1.1em;color:var(--subtext-color); max-width:600px; margin:0 auto;">
-    Enter a time function, shift the phase, and visualize the result interactively.
-    $$ X(\mathrm{j}\omega)=\mathcal{F}\{x(t)\}=\int_{-\infty}^{\infty} x(t)\,e^{-\mathrm{j}\omega t}\,dt $$
+<div class="fourier-head">
+  <h1>Fourier Transform Visualizer</h1>
+  <p class="fourier-lead">Enter a time function, apply the Fourier properties, and watch the spectrum respond.
+    <a href="{{ url_for('static', filename='docs/continuous_fourier.pdf') }}" target="_blank" class="subtle-btn">Correspondence table</a>
   </p>
-  <a href="{{ url_for('static', filename='docs/continuous_fourier.pdf') }}" target="_blank" class="subtle-btn">Fourier Correspondence Table</a>
+  <p class="fourier-definition">$$ X(\mathrm{j}\omega)=\mathcal{F}\{x(t)\}=\int_{-\infty}^{\infty} x(t)\,\mathrm{e}^{-\mathrm{j}\omega t}\,\mathrm{d}t $$</p>
 </div>
 
-<p id="errorMsg" style="max-width:700px;margin:0 auto 16px auto;color:#d00;text-align:center;font-weight:bold;"></p>
+<div class="fourier-workbench" data-requires-mathjax="true">
 
-<form id="fourierForm" style="max-width:700px; margin:0 auto; text-align:center;">
-  <div class="function-group" style="margin-bottom:20px;">
-    <label style="font-weight:bold;">Function:</label>
-    <input type="text" id="func" placeholder="e.g., sin(pi*t) + 3*rect(t)" onfocus="setActiveField(this)">
-    <div class="quick-buttons functions" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:15px;">
-      <button type="button" onclick="insertOperand('rect(t)')">\(\mathrm{rect}\)</button>
-      <button type="button" onclick="insertOperand('tri(t)')">\(\mathrm{tri}\)</button>
-      <button type="button" onclick="insertOperand('sin(pi*t)')">\(\mathrm{sin}\)</button>
-      <button type="button" onclick="insertOperand('cos(pi*t)')">\(\mathrm{cos}\)</button>
-      <button type="button" onclick="insertOperand('step(t)')">\(\mathrm{step}\)</button>
-      <button type="button" onclick="insertOperand('delta(t)')">\(\delta\)</button>
-      <button type="button" onclick="insertOperand('sign(t)')">\(\mathrm{sign}\)</button>
-      <button type="button" onclick="insertOperand('inv_t(t)')">\(\frac{1}{t}\)</button>
-      <button type="button" onclick="insertOperand('si(pi*t)')">\(\mathrm{si}\)</button>
-      <button type="button" onclick="insertOperand('si(pi*t)**2')">\(\mathrm{si}^2\)</button>
-      <button type="button" onclick="insertOperand('exp_iwt(t)')">\(\mathrm{e}^{\mathrm{j}\omega t}\)</button>
-      <button type="button" onclick="insertOperand('exp(t)')">\(\mathrm{e}^t\)</button>
+  <form id="fourierForm" class="fourier-controls">
+    <div class="control-card">
+      <label class="card-title" for="func">Function</label>
+      <input type="text" id="func" placeholder="e.g. sin(pi*t) + 3*rect(t)" onfocus="setActiveField(this)">
+      <p id="errorMsg" class="error-msg" role="alert" aria-live="polite"></p>
+
+      <div class="quick-buttons functions">
+        <button type="button" onclick="insertOperand('rect(t)')" aria-label="rect">\(\mathrm{rect}\)</button>
+        <button type="button" onclick="insertOperand('tri(t)')" aria-label="tri">\(\mathrm{tri}\)</button>
+        <button type="button" onclick="insertOperand('sin(pi*t)')" aria-label="sine">\(\sin\)</button>
+        <button type="button" onclick="insertOperand('cos(pi*t)')" aria-label="cosine">\(\cos\)</button>
+        <button type="button" onclick="insertOperand('step(t)')" aria-label="unit step">\(\mathrm{step}\)</button>
+        <button type="button" onclick="insertOperand('delta(t)')" aria-label="delta impulse">\(\delta\)</button>
+        <button type="button" onclick="insertOperand('sign(t)')" aria-label="sign">\(\mathrm{sign}\)</button>
+        <button type="button" onclick="insertOperand('inv_t(t)')" aria-label="one over t">\(\tfrac{1}{t}\)</button>
+        <button type="button" onclick="insertOperand('si(pi*t)')" aria-label="si">\(\mathrm{si}\)</button>
+        <button type="button" onclick="insertOperand('si(pi*t)**2')" aria-label="si squared">\(\mathrm{si}^2\)</button>
+        <button type="button" onclick="insertOperand('exp_iwt(t)')" aria-label="complex exponential">\(\mathrm{e}^{\mathrm{j}\omega t}\)</button>
+        <button type="button" onclick="insertOperand('exp(t)')" aria-label="exponential">\(\mathrm{e}^{t}\)</button>
+      </div>
+
+      <div class="quick-buttons operators">
+        <button type="button" onclick="insertOperand('+')" aria-label="plus">\(+\)</button>
+        <button type="button" onclick="insertOperand('-')" aria-label="minus">\(-\)</button>
+        <button type="button" onclick="insertOperand('*')" aria-label="times">\(\cdot\)</button>
+        <button type="button" onclick="insertOperand('/')" aria-label="divided by">\(/\)</button>
+      </div>
+
+      <div class="card-actions">
+        <button type="button" id="computeBtn" class="action-btn">Compute</button>
+        <button type="button" id="clearBtn" class="action-btn">Clear</button>
+      </div>
     </div>
-    <div class="quick-buttons operators" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;">
-      <button type="button" onclick="insertOperand('+')">\(+\)</button>
-      <button type="button" onclick="insertOperand('-')">\(-\)</button>
-      <button type="button" onclick="insertOperand('*')">\(\cdot\)</button>
-      <button type="button" onclick="insertOperand('/')">\(/\)</button>
+
+    <fieldset class="control-card property-panel">
+      <legend>Fourier properties</legend>
+      <p class="property-intro">Leave the other sliders neutral to study one property on its own.</p>
+
+      <div class="property-row">
+        <label for="shift">Time shift \(t_0\)</label>
+        <output for="shift" id="shiftOut">0.0</output>
+        <input type="range" id="shift" min="-5" max="5" step="0.1" value="0">
+        <span class="property-law">\(x(t-t_0)\ \leftrightarrow\ X(\mathrm{j}\omega)\,\mathrm{e}^{-\mathrm{j}\omega t_0}\)</span>
+      </div>
+
+      <div class="property-row">
+        <label for="scale">Time scaling \(a\)</label>
+        <output for="scale" id="scaleOut">1.00</output>
+        <input type="range" id="scale" min="0.25" max="4" step="0.05" value="1">
+        <span class="property-law">\(x(a\,t)\ \leftrightarrow\ \tfrac{1}{|a|}\,X\!\left(\mathrm{j}\tfrac{\omega}{a}\right)\)</span>
+      </div>
+
+      <div class="property-row">
+        <label for="modulate">Modulation \(\omega_0\)</label>
+        <output for="modulate" id="modulateOut">0.00 π</output>
+        <input type="range" id="modulate" min="-3" max="3" step="0.05" value="0">
+        <span class="property-law">\(x(t)\,\mathrm{e}^{\mathrm{j}\omega_0 t}\ \leftrightarrow\ X(\mathrm{j}(\omega-\omega_0))\)</span>
+      </div>
+
+      <div class="property-row">
+        <label for="phase">Global phase \(\varphi\)</label>
+        <output for="phase" id="phaseOut">0°</output>
+        <input type="range" id="phase" min="-180" max="180" step="1" value="0">
+        <span class="property-law">\(x(t)\,\mathrm{e}^{\mathrm{j}\varphi}\ \leftrightarrow\ X(\mathrm{j}\omega)\,\mathrm{e}^{\mathrm{j}\varphi}\)</span>
+      </div>
+
+      <div class="property-actions">
+        <button type="button" id="resetProps" class="reset-props">Reset properties</button>
+      </div>
+    </fieldset>
+  </form>
+
+  <div class="fourier-plots">
+    <p id="fourier_transformation_label" class="signal-label"></p>
+
+    <div class="plot-toolbar">
+      <label for="specView">View
+        <select id="specView">
+          <option value="magphase">Magnitude &amp; phase</option>
+          <option value="reim">Real &amp; imaginary</option>
+        </select>
+      </label>
+      <label for="phaseMode">Phase
+        <select id="phaseMode">
+          <option value="wrapped">wrapped</option>
+          <option value="unwrapped">unwrapped</option>
+        </select>
+      </label>
+      <label for="omegaRange">Range
+        <select id="omegaRange">
+          <option value="2">±2π</option>
+          <option value="5" selected>±5π</option>
+          <option value="10">±10π</option>
+          <option value="20">±20π</option>
+        </select>
+      </label>
+      <label class="toolbar-check" for="normalize"><input type="checkbox" id="normalize"> Normalise \(|X|\)</label>
+      <button type="button" id="downloadCsv" class="reset-props">CSV</button>
+    </div>
+
+    <p id="leakageNote" class="leakage-note"></p>
+
+    <div id="plotly-container">
+      <div id="timePlot"></div>
+      <div id="magPlot"></div>
+      <div id="phasePlot"></div>
     </div>
   </div>
 
-  <div class="options-group" style="display:flex; gap:20px; justify-content:center; margin-bottom:30px;">
-    <div>
-      <label style="font-weight:bold;">Global complex phase (°):</label>
-      <input type="number" id="phase" value="0">
-    </div>
-  </div>
-
-  <div style="margin-bottom:30px;">
-    <button type="button" id="computeBtn" class="action-btn">Compute</button>
-    <button type="button" id="clearBtn" class="action-btn">Clear</button>
-  </div>
-</form>
-
-<div id="plotly-container" style="max-width:1200px; margin:0 auto;">
-  <div id="timePlot" style="height:220px;"></div>
-  <div id="magPlot" style="height:250px;"></div>
-  <div id="phasePlot" style="height:250px; margin-top:-20px;"></div>
 </div>
 
-<p id="fourier_transformation_label" style="text-align:center; margin-top:20px; font-weight:bold;"></p>
-
-<script src="{{ url_for('static', filename='js/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/plotly_loader.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fft.js') }}"></script>
+<script src="{{ url_for('static', filename='js/signal_functions.js') }}"></script>
 <script src="{{ url_for('static', filename='js/fourier_compute.js') }}"></script>
 <script>
 let activeField = document.getElementById("func");
@@ -76,7 +140,7 @@ function clearErrors(){
 
 function insertOperand(op) {
   if (!activeField) {
-    alert("Klicke zuerst in das Textfeld!");
+    funcInput.focus();
     return;
   }
   const start = activeField.selectionStart;
@@ -92,43 +156,265 @@ function insertOperand(op) {
   activeField.focus();
 }
 
+// Neutral values: every property off, so the plot shows the plain transform.
+const PROPERTY_DEFAULTS = {shift: 0, scale: 1, modulate: 0, phase: 0};
+
+function readNumber(id, fallback){
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) ? v : fallback;
+}
+
 function getValues(){
   return {
     func: document.getElementById("func").value,
-    phase: document.getElementById("phase").value
+    phase: readNumber("phase", 0),
+    shift: readNumber("shift", 0),
+    scale: readNumber("scale", 1),
+    // The slider counts in multiples of pi so it lines up with the omega axis.
+    modulate: readNumber("modulate", 0) * Math.PI,
+    normalize: document.getElementById("normalize").checked,
+    view: document.getElementById("specView").value,
+    phaseMode: document.getElementById("phaseMode").value,
+    omegaK: readNumber("omegaRange", 5)
   };
 }
 
-const omegaLimit = 5 * Math.PI;
-
-const omegaTicks = [];
-const omegaTickText = [];
-for(let k=-5; k<=5; k++){
-  omegaTicks.push(k * Math.PI);
-  if(k === 0) omegaTickText.push("0");
-  else if(k === 1) omegaTickText.push("π");
-  else if(k === -1) omegaTickText.push("-π");
-  else omegaTickText.push(`${k}π`);
+function syncPropertyReadouts(){
+  document.getElementById("shiftOut").textContent = readNumber("shift", 0).toFixed(1);
+  document.getElementById("scaleOut").textContent = readNumber("scale", 1).toFixed(2);
+  document.getElementById("modulateOut").textContent = readNumber("modulate", 0).toFixed(2) + " π";
+  document.getElementById("phaseOut").textContent = readNumber("phase", 0).toFixed(0) + "°";
 }
 
-const baseLayout = {
-  template: "plotly_white",
-  margin: {t: 40, r: 24, l: 60, b: 50},
-  xaxis: {
-    title: {text: "ω"},
-    range: [-omegaLimit, omegaLimit],
-    tickvals: omegaTicks,
-    ticktext: omegaTickText,
-    zeroline: false,
-    gridcolor: "rgba(0,0,0,0.12)",
-  },
-  yaxis: {
-    gridcolor: "rgba(0,0,0,0.12)",
-    zeroline: false,
-  },
-};
+// Spells out the signal that is actually transformed, omitting neutral factors.
+// Built twice: as TeX for MathJax and as plain text, so the label stays readable
+// if MathJax is unavailable instead of showing raw markup.
+function signalArgument(v, times, open, close){
+  let arg = "t";
+  if (v.shift !== 0) arg = `t ${v.shift > 0 ? "-" : "+"} ${Math.abs(v.shift).toFixed(1)}`;
+  if (v.scale !== 1) arg = v.shift !== 0
+    ? `${v.scale.toFixed(2)}${times}${open}${arg}${close}`
+    : `${v.scale.toFixed(2)}${times}t`;
+  return arg;
+}
 
-const plotConfig = {displayModeBar: false, responsive: true};
+function describeSignalTex(v){
+  const arg = signalArgument(v, "\\,", "(", ")");
+  let out = `y(t) = x\\!\\left(${arg}\\right)`;
+  if (v.modulate !== 0) out += `\\,\\mathrm{e}^{\\mathrm{j}\\,${readNumber("modulate", 0).toFixed(2)}\\pi t}`;
+  if (v.phase !== 0) out += `\\,\\mathrm{e}^{\\mathrm{j}\\,${v.phase.toFixed(0)}^{\\circ}}`;
+  return `\\(${out}\\)`;
+}
+
+function describeSignalPlain(v){
+  const arg = signalArgument(v, "·", "(", ")").replace("-", "−");
+  let out = `y(t) = x(${arg})`;
+  if (v.modulate !== 0) out += `·e^(j·${readNumber("modulate", 0).toFixed(2)}π·t)`;
+  if (v.phase !== 0) out += `·e^(j·${v.phase.toFixed(0)}°)`;
+  return out;
+}
+
+// Wrapping only applies to the phase view, so the selector is disabled while
+// the real/imaginary view is shown rather than silently doing nothing.
+function syncViewControls(){
+  const reim = document.getElementById("specView").value === "reim";
+  const phaseMode = document.getElementById("phaseMode");
+  phaseMode.disabled = reim;
+  phaseMode.closest("label").classList.toggle("is-disabled", reim);
+}
+
+// A signal that is still alive at the edge of the analysis window is transformed
+// truncated, which shows up as leakage rather than as the exact spectrum.
+function showLeakageNote(data){
+  const note = document.getElementById("leakageNote");
+  note.textContent = data.truncated
+    ? "The signal has not decayed at the edge of the 40 s analysis window, so the spectrum shows truncation (leakage) artefacts instead of the exact transform."
+    : "";
+}
+
+function downloadCsv(){
+  if (!lastData || !omegaIdx || !omegaIdx.length) return;
+  const d = spectrumDivisor(lastData, lastVals.normalize);
+  const wrapped = subsetSeries(lastData.phase, 1);
+  const unwrapped = unwrapAroundDc(omegaPlotX, wrapped);
+  const rows = ["omega,magnitude,phase_wrapped,phase_unwrapped,real,imag"];
+  const num = v => (v === null || v === undefined || !Number.isFinite(v)) ? "" : v.toPrecision(10);
+  omegaIdx.forEach((i, k) => {
+    rows.push([lastData.omega[i], lastData.magnitude[i]/d, wrapped[k], unwrapped[k],
+               lastData.spec_real[i]/d, lastData.spec_imag[i]/d].map(num).join(","));
+  });
+  const blob = new Blob([rows.join("\n") + "\n"], {type: "text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "fourier_spectrum.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// base.html pulls MathJax in asynchronously, so the first label is rendered
+// before it exists. Resolves with the library once it is usable, or with null
+// after a grace period, in which case the plain-text label simply stays.
+let mathJaxReady = null;
+function whenMathJaxReady(){
+  if (mathJaxReady) return mathJaxReady;
+  mathJaxReady = new Promise(resolve => {
+    const deadline = Date.now() + 8000;
+    (function poll(){
+      const MJ = window.MathJax;
+      if (MJ && MJ.typesetPromise) {
+        const started = (MJ.startup && MJ.startup.promise) || Promise.resolve();
+        started.then(() => resolve(MJ), () => resolve(MJ));
+      } else if (Date.now() > deadline) {
+        resolve(null);
+      } else {
+        setTimeout(poll, 120);
+      }
+    })();
+  });
+  return mathJaxReady;
+}
+
+// Typesetting runs off a promise chain so that dragging a slider cannot stack up
+// overlapping MathJax passes; stale values are dropped rather than rendered.
+let lastLabelTex = null;
+let labelTypeset = Promise.resolve();
+function renderSignalLabel(v){
+  const el = document.getElementById("fourier_transformation_label");
+  const tex = describeSignalTex(v);
+  if (tex === lastLabelTex) return;
+  lastLabelTex = tex;
+  el.textContent = describeSignalPlain(v);
+
+  labelTypeset = labelTypeset.then(whenMathJaxReady).then(MJ => {
+    if (!MJ || tex !== lastLabelTex) return null;
+    if (MJ.typesetClear) MJ.typesetClear([el]);
+    el.textContent = tex;
+    return MJ.typesetPromise([el]).catch(() => { el.textContent = describeSignalPlain(v); });
+  });
+}
+
+function piLabel(k){
+  if(k === 0) return "0";
+  if(k === 1) return "π";
+  if(k === -1) return "-π";
+  return `${k}π`;
+}
+
+// Ticks stay on multiples of pi whatever range is selected, thinned out so the
+// labels never collide.
+function piTicks(kLo, kHi, maxTicks){
+  const step = Math.max(1, Math.ceil((kHi - kLo)/maxTicks));
+  const vals = [], text = [];
+  for(let k = kLo; k <= kHi; k += step){
+    vals.push(k * Math.PI);
+    text.push(piLabel(k));
+  }
+  return {vals, text};
+}
+
+// The plots sit in the narrower right-hand column now, so the margins are tighter.
+const PLOT_MARGIN = {t: 34, r: 18, l: 58, b: 42};
+
+// The site header is sticky, so the control column has to start below it.
+function syncStickyOffset(){
+  const header = document.querySelector(".header");
+  const top = (header ? header.offsetHeight : 62) + 16;
+  document.documentElement.style.setProperty("--fourier-sticky-top", top + "px");
+}
+window.addEventListener("resize", syncStickyOffset);
+
+function getPlotTheme(){
+  const isDark = document.body.classList.contains("dark-mode");
+  return isDark
+    ? {paperBg: "#0f172a", plotBg: "#0f172a", axisColor: "#e2e8f0", gridColor: "#334155"}
+    : {paperBg: "#ffffff", plotBg: "#ffffff", axisColor: "#1f2937", gridColor: "rgba(0,0,0,0.12)"};
+}
+
+// A fresh object per plot: Plotly mutates the layout it is handed, so the three
+// plots must not share one xaxis/yaxis instance.
+function spectrumLayout(omegaK){
+  const theme = getPlotTheme();
+  const ticks = piTicks(-omegaK, omegaK, 10);
+  return {
+    margin: PLOT_MARGIN,
+    paper_bgcolor: theme.paperBg,
+    plot_bgcolor: theme.plotBg,
+    font: {color: theme.axisColor},
+    xaxis: {
+      title: {text: "ω"},
+      range: [-omegaK*Math.PI, omegaK*Math.PI],
+      tickvals: ticks.vals,
+      ticktext: ticks.text,
+      zeroline: false,
+      color: theme.axisColor,
+      gridcolor: theme.gridColor,
+    },
+    yaxis: {
+      color: theme.axisColor,
+      gridcolor: theme.gridColor,
+      zeroline: false,
+    },
+  };
+}
+
+// The FFT needs the full 40 s window, but showing all of it turns a short pulse
+// into an invisible needle, so the view is trimmed to the bulk of the signal.
+function timeViewRange(data){
+  const t = data.t, re = data.y_real, im = data.y_imag, n = t.length;
+  const full = [t[0], t[n-1]];
+  const mag = new Float64Array(n);
+  let total = 0;
+  for(let i=0;i<n;i++){ mag[i] = Math.hypot(re[i], im[i]); total += mag[i]; }
+  if(!(total > 0)) return full;
+
+  let median = 0, acc = 0;
+  for(let i=0;i<n;i++){ acc += mag[i]; if(acc >= 0.5*total){ median = i; break; } }
+
+  let lo = median, hi = median, covered = mag[median];
+  const target = 0.99*total;
+  while(covered < target && (lo > 0 || hi < n-1)){
+    const nextLo = lo > 0 ? mag[lo-1] : -1;
+    const nextHi = hi < n-1 ? mag[hi+1] : -1;
+    if(nextHi >= nextLo){ hi++; covered += mag[hi]; }
+    else { lo--; covered += mag[lo]; }
+  }
+
+  const centre = (t[lo] + t[hi])/2;
+  const half = Math.max((t[hi] - t[lo])/2 * 1.2, 2.5);
+  return [Math.max(full[0], centre - half), Math.min(full[1], centre + half)];
+}
+
+function applyPlotTheme(){
+  if(!window.Plotly) return;
+  const theme = getPlotTheme();
+  ["timePlot", "magPlot", "phasePlot"].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el || !el.data) return;
+    Plotly.relayout(el, {
+      paper_bgcolor: theme.paperBg,
+      plot_bgcolor: theme.plotBg,
+      "font.color": theme.axisColor,
+      "xaxis.color": theme.axisColor,
+      "xaxis.gridcolor": theme.gridColor,
+      "yaxis.color": theme.axisColor,
+      "yaxis.gridcolor": theme.gridColor,
+    });
+  });
+}
+new MutationObserver(applyPlotTheme).observe(document.body, {attributes: true, attributeFilter: ["class"]});
+
+// The mode bar is kept (on hover only) so the spectra can be zoomed and saved
+// as PNG without adding buttons of our own.
+const plotConfig = {
+  responsive: true,
+  displaylogo: false,
+  displayModeBar: "hover",
+  modeBarButtonsToRemove: ["select2d", "lasso2d", "toggleSpikelines",
+                           "hoverClosestCartesian", "hoverCompareCartesian"],
+};
 
 function renderPlot(target, data, layout) {
   const el = document.getElementById(target);
@@ -139,42 +425,148 @@ function renderPlot(target, data, layout) {
   }
 }
 
-let lastFunc = null;
+let lastRenderKey = null;
 let omegaIdx = null;
 let omegaPlotX = null;
-let magPlotY = null;
 
-function rebuildOmegaCache(data){
+function rebuildOmegaCache(data, omegaK){
   const omega = data.omega;
+  const limit = omegaK * Math.PI;
   const idx = [];
   const x = [];
-  const mag = [];
   for(let i=0;i<omega.length;i++){
-    if(Math.abs(omega[i]) <= omegaLimit){
+    if(Math.abs(omega[i]) <= limit){
       idx.push(i);
       x.push(omega[i]);
-      mag.push(data.magnitude[i]);
     }
   }
   omegaIdx = idx;
   omegaPlotX = x;
-  magPlotY = mag;
 }
 
-function buildPhaseSubset(fullPhase){
+// Keeps null entries intact so the phase plot draws gaps instead of joining
+// across frequencies where the phase carries no information.
+function subsetSeries(full, divisor){
+  const d = divisor || 1;
   const out = new Array(omegaIdx.length);
   for(let k=0;k<omegaIdx.length;k++){
-    out[k] = fullPhase[omegaIdx[k]];
+    const v = full[omegaIdx[k]];
+    out[k] = (v === null || v === undefined) ? null : v/d;
   }
   return out;
 }
 
-function updatePlots(){
+// Normalising hides the amplitude, and with it X(0) = the area under x(t), so
+// the physical scale is the default and normalising is opt-in.
+function spectrumDivisor(data, normalize){
+  return (normalize && data.magnitudeMax > 0) ? data.magnitudeMax : 1;
+}
+
+// Unwrapping runs over the frequencies actually on screen and starts at omega = 0,
+// where the phase is best defined. Unwrapping the whole computed axis instead
+// would have to bridge the wide sidelobe gaps that sit below the noise floor,
+// where the 2*pi branch is no longer decidable -- that produced a slope of -1.64
+// instead of -2 for a signal shifted by 2.
+function unwrapAroundDc(omegaX, wrapped){
+  const n = wrapped.length;
+  const out = new Array(n).fill(null);
+  let dc = -1, best = Infinity;
+  for(let i=0;i<n;i++){
+    if(wrapped[i] === null) continue;
+    const d = Math.abs(omegaX[i]);
+    if(d < best){ best = d; dc = i; }
+  }
+  if(dc < 0) return out;
+
+  function walk(from, to, stepDir){
+    let acc = wrapped[dc], prev = wrapped[dc];
+    for(let i=from; stepDir > 0 ? i <= to : i >= to; i += stepDir){
+      if(wrapped[i] === null) continue;
+      let d = wrapped[i] - prev;
+      while(d > Math.PI) d -= 2*Math.PI;
+      while(d < -Math.PI) d += 2*Math.PI;
+      acc += d;
+      prev = wrapped[i];
+      out[i] = acc;
+    }
+  }
+  out[dc] = wrapped[dc];
+  walk(dc + 1, n - 1, 1);
+  walk(dc - 1, 0, -1);
+  return out;
+}
+
+// The two lower plots follow the selected view: magnitude/phase or real/imaginary.
+function spectrumTraces(data, vals){
+  const d = spectrumDivisor(data, vals.normalize);
+  if (vals.view === "reim") {
+    return {
+      upper: {y: subsetSeries(data.spec_real, d), title: "Real part", axisTitle: "Re{X(jω)}", color: "#1f77b4"},
+      lower: {y: subsetSeries(data.spec_imag, d), title: "Imaginary part", axisTitle: "Im{X(jω)}", color: "#d62728"},
+      symmetric: true,
+    };
+  }
+  const unwrapped = vals.phaseMode === "unwrapped";
+  const wrapped = subsetSeries(data.phase, 1);
+  return {
+    upper: {y: subsetSeries(data.magnitude, d), title: "Magnitude", axisTitle: "|X(jω)|", color: "#1f77b4"},
+    lower: {y: unwrapped ? unwrapAroundDc(omegaPlotX, wrapped) : wrapped,
+            title: unwrapped ? "Phase (unwrapped)" : "Phase", axisTitle: "φ(jω)", color: "#2ca02c"},
+    symmetric: false,
+    unwrapped,
+  };
+}
+
+function upperAxis(base, spec, vals){
+  if (spec.symmetric) {
+    return {...base.yaxis, title: {text: spec.upper.axisTitle}, zeroline: true, zerolinecolor: base.yaxis.gridcolor};
+  }
+  return vals.normalize
+    ? {...base.yaxis, title: {text: spec.upper.axisTitle}, range: [0, 1.15]}
+    : {...base.yaxis, title: {text: spec.upper.axisTitle}, rangemode: "tozero", autorange: true};
+}
+
+function lowerAxis(base, spec){
+  if (spec.symmetric) {
+    return {...base.yaxis, title: {text: spec.lower.axisTitle}, zeroline: true, zerolinecolor: base.yaxis.gridcolor};
+  }
+  if (spec.unwrapped) {
+    let lo = Infinity, hi = -Infinity;
+    for(const v of spec.lower.y){ if(v === null || !Number.isFinite(v)) continue; if(v < lo) lo = v; if(v > hi) hi = v; }
+    if(!Number.isFinite(lo)) return {...base.yaxis, title: {text: spec.lower.axisTitle}};
+    const ticks = piTicks(Math.floor(lo/Math.PI), Math.ceil(hi/Math.PI), 8);
+    return {...base.yaxis, title: {text: spec.lower.axisTitle}, tickvals: ticks.vals, ticktext: ticks.text, autorange: true};
+  }
+  return {
+    ...base.yaxis,
+    title: {text: spec.lower.axisTitle},
+    range: [-Math.PI, Math.PI],
+    tickvals: [-Math.PI, -Math.PI/2, 0, Math.PI/2, Math.PI],
+    ticktext: ["-π", "-π/2", "0", "π/2", "π"],
+  };
+}
+
+let lastData = null;
+let lastVals = null;
+
+async function updatePlots(){
+  try {
+    await renderPlots();
+  } catch (error) {
+    // Without this an async failure would be invisible: no plot, no message.
+    if(errorMsg) errorMsg.textContent = "Unexpected error while plotting: " + ((error && error.message) || error);
+    console.error(error);
+  }
+}
+
+async function renderPlots(){
   clearErrors();
+
+  syncPropertyReadouts();
+  syncViewControls();
 
   const vals = getValues();
   const func = (vals.func || "").trim();
-  const phase = parseFloat(vals.phase);
 
   if(!func){
     if(errorMsg) errorMsg.textContent = "Please enter a function.";
@@ -182,7 +574,7 @@ function updatePlots(){
     return;
   }
 
-  const data = compute_fourier(func, phase);
+  const data = compute_fourier(func, vals.phase, vals);
   if(data.error){
     if(errorMsg) errorMsg.textContent = data.error;
     funcInput.classList.add('input-error');
@@ -190,59 +582,76 @@ function updatePlots(){
     return;
   }
 
+  // 4.5 MB of plotting library, fetched on first use rather than on page load.
+  try {
+    await ensurePlotlyLoaded();
+  } catch (error) {
+    if(errorMsg) errorMsg.textContent = (error && error.message) || "Failed to load the plotting library.";
+    console.error(error);
+    return;
+  }
+
+  lastData = data;
+  lastVals = vals;
+  showLeakageNote(data);
+
   const timeEl = document.getElementById("timePlot");
   const plotsExist = !!(timeEl && timeEl.data);
-  const funcChanged = (!plotsExist) || (func !== lastFunc);
+  // Everything but the global phase changes the sampled signal or the axes and
+  // needs a full re-render; the phase alone is a cheap restyle of the traces.
+  const renderKey = [func, vals.shift, vals.scale, vals.modulate,
+                     vals.normalize, vals.view, vals.phaseMode, vals.omegaK].join("|");
+  const needsFullRender = (!plotsExist) || (renderKey !== lastRenderKey);
 
-  if (funcChanged) {
-    lastFunc = func;
-    rebuildOmegaCache(data);
+  if (needsFullRender) {
+    lastRenderKey = renderKey;
+    rebuildOmegaCache(data, vals.omegaK);
 
-    const phasePlotY = buildPhaseSubset(data.phase);
+    const redrawn = spectrumTraces(data, vals);
+    const theme = getPlotTheme();
 
     renderPlot("timePlot", [
       {x: data.t, y: data.y_real, type: "scatter", mode: "lines", name: "Re", line: { color: "#1f77b4", width: 2 }},
       {x: data.t, y: data.y_imag, type: "scatter", mode: "lines", name: "Im", line: { dash: "dot", color: "#6c757d" }}
     ], {
-      template: "plotly_white",
-      margin: {t: 40, r: 24, l: 60, b: 50},
-      xaxis: {title: {text: "t"}, autorange: "reversed", gridcolor: "rgba(0,0,0,0.12)", zeroline: false},
-      yaxis: {title: {text: "x(t)"}, gridcolor: "rgba(0,0,0,0.12)", zeroline: false},
+      margin: {...PLOT_MARGIN},
+      paper_bgcolor: theme.paperBg,
+      plot_bgcolor: theme.plotBg,
+      font: {color: theme.axisColor},
+      xaxis: {title: {text: "t"}, range: timeViewRange(data), color: theme.axisColor, gridcolor: theme.gridColor, zeroline: false},
+      yaxis: {title: {text: "x(t)"}, color: theme.axisColor, gridcolor: theme.gridColor, zeroline: false},
       title: {text: "Time signal"},
     });
 
+    const upperLayout = spectrumLayout(vals.omegaK);
     renderPlot("magPlot", [
-      {x: omegaPlotX, y: magPlotY, type: "scatter", mode: "lines", name: "|X|", line: { color: "#1f77b4", width: 2 }}
+      {x: omegaPlotX, y: redrawn.upper.y, type: "scatter", mode: "lines",
+       name: redrawn.upper.axisTitle, line: {color: redrawn.upper.color, width: 2}}
     ], {
-      ...baseLayout,
+      ...upperLayout,
       showlegend: false,
-      title: {text: "Magnitude"},
-      yaxis: {...baseLayout.yaxis, title: {text: "|X(jω)|"}, range: [0, 1.15]}
+      title: {text: redrawn.upper.title},
+      yaxis: upperAxis(upperLayout, redrawn, vals),
     });
 
+    const lowerLayout = spectrumLayout(vals.omegaK);
     renderPlot("phasePlot", [
-      {x: omegaPlotX, y: phasePlotY, type: "scatter", mode: "lines", name: "Phase", line: { color: "#2ca02c", width: 2 }}
+      {x: omegaPlotX, y: redrawn.lower.y, type: "scatter", mode: "lines",
+       name: redrawn.lower.axisTitle, line: {color: redrawn.lower.color, width: 2}}
     ], {
-      ...baseLayout,
+      ...lowerLayout,
       showlegend: false,
-      title: {text: "Phase"},
-      yaxis: {
-        ...baseLayout.yaxis,
-        title: {text: "φ(jω)"},
-        range: [-Math.PI, Math.PI],
-        tickvals: [-Math.PI, -Math.PI/2, 0, Math.PI/2, Math.PI],
-        ticktext: ["-π", "-π/2", "0", "π/2", "π"],
-      },
+      title: {text: redrawn.lower.title},
+      yaxis: lowerAxis(lowerLayout, redrawn),
     });
   } else {
-    const phasePlotY = buildPhaseSubset(data.phase);
-
+    const spec = spectrumTraces(data, vals);
     Plotly.restyle("timePlot", {y: [data.y_real, data.y_imag]}, [0, 1]);
-    Plotly.restyle("phasePlot", {y: [phasePlotY]}, [0]);
+    Plotly.restyle("magPlot", {y: [spec.upper.y]}, [0]);
+    Plotly.restyle("phasePlot", {y: [spec.lower.y]}, [0]);
   }
 
-  const label = document.getElementById("fourier_transformation_label");
-  label.textContent = data.transformation_label;
+  renderSignalLabel(vals);
 }
 document.getElementById("computeBtn").addEventListener("click", updatePlots);
 const fourierForm = document.getElementById("fourierForm");
@@ -254,84 +663,354 @@ if (fourierForm) {
     }
   });
 }
-let phaseUpdateTimer;
-document.getElementById("phase").addEventListener("input", () => {
-  window.clearTimeout(phaseUpdateTimer);
-  phaseUpdateTimer = window.setTimeout(updatePlots, 120);
+let propertyUpdateTimer;
+function scheduleUpdate(){
+  syncPropertyReadouts();
+  window.clearTimeout(propertyUpdateTimer);
+  propertyUpdateTimer = window.setTimeout(updatePlots, 120);
+}
+["phase", "shift", "scale", "modulate"].forEach(id => {
+  document.getElementById(id).addEventListener("input", scheduleUpdate);
 });
+["normalize", "specView", "phaseMode", "omegaRange"].forEach(id => {
+  document.getElementById(id).addEventListener("change", updatePlots);
+});
+document.getElementById("downloadCsv").addEventListener("click", downloadCsv);
+
+function resetProperties(){
+  document.getElementById("shift").value = PROPERTY_DEFAULTS.shift;
+  document.getElementById("scale").value = PROPERTY_DEFAULTS.scale;
+  document.getElementById("modulate").value = PROPERTY_DEFAULTS.modulate;
+  document.getElementById("phase").value = PROPERTY_DEFAULTS.phase;
+  syncPropertyReadouts();
+}
+document.getElementById("resetProps").addEventListener("click", () => {
+  resetProperties();
+  updatePlots();
+});
+
 document.getElementById("clearBtn").addEventListener("click", ()=>{
   document.getElementById("func").value="";
-  document.getElementById("phase").value=0;
-  Plotly.purge("timePlot"); Plotly.purge("magPlot"); Plotly.purge("phasePlot");
-  document.getElementById("fourier_transformation_label").innerHTML="";
+  resetProperties();
+  if (window.Plotly) {
+    Plotly.purge("timePlot"); Plotly.purge("magPlot"); Plotly.purge("phasePlot");
+  }
+  document.getElementById("fourier_transformation_label").textContent="";
+  document.getElementById("leakageNote").textContent="";
+  lastLabelTex = null;
+  lastRenderKey = null;
+  lastData = null;
   clearErrors();
-
 });
+
+// Start on a worked example instead of an empty 700 px gap.
+function showStartingExample(){
+  syncStickyOffset();
+  syncPropertyReadouts();
+  if (!document.getElementById("func").value.trim()) {
+    document.getElementById("func").value = "rect(t)";
+  }
+  updatePlots();
+}
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", showStartingExample);
+} else {
+  showStartingExample();
+}
 </script>
 
 <style>
+  /* Page head ---------------------------------------------------------- */
+  .fourier-head {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .fourier-head h1 {
+    font-size: 1.6em;
+    margin: 0 0 4px 0;
+  }
+  .fourier-lead {
+    margin: 0 auto 2px auto;
+    max-width: 660px;
+    color: var(--subtext-color);
+    font-size: 0.9em;
+  }
+  .fourier-lead .subtle-btn {
+    margin-left: 6px;
+    vertical-align: baseline;
+  }
+  .fourier-definition {
+    margin: 0 0 4px 0;
+    font-size: 0.85em;
+  }
   .subtle-btn {
-    display:inline-block;
-    margin-top:10px;
-    padding:6px 12px;
-    font-size:0.9em;
-    border-radius:4px;
-    border:1px solid var(--primary-color);
-    color:var(--primary-color);
-    background-color:rgba(0,122,204,0.08);
-    text-decoration:none;
-    transition:background-color 0.2s ease,color 0.2s ease;
+    display: inline-block;
+    padding: 5px 12px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    background-color: rgba(0, 122, 204, 0.08);
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
   .subtle-btn:hover {
-    background-color:var(--primary-color);
-    color:#fff;
+    background-color: var(--primary-color);
+    color: #fff;
   }
-  /* Quick-Buttons (Functions & Operators) – moderat vergrößert */
-  .quick-buttons.functions button,
-  .quick-buttons.operators button {
-    padding: 12px 18px;       /* moderater Innenabstand */
-    font-size: 1.1em;         /* leicht größere Schrift */
-    min-width: 80px;          /* Mindestbreite */
+
+  /* Workbench: controls stay put while the plots scroll ------------------ */
+  .fourier-workbench {
+    display: grid;
+    grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  .fourier-controls {
+    position: sticky;
+    top: var(--fourier-sticky-top, 78px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: calc(100vh - var(--fourier-sticky-top, 78px) - 16px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .fourier-plots {
+    min-width: 0;
+  }
+  #plotly-container > div + div {
+    margin-top: 4px;
+  }
+  #timePlot { height: 210px; }
+  #magPlot { height: 235px; }
+  #phasePlot { height: 235px; }
+
+  .signal-label {
+    margin: 0 0 6px 0;
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+    border-radius: var(--card-radius);
+    background-color: var(--card-background);
+    color: var(--text-color);
+    overflow-x: auto;
+  }
+
+  /* Cards ---------------------------------------------------------------- */
+  .control-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--card-radius);
+    background-color: var(--card-background);
+    color: var(--text-color);
+    padding: 12px 14px;
+    margin: 0;
+  }
+  .card-title {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  #func {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 0.95em;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+  #func.input-error {
+    border-color: var(--lms-red);
+  }
+  .error-msg {
+    margin: 8px 0 0 0;
+    color: var(--lms-red);
+    font-size: 0.85em;
+    font-weight: 600;
+  }
+  .error-msg:empty {
+    display: none;
+  }
+
+  .quick-buttons {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .quick-buttons.functions {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .quick-buttons.operators {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .quick-buttons button {
+    padding: 6px 3px;
+    font-size: 0.85em;
+    line-height: 1.1;
     border-radius: 5px;
     background-color: var(--primary-color);
     color: #fff;
     border: none;
     cursor: pointer;
+    overflow: hidden;
     transition: background-color 0.15s ease;
   }
-  .quick-buttons.functions button:hover,
-  .quick-buttons.operators button:hover {
+  .quick-buttons button:hover {
     background-color: var(--primary-color-darker);
   }
 
-  /* Action-Buttons (Compute / Clear) – moderat vergrößert */
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
   .action-btn {
-    padding: 12px 28px;       /* moderater Innenabstand */
-    font-size: 1.1em;         /* leicht größere Schrift */
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.95em;
     border-radius: 5px;
     border: none;
     cursor: pointer;
+    color: #fff;
     transition: background-color 0.15s ease;
   }
-  #computeBtn {
-    background-color: var(--lms-green-darker);
+  #computeBtn { background-color: var(--lms-green-darker); }
+  #computeBtn:hover { background-color: var(--lms-green-dark); }
+  #clearBtn { background-color: var(--lms-red); }
+  #clearBtn:hover { background-color: var(--lms-red-darker); }
+
+  /* Fourier properties --------------------------------------------------- */
+  .property-panel legend {
+    font-weight: 600;
+    padding: 0 6px;
+  }
+  .property-intro {
+    margin: 0 0 8px 0;
+    font-size: 0.82em;
+    line-height: 1.4;
+    color: var(--subtext-color);
+  }
+  .property-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 2px 8px;
+    margin-bottom: 6px;
+  }
+  .property-row label {
+    font-weight: 600;
+    font-size: 0.9em;
+  }
+  .property-row output {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.85em;
+    text-align: right;
+    color: var(--subtext-color);
+  }
+  .property-row input[type="range"] {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin: 2px 0 0 0;
+    accent-color: var(--primary-color);
+  }
+  .property-law {
+    grid-column: 1 / -1;
+    font-size: 0.78em;
+    color: var(--subtext-color);
+    overflow-x: auto;
+  }
+  .property-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+  }
+  .property-check {
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .reset-props {
+    padding: 5px 12px;
+    font-size: 0.82em;
+    border-radius: 4px;
+    border: 1px solid var(--primary-color);
+    background-color: transparent;
+    color: var(--primary-color);
+    cursor: pointer;
+  }
+  .reset-props:hover {
+    background-color: var(--primary-color);
     color: #fff;
-    margin-right: 8px;
-  }
-  #computeBtn:hover {
-    background-color: var(--lms-green-dark);
-  }
-  #clearBtn {
-    background-color: var(--lms-red);
-    color: #fff;
-  }
-  #clearBtn:hover {
-    background-color: var(--lms-red-darker);
-  }
-  input.input-error{
-    border-color: var(--lms-red);
   }
 
+  /* View toolbar --------------------------------------------------------- */
+  .plot-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px 10px;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--card-radius);
+    background-color: var(--card-background);
+    font-size: 0.78em;
+    white-space: nowrap;
+  }
+  .plot-toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-color);
+  }
+  .plot-toolbar label.is-disabled {
+    opacity: 0.45;
+  }
+  .plot-toolbar select {
+    padding: 2px 4px;
+    font-size: 1em;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+  .plot-toolbar .reset-props {
+    padding: 3px 10px;
+  }
+  .leakage-note {
+    margin: 0 0 6px 0;
+    padding: 7px 11px;
+    font-size: 0.8em;
+    line-height: 1.4;
+    border-left: 3px solid var(--lms-orange);
+    border-radius: 3px;
+    background-color: rgba(204, 102, 0, 0.09);
+    color: var(--text-color);
+  }
+  .leakage-note:empty {
+    display: none;
+  }
+
+  /* Below the site breakpoint the sidebar stacks, so the workbench does too */
+  @media (max-width: 900px) {
+    .fourier-workbench {
+      grid-template-columns: 1fr;
+    }
+    .fourier-controls {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+  }
 </style>
 
 {% endblock %}

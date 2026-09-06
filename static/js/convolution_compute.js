@@ -8,18 +8,9 @@
     return arr;
   }
 
-  function rect(t){ return Math.abs(t) < 0.5 ? 1 : 0; }
-  function tri(t){ t = Math.abs(t); return t <= 1 ? 1 - t : 0; }
-  function step(t){ return t >= 0 ? 1 : 0; }
-  const cos = Math.cos;
-  const sin = Math.sin;
-  const sign = Math.sign;
-  function delta(t){ const eps=1e-3; return Math.exp(-t*t/eps)/Math.sqrt(Math.PI*eps); }
-  function exp_iwt(t, omega_0=1){ return Math.cos(omega_0*t); }
-  function inv_t(t){ return t!==0 ? 1/t : 0; }
-  function si(t){ return t===0 ? 1 : Math.sin(t)/t; }
-
-  const np = {exp: Math.exp, sin: Math.sin, cos: Math.cos, abs: Math.abs, pi: Math.PI};
+  const SPT = window.SPTSignals;
+  if(!SPT) throw new Error('signal_functions.js must be loaded before this script');
+  const {rect, tri, step, cos, sin, sign, delta, exp_iwt, inv_t, si, np} = SPT;
 
   function makeEvaluator(expr){
     // Allow direct usage of common math helpers like pi, e, abs, exp without np.
