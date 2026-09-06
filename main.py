@@ -184,7 +184,8 @@ def create_app():
                 continue
             if rule.arguments:
                 continue
-            if rule.endpoint in {"static", "sitemap", "robots", "favicon"}:
+            if rule.endpoint in {"static", "sitemap", "robots", "favicon",
+                                 "google_site_verification"}:
                 continue
             if rule.rule.startswith("/static"):
                 continue

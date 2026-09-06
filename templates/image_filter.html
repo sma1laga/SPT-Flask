@@ -338,7 +338,6 @@ new Chart(
 {% endblock %}
 
 {% block scripts %}
-  <script src="{{ url_for('static', filename='js/image_filter.js') }}"></script>
   {% if orig_prof|length > 2 and filt_prof|length > 2 %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% endif %}

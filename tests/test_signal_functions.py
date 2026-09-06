@@ -86,3 +86,33 @@ def test_js_helpers_match_python():
             got[name], expected, rtol=1e-9, atol=1e-9,
             err_msg=f"{name}() differs between signal_functions.js and utils/math_utils.py",
         )
+
+# --- the pages have to load the library before its consumers ----------------
+
+# convolution_compute.js and fourier_compute.js throw at load time when
+# window.SPTSignals is absent, so the order of the script tags is part of the
+# contract, not a detail of the templates.
+CONSUMERS = {
+    "/fourier/": "fourier_compute.js",
+    "/convolution/": "convolution_compute.js",
+    "/autocorrelation/": "convolution_compute.js",
+}
+
+
+@pytest.fixture(scope="module")
+def client():
+    from main import create_app
+    app = create_app()
+    app.config["TESTING"] = True
+    with app.test_client() as c:
+        yield c
+
+
+@pytest.mark.parametrize("url,consumer", sorted(CONSUMERS.items()))
+def test_library_is_loaded_before_its_consumer(client, url, consumer):
+    html = client.get(url).get_data(as_text=True)
+    library_at = html.find("signal_functions.js")
+    consumer_at = html.find(consumer)
+    assert library_at != -1, f"{url} does not load signal_functions.js"
+    assert consumer_at != -1, f"{url} does not load {consumer}"
+    assert library_at < consumer_at, f"{url} loads {consumer} before signal_functions.js"

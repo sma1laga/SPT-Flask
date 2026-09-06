@@ -72,11 +72,6 @@ def privacy():
     return render_template('privacy_policy.html')
 
 
-@info_bp.route('/terms')
-def terms():
-    return render_template('terms_of_service.html')
-
-
 @info_bp.route('/news')
 def news():
     releases = [
