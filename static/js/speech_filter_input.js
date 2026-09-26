@@ -227,8 +227,8 @@ function plotResults(orig, filtered, fs, zeros, poles) {
     { x: pr, y: pi, mode: 'markers', name: 'Poles', marker: { symbol: 'x', color: 'red' } },
     { x: theta.map(c => Math.cos(c)), y: theta.map(s => Math.sin(s)), mode: 'lines', line: { dash: 'dot', color: 'black' }, showlegend: false }
   ], {
-    xaxis: { title: 'Real', range: [-1.5, 1.5] },
-    yaxis: { title: 'Imag', range: [-1.5, 1.5] },
+    xaxis: { title: { text: 'Real' }, range: [-1.5, 1.5] },
+    yaxis: { title: { text: 'Imag' }, range: [-1.5, 1.5] },
     height: 350,
     margin: { t: 30 }
   });

@@ -161,10 +161,10 @@
     ];
 
     const layout = {
-      title: `Iteration of Lloyd-Max quantization (iteration ${state.iteration})`,
+      title: { text: `Iteration of Lloyd-Max quantization (iteration ${state.iteration})` },
       margin: { l: 50, r: 20, t: 40, b: 50 },
-      xaxis: { title: 'Grey level', range: [0, 255] },
-      yaxis: { title: 'Frequency of occurrence', range: [-maxY * 0.1, maxY * 1.1] },
+      xaxis: { title: { text: 'Grey level' }, range: [0, 255] },
+      yaxis: { title: { text: 'Frequency of occurrence' }, range: [-maxY * 0.1, maxY * 1.1] },
       showlegend: false,
       shapes: verticals,
       plot_bgcolor: 'transparent',
@@ -250,8 +250,8 @@
       ],
       {
         margin: { l: 35, r: 10, t: 10, b: 35 },
-        xaxis: { title: 'Input grey level', range: [0, 255] },
-        yaxis: { title: 'Output level', range: [0, 255] },
+        xaxis: { title: { text: 'Input grey level' }, range: [0, 255] },
+        yaxis: { title: { text: 'Output level' }, range: [0, 255] },
         showlegend: false,
         plot_bgcolor: 'transparent',
         paper_bgcolor: 'transparent',

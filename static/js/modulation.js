@@ -225,10 +225,10 @@ async function plotMod() {
 
   Plotly.newPlot('mod_plot', tracesNoHover(traces), withNoHover({
     margin: { t: 30 },
-    title: type === 'QAM' ? 'QAM — Passband view' : `${type} — Modulation`,
+    title: { text: type === 'QAM' ? 'QAM — Passband view' : `${type} — Modulation` },
     legend: { orientation: 'h' },
-    xaxis: { title: 'Time [s]' },
-    yaxis: { title: 'Amplitude' }
+    xaxis: { title: { text: 'Time [s]' } },
+    yaxis: { title: { text: 'Amplitude' } }
   }), PLOT_CONFIG);
 
   if ($('show_spectrum').checked) {
@@ -236,9 +236,9 @@ async function plotMod() {
       { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (modulated)' }
     ]), withNoHover({
       margin: { t: 30 },
-      title: 'Spectrum (Hann + rFFT)',
-      xaxis: { title: 'Frequency [Hz]' },
-      yaxis: { title: 'Power [dB]' }
+      title: { text: 'Spectrum (Hann + rFFT)' },
+      xaxis: { title: { text: 'Frequency [Hz]' } },
+      yaxis: { title: { text: 'Power [dB]' } }
     }), PLOT_CONFIG);
   } else {
     Plotly.purge('spec_plot');
@@ -308,14 +308,14 @@ async function plotDemod() {
 
     const demodLayout = {
       margin: { t: 30 },
-      title: `QAM — ECB view (phase error ${phaseLabel})`,
+      title: { text: `QAM — ECB view (phase error ${phaseLabel})` },
       legend: { orientation: 'h' },
       grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
-      xaxis: { title: 'Time [s]' },
-      yaxis: { title: 'Amplitude' },
-      xaxis2: { title: 'Time [s]' },
-      yaxis2: { title: '|s_bb(t)|' },
-      yaxis3: { title: 'Phase [deg]', overlaying: 'y2', side: 'right' }
+      xaxis: { title: { text: 'Time [s]' } },
+      yaxis: { title: { text: 'Amplitude' } },
+      xaxis2: { title: { text: 'Time [s]' } },
+      yaxis2: { title: { text: '|s_bb(t)|' } },
+      yaxis3: { title: { text: 'Phase [deg]' }, overlaying: 'y2', side: 'right' }
     };
 
     Plotly.newPlot('demod_plot', tracesNoHover([...basebandTraces, ...magPhaseTraces]), withNoHover(demodLayout), PLOT_CONFIG);
@@ -335,10 +335,10 @@ async function plotDemod() {
     }
     Plotly.newPlot('mod_plot', tracesNoHover(passbandTraces), withNoHover({
       margin: { t: 30 },
-      title: `QAM — Passband view (phase error ${phaseLabel})`,
+      title: { text: `QAM — Passband view (phase error ${phaseLabel})` },
       legend: { orientation: 'h' },
-      xaxis: { title: 'Time [s]' },
-      yaxis: { title: 'Amplitude' }
+      xaxis: { title: { text: 'Time [s]' } },
+      yaxis: { title: { text: 'Amplitude' } }
     }), PLOT_CONFIG);
 
     if ($('show_spectrum').checked) {
@@ -346,9 +346,9 @@ async function plotDemod() {
         { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (I baseband)' }
       ]), withNoHover({
         margin: { t: 30 },
-        title: 'Demod Spectrum (I-channel)',
-        xaxis: { title: 'Frequency [Hz]' },
-        yaxis: { title: 'Power [dB]' }
+        title: { text: 'Demod Spectrum (I-channel)' },
+        xaxis: { title: { text: 'Frequency [Hz]' } },
+        yaxis: { title: { text: 'Power [dB]' } }
       }), PLOT_CONFIG);
     } else {
       Plotly.purge('spec_demod_plot');
@@ -364,10 +364,10 @@ async function plotDemod() {
     { x: tDem,     y: data.demodulated, name: 'Demodulated' }
   ]), withNoHover({
     margin: { t: 30 },
-    title: `${type} — Demodulation`,
+    title: { text: `${type} — Demodulation` },
     legend: { orientation: 'h' },
-    xaxis: { title: 'Time [s]' },
-    yaxis: { title: 'Amplitude' }
+    xaxis: { title: { text: 'Time [s]' } },
+    yaxis: { title: { text: 'Amplitude' } }
   }), PLOT_CONFIG);
 
   if ($('show_spectrum').checked) {
@@ -375,9 +375,9 @@ async function plotDemod() {
       { x: data.f, y: data.P_db, type: 'scatter', mode: 'lines', name: 'PSD (demodulated)' }
     ]), withNoHover({
       margin: { t: 30 },
-      title: 'Demod Spectrum',
-      xaxis: { title: 'Frequency [Hz]' },
-      yaxis: { title: 'Power [dB]' }
+      title: { text: 'Demod Spectrum' },
+      xaxis: { title: { text: 'Frequency [Hz]' } },
+      yaxis: { title: { text: 'Power [dB]' } }
     }), PLOT_CONFIG);
   } else {
     Plotly.purge('spec_demod_plot');

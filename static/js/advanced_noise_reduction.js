@@ -138,12 +138,12 @@ function plotTimeFreq(orig, den) {
   Plotly.newPlot('freqPlot', [
     { x: freqs, y: mag1, mode: 'lines', name: 'Original' },
     { x: freqs, y: mag2, mode: 'lines', name: 'Denoised', line: { color: 'orange' } }
-  ], { height: 300, margin: { t: 30 }, xaxis: { title: 'Hz' } });
+  ], { height: 300, margin: { t: 30 }, xaxis: { title: { text: 'Hz' } } });
 
   const gain = freqs.map((_, k) => mag2[k] - mag1[k]);
   Plotly.newPlot('gainPlot', [
     { x: freqs, y: gain, mode: 'lines' }
-  ], { height: 250, margin: { t: 30 }, xaxis: { title: 'Hz' }, yaxis: { title: 'Gain (dB)' } });
+  ], { height: 250, margin: { t: 30 }, xaxis: { title: { text: 'Hz' } }, yaxis: { title: { text: 'Gain (dB)' } } });
 }
 
 function setOutput(data) {

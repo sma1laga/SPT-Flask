@@ -658,14 +658,14 @@ function renderPolesZeros(pz){
   const layout = {
     margin: { l: 60, r: 20, t: 30, b: 40 },
     xaxis: {
-      title: 'Real',
+      title: { text: 'Real' },
       range: [-xRange, xRange],
       zeroline: false,
       showgrid: true,
       gridcolor: '#e5e7eb'
     },
     yaxis: {
-      title: 'Imaginary',
+      title: { text: 'Imaginary' },
       range: [-yRange, yRange],
       zeroline: false,
       showgrid: true,
@@ -714,10 +714,10 @@ function renderBodePlot(bode){
     grid: { rows: 2, columns: 1, pattern: 'independent', roworder: 'top to bottom' },
     margin: { l: 70, r: 20, t: 30, b: 40 },
     hovermode: 'x unified',
-    xaxis: { type: 'log', title: 'Frequency (rad/s)', showgrid: true, gridcolor: '#e5e7eb' },
-    yaxis: { title: 'Magnitude (dB)', showgrid: true, gridcolor: '#e5e7eb' },
-    xaxis2: { type: 'log', title: 'Frequency (rad/s)', showgrid: true, gridcolor: '#e5e7eb' },
-    yaxis2: { title: 'Phase (°)', showgrid: true, gridcolor: '#e5e7eb' },
+    xaxis: { type: 'log', title: { text: 'Frequency (rad/s)' }, showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: { text: 'Magnitude (dB)' }, showgrid: true, gridcolor: '#e5e7eb' },
+    xaxis2: { type: 'log', title: { text: 'Frequency (rad/s)' }, showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis2: { title: { text: 'Phase (°)' }, showgrid: true, gridcolor: '#e5e7eb' },
     legend: { orientation: 'h', x: 0, y: -0.25 }
   };
 
@@ -763,8 +763,8 @@ function renderNyquistPlot(nyquist){
 
   const layout = {
     margin: { l: 60, r: 20, t: 30, b: 40 },
-    xaxis: { title: 'Real', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
-    yaxis: { title: 'Imaginary', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    xaxis: { title: { text: 'Real' }, zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: { text: 'Imaginary' }, zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
     legend: { orientation: 'h', y: -0.2 }
   };
 
@@ -789,8 +789,8 @@ function renderNicholsPlot(nichols){
 
   const layout = {
     margin: { l: 70, r: 20, t: 30, b: 40 },
-    xaxis: { title: 'Phase (°)', showgrid: true, gridcolor: '#e5e7eb' },
-    yaxis: { title: 'Magnitude (dB)', showgrid: true, gridcolor: '#e5e7eb' },
+    xaxis: { title: { text: 'Phase (°)' }, showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: { text: 'Magnitude (dB)' }, showgrid: true, gridcolor: '#e5e7eb' },
     hovermode: 'closest'
   };
 
@@ -834,8 +834,8 @@ function renderRootLocus(data){
 
   const layout = {
     margin: { l: 60, r: 20, t: 30, b: 40 },
-    xaxis: { title: 'Real', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
-    yaxis: { title: 'Imaginary', zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    xaxis: { title: { text: 'Real' }, zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
+    yaxis: { title: { text: 'Imaginary' }, zeroline: true, zerolinewidth: 2, zerolinecolor: '#9ca3af', showgrid: true, gridcolor: '#e5e7eb' },
     legend: { orientation: 'h', y: -0.2 },
     hovermode: 'closest'
   };

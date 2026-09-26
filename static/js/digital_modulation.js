@@ -241,8 +241,8 @@ async function plotPassband() {
       Plotly.newPlot('passband_wave_plot', tracesNoHover(waveTraces), withNoHover({
         margin: { t: 30 },
         legend: { orientation: 'h' },
-        xaxis: { title: 'Time [s]' },
-        yaxis: { title: 'Amplitude' }
+        xaxis: { title: { text: 'Time [s]' } },
+        yaxis: { title: { text: 'Amplitude' } }
       }), PLOT_CONFIG);
     } else {
       Plotly.purge('passband_wave_plot');
@@ -274,8 +274,8 @@ async function plotPassband() {
       Plotly.newPlot('passband_iq_plot', tracesNoHover(baseTraces), withNoHover({
         margin: { t: 30 },
         legend: { orientation: 'h' },
-        xaxis: { title: 'Time [s]' },
-        yaxis: { title: 'I/Q amplitude' }
+        xaxis: { title: { text: 'Time [s]' } },
+        yaxis: { title: { text: 'I/Q amplitude' } }
       }), PLOT_CONFIG);
     } else {
       Plotly.purge('passband_iq_plot');
@@ -322,8 +322,8 @@ async function plotPassband() {
       Plotly.newPlot('passband_constellation_plot', tracesNoHover(constTraces), withNoHover({
         margin: { t: 30 },
         legend: { orientation: 'h' },
-        xaxis: { title: 'In-phase', zeroline: true, scaleanchor: 'y', scaleratio: 1 },
-        yaxis: { title: 'Quadrature', zeroline: true }
+        xaxis: { title: { text: 'In-phase' }, zeroline: true, scaleanchor: 'y', scaleratio: 1 },
+        yaxis: { title: { text: 'Quadrature' }, zeroline: true }
       }), PLOT_CONFIG);
     } else {
       Plotly.purge('passband_constellation_plot');
@@ -406,7 +406,7 @@ async function plotPam() {
     }
     Plotly.newPlot('pam_constellation_plot', tracesNoHover(traces), withNoHover({
       margin: { t: 30 },
-      xaxis: { title: 'Amplitude', zeroline: false },
+      xaxis: { title: { text: 'Amplitude' }, zeroline: false },
       yaxis: { showticklabels: false, showgrid: false, zeroline: false, range: [-0.12, 0.12] },
       legend: { orientation: 'h' }
     }), PLOT_CONFIG);
@@ -469,8 +469,8 @@ async function plotPam() {
       }
       const layout = {
         margin: { t: 30 },
-        xaxis: { title: 'Time [symbols]' },
-        yaxis: { title: 'Amplitude' },
+        xaxis: { title: { text: 'Time [symbols]' } },
+        yaxis: { title: { text: 'Amplitude' } },
         legend: { orientation: 'h' }
       };
       if (cursorTime != null) {
@@ -542,8 +542,8 @@ async function plotPam() {
     }
     Plotly.newPlot('pam_ber_plot', tracesNoHover(berTraces), withNoHover({
       margin: { t: 30 },
-      xaxis: { title: 'Eb/N₀ [dB]' },
-      yaxis: { title: 'Bit error rate', type: 'log', rangemode: 'tozero' },
+      xaxis: { title: { text: 'Eb/N₀ [dB]' } },
+      yaxis: { title: { text: 'Bit error rate' }, type: 'log', rangemode: 'tozero' },
       legend: { orientation: 'h' }
     }), PLOT_CONFIG);
 
@@ -569,10 +569,10 @@ async function plotDigMod() {
       { x: data.t, y: data.modulated, name: `${params.type} Signal` }
     ]), withNoHover({
       margin: { t: 30 },
-      title: `${params.type} — Modulation`,
+      title: { text: `${params.type} — Modulation` },
       legend: { orientation: 'h' },
-      xaxis: { title: 'Time [s]' },
-      yaxis: { title: 'Amplitude' }
+      xaxis: { title: { text: 'Time [s]' } },
+      yaxis: { title: { text: 'Amplitude' } }
     }), PLOT_CONFIG);
 
     if ($('dig_show_spectrum').checked) {
@@ -580,9 +580,9 @@ async function plotDigMod() {
         { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (modulated)' }
       ]), withNoHover({
         margin: { t: 30 },
-        title: 'Spectrum (Hann + rFFT)',
-        xaxis: { title: 'Frequency [Hz]' },
-        yaxis: { title: 'Power [dB]' }
+        title: { text: 'Spectrum (Hann + rFFT)' },
+        xaxis: { title: { text: 'Frequency [Hz]' } },
+        yaxis: { title: { text: 'Power [dB]' } }
       }), PLOT_CONFIG);
     } else {
       Plotly.purge('dig_mod_spec');
@@ -609,10 +609,10 @@ async function plotDigDemod(){
       { x: tDem, y: data.demodulated, name: 'Demodulated' }
     ]), withNoHover({
       margin: { t: 30 },
-      title: `${params.type} — Demodulation`,
+      title: { text: `${params.type} — Demodulation` },
       legend: { orientation: 'h' },
-      xaxis: { title: 'Time [s]' },
-      yaxis: { title: 'Amplitude' }
+      xaxis: { title: { text: 'Time [s]' } },
+      yaxis: { title: { text: 'Amplitude' } }
     }), PLOT_CONFIG);
 
     if ($('dig_show_spectrum').checked) {
@@ -620,9 +620,9 @@ async function plotDigDemod(){
         { x: data.f, y: data.P_db, mode: 'lines', name: 'PSD (demodulated)' }
       ]), withNoHover({
         margin: { t: 30 },
-        title: 'Demod Spectrum',
-        xaxis: { title: 'Frequency [Hz]' },
-        yaxis: { title: 'Power [dB]' }
+        title: { text: 'Demod Spectrum' },
+        xaxis: { title: { text: 'Frequency [Hz]' } },
+        yaxis: { title: { text: 'Power [dB]' } }
       }), PLOT_CONFIG);
     } else {
       Plotly.purge('dig_demod_spec');
