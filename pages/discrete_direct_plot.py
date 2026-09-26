@@ -13,32 +13,33 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle
 import sympy as sp
-from sympy.parsing.sympy_parser import (
-    parse_expr, standard_transformations,
-    implicit_multiplication_application, convert_xor
-)
+
+from utils.eval_helpers import safe_parse_expr
 
 # blueprint -------------------------------------------------------------
 discrete_direct_plot_bp = Blueprint(
     "discrete_direct_plot", __name__, template_folder="templates/discrete")
 
-# reusable parser setup -------------------------------------------------
-_TRANSFORMS = standard_transformations + (
-    implicit_multiplication_application,   # lets "(z+3)(z+1)" work
-    convert_xor                            # lets "^" mean exponent
+# parser setup: the hardened parser understands "(z+3)(z+1)" and "^" itself and
+# never executes Python (sympy's parse_expr on its own would)
+_Z = sp.symbols("z", complex=True)
+_PARSE_LOCALS = {"z": _Z}
+_INPUT_HELP = (
+    "Enter a coefficient list such as [1, 2, 3] or a factorised polynomial such as "
+    "(z+3)(z+1)^2; only numbers, z, + - * / ^ and parentheses are allowed."
 )
 
 def _str_to_coeffs(txt: str):
     txt = txt.strip()
     if txt.startswith("["):
         return np.asarray(ast.literal_eval(txt), dtype=float)
-    expr = parse_expr(
+    expr = safe_parse_expr(
         txt,
-        local_dict={"z": sp.symbols("z", complex=True)},
-        transformations=_TRANSFORMS,
-        evaluate=False
+        local_dict=_PARSE_LOCALS,
+        evaluate=False,
+        help_text=_INPUT_HELP,
     )
-    coeffs = sp.Poly(sp.expand(expr), sp.symbols("z", complex=True)).all_coeffs()
+    coeffs = sp.Poly(sp.expand(expr), _Z).all_coeffs()
     return np.asarray(coeffs, dtype=float)
 
 

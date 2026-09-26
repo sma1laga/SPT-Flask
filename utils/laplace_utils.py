@@ -6,36 +6,26 @@ import re
 import numpy as np
 import sympy as sp
 from scipy.signal import residue
-from sympy.parsing.sympy_parser import (
-    standard_transformations,
-    implicit_multiplication_application, convert_xor
-)
 from sympy.printing.latex import LatexPrinter
 from sympy.utilities.lambdify import lambdify
 
 import utils.sympy_utils as sp_utils
+from utils.eval_helpers import parse_sympy_str, safe_parse_expr
 
 logger = logging.getLogger(__name__)
-
-_TRANSFORMS = standard_transformations + (
-    implicit_multiplication_application,
-    convert_xor,
-)
 
 CONSTANTS = {
     "e": sp.E,
     "pi": sp.pi,
 }
 
+# Everything a user may write in an input expression.  Parsing goes through
+# ``safe_parse_expr`` (arithmetic over these names only, no Python execution);
+# the names sympy's own transformations need (Integer, Float, Add, ...) are
+# supplied by the parser and are not user-visible.
 SYMBOLS_ALLOWED = {
     "s": sp.Symbol("s", complex=True),
     "j": sp.I,
-    "Add": sp.Add,
-    "Mul": sp.Mul,
-    "Pow": sp.Pow,
-    "Integer": sp.Integer,
-    "Rational": sp.Rational,
-    "Float": sp.Float,
     "factorial": sp.factorial,
     # trig functions
     "sin": sp.sin,
@@ -53,6 +43,12 @@ SYMBOLS_ALLOWED = {
 }
 SYMBOLS_ALLOWED.update(CONSTANTS)
 
+_INPUT_HELP = (
+    "Enter a coefficient list such as [1, 2, 3] or an expression in s such as (s+1)^2; "
+    "allowed are numbers, s, j, e, pi, the trigonometric functions, factorial, "
+    "+ - * / ^ and parentheses."
+)
+
 def parse_input(txt: str) -> sp.Expr:
     """Safely parse `txt` into a SymPy expression."""
     txt = txt.strip()
@@ -62,26 +58,23 @@ def parse_input(txt: str) -> sp.Expr:
         items = txt.strip("[]")
         parts = [p.strip() for p in items.split(",") if p.strip()]
         coeffs = [
-            sp.parse_expr(
+            safe_parse_expr(
                 p,
                 evaluate=False,
                 local_dict=sp_utils.rm_keys(SYMBOLS_ALLOWED, ["s"]), # without s
-                global_dict={},
-                transformations=_TRANSFORMS,
+                help_text=_INPUT_HELP,
             )
             for p in parts
         ]
         return sp_utils.coeffs_to_poly(coeffs, sp.Symbol("s", complex=True))
 
     # any other expression
-    expr = sp.parse_expr(
+    return safe_parse_expr(
         txt,
         evaluate=False,
         local_dict=SYMBOLS_ALLOWED,
-        global_dict={},
-        transformations=_TRANSFORMS,
+        help_text=_INPUT_HELP,
     )
-    return expr
 
 def inverse_laplace_expr(num, den) -> sp.Expr:
     """Symbolic inverse Laplace transform of ``num/den``."""
@@ -167,7 +160,7 @@ def eval_expression(expr: sp.Expr, in_vals: np.ndarray, in_symbol: sp.Symbol) ->
     """Evaluate a SymPy expression with given input values."""
     # match anything like DiracDelta(...)
     expr_wo_dirac = re.sub(r"DiracDelta\(([^)]+)(\))*\)(\s+|$){1}", "0 ", str(expr))
-    expr_wo_dirac = sp.parse_expr(expr_wo_dirac)
+    expr_wo_dirac = parse_sympy_str(expr_wo_dirac)
     f = lambdify(in_symbol, expr_wo_dirac)
     f_eval = f(in_vals)
     if not isinstance(f_eval, np.ndarray):

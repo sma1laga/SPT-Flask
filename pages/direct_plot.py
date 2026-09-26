@@ -14,18 +14,19 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, Rectangle, FancyArrowPatch
 from matplotlib.path import Path
 import sympy as sp
-from sympy.parsing.sympy_parser import (
-    parse_expr, standard_transformations,
-    implicit_multiplication_application, convert_xor
-)
+
+from utils.eval_helpers import safe_parse_expr
 
 direct_plot_bp = Blueprint("direct_plot", __name__, template_folder="../templates")
 
 
-# reusable parser setup
-_TRANSFORMS = standard_transformations + (
-    implicit_multiplication_application,   # lets "(s+3)(s+1)" work
-    convert_xor                            # lets "^" mean exponent
+# parser setup: the hardened parser understands "(s+3)(s+1)" and "^" itself and
+# never executes Python (sympy's parse_expr on its own would)
+_S = sp.symbols("s", complex=True)
+_PARSE_LOCALS = {"s": _S}
+_INPUT_HELP = (
+    "Enter a coefficient list such as [1, 2, 3] or a factorised polynomial such as "
+    "(s+3)(s+1)^2; only numbers, s, + - * / ^ and parentheses are allowed."
 )
 
 def _str_to_coeffs(txt: str):
@@ -34,13 +35,13 @@ def _str_to_coeffs(txt: str):
         return np.asarray(ast.literal_eval(txt), dtype=float)
 
     # factorised form, e.g. (s+3)(s+1)^2  or  0.5(s+2)
-    expr = parse_expr(
+    expr = safe_parse_expr(
         txt,
-        local_dict={"s": sp.symbols("s", complex=True)},
-        transformations=_TRANSFORMS,
-        evaluate=False        # keep it symbolic until we expand below
+        local_dict=_PARSE_LOCALS,
+        evaluate=False,       # keep it symbolic until we expand below
+        help_text=_INPUT_HELP,
     )
-    coeffs = sp.Poly(sp.expand(expr), sp.symbols("s", complex=True)).all_coeffs()
+    coeffs = sp.Poly(sp.expand(expr), _S).all_coeffs()
     return np.asarray(coeffs, dtype=float)
 
 

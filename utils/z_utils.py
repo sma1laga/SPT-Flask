@@ -1,28 +1,23 @@
 import sympy as sp
 import numpy as np
 from scipy.signal import residue
-from sympy.parsing.sympy_parser import (
-    standard_transformations,
-    implicit_multiplication_application, convert_xor
-)
 from sympy.printing.latex import LatexPrinter, accepted_latex_functions
 import re
 
 import utils.sympy_utils as sp_utils
+from utils.eval_helpers import safe_parse_expr
 
 CONSTANTS = {
     "e": sp.E,
     "pi": sp.pi,
 }
+# Everything a user may write in an input expression.  Parsing goes through
+# ``safe_parse_expr`` (arithmetic over these names only, no Python execution);
+# the names sympy's own transformations need (Integer, Float, Add, ...) are
+# supplied by the parser and are not user-visible.
 SYMBOLS_ALLOWED = {
     "z": sp.Symbol("z", complex=True),
     "j": sp.I,
-    "Add": sp.Add,
-    "Mul": sp.Mul,
-    "Pow": sp.Pow,
-    "Integer": sp.Integer,
-    "Rational": sp.Rational,
-    "Float": sp.Float,
     "factorial": sp.factorial,
     # trig functions
     "sin": sp.sin,
@@ -44,9 +39,10 @@ H0 = sp.Integer(1) # Value of Heaviside(0)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # parsing a user-entered polynomial (either "[a, b, c]" or "a*z^2 + b*z + c")
-_TRANSFORMS = standard_transformations + (
-    implicit_multiplication_application,
-    convert_xor
+_INPUT_HELP = (
+    "Enter a coefficient list such as [1, 2, 3] or an expression in z such as (z-1)^2; "
+    "allowed are numbers, z, j, e, pi, the trigonometric functions, factorial, "
+    "+ - * / ^ and parentheses."
 )
 
 def parse_input(txt: str) -> sp.Expr:
@@ -57,26 +53,23 @@ def parse_input(txt: str) -> sp.Expr:
         items = txt.strip('[]')
         parts = [p.strip() for p in items.split(',') if p.strip()]
         coeffs = [
-            sp.parse_expr(
+            safe_parse_expr(
                 p,
                 evaluate=False,
                 local_dict=sp_utils.rm_keys(SYMBOLS_ALLOWED, ["z"]), # without z
-                global_dict={},
-                transformations=_TRANSFORMS,
+                help_text=_INPUT_HELP,
             )
             for p in parts
         ]
         return sp_utils.coeffs_to_poly(coeffs, sp.Symbol("z", complex=True))
     
     # any other expression
-    expr = sp.parse_expr(
+    return safe_parse_expr(
         txt,
         evaluate=False,
         local_dict=SYMBOLS_ALLOWED,
-        global_dict={},
-        transformations=_TRANSFORMS,
+        help_text=_INPUT_HELP,
     )
-    return expr
 
 def inverse_z_expr(num, den, roc_type="causal"):
     "symbolic inverse z-transform: partial-fractions → table lookup"

@@ -1,6 +1,8 @@
 import numpy as np
 import sympy as sp
 
+from utils.eval_helpers import parse_sympy_str
+
 CONSTANTS = { # constants allowed for simplification
     "e": sp.E,
     "pi": sp.pi,
@@ -39,7 +41,9 @@ def expr2float(expr, th:int=20, complex_polar:bool=False):
 def render_number(expr, th_float=20, complex_polar:bool=False):
     """Render a SymPy expression as an exact representation if it is short enough."""
     if isinstance(expr, sp.Expr):
-        expr = sp.parse_expr(str(expr).replace("DiracDelta(0)", "1"))
+        # round-trip through sympy's printer to re-evaluate; parse_sympy_str keeps
+        # builtins out of the parser's namespace
+        expr = parse_sympy_str(str(expr).replace("DiracDelta(0)", "1"))
     expr_out = sp.nsimplify(sp.sympify(int_if_close(expr)), CONSTANTS.values()) # render exact number
     if complex_polar and (sp.im(expr_out) != 0):
         expr_out = sp.Abs(expr_out) * sp.exp(sp.I * sp.arg(expr_out)) # convert to polar form

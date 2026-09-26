@@ -9,14 +9,33 @@ Utility helpers for the Block-Diagram module
 from typing import List
 
 import sympy as sp
-import control  
-from sympy.parsing.sympy_parser import (
-    parse_expr,
-    standard_transformations,
-    implicit_multiplication_application
-)
+import control
 from control.matlab import zpk2tf
 import re
+
+from utils.eval_helpers import safe_parse_expr
+
+# User-entered text (transfer-function polynomials, gains, roots) goes through the
+# hardened parser: sympy's parse_expr/sympify would execute arbitrary Python.
+_S, _Z = sp.symbols("s z", complex=True)
+_POLY_LOCALS = {"s": _S, "z": _Z}
+_POLY_HELP = (
+    "Enter a polynomial in s or z such as s^2 + 2*s + 1 or (z-1)(z-0.5); "
+    "only numbers, s, z, + - * / ^ and parentheses are allowed."
+)
+_NUMBER_LOCALS = {"j": sp.I, "I": sp.I, "pi": sp.pi, "e": sp.E, "sqrt": sp.sqrt, "exp": sp.exp}
+_NUMBER_HELP = "Enter a number such as 2, -1.5, 2*pi or 1+2j."
+
+
+def _parse_number(value) -> sp.Expr:
+    """Numeric block parameter (gain, PID constant, root) -> SymPy number."""
+    if isinstance(value, bool):
+        value = int(value)
+    if isinstance(value, (int, float)):
+        return sp.sympify(value)
+    if isinstance(value, str):
+        return safe_parse_expr(value, local_dict=_NUMBER_LOCALS, help_text=_NUMBER_HELP)
+    raise ValueError(f"Invalid numeric parameter {value!r}. {_NUMBER_HELP}")
 
 # ────────────────────────────────────────────────────────────────────────
 def parse_poly(poly_str: str) -> List[float]:
@@ -24,11 +43,8 @@ def parse_poly(poly_str: str) -> List[float]:
     Turn  's^2 + 2'  →  [1, 0, 2]
     Accepts variable  s  or  z.  Raises ValueError on syntax errors.
     """
-    poly_str = poly_str.replace("^", "**")          # allow caret notation
-    s, z = sp.symbols("s z", complex=True)
-    transformations = standard_transformations + (implicit_multiplication_application,)
-    expr = parse_expr(poly_str, local_dict={"s": s, "z": z}, transformations=transformations)
-    poly = sp.Poly(expr, s if "s" in poly_str else z)
+    expr = safe_parse_expr(poly_str, local_dict=_POLY_LOCALS, help_text=_POLY_HELP)
+    poly = sp.Poly(expr, _S if "s" in poly_str else _Z)
     return [float(c) for c in poly.all_coeffs()]
 
 def _parse_root_list(root_str: str) -> List[complex]:
@@ -43,7 +59,7 @@ def _parse_root_list(root_str: str) -> List[complex]:
             continue
         # allow both 'j' and 'i' for imaginary unit
         part = part.replace("i", "j")
-        roots.append(complex(sp.N(sp.sympify(part))))
+        roots.append(complex(sp.N(_parse_number(part))))
     return roots
 
 
@@ -290,7 +306,6 @@ def chain_to_coeffs(graph: dict):
 import re, itertools
 import networkx as nx
 import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
 from control import tf2ss, TransferFunction
 
 s, z = sp.symbols("s z", complex=True)
@@ -301,11 +316,11 @@ def gain_expr(node, domain="s", *, delay_model="pade"):
     var  = s if domain == "s" else z
 
     if t == "TF":
-        num = parse_expr(p["num"].replace("^","**"), local_dict={'s':s,'z':z})
-        den = parse_expr(p["den"].replace("^","**"), local_dict={'s':s,'z':z})
+        num = safe_parse_expr(p["num"], local_dict=_POLY_LOCALS, help_text=_POLY_HELP)
+        den = safe_parse_expr(p["den"], local_dict=_POLY_LOCALS, help_text=_POLY_HELP)
         return num/den
     if t == "Gain":
-        return sp.sympify(p.get("k", 1))
+        return _parse_number(p.get("k", 1))
     if t == "Integrator":
         return 1/var
     if t == "Delay":
@@ -328,14 +343,14 @@ def gain_expr(node, domain="s", *, delay_model="pade"):
     if t == "ZeroPole":
         zeros = _parse_root_list(p.get("zeros", ""))
         poles = _parse_root_list(p.get("poles", ""))
-        k = sp.sympify(p.get("k", 1) or 1)
+        k = _parse_number(p.get("k", 1) or 1)
         num_expr = sp.prod([var - z0 for z0 in zeros]) if zeros else 1
         den_expr = sp.prod([var - p0 for p0 in poles]) if poles else 1
         return k * num_expr / den_expr
     if t == "PID":
-        kp = sp.sympify(p.get("kp", 0) or 0)
-        ki = sp.sympify(p.get("ki", 0) or 0)
-        kd = sp.sympify(p.get("kd", 0) or 0)
+        kp = _parse_number(p.get("kp", 0) or 0)
+        ki = _parse_number(p.get("ki", 0) or 0)
+        kd = _parse_number(p.get("kd", 0) or 0)
         return (kd*var**2 + kp*var + ki) / var
     if t in ("Mux", "Demux"):
         return 1
@@ -344,8 +359,8 @@ def gain_expr(node, domain="s", *, delay_model="pade"):
         if kind == "impulse": return 1
         if kind == "step":    return 1/var
         if kind == "custom":
-            n = parse_expr(p["num"], local_dict={'s':s,'z':z})
-            d = parse_expr(p["den"], local_dict={'s':s,'z':z})
+            n = safe_parse_expr(p["num"], local_dict=_POLY_LOCALS, help_text=_POLY_HELP)
+            d = safe_parse_expr(p["den"], local_dict=_POLY_LOCALS, help_text=_POLY_HELP)
             return n/d
     return 1  # Adder, Output, default
 # ----------------------------------------------------------------------
