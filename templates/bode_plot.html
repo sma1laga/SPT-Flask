@@ -403,7 +403,7 @@
       </li>
       <li>
         <strong>Parentheses for factors.</strong> Type factored forms such as
-        <code>(s+3+2*j)(s+3-2*j)</code>; they render exactly as written while the app expands them behind the scenes.
+        <code>(s+3+2*j)(s+3-2*j)</code>; they are rendered as you typed them while the app expands them behind the scenes.
       </li>
       <li>
         <strong>Python-style notation.</strong> Use <code>s^2</code> or <code>s**2</code>, scientific notation like
@@ -463,10 +463,11 @@
         <div id="bodeMetrics" class="bode-metrics"></div>
         <div class="bode-controls">
           <div class="bode-select-group">
-            <label for="bodeMagnitudeMode">Magnitude plot mode</label>
-            <select id="bodeMagnitudeMode" aria-label="Choose exact or straight-line magnitude plot mode">
+            <label for="bodePlotMode">Plot mode (magnitude &amp; phase)</label>
+            <select id="bodePlotMode" aria-label="Choose exact, straight-line or overlaid mode for both Bode plots">
               <option value="exact" selected>Exact plot</option>
               <option value="straight">Straight-line approximation</option>
+              <option value="both">Exact + straight-line asymptotes</option>
             </select>
           </div>
           <label class="bode-toggle" for="cornerFrequencyToggle">
@@ -503,10 +504,10 @@
           <div class="bode-subplot">
             <h4>Phase (°)</h4>
             <div id="bodePhasePlot" class="plotly-chart"></div>
-            <p style="margin:0; color:#6b7280; font-size:0.92rem;">Choose exact or straight-line mode above to switch both the magnitude and phase plots together.</p>
+            <p style="margin:0; color:#6b7280; font-size:0.92rem;">The straight-line approximation starts at the low-frequency phase of H(s) (±180° for negative gains and right-half-plane roots, ∓90° per pole/zero at the origin) and changes by ±45°/decade per root between 0.1 and 10 times its corner frequency.</p>
           </div>
-          {% set has_phase_cross = bode_data.phase_cross_freq is not none %}
-          {% set has_gain_cross = bode_data.gain_cross_freq is not none %}
+          {% set has_phase_cross = bode_data.phase_crossover_freq is not none and bode_data.phase_crossover_freq > 0 %}
+          {% set has_gain_cross = bode_data.gain_crossover_freq is not none and bode_data.gain_crossover_freq > 0 %}
           {% set has_corner_markers = bode_data.corner_frequencies and bode_data.corner_frequencies|length > 0 %}
           {% if has_phase_cross or has_gain_cross or has_corner_markers %}
             <div class="bode-legend">
@@ -515,13 +516,13 @@
                 {% if has_phase_cross %}
                   <span class="bode-legend-item">
                     <span class="bode-legend-swatch bode-legend-swatch--phase"></span>
-                    Phase crossover frequency (phase crosses −180°)
+                    Phase crossover frequency (phase = −180°, where the gain margin is read; dotted horizontal line marks the −180° level)
                   </span>
                 {% endif %}
                 {% if has_gain_cross %}
                   <span class="bode-legend-item">
                     <span class="bode-legend-swatch bode-legend-swatch--gain"></span>
-                    Gain crossover frequency (magnitude crosses 0 dB)
+                    Gain crossover frequency (magnitude = 0 dB, where the phase margin is read)
                   </span>
                 {% endif %}
                 {% if has_corner_markers %}
@@ -600,7 +601,8 @@
     window.bodeMeta = {
       numerator: {{ default_num|tojson|safe }},
       denominator: {{ default_den|tojson|safe }},
-      functionLatex: {{ function_str|tojson|safe }}
+      functionLatex: {{ function_str|tojson|safe }},
+      functionText: {{ function_text|tojson|safe }}
     };
   </script>
   <script defer src="{{ url_for('static', filename='js/bode_plot.js') }}"></script>

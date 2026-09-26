@@ -8,8 +8,20 @@
 
   const basePlotConfig = { responsive: true, displaylogo: false };
   let showCornerFrequencyMarkers = true;
+  // 'exact' | 'straight' | 'both'
   let currentPlotMode = 'exact';
 
+  const COLORS = {
+    magnitude: '#2563eb',
+    magnitudeAsymptote: '#93c5fd',
+    phase: '#16a34a',
+    phaseAsymptote: '#86efac',
+    phaseCrossover: '#ef4444',
+    gainCrossover: '#f97316',
+    corner: '#a855f7',
+    grid: '#e5e7eb',
+    zeroline: '#9ca3af'
+  };
 
   const isFiniteNumber = value => typeof value === 'number' && Number.isFinite(value);
 
@@ -47,23 +59,87 @@
     return freqText === '—' ? main : `${main} @ ${freqText}`;
   }
 
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function renderMetrics(data) {
     const metricsBox = document.getElementById('bodeMetrics');
     if (!metricsBox) return;
 
-    const gmText = formatMargin(data.gain_margin_db, data.gain_cross_freq, 'dB', 'rad/s');
-    const pmText = formatMargin(data.phase_margin_deg, data.phase_cross_freq, '°', 'rad/s');
-    const bwText = formatWithUnit(data.bandwidth, 'rad/s', 3);
+    const unavailableHint = data.margins_available === false
+      ? 'Not available for transfer functions with complex coefficients'
+      : 'Could not be determined';
+
+    let gmText;
+    let gmHint = '';
+    if (data.gain_margin_infinite) {
+      gmText = '∞ dB';
+      gmHint = 'The phase never crosses −180°, so the gain can be raised without limit.';
+    } else if (data.gain_margin_zero) {
+      gmText = isFiniteNumber(data.phase_crossover_freq)
+        ? `−∞ dB @ ${formatWithUnit(data.phase_crossover_freq, 'rad/s', 3)}`
+        : '−∞ dB';
+      gmHint = 'The phase passes −180° at an undamped pole where |H| → ∞; the unity-feedback loop is unstable for any positive gain.';
+    } else if (isFiniteNumber(data.gain_margin_db) && data.phase_crossover_at_dc) {
+      gmText = `${formatWithUnit(data.gain_margin_db, 'dB', 2)} @ ω → 0`;
+      gmHint = 'The phase is ±180° at ω → 0 (negative low-frequency gain), so the gain margin is read at DC.';
+    } else if (isFiniteNumber(data.gain_margin_db)) {
+      gmText = formatMargin(data.gain_margin_db, data.phase_crossover_freq, 'dB', 'rad/s');
+      gmHint = 'Measured at the phase crossover frequency (phase = −180°).';
+    } else {
+      gmText = '—';
+      gmHint = unavailableHint;
+    }
+
+    let pmText;
+    let pmHint = '';
+    if (data.phase_margin_infinite) {
+      pmText = '∞ °';
+      pmHint = 'The magnitude never crosses 0 dB.';
+    } else if (isFiniteNumber(data.phase_margin_deg)) {
+      pmText = formatMargin(data.phase_margin_deg, data.gain_crossover_freq, '°', 'rad/s');
+      pmHint = 'Measured at the gain crossover frequency (|H| = 0 dB).';
+    } else {
+      pmText = '—';
+      pmHint = unavailableHint;
+    }
+
+    let bwText;
+    let bwHint = '';
+    switch (data.bandwidth_status) {
+      case 'value':
+        bwText = formatWithUnit(data.bandwidth, 'rad/s', 3);
+        bwHint = 'Frequency where |H| falls 3 dB below its DC value.';
+        break;
+      case 'infinite':
+        bwText = '∞';
+        bwHint = '|H| never falls 3 dB below its DC value in the examined range.';
+        break;
+      case 'undefined':
+        bwText = '—';
+        bwHint = 'Not defined: no finite, non-zero DC gain (pole or zero at the origin).';
+        break;
+      default:
+        bwText = '—';
+        bwHint = unavailableHint;
+    }
+
+    const dcText = isFiniteNumber(data.phase_dc_deg) ? `${formatNumber(data.phase_dc_deg, 1)} °` : '—';
 
     metricsBox.innerHTML = `
-      <span><strong>Gain margin</strong>${gmText}</span>
-      <span><strong>Phase margin</strong>${pmText}</span>
-      <span><strong>Bandwidth</strong>${bwText}</span>
+      <span title="${escapeHtml(gmHint)}"><strong>Gain margin</strong>${gmText}</span>
+      <span title="${escapeHtml(pmHint)}"><strong>Phase margin</strong>${pmText}</span>
+      <span title="${escapeHtml(bwHint)}"><strong>Bandwidth</strong>${bwText}</span>
+      <span title="Phase of H(jω) as ω → 0 (the start of the asymptotic phase plot)"><strong>Low-freq. phase</strong>${dcText}</span>
     `;
   }
 
   const CROSSOVER_MARGIN_DECADES = 1;
-  const MAX_CROSSOVER_SPREAD_DECADES = 8;
 
   function getFrequencyRangeFromData(data) {
     if (!data || !Array.isArray(data.omega)) return null;
@@ -84,62 +160,29 @@
     return freq >= minLimit && freq <= maxLimit;
   }
 
-  function areCrossoversTooFar(freqA, freqB) {
-    if (!isFiniteNumber(freqA) || !isFiniteNumber(freqB) || freqA <= 0 || freqB <= 0) {
-      return false;
-    }
-    const distance = Math.abs(Math.log10(freqA) - Math.log10(freqB));
-    return distance > MAX_CROSSOVER_SPREAD_DECADES;
+  function verticalLine(x, color) {
+    return {
+      type: 'line',
+      x0: x,
+      x1: x,
+      y0: 0,
+      y1: 1,
+      xref: 'x',
+      yref: 'paper',
+      line: { color, dash: 'dash', width: 2 }
+    };
   }
 
-  function getDistanceFromRangeMidpoint(freq, range) {
-    if (!isFiniteNumber(freq) || freq <= 0) return Number.POSITIVE_INFINITY;
-    if (!range || !(range.min > 0 && range.max > 0)) {
-      return Math.abs(Math.log10(freq));
-    }
-    const midLog = (Math.log10(range.min) + Math.log10(range.max)) / 2;
-    return Math.abs(Math.log10(freq) - midLog);
-  }
-
+  // Red dashed line: phase crossover (phase = −180°, where the gain margin is read).
+  // Orange dashed line: gain crossover (|H| = 0 dB, where the phase margin is read).
   function buildCrossingLines(data) {
     const shapes = [];
     const freqRange = getFrequencyRangeFromData(data);
-    let showPhase = isCrossoverWithinRange(data.phase_cross_freq, freqRange);
-    let showGain = isCrossoverWithinRange(data.gain_cross_freq, freqRange);
-
-    if (showPhase && showGain && areCrossoversTooFar(data.phase_cross_freq, data.gain_cross_freq)) {
-      const phaseDistance = getDistanceFromRangeMidpoint(data.phase_cross_freq, freqRange);
-      const gainDistance = getDistanceFromRangeMidpoint(data.gain_cross_freq, freqRange);
-      if (phaseDistance <= gainDistance) {
-        showGain = false;
-      } else {
-        showPhase = false;
-      }
+    if (isCrossoverWithinRange(data.phase_crossover_freq, freqRange)) {
+      shapes.push(verticalLine(data.phase_crossover_freq, COLORS.phaseCrossover));
     }
-
-    if (showPhase) {
-      shapes.push({
-        type: 'line',
-        x0: data.phase_cross_freq,
-        x1: data.phase_cross_freq,
-        y0: 0,
-        y1: 1,
-        xref: 'x',
-        yref: 'paper',
-        line: { color: '#ef4444', dash: 'dash', width: 2 }
-      });
-    }
-    if (showGain) {
-      shapes.push({
-        type: 'line',
-        x0: data.gain_cross_freq,
-        x1: data.gain_cross_freq,
-        y0: 0,
-        y1: 1,
-        xref: 'x',
-        yref: 'paper',
-        line: { color: '#f97316', dash: 'dash', width: 2 }
-      });
+    if (isCrossoverWithinRange(data.gain_crossover_freq, freqRange)) {
+      shapes.push(verticalLine(data.gain_crossover_freq, COLORS.gainCrossover));
     }
     return shapes;
   }
@@ -165,7 +208,7 @@
       y1: 1,
       xref: 'x',
       yref: 'paper',
-      line: { color: '#a855f7', dash: 'dot', width: 1.5 }
+      line: { color: COLORS.corner, dash: 'dot', width: 1.5 }
     }));
   }
 
@@ -173,37 +216,84 @@
     const shapes = buildCrossingLines(data);
     return shapes.concat(buildCornerFrequencyShapes(data));
   }
-  function getMagnitudeSeries(data) {
-    const exact = Array.isArray(data.magnitude_db) ? data.magnitude_db : [];
-    const straight = Array.isArray(data.magnitude_straight_db) ? data.magnitude_straight_db : [];
-    if (currentPlotMode === 'straight' && straight.length === exact.length && straight.length > 0) {
-      return {
-        values: straight,
-        name: 'Straight-line magnitude approximation',
-        line: { color: '#2563eb', width: 3, dash: 'dash' }
-      };
-    }
-    return {
+
+  function buildSeries(data, exactKey, straightKey, labels, colors) {
+    const exact = Array.isArray(data[exactKey]) ? data[exactKey] : [];
+    const straight = Array.isArray(data[straightKey]) ? data[straightKey] : [];
+    const haveStraight = straight.length === exact.length && straight.length > 0;
+    const exactTrace = {
       values: exact,
-      name: 'Exact magnitude (dB)',
-      line: { color: '#2563eb', width: 3 }
+      name: labels.exact,
+      line: { color: colors.exact, width: 3 }
     };
+    const straightTrace = {
+      values: straight,
+      name: labels.straight,
+      line: { color: colors.straight, width: 2.5, dash: 'dash' }
+    };
+    if (currentPlotMode === 'straight' && haveStraight) {
+      return [{ ...straightTrace, line: { color: colors.exact, width: 3, dash: 'dash' } }];
+    }
+    if (currentPlotMode === 'both' && haveStraight) {
+      return [exactTrace, straightTrace];
+    }
+    return [exactTrace];
+  }
+
+  function getMagnitudeSeries(data) {
+    return buildSeries(
+      data,
+      'magnitude_db',
+      'magnitude_straight_db',
+      { exact: 'Exact magnitude (dB)', straight: 'Straight-line asymptotes' },
+      { exact: COLORS.magnitude, straight: COLORS.magnitudeAsymptote }
+    );
   }
   function getPhaseSeries(data) {
-    const exact = Array.isArray(data.phase_deg) ? data.phase_deg : [];
-    const straight = Array.isArray(data.phase_straight_deg) ? data.phase_straight_deg : [];
-    if (currentPlotMode === 'straight' && straight.length === exact.length && straight.length > 0) {
-      return {
-        values: straight,
-        name: 'Straight-line phase approximation',
-        line: { color: '#16a34a', width: 3, dash: 'dash' }
-      };
-    }
+    return buildSeries(
+      data,
+      'phase_deg',
+      'phase_straight_deg',
+      { exact: 'Exact phase (°)', straight: 'Straight-line approximation' },
+      { exact: COLORS.phase, straight: COLORS.phaseAsymptote }
+    );
+  }
+
+  function seriesToTraces(freq, series) {
+    return series.map(entry => ({
+      x: freq,
+      y: entry.values,
+      type: 'scatter',
+      mode: 'lines',
+      name: entry.name,
+      line: entry.line,
+      connectgaps: false
+    }));
+  }
+
+  function makeXAxis() {
     return {
-      values: exact,
-      name: 'Exact phase (°)',
-      line: { color: '#16a34a', width: 3 }
+      type: 'log',
+      title: { text: 'Frequency (rad/s)' },
+      showgrid: true,
+      gridcolor: COLORS.grid,
+      showexponent: 'all',
+      exponentformat: 'power'
     };
+  }
+
+  function phaseSpan(series) {
+    let min = Infinity;
+    let max = -Infinity;
+    series.forEach(entry => {
+      entry.values.forEach(value => {
+        if (isFiniteNumber(value)) {
+          if (value < min) min = value;
+          if (value > max) max = value;
+        }
+      });
+    });
+    return Number.isFinite(min) && Number.isFinite(max) ? max - min : 0;
   }
 
   function renderBodeMagnitude(data) {
@@ -212,43 +302,26 @@
     if (!el) return;
 
     const freq = Array.isArray(data.omega) ? data.omega : [];
-    const magnitudeSeries = getMagnitudeSeries(data);
+    const series = getMagnitudeSeries(data);
 
     const layout = {
       margin: { l: 70, r: 20, t: 10, b: 40 },
       hovermode: 'x unified',
       shapes: buildBodeShapes(data),
-      xaxis: {
-        type: 'log',
-        title: 'Frequency (rad/s)',
-        showgrid: true,
-        gridcolor: '#e5e7eb',
-        showexponent: 'all',
-        exponentformat: 'power'
-      },
+      xaxis: makeXAxis(),
       yaxis: {
-        title: 'Magnitude (dB)',
+        title: { text: 'Magnitude (dB)' },
         showgrid: true,
-        gridcolor: '#e5e7eb'
+        gridcolor: COLORS.grid,
+        zeroline: true,
+        zerolinecolor: COLORS.zeroline,
+        zerolinewidth: 1.5
       },
-      showlegend: false
+      showlegend: series.length > 1,
+      legend: { orientation: 'h', x: 0, y: 1.12 }
     };
 
-    Plotly.react(
-      el,
-      [
-        {
-          x: freq,
-          y: magnitudeSeries.values,
-          type: 'scatter',
-          mode: 'lines',
-          name: magnitudeSeries.name,
-          line: magnitudeSeries.line
-        }
-      ],
-      layout,
-      basePlotConfig
-    );
+    Plotly.react(el, seriesToTraces(freq, series), layout, basePlotConfig);
   }
 
   function renderBodePhase(data) {
@@ -257,43 +330,49 @@
     if (!el) return;
 
     const freq = Array.isArray(data.omega) ? data.omega : [];
-    const phaseSeries = getPhaseSeries(data);
+    const series = getPhaseSeries(data);
+    const shapes = buildBodeShapes(data);
+
+    // Horizontal reference at the −180° level (on the plotted branch) when a phase crossover exists.
+    const freqRange = getFrequencyRangeFromData(data);
+    if (isFiniteNumber(data.phase_crossover_level_deg) && isCrossoverWithinRange(data.phase_crossover_freq, freqRange)) {
+      shapes.push({
+        type: 'line',
+        x0: 0,
+        x1: 1,
+        y0: data.phase_crossover_level_deg,
+        y1: data.phase_crossover_level_deg,
+        xref: 'paper',
+        yref: 'y',
+        line: { color: COLORS.phaseCrossover, dash: 'dot', width: 1 }
+      });
+    }
+
+    const span = phaseSpan(series);
+    const yaxis = {
+      title: { text: 'Phase (°)' },
+      showgrid: true,
+      gridcolor: COLORS.grid,
+      zeroline: true,
+      zerolinecolor: COLORS.zeroline
+    };
+    if (span > 0 && span <= 400) {
+      yaxis.dtick = 45;
+    } else if (span > 400 && span <= 900) {
+      yaxis.dtick = 90;
+    }
 
     const layout = {
       margin: { l: 70, r: 20, t: 10, b: 40 },
       hovermode: 'x unified',
-      shapes: buildBodeShapes(data),
-      xaxis: {
-        type: 'log',
-        title: 'Frequency (rad/s)',
-        showgrid: true,
-        gridcolor: '#e5e7eb',
-        showexponent: 'all',
-        exponentformat: 'power'
-      },
-      yaxis: {
-        title: 'Phase (°)',
-        showgrid: true,
-        gridcolor: '#e5e7eb'
-      },
-      showlegend: false
+      shapes,
+      xaxis: makeXAxis(),
+      yaxis,
+      showlegend: series.length > 1,
+      legend: { orientation: 'h', x: 0, y: 1.12 }
     };
 
-    Plotly.react(
-      el,
-      [
-        {
-          x: freq,
-          y: phaseSeries.values,
-          type: 'scatter',
-          mode: 'lines',
-          name: phaseSeries.name,
-          line: phaseSeries.line
-        }
-      ],
-      layout,
-      basePlotConfig
-    );
+    Plotly.react(el, seriesToTraces(freq, series), layout, basePlotConfig);
   }
 
   function renderBodePlot(data) {
@@ -302,13 +381,13 @@
   }
 
   function getTransferFunctionExportText() {
+    if (typeof bodeMeta.functionText === 'string' && bodeMeta.functionText.trim()) {
+      return bodeMeta.functionText.trim();
+    }
     const numerator = typeof bodeMeta.numerator === 'string' ? bodeMeta.numerator.trim() : '';
     const denominator = typeof bodeMeta.denominator === 'string' ? bodeMeta.denominator.trim() : '';
     if (numerator && denominator) {
-      return `H(s) = ${numerator} / ${denominator}`;
-    }
-    if (typeof bodeMeta.functionLatex === 'string' && bodeMeta.functionLatex.trim()) {
-      return bodeMeta.functionLatex.replace(/\\/g, '');
+      return `H(s) = (${numerator}) / (${denominator})`;
     }
     return 'H(s)';
   }
@@ -326,6 +405,15 @@
     return JSON.parse(JSON.stringify(value || {}));
   }
 
+  function axisTitleText(axis, fallback) {
+    if (!axis) return fallback;
+    if (axis.title && typeof axis.title === 'object' && typeof axis.title.text === 'string') {
+      return axis.title.text;
+    }
+    if (typeof axis.title === 'string') return axis.title;
+    return fallback;
+  }
+
   function createExportLayout(sourceLayout, titleText) {
     const layout = cloneForExport(sourceLayout);
     const xaxis = layout.xaxis || {};
@@ -341,17 +429,19 @@
       paper_bgcolor: '#ffffff',
       plot_bgcolor: '#ffffff',
       margin: { l: 110, r: 40, t: 84, b: 80 },
+      // Right-aligned so the legend (only shown in "both" mode) never meets the left-aligned title.
+      legend: { orientation: 'h', x: 1, xanchor: 'right', y: 1.02, yanchor: 'bottom', font: { size: 16 } },
       font: { family: 'Arial, sans-serif', size: 18, color: '#111827' },
       xaxis: {
         ...xaxis,
-        title: { text: xaxis.title?.text || xaxis.title || 'Frequency (rad/s)', font: { size: 20 } },
+        title: { text: axisTitleText(xaxis, 'Frequency (rad/s)'), font: { size: 20 } },
         tickfont: { size: 16 },
         gridcolor: '#d1d5db',
         zerolinecolor: '#9ca3af'
       },
       yaxis: {
         ...yaxis,
-        title: { text: yaxis.title?.text || yaxis.title || '', font: { size: 20 } },
+        title: { text: axisTitleText(yaxis, ''), font: { size: 20 } },
         tickfont: { size: 16 },
         gridcolor: '#d1d5db',
         zerolinecolor: '#9ca3af'
@@ -395,6 +485,23 @@
     }
   }
 
+  function roundedRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(x, y, width, height, radius);
+    } else {
+      ctx.rect(x, y, width, height);
+    }
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function modeLabel() {
+    if (currentPlotMode === 'straight') return 'Straight-line approximation';
+    if (currentPlotMode === 'both') return 'Exact response with straight-line asymptotes';
+    return 'Exact response';
+  }
+
   async function exportBodeComposite() {
     const [magnitudeImage, phaseImage] = await Promise.all([
       createPlotImage('bodeMagnitudePlot', 'Magnitude Plot'),
@@ -420,25 +527,18 @@
     ctx.fillStyle = '#374151';
     ctx.fillText(getTransferFunctionExportText(), 90, 138);
 
-    const modeLabel = currentPlotMode === 'straight' ? 'Straight-line approximation' : 'Exact response';
     const markersLabel = showCornerFrequencyMarkers ? 'Corner frequencies shown' : 'Corner frequencies hidden';
     ctx.font = '22px Arial, sans-serif';
     ctx.fillStyle = '#4b5563';
-    ctx.fillText(`${modeLabel} • ${markersLabel}`, 90, 182);
+    ctx.fillText(`${modeLabel()} • ${markersLabel}`, 90, 182);
 
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = '#dbeafe';
     ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(70, 220, 1660, 560, 22);
-    ctx.fill();
-    ctx.stroke();
+    roundedRect(ctx, 70, 220, 1660, 560, 22);
     ctx.drawImage(magnitudeImage, 100, 242, 1600, 520);
 
-    ctx.beginPath();
-    ctx.roundRect(70, 830, 1660, 560, 22);
-    ctx.fill();
-    ctx.stroke();
+    roundedRect(ctx, 70, 830, 1660, 560, 22);
     ctx.drawImage(phaseImage, 100, 852, 1600, 520);
 
     const dataUrl = canvas.toDataURL('image/png');
@@ -491,12 +591,16 @@
     });
   }
 
-  function setupMagnitudeModeToggle(data) {
-    const select = document.getElementById('bodeMagnitudeMode');
+  function readPlotMode(select) {
+    return ['exact', 'straight', 'both'].includes(select.value) ? select.value : 'exact';
+  }
+
+  function setupPlotModeToggle(data) {
+    const select = document.getElementById('bodePlotMode');
     if (!select) return;
-    currentPlotMode = select.value === 'straight' ? 'straight' : 'exact';
+    currentPlotMode = readPlotMode(select);
     select.addEventListener('change', () => {
-      currentPlotMode = select.value === 'straight' ? 'straight' : 'exact';
+      currentPlotMode = readPlotMode(select);
       renderBodePlot(data);
     });
   }
@@ -520,12 +624,13 @@
     const xRange = maxRe === 0 ? 1 : maxRe * 1.2;
     const yRange = maxIm === 0 ? 1 : maxIm * 1.2;
 
-    const traces = [
-      {
+    const traces = [];
+    if (zerosPoints.length) {
+      traces.push({
         x: zerosPoints.map(z => z.x),
         y: zerosPoints.map(z => z.y),
         type: 'scatter',
-        mode: zerosPoints.length ? 'markers' : 'text',
+        mode: 'markers',
         name: 'Zeros',
         marker: {
           symbol: 'circle-open',
@@ -533,14 +638,15 @@
           color: '#0ea5e9',
           line: { width: 2 }
         },
-        text: zerosPoints.length ? undefined : ['No zeros'],
-        textposition: 'top center'
-      },
-      {
+        hovertemplate: 'Zero<br>Re: %{x:.4g}<br>Im: %{y:.4g}<extra></extra>'
+      });
+    }
+    if (polesPoints.length) {
+      traces.push({
         x: polesPoints.map(p => p.x),
         y: polesPoints.map(p => p.y),
         type: 'scatter',
-        mode: polesPoints.length ? 'markers' : 'text',
+        mode: 'markers',
         name: 'Poles',
         marker: {
           symbol: 'x',
@@ -548,31 +654,45 @@
           color: '#ef4444',
           line: { width: 2 }
         },
-        text: polesPoints.length ? undefined : ['No poles'],
-        textposition: 'bottom center'
-      }
-    ];
+        hovertemplate: 'Pole<br>Re: %{x:.4g}<br>Im: %{y:.4g}<extra></extra>'
+      });
+    }
+
+    const annotations = [];
+    if (!zerosPoints.length) {
+      annotations.push({
+        xref: 'paper', yref: 'paper', x: 0.02, y: 0.98, xanchor: 'left', yanchor: 'top',
+        text: 'No finite zeros', showarrow: false, font: { color: '#0ea5e9', size: 13 }
+      });
+    }
+    if (!polesPoints.length) {
+      annotations.push({
+        xref: 'paper', yref: 'paper', x: 0.02, y: 0.02, xanchor: 'left', yanchor: 'bottom',
+        text: 'No finite poles', showarrow: false, font: { color: '#ef4444', size: 13 }
+      });
+    }
 
     const layout = {
       margin: { l: 60, r: 20, t: 20, b: 40 },
       xaxis: {
-        title: 'Real',
+        title: { text: 'Real' },
         range: [-xRange, xRange],
         zeroline: false,
         showgrid: true,
-        gridcolor: '#e5e7eb'
+        gridcolor: COLORS.grid
       },
       yaxis: {
-        title: 'Imaginary',
+        title: { text: 'Imaginary' },
         range: [-yRange, yRange],
         zeroline: false,
         showgrid: true,
-        gridcolor: '#e5e7eb'
+        gridcolor: COLORS.grid
       },
       shapes: [
-        { type: 'line', x0: -xRange, x1: xRange, y0: 0, y1: 0, line: { color: '#9ca3af', width: 1 } },
-        { type: 'line', x0: 0, x1: 0, y0: -yRange, y1: yRange, line: { color: '#9ca3af', width: 1 } }
+        { type: 'line', x0: -xRange, x1: xRange, y0: 0, y1: 0, line: { color: COLORS.zeroline, width: 1 } },
+        { type: 'line', x0: 0, x1: 0, y0: -yRange, y1: yRange, line: { color: COLORS.zeroline, width: 1 } }
       ],
+      annotations,
       legend: { orientation: 'h', y: -0.2 }
     };
 
@@ -612,6 +732,7 @@
       mode: 'lines',
       name: 'ω ≥ 0',
       line: { color: '#2563eb', width: 3 },
+      connectgaps: false,
       hovertemplate: 'Re: %{x:.4f}<br>Im: %{y:.4f}<br>ω: %{customdata}<extra></extra>',
       customdata: posFreq.map(freqToHover)
     };
@@ -626,6 +747,7 @@
         mode: 'lines',
         name: 'ω ≤ 0',
         line: { color: '#7c3aed', width: 2, dash: 'dot' },
+        connectgaps: false,
         hovertemplate: 'Re: %{x:.4f}<br>Im: %{y:.4f}<br>ω: %{customdata}<extra></extra>',
         customdata: negFreq.map(freqToHover)
       });
@@ -672,15 +794,43 @@
       });
     }
 
+    const crossings = Array.isArray(data.real_axis_crossings) ? data.real_axis_crossings : [];
+    const crossingReals = crossings.map(c => Number(c.real)).filter(isFiniteNumber);
+    if (crossingReals.length) {
+      traces.push({
+        x: crossingReals,
+        y: crossingReals.map(() => 0),
+        type: 'scatter',
+        mode: 'markers',
+        name: 'Real-axis crossing',
+        marker: { color: '#f97316', size: 9, symbol: 'diamond' },
+        hovertemplate: 'Real-axis crossing<br>Re: %{x:.4f}<extra></extra>'
+      });
+    }
+
+    // Default view: focus on the region around the critical point.  For systems with poles
+    // at the origin the locus runs off to infinity, which would otherwise dominate the
+    // autoscale and shrink everything that matters to a dot.  Plotly's "Autoscale" button
+    // still shows the whole locus.
     const allReal = posReal.concat(negReal);
     const allImag = posImag.concat(negImag);
-    const finiteReal = allReal.filter(isFiniteNumber);
-    const finiteImag = allImag.filter(isFiniteNumber);
-    const maxReal = finiteReal.length ? Math.max(...finiteReal.map(Math.abs)) : 0;
-    const maxImag = finiteImag.length ? Math.max(...finiteImag.map(Math.abs)) : 0;
-    const extent = Math.max(1, maxReal, maxImag);
-    const pad = extent * 0.15;
-    const limit = extent + pad;
+    const fullExtent = Math.max(
+      1,
+      ...allReal.filter(isFiniteNumber).map(Math.abs),
+      ...allImag.filter(isFiniteNumber).map(Math.abs)
+    );
+    const focusThreshold = Math.max(2, 2 * Math.max(0, ...crossingReals.map(Math.abs)));
+    let coreExtent = 0;
+    for (let i = 0; i < allReal.length; i += 1) {
+      const re = allReal[i];
+      const im = allImag[i];
+      if (!isFiniteNumber(re) || !isFiniteNumber(im)) continue;
+      if (Math.hypot(re, im) <= focusThreshold) {
+        coreExtent = Math.max(coreExtent, Math.abs(re), Math.abs(im));
+      }
+    }
+    const extent = coreExtent > 0 ? Math.max(1.2, coreExtent) : fullExtent;
+    const limit = Math.min(fullExtent * 1.15, extent * 1.15 + 0.2);
     const circleRadius = Math.min(limit * 0.12, 1.5);
 
     const layout = {
@@ -688,24 +838,24 @@
       hovermode: 'closest',
       showlegend: false,
       xaxis: {
-        title: 'Re{L(jω)}',
+        title: { text: 'Re{L(jω)}' },
         showgrid: true,
-        gridcolor: '#e5e7eb',
+        gridcolor: COLORS.grid,
         zeroline: false,
         range: [-limit, limit]
       },
       yaxis: {
-        title: 'Im{L(jω)}',
+        title: { text: 'Im{L(jω)}' },
         showgrid: true,
-        gridcolor: '#e5e7eb',
+        gridcolor: COLORS.grid,
         zeroline: false,
         scaleanchor: 'x',
         scaleratio: 1,
         range: [-limit, limit]
       },
       shapes: [
-        { type: 'line', x0: -limit, x1: limit, y0: 0, y1: 0, line: { color: '#9ca3af', width: 1 } },
-        { type: 'line', x0: 0, x1: 0, y0: -limit, y1: limit, line: { color: '#9ca3af', width: 1 } },
+        { type: 'line', x0: -fullExtent * 1.15, x1: fullExtent * 1.15, y0: 0, y1: 0, line: { color: COLORS.zeroline, width: 1 } },
+        { type: 'line', x0: 0, x1: 0, y0: -fullExtent * 1.15, y1: fullExtent * 1.15, line: { color: COLORS.zeroline, width: 1 } },
         {
           type: 'circle',
           xref: 'x',
@@ -715,6 +865,16 @@
           y0: -circleRadius,
           y1: circleRadius,
           line: { color: 'rgba(239,68,68,0.45)', dash: 'dot', width: 1 }
+        },
+        {
+          type: 'circle',
+          xref: 'x',
+          yref: 'y',
+          x0: -1,
+          x1: 1,
+          y0: -1,
+          y1: 1,
+          line: { color: 'rgba(107,114,128,0.35)', dash: 'dot', width: 1 }
         }
       ],
       annotations: [
@@ -737,7 +897,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const bootstrap = () => {
       if (bodeData) {
-        setupMagnitudeModeToggle(bodeData);
+        setupPlotModeToggle(bodeData);
         setupCornerFrequencyToggle(bodeData);
         renderBodePlot(bodeData);
         renderMetrics(bodeData);
